@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="WarehouseInvoiceSystem.API/WarehouseInvoiceSystem.API.csproj" />
+  <Project Path="WarehouseInvoiceSystem.Application/WarehouseInvoiceSystem.Application.csproj" />
+  <Project Path="WarehouseInvoiceSystem.BlazorUI/WarehouseInvoiceSystem.BlazorUI.csproj" />
+  <Project Path="WarehouseInvoiceSystem.Domain/WarehouseInvoiceSystem.Domain.csproj" />
+  <Project Path="WarehouseInvoiceSystem.Infrastructure/WarehouseInvoiceSystem.Infrastructure.csproj" />
+</Solution>
