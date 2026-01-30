@@ -44,7 +44,7 @@
 
             builder.Property(e => e.IssueDate)
                 .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp without time zone");
 
             builder.Property(e => e.DueDate)
                 .IsRequired();
@@ -54,7 +54,7 @@
 
             builder.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp without time zone");
 
             builder.Property(e => e.CreatedBy)
                 .HasMaxLength(100);

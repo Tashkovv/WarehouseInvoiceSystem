@@ -23,5 +23,13 @@
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
         }
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            // Configure all DateTime properties to use timestamp without time zone
+            configurationBuilder
+                .Properties<DateTime>()
+                .HaveColumnType("timestamp without time zone");
+        }
     }
 }

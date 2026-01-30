@@ -1,10 +1,9 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Entities
+﻿namespace WarehouseInvoiceSystem.Application.DTOs.Payment
 {
     using WarehouseInvoiceSystem.Domain.Enums;
 
-    public class Payment
+    public class CreatePaymentDto
     {
-        public int Id { get; set; }
         public int InvoiceId { get; set; }
         public DateTime PaymentDate { get; set; } = DateTime.Now;
         public decimal Amount { get; set; }
@@ -12,9 +11,5 @@
         public string? ReferenceNumber { get; set; }
         public string? Notes { get; set; }
         public string? RecordedBy { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
-        // Navigation property
-        public Invoice Invoice { get; set; } = null!;
     }
 }

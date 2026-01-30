@@ -1,8 +1,8 @@
-﻿using WarehouseInvoiceSystem.Domain.Enums;
-
-namespace WarehouseInvoiceSystem.Domain.Entities
+﻿namespace WarehouseInvoiceSystem.Application.DTOs.Company
 {
-    public class Company
+    using WarehouseInvoiceSystem.Domain.Enums;
+
+    public class CompanyDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -12,13 +12,10 @@ namespace WarehouseInvoiceSystem.Domain.Entities
         public string? Phone { get; set; }
         public string? Address { get; set; }
         public string? TaxId { get; set; }
-        public int PaymentTermsDays { get; set; } = 30; // Net 30 default
+        public int PaymentTermsDays { get; set; }
         public decimal? CreditLimit { get; set; }
-        public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
-
-        // Navigation properties
-        public ICollection<Invoice> Invoices { get; set; } = [];
     }
 }

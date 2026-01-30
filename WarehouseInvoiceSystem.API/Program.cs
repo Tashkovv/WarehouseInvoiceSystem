@@ -1,7 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using WarehouseInvoiceSystem.Application.Interfaces;
+using WarehouseInvoiceSystem.Application.Services;
+using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Data;
+using WarehouseInvoiceSystem.Infrastructure.Repositories;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -12,7 +16,15 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-var app = builder.Build();
+// Register Repositories
+builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+
+// Register Services
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

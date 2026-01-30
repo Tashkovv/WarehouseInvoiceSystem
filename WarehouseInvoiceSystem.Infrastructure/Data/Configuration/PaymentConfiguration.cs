@@ -21,7 +21,7 @@
 
             builder.Property(e => e.PaymentDate)
                 .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp without time zone");
 
             builder.Property(e => e.ReferenceNumber)
                 .HasMaxLength(100);
@@ -34,7 +34,7 @@
 
             builder.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp without time zone");
 
             // Indexes
             builder.HasIndex(e => e.PaymentDate);

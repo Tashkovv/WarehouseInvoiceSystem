@@ -8,7 +8,7 @@
         public string PasswordHash { get; set; } = string.Empty;
         public string Role { get; set; } = "Viewer"; // Admin, Manager, Accountant, Viewer
         public bool IsActive { get; set; } = true;
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? LastLogin { get; set; }
     }
 }

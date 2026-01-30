@@ -35,7 +35,7 @@
 
             builder.Property(e => e.CreatedAt)
                 .IsRequired()
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                .HasColumnType("timestamp without time zone");
 
             // Indexes
             builder.HasIndex(e => e.Username)
