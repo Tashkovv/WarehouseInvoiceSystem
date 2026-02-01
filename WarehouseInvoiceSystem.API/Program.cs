@@ -19,10 +19,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register Repositories
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 // Register Services
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 WebApplication app = builder.Build();
 
