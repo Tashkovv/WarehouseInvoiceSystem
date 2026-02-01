@@ -1,7 +1,268 @@
 ﻿@page "/"
+@implements IDisposable
+@using MudBlazor
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.BlazorUI.Services
+@inject IInvoiceService InvoiceService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>@Localization.GetString("Dashboard") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Dashboard")</MudText>
 
-Welcome to your new app.
+@if (_loading)
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="120px" />
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudGrid Class="mb-6">
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @Localization.GetString("TotalDue")
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Color="Color.Success" />
+                    </div>
+                    <MudText Typo="Typo.h4" Class="mb-1">
+                        @(_summary?.TotalDue.ToString("C") ?? "$0.00")
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @_summary?.UnpaidInvoices @Localization.GetString("InvoicesUnpaid")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @Localization.GetString("TotalInvoices")
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Info" />
+                    </div>
+                    <MudText Typo="Typo.h4" Class="mb-1">
+                        @(_summary?.TotalInvoices ?? 0)
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @_summary?.PaidInvoices @Localization.GetString("Paid")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @Localization.GetString("Overdue")
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" />
+                    </div>
+                    <MudText Typo="Typo.h4" Class="mb-1">
+                        @(_summary?.OverdueInvoices ?? 0)
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @Localization.GetString("RequiresAttention")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @Localization.GetString("TotalPaid")
+                        </MudText>
+                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
+                    </div>
+                    <MudText Typo="Typo.h4" Class="mb-1">
+                        @(_summary?.TotalPaid.ToString("C") ?? "$0.00")
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @Localization.GetString("AllTimeCollected")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    <MudCard Elevation="2">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">@Localization.GetString("RecentInvoices")</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudButton StartIcon="@Icons.Material.Filled.Add" 
+                           Color="Color.Primary" 
+                           Variant="Variant.Filled"
+                           Href="/invoices/create">
+                    @Localization.GetString("NewInvoice")
+                </MudButton>
+            </CardHeaderActions>
+        </MudCardHeader>
+        <MudCardContent Class="pa-0">
+            @if (_recentInvoices == null || !_recentInvoices.Any())
+            {
+                <div class="pa-6 text-center">
+                    <MudText Color="Color.Secondary">
+                        @Localization.GetString("NoInvoicesFound")
+                    </MudText>
+                </div>
+            }
+            else
+            {
+                <MudTable Items="_recentInvoices" Hover="true" Breakpoint="Breakpoint.Sm" Dense="false">
+                    <HeaderContent>
+                        <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
+                        <MudTh>@Localization.GetString("Company")</MudTh>
+                        <MudTh>@Localization.GetString("Amount")</MudTh>
+                        <MudTh>@Localization.GetString("Status")</MudTh>
+                        <MudTh>@Localization.GetString("DueDate")</MudTh>
+                        <MudTh>@Localization.GetString("Actions")</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                @context.InvoiceNumber
+                            </MudText>
+                        </MudTd>
+                        <MudTd DataLabel="@Localization.GetString("Company")">
+                            @context.CompanyName
+                        </MudTd>
+                        <MudTd DataLabel="@Localization.GetString("Amount")">
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                @context.TotalAmount.ToString("C")
+                            </MudText>
+                        </MudTd>
+                        <MudTd DataLabel="@Localization.GetString("Status")">
+                            <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.Status)">
+                                @GetStatusText(context.Status)
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="@Localization.GetString("DueDate")">
+                            @if (context.DueDate < DateTime.Now && context.Status != InvoiceStatus.Paid)
+                            {
+                                <MudText Color="Color.Error">
+                                    @context.DueDate.ToString("MMM dd, yyyy")
+                                </MudText>
+                            }
+                            else
+                            {
+                                <MudText>@context.DueDate.ToString("MMM dd, yyyy")</MudText>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="@Localization.GetString("Actions")">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                           Size="Size.Small" 
+                                           OnClick="@(() => ViewInvoice(context.Id))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Href="/invoices" Color="Color.Primary">
+                @Localization.GetString("ViewAllInvoices")
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+}
+
+@code {
+    private bool _loading = true;
+    private InvoiceSummaryDto? _summary;
+    private List<InvoiceDto> _recentInvoices = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadDashboardData();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadDashboardData()
+    {
+        _loading = true;
+        
+        try
+        {
+            _summary = await InvoiceService.GetInvoiceSummaryAsync();
+            
+            IEnumerable<InvoiceDto> allInvoices = await InvoiceService.GetAllInvoicesAsync();
+            _recentInvoices = allInvoices.OrderByDescending(i => i.CreatedAt).Take(5).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => Color.Default,
+            InvoiceStatus.Sent => Color.Info,
+            InvoiceStatus.PartiallyPaid => Color.Warning,
+            InvoiceStatus.Paid => Color.Success,
+            InvoiceStatus.Overdue => Color.Error,
+            InvoiceStatus.Cancelled => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private string GetStatusText(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => Localization.GetString("Draft"),
+            InvoiceStatus.Sent => Localization.GetString("Sent"),
+            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
+            InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
+            InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
+            InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+            _ => status.ToString()
+        };
+    }
+
+    private void ViewInvoice(int id)
+    {
+        Navigation.NavigateTo($"/invoices/{id}");
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}
