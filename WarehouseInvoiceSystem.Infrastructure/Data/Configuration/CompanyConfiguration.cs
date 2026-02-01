@@ -45,10 +45,14 @@
                 .IsRequired()
                 .HasColumnType("timestamp without time zone");
 
+            builder.Property(e => e.DeletedOn)
+                .HasColumnType("timestamp without time zone");
+
             // Indexes
             builder.HasIndex(e => e.Name);
             builder.HasIndex(e => e.Type);
             builder.HasIndex(e => e.IsActive);
+            builder.HasIndex(e => e.DeletedOn);
         }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
+using System.Globalization;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Services;
 using WarehouseInvoiceSystem.BlazorUI.Components;
@@ -9,6 +10,15 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 using WarehouseInvoiceSystem.Infrastructure.Repositories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Culture setup 
+CultureInfo mkdCulture = new("de-DE");
+mkdCulture.NumberFormat.CurrencySymbol = "MKD";
+mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
+mkdCulture.NumberFormat.CurrencyPositivePattern = 3;
+
+CultureInfo.DefaultThreadCurrentCulture = mkdCulture;
+CultureInfo.DefaultThreadCurrentUICulture = mkdCulture;
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260130191050_InitialCreateWithLocalTime")]
-    partial class InitialCreateWithLocalTime
+    [Migration("20260201192119_AddSoftDelete")]
+    partial class AddSoftDelete
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,6 +48,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<string>("Email")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -81,6 +84,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeletedOn");
+
                     b.HasIndex("IsActive");
 
                     b.HasIndex("Name");
@@ -113,6 +118,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<string>("CreatedBy")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("timestamp without time zone");
@@ -162,6 +170,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasIndex("CompanyId");
 
+                    b.HasIndex("DeletedOn");
+
                     b.HasIndex("InvoiceNumber")
                         .IsUnique();
 
@@ -179,6 +189,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -224,6 +237,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
@@ -247,6 +263,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeletedOn");
+
                     b.HasIndex("InvoiceId");
 
                     b.HasIndex("PaymentDate");
@@ -265,6 +283,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Email")
@@ -298,6 +319,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
 
                     b.HasIndex("Email")
                         .IsUnique();

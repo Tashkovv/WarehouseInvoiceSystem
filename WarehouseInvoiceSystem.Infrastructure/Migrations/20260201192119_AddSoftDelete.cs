@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreateWithLocalTime : Migration
+    public partial class AddSoftDelete : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -29,7 +29,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     CreditLimit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -48,7 +49,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Viewer"),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    LastLogin = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
+                    LastLogin = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -74,6 +76,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ModifiedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
                 },
@@ -98,7 +101,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Quantity = table.Column<decimal>(type: "numeric(18,3)", precision: 18, scale: 3, nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    TaxRate = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false, defaultValue: 0m)
+                    TaxRate = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false, defaultValue: 0m),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -124,7 +128,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     ReferenceNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     RecordedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -136,6 +141,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Company_DeletedOn",
+                table: "Company",
+                column: "DeletedOn");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Company_IsActive",
@@ -156,6 +166,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_Invoice_CompanyId",
                 table: "Invoice",
                 column: "CompanyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Invoice_DeletedOn",
+                table: "Invoice",
+                column: "DeletedOn");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoice_InvoiceNumber",
@@ -179,6 +194,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "InvoiceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Payment_DeletedOn",
+                table: "Payment",
+                column: "DeletedOn");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Payment_InvoiceId",
                 table: "Payment",
                 column: "InvoiceId");
@@ -192,6 +212,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_Payment_ReferenceNumber",
                 table: "Payment",
                 column: "ReferenceNumber");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_User_DeletedOn",
+                table: "User",
+                column: "DeletedOn");
 
             migrationBuilder.CreateIndex(
                 name: "IX_User_Email",

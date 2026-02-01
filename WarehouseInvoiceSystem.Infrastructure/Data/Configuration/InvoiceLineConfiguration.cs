@@ -29,6 +29,9 @@
                 .IsRequired()
                 .HasDefaultValue(0);
 
+            builder.Property(e => e.DeletedOn)
+                .HasColumnType("timestamp without time zone");
+
             // Computed properties - not stored in database
             builder.Ignore(e => e.Amount);
             builder.Ignore(e => e.TaxAmount);
@@ -36,6 +39,7 @@
 
             // Indexes
             builder.HasIndex(e => e.InvoiceId);
+            builder.HasIndex(e => e.DeletedOn);
 
             // Relationships
             builder.HasOne(e => e.Invoice)

@@ -2,7 +2,7 @@
 {
     public class LocalizationService : ILocalizationService
     {
-        private string _currentLanguage = "mk";
+        private string _currentLanguage = "en";
 
         public string CurrentLanguage => _currentLanguage;
 
@@ -10,6 +10,7 @@
 
         private readonly Dictionary<string, Dictionary<string, string>> _translations = new()
         {
+            #region English translations
             ["en"] = new Dictionary<string, string>
             {
                 // Navigation
@@ -61,12 +62,78 @@
                 ["Filter"] = "Filter",
                 ["Export"] = "Export",
                 ["Import"] = "Import",
-                ["WarehouseInvoiceSystem"] = "Warehouse Invoice System"
+                ["WarehouseInvoiceSystem"] = "Warehouse Invoice System",
+
+                // Invoices Page
+                ["CreateInvoice"] = "Create Invoice",
+                ["EditInvoice"] = "Edit Invoice",
+                ["InvoiceDetails"] = "Invoice Details",
+                ["AllInvoices"] = "All Invoices",
+                ["Receivables"] = "Receivables",
+                ["Payables"] = "Payables",
+                ["Type"] = "Type",
+                ["IssueDate"] = "Issue Date",
+                ["Notes"] = "Notes",
+                ["LineItems"] = "Line Items",
+                ["Description"] = "Description",
+                ["Quantity"] = "Quantity",
+                ["UnitPrice"] = "Unit Price",
+                ["TaxRate"] = "Tax Rate",
+                ["Total"] = "Total",
+                ["Subtotal"] = "Subtotal",
+                ["Tax"] = "Tax",
+                ["AmountPaid"] = "Amount Paid",
+                ["AmountDue"] = "Amount Due",
+                ["AddLineItem"] = "Add Line Item",
+                ["RemoveLineItem"] = "Remove",
+                ["BillTo"] = "Bill To",
+                ["BillFrom"] = "Bill From",
+                ["InvoiceInformation"] = "Invoice Information",
+                ["PaymentHistory"] = "Payment History",
+                ["RecordPayment"] = "Record Payment",
+                ["NoPaymentsRecorded"] = "No payments recorded yet",
+                ["BackToInvoices"] = "Back to Invoices",
+                ["SelectCompany"] = "Select Company",
+                ["SelectType"] = "Select Type",
+                ["Receivable"] = "Receivable",
+                ["Payable"] = "Payable",
+                ["ConfirmDelete"] = "Confirm Delete",
+                ["DeleteInvoiceConfirm"] = "Are you sure you want to delete this invoice? This action cannot be undone.",
+                ["InvoiceDeleted"] = "Invoice deleted successfully",
+                ["InvoiceCreated"] = "Invoice created successfully",
+                ["InvoiceUpdated"] = "Invoice updated successfully",
+                ["ErrorLoadingInvoice"] = "Error loading invoice",
+                ["ErrorCreatingInvoice"] = "Error creating invoice",
+                ["ErrorUpdatingInvoice"] = "Error updating invoice",
+                ["ErrorDeletingInvoice"] = "Error deleting invoice",
+                ["PleaseAddLineItems"] = "Please add at least one line item",
+                ["Yes"] = "Yes",
+                ["No"] = "No",
+                ["Close"] = "Close",
+                ["PaymentDate"] = "Payment Date",
+                ["PaymentAmount"] = "Payment Amount",
+                ["PaymentMethod"] = "Payment Method",
+                ["ReferenceNumber"] = "Reference Number",
+                ["RecordedBy"] = "Recorded By",
+                ["ShowingResults"] = "Showing {0} to {1} of {2} results",
+                ["Terms"] = "Terms",
+                ["Days"] = "days",
+
+                // Payment Methods
+                ["Cash"] = "Cash",
+                ["Check"] = "Check",
+                ["BankTransfer"] = "Bank Transfer",
+                ["CreditCard"] = "Credit Card",
+                ["DebitCard"] = "Debit Card",
+                ["Other"] = "Other",
             },
+            #endregion
+
+            #region Macedonian translations
             ["mk"] = new Dictionary<string, string>
             {
                 // Navigation
-                ["Dashboard"] = "Контролна табла",
+                ["Dashboard"] = "Почетна",
                 ["Companies"] = "Компании",
                 ["Invoices"] = "Фактури",
                 ["Payments"] = "Плаќања",
@@ -114,14 +181,78 @@
                 ["Filter"] = "Филтрирај",
                 ["Export"] = "Извези",
                 ["Import"] = "Увези",
-                ["WarehouseInvoiceSystem"] = "Систем за фактури"
+                ["WarehouseInvoiceSystem"] = "Систем за фактури",
+
+                // Invoices Page
+                ["CreateInvoice"] = "Креирај фактура",
+                ["EditInvoice"] = "Измени фактура",
+                ["InvoiceDetails"] = "Детали за фактура",
+                ["AllInvoices"] = "Сите фактури",
+                ["Receivables"] = "Побарувања",
+                ["Payables"] = "Обврски",
+                ["Type"] = "Тип",
+                ["IssueDate"] = "Датум на издавање",
+                ["Notes"] = "Забелешки",
+                ["LineItems"] = "Ставки",
+                ["Description"] = "Опис",
+                ["Quantity"] = "Количина",
+                ["UnitPrice"] = "Единечна цена",
+                ["TaxRate"] = "Даночна стапка",
+                ["Total"] = "Вкупно",
+                ["Subtotal"] = "Подзбир",
+                ["Tax"] = "Данок",
+                ["AmountPaid"] = "Платено",
+                ["AmountDue"] = "За наплата",
+                ["AddLineItem"] = "Додади ставка",
+                ["RemoveLineItem"] = "Отстрани",
+                ["BillTo"] = "Наплата од",
+                ["BillFrom"] = "Наплата на",
+                ["InvoiceInformation"] = "Информации за фактура",
+                ["PaymentHistory"] = "Историја на плаќања",
+                ["RecordPayment"] = "Евидентирај плаќање",
+                ["NoPaymentsRecorded"] = "Нема евидентирани плаќања",
+                ["BackToInvoices"] = "Назад кон фактури",
+                ["SelectCompany"] = "Избери компанија",
+                ["SelectType"] = "Избери тип",
+                ["Receivable"] = "Побарување",
+                ["Payable"] = "Обврска",
+                ["ConfirmDelete"] = "Потврди бришење",
+                ["DeleteInvoiceConfirm"] = "Дали сте сигурни дека сакате да ја избришете оваа фактура? Ова дејство не може да се врати.",
+                ["InvoiceDeleted"] = "Фактурата е успешно избришана",
+                ["InvoiceCreated"] = "Фактурата е успешно креирана",
+                ["InvoiceUpdated"] = "Фактурата е успешно ажурирана",
+                ["ErrorLoadingInvoice"] = "Грешка при вчитување на фактура",
+                ["ErrorCreatingInvoice"] = "Грешка при креирање на фактура",
+                ["ErrorUpdatingInvoice"] = "Грешка при ажурирање на фактура",
+                ["ErrorDeletingInvoice"] = "Грешка при бришење на фактура",
+                ["PleaseAddLineItems"] = "Ве молиме додадете барем една ставка",
+                ["Yes"] = "Да",
+                ["No"] = "Не",
+                ["Close"] = "Затвори",
+                ["PaymentDate"] = "Датум на плаќање",
+                ["PaymentAmount"] = "Износ на плаќање",
+                ["PaymentMethod"] = "Начин на плаќање",
+                ["ReferenceNumber"] = "Референтен број",
+                ["RecordedBy"] = "Евидентирано од",
+                ["ShowingResults"] = "Прикажани {0} до {1} од {2} резултати",
+                ["Terms"] = "Услови",
+                ["Days"] = "денови",
+
+                // Payment Methods
+                ["Cash"] = "Готовина",
+                ["Check"] = "Чек",
+                ["BankTransfer"] = "Банкарски трансфер",
+                ["CreditCard"] = "Кредитна картичка",
+                ["DebitCard"] = "Дебитна картичка",
+                ["Other"] = "Друго",
             }
+            #endregion
         };
 
         public void SetLanguage(string language)
         {
             if (language != "en" && language != "mk")
-                language = "mk";
+                language = "en";
 
             _currentLanguage = language;
             OnLanguageChanged?.Invoke();

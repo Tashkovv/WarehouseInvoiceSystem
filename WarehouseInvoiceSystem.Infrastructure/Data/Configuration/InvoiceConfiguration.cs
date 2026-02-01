@@ -65,15 +65,19 @@
             // Computed property - not stored in database
             builder.Ignore(e => e.AmountDue);
 
-            // Indexes
-            builder.HasIndex(e => e.InvoiceNumber)
-                .IsUnique();
-
             builder.HasIndex(e => new { e.Status, e.DueDate });
 
             builder.HasIndex(e => e.CompanyId);
 
             builder.HasIndex(e => e.IssueDate);
+            
+            builder.Property(e => e.DeletedOn)
+                .HasColumnType("timestamp without time zone");
+
+            // Indexes
+            builder.HasIndex(e => e.InvoiceNumber)
+                .IsUnique();
+            builder.HasIndex(e => e.DeletedOn);
 
             // Relationships
             builder.HasOne(e => e.Company)

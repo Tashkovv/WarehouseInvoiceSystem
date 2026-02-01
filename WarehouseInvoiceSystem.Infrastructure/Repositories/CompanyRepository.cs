@@ -11,7 +11,7 @@
         public async Task<IEnumerable<Company>> GetAllAsync()
         {
             return await context.Companies
-                .Where(c => c.IsActive)
+                .Where(c => c.IsActive && c.DeletedOn == null)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }
@@ -19,7 +19,7 @@
         public async Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type)
         {
             return await context.Companies
-                .Where(c => c.IsActive && (c.Type == type || c.Type == CompanyType.Both))
+                .Where(c => c.IsActive && (c.Type == type || c.Type == CompanyType.Both) && c.DeletedOn == null)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }
@@ -28,7 +28,7 @@
         {
             return await context.Companies
                 .Include(c => c.Invoices)
-                .FirstOrDefaultAsync(c => c.Id == id);
+                .FirstOrDefaultAsync(c => c.Id == id && c.DeletedOn == null);
         }
 
         public async Task<Company> CreateAsync(Company company)
@@ -42,7 +42,6 @@
 
         public async Task<Company> UpdateAsync(Company company)
         {
-            company.UpdatedAt = DateTime.Now;
             context.Companies.Update(company);
 
             await context.SaveChangesAsync();
@@ -61,7 +60,7 @@
 
             // Soft delete
             company.IsActive = false;
-            company.UpdatedAt = DateTime.Now;
+            company.DeletedOn = DateTime.Now;
 
             await context.SaveChangesAsync();
             return true;
@@ -69,7 +68,7 @@
 
         public async Task<bool> ExistsAsync(int id)
         {
-            return await context.Companies.AnyAsync(c => c.Id == id && c.IsActive);
+            return await context.Companies.AnyAsync(c => c.Id == id && c.IsActive && c.DeletedOn == null);
         }
 
         public async Task<decimal> GetTotalOwedByCompanyAsync(int companyId)
@@ -78,7 +77,8 @@
                 .Where(i => i.CompanyId == companyId &&
                             i.Type == InvoiceType.Payable &&
                             i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled)
+                            i.Status != InvoiceStatus.Cancelled &&
+                            i.DeletedOn == null)
                 .SumAsync(i => i.TotalAmount - i.AmountPaid);
         }
 
@@ -88,7 +88,8 @@
                 .Where(i => i.CompanyId == companyId &&
                             i.Type == InvoiceType.Receivable &&
                             i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled)
+                            i.Status != InvoiceStatus.Cancelled &&
+                            i.DeletedOn == null)
                 .SumAsync(i => i.TotalAmount - i.AmountPaid);
         }
     }

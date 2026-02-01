@@ -10,6 +10,7 @@
         public async Task<IEnumerable<Payment>> GetAllAsync()
         {
             IEnumerable<Payment> payments = await context.Payments
+                .Where(p => p.DeletedOn == null)
                 .Include(p => p.Invoice)
                     .ThenInclude(i => i.Company)
                 .OrderByDescending(p => p.PaymentDate)
@@ -22,7 +23,7 @@
         {
             IEnumerable<Payment> payments = await context.Payments
                 .Include(p => p.Invoice)
-                .Where(p => p.InvoiceId == invoiceId)
+                .Where(p => p.InvoiceId == invoiceId && p.DeletedOn == null)
                 .OrderByDescending(p => p.PaymentDate)
                 .ToListAsync();
 
@@ -34,7 +35,7 @@
             Payment? payment = await context.Payments
                 .Include(p => p.Invoice)
                     .ThenInclude(i => i.Company)
-                .FirstOrDefaultAsync(p => p.Id == id);
+                .FirstOrDefaultAsync(p => p.Id == id && p.DeletedOn == null);
 
             return payment;
         }
@@ -62,11 +63,12 @@
 
         public async Task<bool> DeleteAsync(int id)
         {
-            Payment? payment = await context.Payments.FindAsync(id);
+            Payment? payment = await context.Payments.IgnoreQueryFilters()
+                                                     .FirstOrDefaultAsync(p => p.Id == id);
             if (payment == null)
                 return false;
 
-            context.Payments.Remove(payment);
+            payment.DeletedOn = DateTime.Now;
             await context.SaveChangesAsync();
             return true;
         }
@@ -74,7 +76,7 @@
         public async Task<decimal> GetTotalPaymentsByInvoiceAsync(int invoiceId)
         {
             decimal total = await context.Payments
-                .Where(p => p.InvoiceId == invoiceId)
+                .Where(p => p.InvoiceId == invoiceId && p.DeletedOn == null)
                 .SumAsync(p => p.Amount);
 
             return total;

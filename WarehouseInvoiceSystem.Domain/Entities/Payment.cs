@@ -13,6 +13,7 @@
         public string? Notes { get; set; }
         public string? RecordedBy { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? DeletedOn { get; set; }
 
         // Navigation property
         public Invoice Invoice { get; set; } = null!;

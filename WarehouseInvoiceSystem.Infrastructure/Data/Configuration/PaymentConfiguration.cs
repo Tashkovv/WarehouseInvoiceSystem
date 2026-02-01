@@ -36,10 +36,14 @@
                 .IsRequired()
                 .HasColumnType("timestamp without time zone");
 
+            builder.Property(e => e.DeletedOn)
+                .HasColumnType("timestamp without time zone");
+
             // Indexes
             builder.HasIndex(e => e.PaymentDate);
             builder.HasIndex(e => e.InvoiceId);
             builder.HasIndex(e => e.ReferenceNumber);
+            builder.HasIndex(e => e.DeletedOn);
 
             // Relationships
             builder.HasOne(e => e.Invoice)

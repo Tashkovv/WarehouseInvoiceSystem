@@ -12,6 +12,7 @@
         public async Task<IEnumerable<Invoice>> GetAllAsync()
         {
             return await context.Invoices
+                .Where(i => i.DeletedOn == null)
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
                 .OrderByDescending(i => i.CreatedAt)
@@ -23,7 +24,7 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
-                .Where(i => i.CompanyId == companyId)
+                .Where(i => i.CompanyId == companyId && i.DeletedOn == null)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -43,7 +44,7 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
-                .Where(i => i.Status == status)
+                .Where(i => i.DeletedOn == null && i.Status == status)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -54,7 +55,8 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
-                .Where(i => i.DueDate < today &&
+                .Where(i => i.DeletedOn == null &&
+                            i.DueDate < today &&
                             i.Status != InvoiceStatus.Paid &&
                             i.Status != InvoiceStatus.Cancelled)
                 .OrderBy(i => i.DueDate)
@@ -64,6 +66,7 @@
         public async Task<Invoice?> GetByIdAsync(int id)
         {
             return await context.Invoices
+                .Where(i => i.DeletedOn == null)
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
                 .Include(i => i.Payments)
@@ -76,7 +79,7 @@
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
                 .Include(i => i.Payments)
-                .FirstOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber);
+                .FirstOrDefaultAsync(i => i.DeletedOn == null && i.InvoiceNumber == invoiceNumber);
         }
 
         public async Task<Invoice> CreateAsync(Invoice invoice)
@@ -91,7 +94,6 @@
 
         public async Task<Invoice> UpdateAsync(Invoice invoice)
         {
-            invoice.UpdatedAt = DateTime.Now;
             context.Invoices.Update(invoice);
             await context.SaveChangesAsync();
 
@@ -101,20 +103,21 @@
 
         public async Task<bool> DeleteAsync(int id)
         {
-            Invoice? invoice = await context.Invoices.FindAsync(id);
+            Invoice? invoice = await context.Invoices.IgnoreQueryFilters()
+                                                     .FirstOrDefaultAsync(i => i.Id == id);
             if (invoice == null)
             {
                 return false;
             }
 
-            context.Invoices.Remove(invoice);
+            invoice.DeletedOn = DateTime.Now;
             await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> ExistsAsync(int id)
         {
-            return await context.Invoices.AnyAsync(i => i.Id == id);
+            return await context.Invoices.AnyAsync(i => i.Id == id && i.DeletedOn == null);
         }
 
         public async Task<string> GenerateInvoiceNumberAsync(InvoiceType type)
@@ -146,14 +149,15 @@
         {
             DateTime today = DateTime.Now.Date;
 
-            int total = await context.Invoices.CountAsync();
-            int paid = await context.Invoices.CountAsync(i => i.Status == InvoiceStatus.Paid);
+            int total = await context.Invoices.CountAsync(i => i.DeletedOn == null);
+            int paid = await context.Invoices.CountAsync(i => i.Status == InvoiceStatus.Paid && i.DeletedOn == null);
             int unpaid = await context.Invoices.CountAsync(i =>
-                i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled);
+                i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled && i.DeletedOn == null);
             int overdue = await context.Invoices.CountAsync(i =>
                 i.DueDate < today &&
                 i.Status != InvoiceStatus.Paid &&
-                i.Status != InvoiceStatus.Cancelled);
+                i.Status != InvoiceStatus.Cancelled &&
+                i.DeletedOn == null);
 
             return (total, paid, unpaid, overdue);
         }
@@ -161,7 +165,7 @@
         public async Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetInvoiceTotalsAsync()
         {
             List<Invoice> invoices = await context.Invoices
-                .Where(i => i.Status != InvoiceStatus.Cancelled)
+                .Where(i => i.Status != InvoiceStatus.Cancelled && i.DeletedOn == null)
                 .ToListAsync();
 
 

@@ -11,6 +11,7 @@
         public decimal Amount => Quantity * UnitPrice;
         public decimal TaxAmount => Amount * (TaxRate / 100);
         public decimal TotalAmount => Amount + TaxAmount;
+        public DateTime? DeletedOn { get; set; }
 
         // Navigation property
         public Invoice Invoice { get; set; } = null!;

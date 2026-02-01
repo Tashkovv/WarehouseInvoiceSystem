@@ -18,7 +18,7 @@
         public decimal AmountDue => TotalAmount - AmountPaid;
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime? DeletedOn { get; set; }
         public string? CreatedBy { get; set; }
         public string? ModifiedBy { get; set; }
 

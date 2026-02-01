@@ -103,7 +103,6 @@
                 CreditLimit = company.CreditLimit,
                 IsActive = company.IsActive,
                 CreatedAt = company.CreatedAt,
-                UpdatedAt = company.UpdatedAt
             };
         }
     }

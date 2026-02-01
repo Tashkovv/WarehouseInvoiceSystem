@@ -1,12 +1,11 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
-    using System.Collections.Generic;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
-
     using WarehouseInvoiceSystem.Domain.Interfaces;
+
     public class InvoiceService(IInvoiceRepository invoiceRepository, ICompanyRepository companyRepository) : IInvoiceService
     {
         public async Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync()
@@ -183,7 +182,6 @@
                 AmountDue = invoice.AmountDue,
                 Notes = invoice.Notes,
                 CreatedAt = invoice.CreatedAt,
-                UpdatedAt = invoice.UpdatedAt,
                 LineItems = [.. invoice.LineItems.Select(li => new InvoiceLineDto
                 {
                     Id = li.Id,

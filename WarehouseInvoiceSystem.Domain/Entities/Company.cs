@@ -16,7 +16,7 @@ namespace WarehouseInvoiceSystem.Domain.Entities
         public decimal? CreditLimit { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime? DeletedOn { get; set; }
 
         // Navigation properties
         public ICollection<Invoice> Invoices { get; set; } = [];

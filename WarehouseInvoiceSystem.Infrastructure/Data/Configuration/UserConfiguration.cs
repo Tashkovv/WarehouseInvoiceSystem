@@ -37,14 +37,16 @@
                 .IsRequired()
                 .HasColumnType("timestamp without time zone");
 
+            builder.Property(e => e.DeletedOn)
+                .HasColumnType("timestamp without time zone");
+
             // Indexes
             builder.HasIndex(e => e.Username)
                 .IsUnique();
-
             builder.HasIndex(e => e.Email)
                 .IsUnique();
-
             builder.HasIndex(e => e.IsActive);
+            builder.HasIndex(e => e.DeletedOn);
         }
     }
 }

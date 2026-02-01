@@ -1,0 +1,299 @@
+﻿@page "/invoices"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@inject IInvoiceService InvoiceService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Invoices")</MudText>
+
+<MudCard Elevation="2">
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton StartIcon="@Icons.Material.Filled.Add" 
+                           Color="Color.Primary" 
+                           Variant="Variant.Filled"
+                           FullWidth="true"
+                           Href="/invoices/create">
+                    @Localization.GetString("CreateInvoice")
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="9">
+                <MudTextField @bind-Value="_searchString"
+                              Placeholder="@Localization.GetString("Search")"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Immediate="true"
+                              DebounceInterval="300"
+                              OnDebounceIntervalElapsed="OnSearch"
+                              Class="mt-0" />
+            </MudItem>
+        </MudGrid>
+
+        <MudTabs Elevation="0" Rounded="true" Class="mt-4" @bind-ActivePanelIndex="_activeTabIndex">
+            <MudTabPanel Text="@Localization.GetString("AllInvoices")" Icon="@Icons.Material.Filled.List" />
+            <MudTabPanel Text="@Localization.GetString("Receivables")" Icon="@Icons.Material.Filled.TrendingUp" />
+            <MudTabPanel Text="@Localization.GetString("Payables")" Icon="@Icons.Material.Filled.TrendingDown" />
+            <MudTabPanel Text="@Localization.GetString("Overdue")" Icon="@Icons.Material.Filled.Warning" />
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Elevation="2" Class="mt-4">
+    <MudCardContent Class="pa-0">
+        @if (_loading)
+        {
+            <div class="pa-6">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_filteredInvoices == null || !_filteredInvoices.Any())
+        {
+            <div class="pa-6 text-center">
+                <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="_filteredInvoices" 
+                      Hover="true" 
+                      Breakpoint="Breakpoint.Sm" 
+                      Dense="false"
+                      FixedHeader="true"
+                      Height="600px">
+                <HeaderContent>
+                    <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
+                    <MudTh>@Localization.GetString("Company")</MudTh>
+                    <MudTh>@Localization.GetString("Type")</MudTh>
+                    <MudTh>@Localization.GetString("IssueDate")</MudTh>
+                    <MudTh>@Localization.GetString("DueDate")</MudTh>
+                    <MudTh>@Localization.GetString("Total")</MudTh>
+                    <MudTh>@Localization.GetString("Status")</MudTh>
+                    <MudTh>@Localization.GetString("Actions")</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.InvoiceNumber
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Company")">
+                        <MudText>@context.CompanyName</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Type")">
+                        <MudChip T="string"
+                                 Size="Size.Small" 
+                                 Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
+                            @(context.Type == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("IssueDate")">
+                        @context.IssueDate.ToString("MMM dd, yyyy")
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("DueDate")">
+                        @if (context.DueDate < DateTime.Now && context.Status != InvoiceStatus.Paid)
+                        {
+                            <MudText Color="Color.Error">
+                                @context.DueDate.ToString("MMM dd, yyyy")
+                            </MudText>
+                        }
+                        else
+                        {
+                            <MudText>@context.DueDate.ToString("MMM dd, yyyy")</MudText>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Total")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.TotalAmount.ToString("C")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Status")">
+                        <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context.Status)">
+                            @GetStatusText(context.Status)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Actions")">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility" 
+                                         OnClick="@(() => ViewInvoice(context.Id))">
+                                @Localization.GetString("View")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" 
+                                         OnClick="@(() => EditInvoice(context.Id))">
+                                @Localization.GetString("Edit")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Payment" 
+                                         OnClick="@(() => RecordPayment(context.Id))"
+                                         Disabled="@(context.Status == InvoiceStatus.Paid)">
+                                @Localization.GetString("RecordPayment")
+                            </MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete" 
+                                         IconColor="Color.Error"
+                                         OnClick="@(() => DeleteInvoice(context.Id))">
+                                @Localization.GetString("Delete")
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool _loading = true;
+    private List<InvoiceDto> _allInvoices = new();
+    private List<InvoiceDto> _filteredInvoices = new();
+    private string _searchString = "";
+    private int _activeTabIndex = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadInvoices();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadInvoices()
+    {
+        _loading = true;
+        
+        try
+        {
+            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
+            _allInvoices = invoices.ToList();
+            FilterInvoices();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading invoices: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void FilterInvoices()
+    {
+        IEnumerable<InvoiceDto> filtered = _allInvoices;
+
+        // Filter by tab
+        filtered = _activeTabIndex switch
+        {
+            1 => filtered.Where(i => i.Type == InvoiceType.Receivable),
+            2 => filtered.Where(i => i.Type == InvoiceType.Payable),
+            3 => filtered.Where(i => i.DueDate < DateTime.Now && 
+                                     i.Status != InvoiceStatus.Paid && 
+                                     i.Status != InvoiceStatus.Cancelled),
+            _ => filtered
+        };
+
+        // Filter by search
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            string search = _searchString.ToLower();
+            filtered = filtered.Where(i => 
+                i.InvoiceNumber.ToLower().Contains(search) ||
+                i.CompanyName.ToLower().Contains(search) ||
+                i.TotalAmount.ToString().Contains(search));
+        }
+
+        _filteredInvoices = filtered.OrderByDescending(i => i.CreatedAt).ToList();
+    }
+
+    private async Task OnSearch(string text)
+    {
+        _searchString = text;
+        FilterInvoices();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Color GetStatusColor(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => Color.Default,
+            InvoiceStatus.Sent => Color.Info,
+            InvoiceStatus.PartiallyPaid => Color.Warning,
+            InvoiceStatus.Paid => Color.Success,
+            InvoiceStatus.Overdue => Color.Error,
+            InvoiceStatus.Cancelled => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private string GetStatusText(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => Localization.GetString("Draft"),
+            InvoiceStatus.Sent => Localization.GetString("Sent"),
+            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
+            InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
+            InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
+            InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+            _ => status.ToString()
+        };
+    }
+
+    private void ViewInvoice(int id)
+    {
+        Navigation.NavigateTo($"/invoices/{id}");
+    }
+
+    private void EditInvoice(int id)
+    {
+        Navigation.NavigateTo($"/invoices/edit/{id}");
+    }
+
+    private void RecordPayment(int id)
+    {
+        Navigation.NavigateTo($"/invoices/{id}?recordPayment=true");
+    }
+
+    private async Task DeleteInvoice(int id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteInvoiceConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await InvoiceService.DeleteInvoiceAsync(id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
+                    await LoadInvoices();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting invoice: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingInvoice"), Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}
