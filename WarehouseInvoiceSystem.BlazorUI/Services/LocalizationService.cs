@@ -62,7 +62,7 @@
                 ["Filter"] = "Filter",
                 ["Export"] = "Export",
                 ["Import"] = "Import",
-                ["WarehouseInvoiceSystem"] = "Warehouse Invoice System",
+                ["InvoiceSystem"] = "Invoice System",
 
                 // Invoices Page
                 ["CreateInvoice"] = "Create Invoice",
@@ -118,6 +118,19 @@
                 ["ShowingResults"] = "Showing {0} to {1} of {2} results",
                 ["Terms"] = "Terms",
                 ["Days"] = "days",
+                ["SelectInvoiceType"] = "Select Invoice Type",
+                ["DaysFromIssue"] = "Days from issue date",
+                ["CalculateDueDate"] = "Calculate Due Date",
+                ["AddItem"] = "Add Item",
+                ["RemoveItem"] = "Remove Item",
+                ["Item"] = "Item",
+                ["PleaseSelectCompany"] = "Please select a company",
+                ["PleaseSelectType"] = "Please select invoice type",
+                ["PleaseAddAtLeastOneLineItem"] = "Please add at least one line item",
+                ["EnterDescription"] = "Enter description",
+                ["EnterQuantity"] = "Enter quantity",
+                ["EnterUnitPrice"] = "Enter unit price",
+                ["EnterTaxRate"] = "Enter tax rate (%)",
 
                 // Payment Methods
                 ["Cash"] = "Cash",
@@ -181,7 +194,7 @@
                 ["Filter"] = "Филтрирај",
                 ["Export"] = "Извези",
                 ["Import"] = "Увези",
-                ["WarehouseInvoiceSystem"] = "Систем за фактури",
+                ["InvoiceSystem"] = "Систем за фактури",
 
                 // Invoices Page
                 ["CreateInvoice"] = "Креирај фактура",
@@ -237,6 +250,19 @@
                 ["ShowingResults"] = "Прикажани {0} до {1} од {2} резултати",
                 ["Terms"] = "Услови",
                 ["Days"] = "денови",
+                ["SelectInvoiceType"] = "Избери тип на фактура",
+                ["DaysFromIssue"] = "Денови од датум на издавање",
+                ["CalculateDueDate"] = "Пресметај рок на плаќање",
+                ["AddItem"] = "Додади ставка",
+                ["RemoveItem"] = "Отстрани ставка",
+                ["Item"] = "Ставка",
+                ["PleaseSelectCompany"] = "Ве молиме изберете компанија",
+                ["PleaseSelectType"] = "Ве молиме изберете тип на фактура",
+                ["PleaseAddAtLeastOneLineItem"] = "Ве молиме додадете барем една ставка",
+                ["EnterDescription"] = "Внесете опис",
+                ["EnterQuantity"] = "Внесете количина",
+                ["EnterUnitPrice"] = "Внесете единечна цена",
+                ["EnterTaxRate"] = "Внесете даночна стапка (%)",
 
                 // Payment Methods
                 ["Cash"] = "Готовина",

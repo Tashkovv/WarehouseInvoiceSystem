@@ -17,7 +17,6 @@
                 .HasMaxLength(500);
 
             builder.Property(e => e.Quantity)
-                .HasPrecision(18, 3)
                 .IsRequired();
 
             builder.Property(e => e.UnitPrice)

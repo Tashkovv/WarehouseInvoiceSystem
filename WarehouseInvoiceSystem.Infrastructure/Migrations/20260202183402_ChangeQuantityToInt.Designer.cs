@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260202171618_AddSoftDelete")]
-    partial class AddSoftDelete
+    [Migration("20260202183402_ChangeQuantityToInt")]
+    partial class ChangeQuantityToInt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -195,9 +195,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)");
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("TaxRate")
                         .ValueGeneratedOnAdd()

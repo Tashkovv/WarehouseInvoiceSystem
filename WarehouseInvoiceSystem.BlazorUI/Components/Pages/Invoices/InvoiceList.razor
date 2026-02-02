@@ -8,7 +8,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Invoices")</MudText>
 
@@ -37,7 +37,11 @@
             </MudItem>
         </MudGrid>
 
-        <MudTabs Elevation="0" Rounded="true" Class="mt-4" @bind-ActivePanelIndex="_activeTabIndex">
+        <MudTabs Elevation="0"
+                 Rounded="true"
+                 Class="mt-4"
+                 ActivePanelIndex="_activeTabIndex"
+                 ActivePanelIndexChanged="OnTabChanged">
             <MudTabPanel Text="@Localization.GetString("AllInvoices")" Icon="@Icons.Material.Filled.List" />
             <MudTabPanel Text="@Localization.GetString("Receivables")" Icon="@Icons.Material.Filled.TrendingUp" />
             <MudTabPanel Text="@Localization.GetString("Payables")" Icon="@Icons.Material.Filled.TrendingDown" />
@@ -290,6 +294,13 @@
                 Snackbar.Add(Localization.GetString("ErrorDeletingInvoice"), Severity.Error);
             }
         }
+    }
+
+    private async Task OnTabChanged(int index)
+    {
+        _activeTabIndex = index;
+        FilterInvoices();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()

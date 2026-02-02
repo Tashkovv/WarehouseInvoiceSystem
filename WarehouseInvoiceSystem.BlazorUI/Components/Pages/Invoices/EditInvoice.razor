@@ -1,0 +1,484 @@
+﻿@page "/invoices/edit/{Id:int}"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@inject IInvoiceService InvoiceService
+@inject ICompanyService CompanyService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("EditInvoice") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@Localization.GetString("EditInvoice")</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+               Variant="Variant.Text"
+               Href="@($"/invoices/{Id}")">
+        @Localization.GetString("BackToInvoices")
+    </MudButton>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_invoice == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("ErrorLoadingInvoice")</MudAlert>
+}
+else
+{
+    <EditForm Model="_updateDto" OnValidSubmit="HandleSubmit">
+        <MudGrid>
+            <!-- Invoice Information Card -->
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("InvoiceInformation")</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudChip T="string" Size="Size.Small">@_invoice.InvoiceNumber</MudChip>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudSelect T="int"
+                                           Value="_selectedCompanyId"
+                                           ValueChanged="@((int val) => _selectedCompanyId = val)"
+                                           Label="@Localization.GetString("Company")"
+                                           Required="true"
+                                           Variant="Variant.Outlined"
+                                           AnchorOrigin="Origin.BottomCenter">
+                                    @foreach (CompanyDto company in _companies)
+                                    {
+                                        <MudSelectItem T="int" Value="company.Id">@company.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudSelect T="InvoiceType"
+                                           Value="_selectedType"
+                                           ValueChanged="@((InvoiceType val) => _selectedType = val)"
+                                           Label="@Localization.GetString("Type")"
+                                           Required="true"
+                                           Variant="Variant.Outlined"
+                                           AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem T="InvoiceType" Value="InvoiceType.Receivable">@Localization.GetString("Receivable")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceType" Value="InvoiceType.Payable">@Localization.GetString("Payable")</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <MudSelect T="InvoiceStatus"
+                                           Value="_selectedStatus"
+                                           ValueChanged="@((InvoiceStatus val) => _selectedStatus = val)"
+                                           Label="@Localization.GetString("Status")"
+                                           Required="true"
+                                           Variant="Variant.Outlined"
+                                           AnchorOrigin="Origin.BottomCenter">
+                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Draft">@Localization.GetString("Draft")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Sent">@Localization.GetString("Sent")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.PartiallyPaid">@Localization.GetString("PartiallyPaid")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Paid">@Localization.GetString("PaidStatus")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Overdue">@Localization.GetString("OverdueStatus")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Cancelled">@Localization.GetString("Cancelled")</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+
+                            <MudItem xs="12" md="6">
+                                <!-- Empty spacer for alignment -->
+                            </MudItem>
+
+                            <MudItem xs="12" md="4">
+                                <MudDatePicker Date="_issueDate"
+                                               DateChanged="OnIssueDateChanged"
+                                               Label="@Localization.GetString("IssueDate")"
+                                               Required="true"
+                                               Variant="Variant.Outlined" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="4">
+                                <MudNumericField T="int"
+                                                 Value="_paymentTermsDays"
+                                                 ValueChanged="OnPaymentTermsChanged"
+                                                 Label="@Localization.GetString("Terms")"
+                                                 Variant="Variant.Outlined"
+                                                 Adornment="Adornment.End"
+                                                 AdornmentText="@Localization.GetString("Days")"
+                                                 Min="0" />
+                            </MudItem>
+
+                            <MudItem xs="12" md="4">
+                                <MudDatePicker Date="_dueDate"
+                                               DateChanged="@((DateTime? val) => _dueDate = val)"
+                                               Label="@Localization.GetString("DueDate")"
+                                               Required="true"
+                                               Variant="Variant.Outlined" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField Value="_notes"
+                                              ValueChanged="@((string val) => _notes = val)"
+                                              Label="@Localization.GetString("Notes")"
+                                              Variant="Variant.Outlined"
+                                              Lines="3" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Line Items Card -->
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("LineItems")</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                       Color="Color.Primary"
+                                       Variant="Variant.Filled"
+                                       OnClick="AddLineItem">
+                                @Localization.GetString("AddItem")
+                            </MudButton>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        @if (!_lineItems.Any())
+                        {
+                            <MudAlert Severity="Severity.Info" Class="my-4">
+                                @Localization.GetString("PleaseAddLineItems")
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            @foreach (LineItemModel item in _lineItems)
+                            {
+                                int index = _lineItems.IndexOf(item);
+                                <MudCard Elevation="1" Class="mb-3">
+                                    <MudCardContent>
+                                        <div class="d-flex justify-space-between align-center mb-3">
+                                            <MudText Typo="Typo.subtitle1">
+                                                @Localization.GetString("Item") #@(index + 1)
+                                            </MudText>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Color="Color.Error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => RemoveLineItem(item))" />
+                                        </div>
+                                        <MudGrid>
+                                            <MudItem xs="12">
+                                                <MudTextField Value="item.Description"
+                                                              ValueChanged="@((string val) => item.Description = val)"
+                                                              Label="@Localization.GetString("Description")"
+                                                              Variant="Variant.Outlined"
+                                                              Required="true"
+                                                              Placeholder="@Localization.GetString("EnterDescription")" />
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6" md="3">
+                                                <MudNumericField T="int"
+                                                                 Value="item.Quantity"
+                                                                 Label="@Localization.GetString("Quantity")"
+                                                                 Variant="Variant.Outlined"
+                                                                 Required="true"
+                                                                 Min="0"
+                                                                 Step="1"
+                                                                 ValueChanged="@((int val) => { item.Quantity = val; CalculateTotals(); })" />
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6" md="3">
+                                                <MudNumericField T="decimal"
+                                                                 Value="item.UnitPrice"
+                                                                 Label="@Localization.GetString("UnitPrice")"
+                                                                 Variant="Variant.Outlined"
+                                                                 Required="true"
+                                                                 Min="0"
+                                                                 Step="0.01m"
+                                                                 Format="C2"
+                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"
+                                                                 ValueChanged="@((decimal val) => { item.UnitPrice = val; CalculateTotals(); })" />
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6" md="3">
+                                                <MudNumericField T="decimal"
+                                                                 Value="item.TaxRate"
+                                                                 Label="@Localization.GetString("TaxRate")"
+                                                                 Variant="Variant.Outlined"
+                                                                 Min="0"
+                                                                 Max="100"
+                                                                 Step="0.1m"
+                                                                 Adornment="Adornment.End"
+                                                                 AdornmentText="%"
+                                                                 ValueChanged="@((decimal val) => { item.TaxRate = val; CalculateTotals(); })" />
+                                            </MudItem>
+                                            <MudItem xs="12" sm="6" md="3">
+                                                <MudTextField Value="@item.LineTotal.ToString("C")"
+                                                              Label="@Localization.GetString("Total")"
+                                                              Variant="Variant.Outlined"
+                                                              ReadOnly="true" />
+                                            </MudItem>
+                                        </MudGrid>
+                                    </MudCardContent>
+                                </MudCard>
+                            }
+
+                            <!-- Totals Summary -->
+                            <MudCard Elevation="1" Class="mt-4">
+                                <MudCardContent>
+                                    <div class="d-flex justify-end mb-2">
+                                        <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
+                                            @Localization.GetString("Subtotal"):
+                                        </MudText>
+                                        <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                            @_subtotal.ToString("C")
+                                        </MudText>
+                                    </div>
+                                    <div class="d-flex justify-end mb-2">
+                                        <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
+                                            @Localization.GetString("Tax"):
+                                        </MudText>
+                                        <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                            @_taxAmount.ToString("C")
+                                        </MudText>
+                                    </div>
+                                    <MudDivider Class="my-2" />
+                                    <div class="d-flex justify-end">
+                                        <MudText Typo="Typo.h6" Class="mr-4" Style="min-width: 120px;">
+                                            @Localization.GetString("Total"):
+                                        </MudText>
+                                        <MudText Typo="Typo.h6" Color="Color.Primary">
+                                            @_total.ToString("C")
+                                        </MudText>
+                                    </div>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- Actions -->
+            <MudItem xs="12">
+                <div class="d-flex justify-end gap-2">
+                    <MudButton Variant="Variant.Outlined"
+                               OnClick="@(() => Navigation.NavigateTo($"/invoices/{Id}"))">
+                        @Localization.GetString("Cancel")
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               ButtonType="ButtonType.Submit"
+                               Disabled="_saving">
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                            @Localization.GetString("Save")
+                        }
+                        else
+                        {
+                            @Localization.GetString("Update")
+                        }
+                    </MudButton>
+                </div>
+            </MudItem>
+        </MudGrid>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool _loading = true;
+    private bool _saving = false;
+    private InvoiceDto? _invoice;
+    private List<CompanyDto> _companies = new();
+    private readonly UpdateInvoiceDto _updateDto = new();
+    
+    private int _selectedCompanyId;
+    private InvoiceType _selectedType;
+    private InvoiceStatus _selectedStatus;
+    private DateTime? _issueDate;
+    private DateTime? _dueDate;
+    private int _paymentTermsDays = 30;
+    private string? _notes;
+    
+    private List<LineItemModel> _lineItems = new();
+    private decimal _subtotal = 0;
+    private decimal _taxAmount = 0;
+    private decimal _total = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadCompanies();
+        await LoadInvoice();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadCompanies()
+    {
+        try
+        {
+            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
+            _companies = companies.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading companies: {ex.Message}");
+            Snackbar.Add("Error loading companies", Severity.Error);
+        }
+    }
+
+    private async Task LoadInvoice()
+    {
+        _loading = true;
+        
+        try
+        {
+            _invoice = await InvoiceService.GetInvoiceByIdAsync(Id);
+            
+            if (_invoice != null)
+            {
+                _selectedCompanyId = _invoice.CompanyId;
+                _selectedType = _invoice.Type;
+                _selectedStatus = _invoice.Status;
+                _issueDate = _invoice.IssueDate;
+                _dueDate = _invoice.DueDate;
+                _notes = _invoice.Notes;
+                
+                // Calculate payment terms from dates
+                if (_issueDate.HasValue && _dueDate.HasValue)
+                {
+                    _paymentTermsDays = (_dueDate.Value - _issueDate.Value).Days;
+                }
+
+                // Load line items
+                _lineItems = _invoice.LineItems.Select(li => new LineItemModel
+                {
+                    Id = li.Id,
+                    Description = li.Description,
+                    Quantity = li.Quantity,
+                    UnitPrice = li.UnitPrice,
+                    TaxRate = li.TaxRate
+                }).ToList();
+
+                CalculateTotals();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnIssueDateChanged(DateTime? date)
+    {
+        _issueDate = date;
+        if (_issueDate.HasValue)
+        {
+            _dueDate = _issueDate.Value.AddDays(_paymentTermsDays);
+        }
+    }
+
+    private void OnPaymentTermsChanged(int days)
+    {
+        _paymentTermsDays = days;
+        if (_issueDate.HasValue)
+        {
+            _dueDate = _issueDate.Value.AddDays(_paymentTermsDays);
+        }
+    }
+
+    private void AddLineItem()
+    {
+        _lineItems.Add(new LineItemModel());
+    }
+
+    private void RemoveLineItem(LineItemModel item)
+    {
+        _lineItems.Remove(item);
+        CalculateTotals();
+    }
+
+    private void CalculateTotals()
+    {
+        _subtotal = _lineItems.Sum(i => i.Quantity * i.UnitPrice);
+        _taxAmount = _lineItems.Sum(i => (i.Quantity * i.UnitPrice) * (i.TaxRate / 100));
+        _total = _subtotal + _taxAmount;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmit()
+    {
+        // Validation
+        if (!_lineItems.Any() || _lineItems.All(i => string.IsNullOrWhiteSpace(i.Description)))
+        {
+            Snackbar.Add(Localization.GetString("PleaseAddAtLeastOneLineItem"), Severity.Warning);
+            return;
+        }
+
+        _saving = true;
+
+        try
+        {
+            _updateDto.CompanyId = _selectedCompanyId;
+            _updateDto.Type = _selectedType;
+            _updateDto.Status = _selectedStatus;
+            _updateDto.IssueDate = _issueDate ?? DateTime.Now;
+            _updateDto.DueDate = _dueDate ?? DateTime.Now.AddDays(30);
+            _updateDto.Notes = _notes;
+            _updateDto.LineItems = _lineItems
+                .Where(i => !string.IsNullOrWhiteSpace(i.Description))
+                .Select(i => new UpdateInvoiceLineDto
+                {
+                    Id = i.Id,
+                    Description = i.Description,
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    TaxRate = i.TaxRate
+                }).ToList();
+
+            InvoiceDto updated = await InvoiceService.UpdateInvoiceAsync(Id, _updateDto);
+            
+            Snackbar.Add(Localization.GetString("InvoiceUpdated"), Severity.Success);
+            Navigation.NavigateTo($"/invoices/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private class LineItemModel
+    {
+        public int? Id { get; set; }
+        public string Description { get; set; } = string.Empty;
+        public int Quantity { get; set; } = 1;
+        public decimal UnitPrice { get; set; } = 0;
+        public decimal TaxRate { get; set; } = 0;
+        public decimal LineTotal => (Quantity * UnitPrice) * (1 + TaxRate / 100);
+    }
+}

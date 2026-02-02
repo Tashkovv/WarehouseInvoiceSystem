@@ -192,9 +192,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 3)
-                        .HasColumnType("numeric(18,3)");
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("TaxRate")
                         .ValueGeneratedOnAdd()
