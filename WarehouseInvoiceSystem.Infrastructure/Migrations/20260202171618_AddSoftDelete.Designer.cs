@@ -12,7 +12,7 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260201192119_AddSoftDelete")]
+    [Migration("20260202171618_AddSoftDelete")]
     partial class AddSoftDelete
     {
         /// <inheritdoc />
@@ -78,9 +78,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -163,9 +160,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
@@ -216,6 +210,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
 
                     b.HasIndex("InvoiceId");
 

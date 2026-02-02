@@ -29,7 +29,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     CreditLimit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true)
                 },
                 constraints: table =>
@@ -75,7 +74,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     AmountPaid = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
                     Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     DeletedOn = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     CreatedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ModifiedBy = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true)
@@ -187,6 +185,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_Invoice_Status_DueDate",
                 table: "Invoice",
                 columns: new[] { "Status", "DueDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InvoiceLine_DeletedOn",
+                table: "InvoiceLine",
+                column: "DeletedOn");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InvoiceLine_InvoiceId",

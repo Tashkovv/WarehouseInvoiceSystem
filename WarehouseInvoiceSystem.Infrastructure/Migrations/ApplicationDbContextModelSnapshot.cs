@@ -76,9 +76,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DeletedOn");
@@ -160,9 +157,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
@@ -213,6 +207,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
 
                     b.HasIndex("InvoiceId");
 
