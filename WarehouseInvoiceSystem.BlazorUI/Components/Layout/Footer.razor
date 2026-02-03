@@ -1,0 +1,20 @@
+﻿@inject ILocalizationService Localization
+
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-auto py-4" Style="background-color: #F8FAFC;">
+    <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge">
+        <div class="d-flex justify-space-between align-center flex-wrap">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                © @DateTime.Now.Year @Localization.GetString("InvoiceSystem")
+            </MudText>
+            <div class="d-flex gap-4">
+                <MudLink Href="/help" Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Help")</MudLink>
+                <MudLink Href="/privacy" Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Privacy")</MudLink>
+                <MudLink Href="/terms" Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Terms")</MudLink>
+            </div>
+        </div>
+    </MudContainer>
+</MudContainer>
+
+@code {
+
+}

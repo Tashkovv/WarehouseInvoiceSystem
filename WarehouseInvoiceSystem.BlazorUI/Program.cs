@@ -12,7 +12,7 @@ using WarehouseInvoiceSystem.Infrastructure.Repositories;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Culture setup 
-CultureInfo mkdCulture = new("de-DE");
+CultureInfo mkdCulture = new("en-EN");
 mkdCulture.NumberFormat.CurrencySymbol = "MKD";
 mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
 mkdCulture.NumberFormat.CurrencyPositivePattern = 3;

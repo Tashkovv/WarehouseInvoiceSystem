@@ -1,0 +1,218 @@
+﻿@page "/companies/create"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ICompanyService CompanyService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("CreateCompany") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@Localization.GetString("CreateCompany")</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+               Variant="Variant.Text"
+               Href="/companies">
+        @Localization.GetString("BackToCompanies")
+    </MudButton>
+</div>
+
+<EditForm Model="_createDto" OnValidSubmit="HandleSubmit">
+    <MudCard Elevation="2" Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">@Localization.GetString("CompanyDetails")</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string"
+                                  Value="_name"
+                                  ValueChanged="@((string val) => _name = val)"
+                                  Label="@Localization.GetString("CompanyName")"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  Placeholder="@Localization.GetString("EnterCompanyName")" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudSelect T="CompanyType"
+                               Value="_type"
+                               ValueChanged="@((CompanyType val) => _type = val)"
+                               Label="@Localization.GetString("Type")"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem T="CompanyType" Value="CompanyType.Client">@Localization.GetString("Client")</MudSelectItem>
+                        <MudSelectItem T="CompanyType" Value="CompanyType.Vendor">@Localization.GetString("Vendor")</MudSelectItem>
+                        <MudSelectItem T="CompanyType" Value="CompanyType.Both">@Localization.GetString("ClientAndVendor")</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string"
+                                  Value="_contactPerson"
+                                  ValueChanged="@((string val) => _contactPerson = val)"
+                                  Label="@Localization.GetString("ContactPerson")"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="@Localization.GetString("EnterContactPerson")" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string"
+                                  Value="_email"
+                                  ValueChanged="@((string val) => _email = val)"
+                                  Label="@Localization.GetString("Email")"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  Placeholder="@Localization.GetString("EnterEmail")" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string"
+                                  Value="_phone"
+                                  ValueChanged="@((string val) => _phone = val)"
+                                  Label="@Localization.GetString("Phone")"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Telephone"
+                                  Placeholder="@Localization.GetString("EnterPhone")" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudTextField T="string"
+                                  Value="_taxId"
+                                  ValueChanged="@((string val) => _taxId = val)"
+                                  Label="@Localization.GetString("TaxID")"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="@Localization.GetString("EnterTaxID")" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField T="string"
+                                  Value="_address"
+                                  ValueChanged="@((string val) => _address = val)"
+                                  Label="@Localization.GetString("Address")"
+                                  Variant="Variant.Outlined"
+                                  Lines="3"
+                                  Placeholder="@Localization.GetString("EnterAddress")" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="int"
+                                     Value="_paymentTermsDays"
+                                     ValueChanged="@((int val) => _paymentTermsDays = val)"
+                                     Label="@Localization.GetString("Terms")"
+                                     Variant="Variant.Outlined"
+                                     Adornment="Adornment.End"
+                                     AdornmentText="@Localization.GetString("Days")"
+                                     Min="0" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal?"
+                                     Value="_creditLimit"
+                                     ValueChanged="@((decimal? val) => _creditLimit = val)"
+                                     Label="@Localization.GetString("CreditLimit")"
+                                     Variant="Variant.Outlined"
+                                     Format="C2"
+                                     Culture="@System.Globalization.CultureInfo.CurrentCulture"
+                                     Min="0"
+                                     Placeholder="@Localization.GetString("EnterCreditLimit")" />
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+    </MudCard>
+    <!-- Actions -->
+    <MudItem xs="12">
+        <div class="d-flex justify-end gap-2">
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="@(() => Navigation.NavigateTo("/companies"))">
+                @Localization.GetString("Cancel")
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       ButtonType="ButtonType.Submit"
+                       Disabled="_saving">
+                @if (_saving)
+                {
+                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                    @Localization.GetString("Save")
+                }
+                else
+                {
+                    @Localization.GetString("Create")
+                }
+            </MudButton>
+        </div>
+    </MudItem>
+</EditForm>
+
+@code {
+    private bool _saving = false;
+    private readonly CreateCompanyDto _createDto = new();
+
+    private string _name = string.Empty;
+    private CompanyType _type = CompanyType.Client;
+    private string? _contactPerson;
+    private string? _email;
+    private string? _phone;
+    private string? _address;
+    private string? _taxId;
+    private int _paymentTermsDays = 30;
+    private decimal? _creditLimit;
+
+    protected override void OnInitialized()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            Snackbar.Add(Localization.GetString("PleaseEnterCompanyName"), Severity.Warning);
+            return;
+        }
+
+        _saving = true;
+
+        try
+        {
+            _createDto.Name = _name;
+            _createDto.Type = _type;
+            _createDto.ContactPerson = _contactPerson;
+            _createDto.Email = _email;
+            _createDto.Phone = _phone;
+            _createDto.Address = _address;
+            _createDto.TaxId = _taxId;
+            _createDto.PaymentTermsDays = _paymentTermsDays;
+            _createDto.CreditLimit = _creditLimit;
+
+            CompanyDto created = await CompanyService.CreateCompanyAsync(_createDto);
+
+            Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
+            Navigation.NavigateTo($"/companies/{created.Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating company: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingCompany"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

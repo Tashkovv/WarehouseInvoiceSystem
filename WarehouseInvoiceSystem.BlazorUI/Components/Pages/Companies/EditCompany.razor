@@ -1,0 +1,277 @@
+﻿@page "/companies/edit/{Id:int}"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@inject ICompanyService CompanyService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("EditCompany") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@Localization.GetString("EditCompany")</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+               Variant="Variant.Text"
+               Href="@($"/companies/{Id}")">
+        @Localization.GetString("BackToCompanies")
+    </MudButton>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_company == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("ErrorLoadingCompany")</MudAlert>
+}
+else
+{
+    <EditForm Model="_updateDto" OnValidSubmit="HandleSubmit">
+        <MudCard Elevation="2" Class="mb-4">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("CompanyDetails")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudTextField T="string"
+                                      Value="_name"
+                                      ValueChanged="@((string val) => _name = val)"
+                                      Label="@Localization.GetString("CompanyName")"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      Placeholder="@Localization.GetString("EnterCompanyName")" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudSelect T="CompanyType"
+                                   Value="_type"
+                                   ValueChanged="@((CompanyType val) => _type = val)"
+                                   Label="@Localization.GetString("Type")"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   AnchorOrigin="Origin.BottomCenter">
+                            <MudSelectItem T="CompanyType" Value="CompanyType.Client">@Localization.GetString("Client")</MudSelectItem>
+                            <MudSelectItem T="CompanyType" Value="CompanyType.Vendor">@Localization.GetString("Vendor")</MudSelectItem>
+                            <MudSelectItem T="CompanyType" Value="CompanyType.Both">@Localization.GetString("ClientAndVendor")</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField T="string"
+                                      Value="_contactPerson"
+                                      ValueChanged="@((string val) => _contactPerson = val)"
+                                      Label="@Localization.GetString("ContactPerson")"
+                                      Variant="Variant.Outlined"
+                                      Placeholder="@Localization.GetString("EnterContactPerson")" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField T="string"
+                                      Value="_email"
+                                      ValueChanged="@((string val) => _email = val)"
+                                      Label="@Localization.GetString("Email")"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Email"
+                                      Placeholder="@Localization.GetString("EnterEmail")" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField T="string"
+                                      Value="_phone"
+                                      ValueChanged="@((string val) => _phone = val)"
+                                      Label="@Localization.GetString("Phone")"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Telephone"
+                                      Placeholder="@Localization.GetString("EnterPhone")" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="6">
+                        <MudTextField T="string"
+                                      Value="_taxId"
+                                      ValueChanged="@((string val) => _taxId = val)"
+                                      Label="@Localization.GetString("TaxID")"
+                                      Variant="Variant.Outlined"
+                                      Placeholder="@Localization.GetString("EnterTaxID")" />
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudTextField T="string"
+                                      Value="_address"
+                                      ValueChanged="@((string val) => _address = val)"
+                                      Label="@Localization.GetString("Address")"
+                                      Variant="Variant.Outlined"
+                                      Lines="3"
+                                      Placeholder="@Localization.GetString("EnterAddress")" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudNumericField T="int"
+                                         Value="_paymentTermsDays"
+                                         ValueChanged="@((int val) => _paymentTermsDays = val)"
+                                         Label="@Localization.GetString("Terms")"
+                                         Variant="Variant.Outlined"
+                                         Adornment="Adornment.End"
+                                         AdornmentText="@Localization.GetString("Days")"
+                                         Min="0" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudNumericField T="decimal?"
+                                         Value="_creditLimit"
+                                         ValueChanged="@((decimal? val) => _creditLimit = val)"
+                                         Label="@Localization.GetString("CreditLimit")"
+                                         Variant="Variant.Outlined"
+                                         Format="C2"
+                                         Culture="@System.Globalization.CultureInfo.CurrentCulture"
+                                         Min="0"
+                                         Placeholder="@Localization.GetString("EnterCreditLimit")" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudSwitch T="bool"
+                                   Value="_isActive"
+                                   ValueChanged="@((bool val) => _isActive = val)"
+                                   Label="@Localization.GetString("Active")"
+                                   Color="Color.Success" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+        <!-- Actions -->
+        <MudItem xs="12">
+            <div class="d-flex justify-end gap-2">
+                <MudButton Variant="Variant.Outlined"
+                           OnClick="@(() => Navigation.NavigateTo($"/companies/{Id}"))">
+                    @Localization.GetString("Cancel")
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           ButtonType="ButtonType.Submit"
+                           Disabled="_saving">
+                    @if (_saving)
+                    {
+                        <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                        @Localization.GetString("Save")
+                    }
+                    else
+                    {
+                        @Localization.GetString("Update")
+                    }
+                </MudButton>
+            </div>
+        </MudItem>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool _loading = true;
+    private bool _saving = false;
+    private CompanyDto? _company;
+    private readonly UpdateCompanyDto _updateDto = new();
+
+    private string _name = string.Empty;
+    private CompanyType _type = CompanyType.Client;
+    private string? _contactPerson;
+    private string? _email;
+    private string? _phone;
+    private string? _address;
+    private string? _taxId;
+    private int _paymentTermsDays = 30;
+    private decimal? _creditLimit;
+    private bool _isActive = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadCompany();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadCompany()
+    {
+        _loading = true;
+        
+        try
+        {
+            _company = await CompanyService.GetCompanyByIdAsync(Id);
+            
+            if (_company != null)
+            {
+                _name = _company.Name;
+                _type = _company.Type;
+                _contactPerson = _company.ContactPerson;
+                _email = _company.Email;
+                _phone = _company.Phone;
+                _address = _company.Address;
+                _taxId = _company.TaxId;
+                _paymentTermsDays = _company.PaymentTermsDays;
+                _creditLimit = _company.CreditLimit;
+                _isActive = _company.IsActive;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading company: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingCompany"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(_name))
+        {
+            Snackbar.Add(Localization.GetString("PleaseEnterCompanyName"), Severity.Warning);
+            return;
+        }
+
+        _saving = true;
+
+        try
+        {
+            _updateDto.Name = _name;
+            _updateDto.Type = _type;
+            _updateDto.ContactPerson = _contactPerson;
+            _updateDto.Email = _email;
+            _updateDto.Phone = _phone;
+            _updateDto.Address = _address;
+            _updateDto.TaxId = _taxId;
+            _updateDto.PaymentTermsDays = _paymentTermsDays;
+            _updateDto.CreditLimit = _creditLimit;
+            _updateDto.IsActive = _isActive;
+
+            CompanyDto updated = await CompanyService.UpdateCompanyAsync(Id, _updateDto);
+            
+            Snackbar.Add(Localization.GetString("CompanyUpdated"), Severity.Success);
+            Navigation.NavigateTo($"/companies/{Id}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating company: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

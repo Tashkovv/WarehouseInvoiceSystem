@@ -1,0 +1,240 @@
+﻿@page "/payments"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Payment
+@inject IPaymentService PaymentService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("Payments") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Payments")</MudText>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           FullWidth="true"
+                           Href="/payments/create">
+                    @Localization.GetString("RecordPayment")
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="9">
+                <MudTextField T="string"
+                              Value="_searchString"
+                              ValueChanged="OnSearch"
+                              Placeholder="@Localization.GetString("Search")"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Immediate="true"
+                              DebounceInterval="300"
+                              Class="mt-0" />
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent Class="pa-0">
+        @if (_loading)
+        {
+            <div class="pa-6">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_filteredPayments == null || !_filteredPayments.Any())
+        {
+            <div class="pa-6 text-center">
+                <MudText Color="Color.Secondary">@Localization.GetString("NoPaymentsFound")</MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="_filteredPayments"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      Dense="false"
+                      FixedHeader="true"
+                      Height="600px">
+                <HeaderContent>
+                    <MudTh>@Localization.GetString("PaymentDate")</MudTh>
+                    <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
+                    <MudTh>@Localization.GetString("Amount")</MudTh>
+                    <MudTh>@Localization.GetString("PaymentMethod")</MudTh>
+                    <MudTh>@Localization.GetString("ReferenceNumber")</MudTh>
+                    <MudTh>@Localization.GetString("RecordedBy")</MudTh>
+                    <MudTh>@Localization.GetString("Actions")</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localization.GetString("PaymentDate")">
+                        @context.PaymentDate.ToString("MMM dd, yyyy")
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
+                        <MudLink Href="@($"/invoices/{context.InvoiceId}")" Typo="Typo.body2" Class="font-weight-medium">
+                            @context.InvoiceNumber
+                        </MudLink>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Amount")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium" Color="Color.Success">
+                            @context.Amount.ToString("C")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
+                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                            @GetPaymentMethodText(context.PaymentMethod)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
+                        @context.ReferenceNumber
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("RecordedBy")">
+                        @context.RecordedBy
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Actions")">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                         OnClick="@(() => ViewPayment(context.Id))">
+                                @Localization.GetString("View")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                         OnClick="@(() => EditPayment(context.Id))">
+                                @Localization.GetString("Edit")
+                            </MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Error"
+                                         OnClick="@(() => DeletePayment(context.Id))">
+                                @Localization.GetString("Delete")
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool _loading = true;
+    private List<PaymentDto> _allPayments = new();
+    private List<PaymentDto> _filteredPayments = new();
+    private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadPayments();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadPayments()
+    {
+        _loading = true;
+
+        try
+        {
+            IEnumerable<PaymentDto> payments = await PaymentService.GetAllPaymentsAsync();
+            _allPayments = payments.ToList();
+            FilterPayments();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading payments: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingPayment"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void FilterPayments()
+    {
+        IEnumerable<PaymentDto> filtered = _allPayments;
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            string search = _searchString.ToLower();
+            filtered = filtered.Where(p =>
+                p.InvoiceNumber.ToLower().Contains(search) ||
+                (p.ReferenceNumber?.ToLower().Contains(search) ?? false) ||
+                (p.RecordedBy?.ToLower().Contains(search) ?? false) ||
+                p.Amount.ToString().Contains(search));
+        }
+
+        _filteredPayments = filtered.OrderByDescending(p => p.PaymentDate).ToList();
+    }
+
+    private async Task OnSearch(string text)
+    {
+        _searchString = text;
+        FilterPayments();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string GetPaymentMethodText(PaymentMethod method)
+    {
+        return method switch
+        {
+            PaymentMethod.Cash => Localization.GetString("Cash"),
+            PaymentMethod.Check => Localization.GetString("Check"),
+            PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
+            PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
+            PaymentMethod.DebitCard => Localization.GetString("DebitCard"),
+            PaymentMethod.Other => Localization.GetString("Other"),
+            _ => method.ToString()
+        };
+    }
+
+    private void ViewPayment(int id)
+    {
+        Navigation.NavigateTo($"/payments/{id}");
+    }
+
+    private void EditPayment(int id)
+    {
+        Navigation.NavigateTo($"/payments/edit/{id}");
+    }
+
+    private async Task DeletePayment(int id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeletePaymentConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await PaymentService.DeletePaymentAsync(id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("PaymentDeleted"), Severity.Success);
+                    await LoadPayments();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting payment: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingPayment"), Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

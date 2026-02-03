@@ -230,27 +230,40 @@ else
                             <MudCard Elevation="1" Class="mt-4">
                                 <MudCardContent>
                                     <div class="d-flex justify-end mb-2">
-                                        <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
+                                        <MudText Typo="Typo.body1"
+                                                 Class="mr-4"
+                                                 Style="min-width: 120px;">
                                             @Localization.GetString("Subtotal"):
                                         </MudText>
-                                        <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                        <MudText Typo="Typo.body1"
+                                                 Style="min-width: 160px;" 
+                                                 Class="font-weight-medium text-right tabular-numbers">
                                             @_subtotal.ToString("C")
                                         </MudText>
                                     </div>
                                     <div class="d-flex justify-end mb-2">
-                                        <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
+                                        <MudText Typo="Typo.body1"
+                                                 Class="mr-4"
+                                                 Style="min-width: 120px;">
                                             @Localization.GetString("Tax"):
                                         </MudText>
-                                        <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                        <MudText Typo="Typo.body1"
+                                                 Style="min-width: 160px;"
+                                                 Class="font-weight-medium text-right tabular-numbers">
                                             @_taxAmount.ToString("C")
                                         </MudText>
                                     </div>
                                     <MudDivider Class="my-2" />
                                     <div class="d-flex justify-end">
-                                        <MudText Typo="Typo.h6" Class="mr-4" Style="min-width: 120px;">
+                                        <MudText Typo="Typo.h6"
+                                                 Class="mr-4"
+                                                 Style="min-width: 120px;">
                                             @Localization.GetString("Total"):
                                         </MudText>
-                                        <MudText Typo="Typo.h6" Color="Color.Primary">
+                                        <MudText Typo="Typo.h6"
+                                                 Color="Color.Primary"
+                                                 Style="min-width: 160px;"
+                                                 Class="font-weight-medium text-right tabular-numbers">
                                             @_total.ToString("C")
                                         </MudText>
                                     </div>

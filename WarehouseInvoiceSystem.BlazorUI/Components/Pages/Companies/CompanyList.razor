@@ -1,0 +1,288 @@
+﻿@page "/companies"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@inject ICompanyService CompanyService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("Companies") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Companies")</MudText>
+
+<MudCard Elevation="2">
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           FullWidth="true"
+                           Href="/companies/create">
+                    @Localization.GetString("CreateCompany")
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="9">
+                <MudTextField T="string"
+                              Value="_searchString"
+                              ValueChanged="OnSearch"
+                              Placeholder="@Localization.GetString("Search")"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Immediate="true"
+                              DebounceInterval="300"
+                              Class="mt-0" />
+            </MudItem>
+        </MudGrid>
+
+        <MudTabs Elevation="0"
+                 Rounded="true"
+                 Class="mt-4"
+                 ActivePanelIndex="_activeTabIndex"
+                 ActivePanelIndexChanged="OnTabChanged">
+            <MudTabPanel Text="@Localization.GetString("AllCompanies")" Icon="@Icons.Material.Filled.List" />
+            <MudTabPanel Text="@Localization.GetString("Clients")" Icon="@Icons.Material.Filled.TrendingUp" />
+            <MudTabPanel Text="@Localization.GetString("Vendors")" Icon="@Icons.Material.Filled.TrendingDown" />
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Elevation="2" Class="mt-4">
+    <MudCardContent Class="pa-0">
+        @if (_loading)
+        {
+            <div class="pa-6">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_filteredCompanies == null || !_filteredCompanies.Any())
+        {
+            <div class="pa-6 text-center">
+                <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="_filteredCompanies"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      Dense="false"
+                      FixedHeader="true"
+                      Height="600px">
+                <HeaderContent>
+                    <MudTh>@Localization.GetString("CompanyName")</MudTh>
+                    <MudTh>@Localization.GetString("Type")</MudTh>
+                    <MudTh>@Localization.GetString("ContactPerson")</MudTh>
+                    <MudTh>@Localization.GetString("Email")</MudTh>
+                    <MudTh>@Localization.GetString("Phone")</MudTh>
+                    <MudTh>@Localization.GetString("Status")</MudTh>
+                    <MudTh>@Localization.GetString("Actions")</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localization.GetString("CompanyName")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.Name
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Type")">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="GetTypeColor(context.Type)">
+                            @GetTypeText(context.Type)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("ContactPerson")">
+                        @context.ContactPerson
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Email")">
+                        @context.Email
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Phone")">
+                        @context.Phone
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Status")">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
+                            @(context.IsActive? Localization.GetString("Active") : Localization.GetString("Inactive"))
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Actions")">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                         OnClick="@(() => ViewCompany(context.Id))">
+                                @Localization.GetString("View")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                         OnClick="@(() => EditCompany(context.Id))">
+                                @Localization.GetString("Edit")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Receipt"
+                                         OnClick="@(() => ViewCompanyInvoices(context.Id))">
+                                @Localization.GetString("ViewInvoices")
+                            </MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Error"
+                                         OnClick="@(() => DeleteCompany(context.Id))">
+                                @Localization.GetString("Delete")
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool _loading = true;
+    private List<CompanyDto> _allCompanies = new();
+    private List<CompanyDto> _filteredCompanies = new();
+    private string _searchString = "";
+    private int _activeTabIndex = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadCompanies();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadCompanies()
+    {
+        _loading = true;
+
+        try
+        {
+            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
+            _allCompanies = companies.ToList();
+            FilterCompanies();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading companies: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingCompany"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void FilterCompanies()
+    {
+        IEnumerable<CompanyDto> filtered = _allCompanies;
+
+        // Filter by tab
+        filtered = _activeTabIndex switch
+        {
+            1 => filtered.Where(c => c.Type == CompanyType.Client || c.Type == CompanyType.Both),
+            2 => filtered.Where(c => c.Type == CompanyType.Vendor || c.Type == CompanyType.Both),
+            _ => filtered
+        };
+
+        // Filter by search
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            string search = _searchString.ToLower();
+            filtered = filtered.Where(c =>
+                c.Name.ToLower().Contains(search) ||
+                (c.ContactPerson?.ToLower().Contains(search) ?? false) ||
+                (c.Email?.ToLower().Contains(search) ?? false) ||
+                (c.Phone?.ToLower().Contains(search) ?? false));
+        }
+
+        _filteredCompanies = filtered.OrderBy(c => c.Name).ToList();
+    }
+
+    private async Task OnSearch(string text)
+    {
+        _searchString = text;
+        FilterCompanies();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnTabChanged(int index)
+    {
+        _activeTabIndex = index;
+        FilterCompanies();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Color GetTypeColor(CompanyType type)
+    {
+        return type switch
+        {
+            CompanyType.Client => Color.Success,
+            CompanyType.Vendor => Color.Warning,
+            CompanyType.Both => Color.Info,
+            _ => Color.Default
+        };
+    }
+
+    private string GetTypeText(CompanyType type)
+    {
+        return type switch
+        {
+            CompanyType.Client => Localization.GetString("Client"),
+            CompanyType.Vendor => Localization.GetString("Vendor"),
+            CompanyType.Both => Localization.GetString("ClientAndVendor"),
+            _ => type.ToString()
+        };
+    }
+
+    private void ViewCompany(int id)
+    {
+        Navigation.NavigateTo($"/companies/{id}");
+    }
+
+    private void EditCompany(int id)
+    {
+        Navigation.NavigateTo($"/companies/edit/{id}");
+    }
+
+    private void ViewCompanyInvoices(int id)
+    {
+        Navigation.NavigateTo($"/invoices?companyId={id}");
+    }
+
+    private async Task DeleteCompany(int id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteCompanyConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await CompanyService.DeleteCompanyAsync(id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("CompanyDeleted"), Severity.Success);
+                    await LoadCompanies();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting company: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingCompany"), Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

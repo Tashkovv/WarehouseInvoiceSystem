@@ -163,7 +163,9 @@ else
                             <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
                                 @Localization.GetString("Subtotal"):
                             </MudText>
-                            <MudText Typo="Typo.body1" Class="font-weight-medium">
+                            <MudText Typo="Typo.body1"
+                                     Class="font-weight-medium text-right tabular-numbers"
+                                     Style="min-width: 160px;">
                                 @_invoice.SubTotal.ToString("C")
                             </MudText>
                         </div>
@@ -171,7 +173,9 @@ else
                             <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
                                 @Localization.GetString("Tax"):
                             </MudText>
-                            <MudText Typo="Typo.body1" Class="font-weight-medium">
+                            <MudText Typo="Typo.body1"
+                                     Class="font-weight-medium text-right tabular-numbers"
+                                     Style="min-width: 160px;">
                                 @_invoice.TaxAmount.ToString("C")
                             </MudText>
                         </div>
@@ -180,7 +184,10 @@ else
                             <MudText Typo="Typo.h6" Class="mr-4" Style="min-width: 120px;">
                                 @Localization.GetString("Total"):
                             </MudText>
-                            <MudText Typo="Typo.h6" Color="Color.Primary">
+                            <MudText Typo="Typo.h6"
+                                     Color="Color.Primary"
+                                     Class="text-right tabular-numbers"
+                                     Style="min-width: 160px;">
                                 @_invoice.TotalAmount.ToString("C")
                             </MudText>
                         </div>
@@ -188,7 +195,10 @@ else
                             <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
                                 @Localization.GetString("AmountPaid"):
                             </MudText>
-                            <MudText Typo="Typo.body1" Color="Color.Success" Class="font-weight-medium">
+                            <MudText Typo="Typo.body1"
+                                     Color="Color.Success"
+                                     Class="font-weight-medium text-right tabular-numbers"
+                                     Style="min-width: 160px;">
                                 @_invoice.AmountPaid.ToString("C")
                             </MudText>
                         </div>
@@ -196,7 +206,10 @@ else
                             <MudText Typo="Typo.h6" Class="mr-4" Style="min-width: 120px;">
                                 @Localization.GetString("AmountDue"):
                             </MudText>
-                            <MudText Typo="Typo.h6" Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)">
+                            <MudText Typo="Typo.h6"
+                                     Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)"
+                                     Class="text-right tabular-numbers"
+                                     Style="min-width: 160px;">
                                 @_invoice.AmountDue.ToString("C")
                             </MudText>
                         </div>
