@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.BlazorUI.Services
+﻿namespace WarehouseInvoiceSystem.Application.Interfaces
 {
     public interface ILocalizationService
     {

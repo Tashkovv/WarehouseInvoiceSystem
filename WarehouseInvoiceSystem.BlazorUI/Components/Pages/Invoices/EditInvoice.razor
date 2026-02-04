@@ -1,5 +1,6 @@
 ﻿@page "/invoices/edit/{Id:int}"
 @implements IDisposable
+@using System.Globalization
 @using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
@@ -95,7 +96,8 @@ else
                             </MudItem>
 
                             <MudItem xs="12" md="4">
-                                <MudDatePicker Date="_issueDate"
+                                <MudDatePicker @key="_currentCultureKey"
+                                               Date="_issueDate"
                                                DateChanged="OnIssueDateChanged"
                                                Label="@Localization.GetString("IssueDate")"
                                                Required="true"
@@ -114,7 +116,8 @@ else
                             </MudItem>
 
                             <MudItem xs="12" md="4">
-                                <MudDatePicker Date="_dueDate"
+                                <MudDatePicker @key="_currentCultureKey"
+                                               Date="_dueDate"
                                                DateChanged="@((DateTime? val) => _dueDate = val)"
                                                Label="@Localization.GetString("DueDate")"
                                                Required="true"
@@ -307,6 +310,7 @@ else
 
     private bool _loading = true;
     private bool _saving = false;
+    private string _currentCultureKey = CultureInfo.CurrentCulture.Name;
     private InvoiceDto? _invoice;
     private List<CompanyDto> _companies = new();
     private readonly UpdateInvoiceDto _updateDto = new();
@@ -333,6 +337,7 @@ else
 
     private async void OnLanguageChanged()
     {
+        _currentCultureKey = CultureInfo.CurrentCulture.Name;
         await InvokeAsync(StateHasChanged);
     }
 

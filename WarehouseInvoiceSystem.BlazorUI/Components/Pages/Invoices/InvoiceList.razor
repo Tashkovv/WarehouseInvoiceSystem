@@ -7,6 +7,8 @@
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -15,7 +17,7 @@
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent>
         <MudGrid>
-            <MudItem xs="12" sm="6" md="3">
+            <MudItem xs="12" sm="3" md="2">
                 <MudButton StartIcon="@Icons.Material.Filled.Add" 
                            Color="Color.Primary" 
                            Variant="Variant.Filled"
@@ -24,7 +26,17 @@
                     @Localization.GetString("CreateInvoice")
                 </MudButton>
             </MudItem>
-            <MudItem xs="12" sm="6" md="9">
+            <MudItem xs="12" sm="3" md="2">
+                <MudButton StartIcon="@Icons.Material.Filled.Download"
+                           Color="Color.Secondary"
+                           Variant="Variant.Outlined"
+                           FullWidth="true"
+                           OnClick="OpenExportDialog"
+                           Disabled="_exporting">
+                    @Localization.GetString("ExportToExcel")
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="3" md="8">
                 <MudTextField @bind-Value="_searchString"
                               Placeholder="@Localization.GetString("Search")"
                               Adornment="Adornment.Start"
@@ -154,6 +166,7 @@
 
 @code {
     private bool _loading = true;
+    private bool _exporting = false;
     private List<InvoiceDto> _allInvoices = new();
     private List<InvoiceDto> _filteredInvoices = new();
     private string _searchString = "";
@@ -173,7 +186,7 @@
     private async Task LoadInvoices()
     {
         _loading = true;
-        
+
         try
         {
             IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
@@ -301,6 +314,57 @@
         _activeTabIndex = index;
         FilterInvoices();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OpenExportDialog()
+    {
+        DialogOptions options = new DialogOptions
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        IDialogReference? dialog = await DialogService.ShowAsync<ExportInvoicesDialog>(
+            Localization.GetString("ExportInvoices"),
+            options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is ExportDialogResult exportResult)
+        {
+            await PerformExport(exportResult);
+        }
+    }
+
+    private async Task PerformExport(ExportDialogResult exportResult)
+    {
+        _exporting = true;
+
+        try
+        {
+            byte[] fileBytes = exportResult.ExportAll
+                ? await ExcelExportService.ExportInvoicesToExcelAsync(_filteredInvoices)
+                : await ExcelExportService.ExportInvoicesByDateRangeAsync(_filteredInvoices, exportResult.StartDate, exportResult.EndDate);
+
+            string fileName = $"{Localization.GetString("Invoices")}_{DateTime.Now:yyyyMMdd}.xlsx";
+
+            await JSRuntime.InvokeVoidAsync(
+                "fileDownloadHelper.downloadFileFromStream",
+                fileName,
+                new DotNetStreamReference(new MemoryStream(fileBytes)));
+
+            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting invoices: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+        }
     }
 
     public void Dispose()

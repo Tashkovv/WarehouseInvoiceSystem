@@ -6,6 +6,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.JSInterop" Version="10.0.2" />
     <PackageReference Include="MudBlazor" Version="8.15.0" />
   </ItemGroup>
 
@@ -14,6 +15,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <NoWarn>$(NoWarn);NU1510</NoWarn>
   </PropertyGroup>
 
 </Project>

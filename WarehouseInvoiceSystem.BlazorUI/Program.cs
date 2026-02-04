@@ -4,7 +4,6 @@ using System.Globalization;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Services;
 using WarehouseInvoiceSystem.BlazorUI.Components;
-using WarehouseInvoiceSystem.BlazorUI.Services;
 using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Data;
 using WarehouseInvoiceSystem.Infrastructure.Repositories;
@@ -12,7 +11,7 @@ using WarehouseInvoiceSystem.Infrastructure.Repositories;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Culture setup 
-CultureInfo mkdCulture = new("en-EN");
+CultureInfo mkdCulture = new("mk-MK");
 mkdCulture.NumberFormat.CurrencySymbol = "MKD";
 mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
 mkdCulture.NumberFormat.CurrencyPositivePattern = 3;
@@ -43,6 +42,7 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 
 WebApplication app = builder.Build();
 

@@ -1,10 +1,11 @@
-﻿using System.Globalization;
-
-namespace WarehouseInvoiceSystem.BlazorUI.Services
+﻿namespace WarehouseInvoiceSystem.Application.Services
 {
+    using System.Globalization;
+    using WarehouseInvoiceSystem.Application.Interfaces;
+
     public class LocalizationService : ILocalizationService
     {
-        private string _currentLanguage = "en";
+        private string _currentLanguage = "mk";
 
         public string CurrentLanguage => _currentLanguage;
 
@@ -68,6 +69,8 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["Help"] = "Help",
                 ["Privacy"] = "Privacy",
                 ["Terms"] = "Terms",
+                ["Brajkovci"] = "Brajkovci, Valandovo, Makedonija",
+                ["ThankYou"] = "Thank you for your business!",
 
                 // Companies
                 ["AllCompanies"] = "All Companies",
@@ -115,6 +118,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["TotalInvoicesCount"] = "Total Invoices",
 
                 // Invoices
+                ["Invoice"] = "Invoice",
                 ["CreateInvoice"] = "Create Invoice",
                 ["EditInvoice"] = "Edit Invoice",
                 ["InvoiceDetails"] = "Invoice Details",
@@ -215,6 +219,18 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["DeletePaymentConfirm"] = "Are you sure you want to delete this payment? This will update the invoice balance.",
                 ["EditPayment"] = "Edit Payment",
                 ["NoPaymentsFound"] = "No payments found",
+
+                // Export
+                ["ExportToExcel"] = "Export to Excel",
+                ["ExportForPrinting"] = "Export for Printing",
+                ["ExportAllInvoices"] = "Export All Invoices",
+                ["ExportByDateRange"] = "Export by Date Range",
+                ["StartDate"] = "Start Date",
+                ["EndDate"] = "End Date",
+                ["ExportInvoices"] = "Export Invoices",
+                ["Exporting"] = "Exporting...",
+                ["ExportSuccess"] = "File exported successfully",
+                ["ExportError"] = "Error exporting file",
             },
             #endregion
 
@@ -274,6 +290,8 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["Help"] = "Помош",
                 ["Privacy"] = "Приватност",
                 ["Terms"] = "Услови",
+                ["Brajkovci"] = "Брајковци, Валандово, Македонија",
+                ["ThankYou"] = "Ви благодариме за соработката!",
 
                 // Companies
                 ["AllCompanies"] = "Сите компании",
@@ -321,6 +339,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["TotalInvoicesCount"] = "Вкупно фактури",
 
                 // Invoices
+                ["Invoice"] = "Фактура",
                 ["CreateInvoice"] = "Креирај фактура",
                 ["EditInvoice"] = "Измени фактура",
                 ["InvoiceDetails"] = "Детали за фактура",
@@ -342,8 +361,8 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["AmountDue"] = "За наплата",
                 ["AddLineItem"] = "Додади ставка",
                 ["RemoveLineItem"] = "Отстрани",
-                ["BillTo"] = "Наплата од",
-                ["BillFrom"] = "Наплата на",
+                ["BillTo"] = "Наплата на",
+                ["BillFrom"] = "Наплата од",
                 ["InvoiceInformation"] = "Информации за фактура",
                 ["PaymentHistory"] = "Историја на плаќања",
                 ["RecordPayment"] = "Евидентирај плаќање",
@@ -421,6 +440,18 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 ["DeletePaymentConfirm"] = "Дали сте сигурни дека сакате да го избришете ова плаќање? Ова ќе го ажурира салдото на фактурата.",
                 ["EditPayment"] = "Измени плаќање",
                 ["NoPaymentsFound"] = "Нема пронајдени плаќања",
+
+                // Export
+                ["ExportToExcel"] = "Извези во Excel",
+                ["ExportForPrinting"] = "Извези за печатење",
+                ["ExportAllInvoices"] = "Извези ги сите фактури",
+                ["ExportByDateRange"] = "Извези по датум",
+                ["StartDate"] = "Почетен датум",
+                ["EndDate"] = "Краен датум",
+                ["ExportInvoices"] = "Извези фактури",
+                ["Exporting"] = "Извезување...",
+                ["ExportSuccess"] = "Датотеката е успешно извезена",
+                ["ExportError"] = "Грешка при извезување на датотека",
             }
             #endregion
         };
@@ -428,7 +459,15 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
         public void SetLanguage(string language)
         {
             if (language != "en" && language != "mk")
-                language = "en";
+                language = "mk";
+
+            CultureInfo culture = new($"{language}-{language.ToUpper()}");
+
+            culture.NumberFormat.CurrencySymbol = "MKD";
+            culture.NumberFormat.CurrencyDecimalDigits = 2;
+            culture.NumberFormat.CurrencyPositivePattern = 3;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
 
             _currentLanguage = language;
             OnLanguageChanged?.Invoke();
@@ -441,7 +480,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Services
                 return value;
             }
 
-            return key; // Return key if translation not found
+            return key;
         }
     }
 }

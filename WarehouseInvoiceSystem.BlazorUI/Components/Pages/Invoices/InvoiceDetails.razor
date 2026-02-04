@@ -9,6 +9,8 @@
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
+@inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("InvoiceDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -31,6 +33,13 @@ else
             </MudButton>
         </div>
         <div>
+            <MudButton StartIcon="@Icons.Material.Filled.Print"
+                       Color="Color.Secondary"
+                       Variant="Variant.Outlined"
+                       Class="mr-2"
+                       OnClick="ExportForPrinting">
+                @Localization.GetString("Export")
+            </MudButton>
             <MudButton StartIcon="@Icons.Material.Filled.Edit" 
                        Color="Color.Primary" 
                        Variant="Variant.Filled"
@@ -38,8 +47,8 @@ else
                        Href="@($"/invoices/edit/{Id}")">
                 @Localization.GetString("Edit")
             </MudButton>
-            <MudButton StartIcon="@Icons.Material.Filled.Delete" 
-                       Color="Color.Error" 
+            <MudButton StartIcon="@Icons.Material.Filled.Delete"
+                       Color="Color.Error"
                        Variant="Variant.Outlined"
                        OnClick="DeleteInvoice">
                 @Localization.GetString("Delete")
@@ -81,7 +90,7 @@ else
                 <MudCardHeader>
                     <CardHeaderContent>
                         <MudText Typo="Typo.h6">
-                            @(_invoice.Type == InvoiceType.Receivable ? Localization.GetString("BillTo") : Localization.GetString("BillFrom"))
+                            @(_invoice.Type == InvoiceType.Receivable ? Localization.GetString("BillFrom") : Localization.GetString("Bill"))
                         </MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
@@ -90,7 +99,7 @@ else
                     <MudChip T="string"
                              Size="Size.Small" 
                              Color="@(_invoice.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
-                        @(_invoice.Type == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
+                        @(Localization.GetString(_invoice.Type.ToString()))
                     </MudChip>
                 </MudCardContent>
             </MudCard>
@@ -280,8 +289,8 @@ else
     </MudGrid>
     }
 @code {
-[Parameter]
-public int Id { get; set; }
+    [Parameter]
+    public int Id { get; set; }
     private bool _loading = true;
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = new();
@@ -408,6 +417,27 @@ public int Id { get; set; }
                 Console.WriteLine($"Error deleting invoice: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorDeletingInvoice"), Severity.Error);
             }
+        }
+    }
+
+    private async Task ExportForPrinting()
+    {
+        try
+        {
+            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(Id);
+            string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.Now:yyyyMMdd}.xlsx";
+
+            await JSRuntime.InvokeVoidAsync(
+                "fileDownloadHelper.downloadFileFromStream",
+                fileName,
+                new DotNetStreamReference(new MemoryStream(fileBytes)));
+
+            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting to Excel: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
     }
 

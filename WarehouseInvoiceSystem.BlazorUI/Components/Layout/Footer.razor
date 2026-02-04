@@ -1,4 +1,6 @@
-﻿@inject ILocalizationService Localization
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ILocalizationService Localization
+@implements IDisposable
 
 <MudContainer MaxWidth="MaxWidth.False" Class="mt-auto py-4" Style="background-color: #F8FAFC;">
     <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge">
@@ -16,5 +18,18 @@
 </MudContainer>
 
 @code {
+    protected override void OnInitialized()
+    {
+        Localization.OnLanguageChanged += StateHasChanged;
+    }
 
+    private void ChangeLanguage(string language)
+    {
+        Localization.SetLanguage(language);
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= StateHasChanged;
+    }
 }

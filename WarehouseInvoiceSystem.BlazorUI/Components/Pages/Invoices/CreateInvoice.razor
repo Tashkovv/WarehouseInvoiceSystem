@@ -1,5 +1,6 @@
 ﻿@page "/invoices/create"
 @implements IDisposable
+@using System.Globalization
 @using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
@@ -67,7 +68,8 @@ else
                             </MudItem>
 
                             <MudItem xs="12" md="4">
-                                <MudDatePicker Label="@Localization.GetString("IssueDate")"
+                                <MudDatePicker @key="_currentCultureKey"
+                                               Label="@Localization.GetString("IssueDate")"
                                                Required="true"
                                                Variant="Variant.Outlined"
                                                DateChanged="OnIssueDateChanged" />
@@ -84,7 +86,8 @@ else
                             </MudItem>
 
                             <MudItem xs="12" md="4">
-                                <MudDatePicker @bind-Date="_dueDate"
+                                <MudDatePicker @key="_currentCultureKey"
+                                               @bind-Date="_dueDate"
                                                Label="@Localization.GetString("DueDate")"
                                                Required="true"
                                                Variant="Variant.Outlined" />
@@ -252,6 +255,7 @@ else
 @code {
     private bool _loading = true;
     private bool _saving = false;
+    private string _currentCultureKey = CultureInfo.CurrentCulture.Name;
     private List<CompanyDto> _companies = new();
     private readonly CreateInvoiceDto _createDto = new();
     
@@ -276,6 +280,7 @@ else
 
     private async void OnLanguageChanged()
     {
+        _currentCultureKey = CultureInfo.CurrentCulture.Name;
         await InvokeAsync(StateHasChanged);
     }
 
