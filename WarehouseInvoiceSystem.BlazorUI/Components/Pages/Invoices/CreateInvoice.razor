@@ -9,6 +9,7 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IEmailService EmailService
 
 <PageTitle>@Localization.GetString("CreateInvoice") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -258,14 +259,14 @@ else
     private string _currentCultureKey = CultureInfo.CurrentCulture.Name;
     private List<CompanyDto> _companies = new();
     private readonly CreateInvoiceDto _createDto = new();
-    
+
     private int? _selectedCompanyId;
     private InvoiceType? _selectedType;
     private DateTime? _issueDate = DateTime.Now;
     private DateTime? _dueDate = DateTime.Now.AddDays(30);
     private int _paymentTermsDays = 30;
     private string? _notes;
-    
+
     private readonly List<LineItemModel> _lineItems = new();
     private decimal _subtotal = 0;
     private decimal _taxAmount = 0;
@@ -287,7 +288,7 @@ else
     private async Task LoadCompanies()
     {
         _loading = true;
-        
+
         try
         {
             IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
@@ -382,7 +383,7 @@ else
                 }).ToList();
 
             InvoiceDto created = await InvoiceService.CreateInvoiceAsync(_createDto);
-            
+
             Snackbar.Add(Localization.GetString("InvoiceCreated"), Severity.Success);
             Navigation.NavigateTo($"/invoices/{created.Id}");
         }
@@ -394,6 +395,7 @@ else
         finally
         {
             _saving = false;
+            await EmailService.SendTestEmailAsync("jovantaskov0@gmail.com");
         }
     }
 

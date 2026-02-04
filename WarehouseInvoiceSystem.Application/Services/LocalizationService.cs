@@ -72,6 +72,18 @@
                 ["Brajkovci"] = "Brajkovci, Valandovo, Makedonija",
                 ["ThankYou"] = "Thank you for your business!",
 
+                // Email
+                ["SendInvoice"] = "Send Invoice",
+                ["SendEmail"] = "Send Email",
+                ["RecipientEmail"] = "Recipient Email",
+                ["CustomMessage"] = "Custom Message (Optional)",
+                ["EmailSent"] = "Email sent successfully",
+                ["ErrorSendingEmail"] = "Error sending email",
+                ["SendingEmail"] = "Sending email...",
+                ["EnterRecipientEmail"] = "Enter recipient email address",
+                ["EnterCustomMessage"] = "Enter a custom message to include in the email",
+                ["EmailWillBeSent"] = "The invoice will be sent as an attachment and the status will be updated to 'Sent'",
+
                 // Companies
                 ["AllCompanies"] = "All Companies",
                 ["Clients"] = "Clients",
@@ -184,6 +196,7 @@
                 ["EnterQuantity"] = "Enter quantity",
                 ["EnterUnitPrice"] = "Enter unit price",
                 ["EnterTaxRate"] = "Enter tax rate (%)",
+                ["Bill"] = "Bill",
 
                 // Payments
                 ["Cash"] = "Cash",
@@ -292,6 +305,18 @@
                 ["Terms"] = "Услови",
                 ["Brajkovci"] = "Брајковци, Валандово, Македонија",
                 ["ThankYou"] = "Ви благодариме за соработката!",
+
+                // Email
+                ["SendInvoice"] = "Испрати фактура",
+                ["SendEmail"] = "Испрати е-пошта",
+                ["RecipientEmail"] = "Примач на е-пошта",
+                ["CustomMessage"] = "Порака (Опционално)",
+                ["EmailSent"] = "Е-поштата е успешно испратена",
+                ["ErrorSendingEmail"] = "Грешка при испраќање на е-пошта",
+                ["SendingEmail"] = "Испраќање на е-пошта...",
+                ["EnterRecipientEmail"] = "Внесете адреса на примач",
+                ["EnterCustomMessage"] = "Внесете порака за да ја вклучите во е-поштата",
+                ["EmailWillBeSent"] = "Фактурата ќе биде испратена како прилог и статусот ќе биде ажуриран на 'Испратена'",
 
                 // Companies
                 ["AllCompanies"] = "Сите компании",
@@ -405,6 +430,7 @@
                 ["EnterQuantity"] = "Внесете количина",
                 ["EnterUnitPrice"] = "Внесете единечна цена",
                 ["EnterTaxRate"] = "Внесете даночна стапка (%)",
+                ["Bill"] = "Сметка",
 
                 // Payments
                 ["Cash"] = "Готовина",

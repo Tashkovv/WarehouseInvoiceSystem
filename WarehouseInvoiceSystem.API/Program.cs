@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using WarehouseInvoiceSystem.Application.Interfaces;
+using WarehouseInvoiceSystem.Application.Models;
 using WarehouseInvoiceSystem.Application.Services;
 using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Data;
@@ -12,12 +13,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Register Settings
+builder.Services.AddOptions<EmailSettings>()
+                .Bind(builder.Configuration.GetSection("EmailSettings"))
+                .ValidateOnStart();
+
 // Add Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add Localization service
-builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 
 // Register Repositories
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
@@ -28,6 +31,9 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 WebApplication app = builder.Build();
 

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using System.Globalization;
 using WarehouseInvoiceSystem.Application.Interfaces;
+using WarehouseInvoiceSystem.Application.Models;
 using WarehouseInvoiceSystem.Application.Services;
 using WarehouseInvoiceSystem.BlazorUI.Components;
 using WarehouseInvoiceSystem.Domain.Interfaces;
@@ -21,13 +22,15 @@ CultureInfo.DefaultThreadCurrentUICulture = mkdCulture;
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+                .AddInteractiveServerComponents();
+
+// Register Settings
+builder.Services.AddOptions<EmailSettings>()
+                .Bind(builder.Configuration.GetSection("EmailSettings"))
+                .ValidateOnStart();
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
-
-// Add Localization service
-builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 
 // Add Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -43,6 +46,8 @@ builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 WebApplication app = builder.Build();
 
@@ -53,6 +58,7 @@ if (!app.Environment.IsDevelopment())
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseStaticFiles();
