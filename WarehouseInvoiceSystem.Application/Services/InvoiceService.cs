@@ -171,6 +171,7 @@
                 InvoiceNumber = invoice.InvoiceNumber,
                 CompanyId = invoice.CompanyId,
                 CompanyName = invoice.Company?.Name ?? string.Empty,
+                CompanyEmail = invoice.Company?.Email ?? string.Empty,
                 Type = invoice.Type,
                 Status = invoice.Status,
                 IssueDate = invoice.IssueDate,

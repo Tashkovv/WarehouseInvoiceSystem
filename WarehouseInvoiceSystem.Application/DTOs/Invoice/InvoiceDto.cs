@@ -8,6 +8,7 @@
         public string InvoiceNumber { get; set; } = string.Empty;
         public int CompanyId { get; set; }
         public string CompanyName { get; set; } = string.Empty;
+        public string CompanyEmail { get; set; } = string.Empty;
         public InvoiceType Type { get; set; }
         public InvoiceStatus Status { get; set; }
         public DateTime IssueDate { get; set; }

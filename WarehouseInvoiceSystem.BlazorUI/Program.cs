@@ -49,6 +49,16 @@ builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
+// Add HttpClient
+builder.Services.AddScoped(sp =>
+{
+    IConfiguration config = sp.GetRequiredService<IConfiguration>();
+    return new HttpClient()
+    {
+        BaseAddress = new Uri(config["ApiBaseUrl"]!)
+    };
+});
+
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -66,6 +76,6 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+   .AddInteractiveServerRenderMode();
 
 await app.RunAsync();

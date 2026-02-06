@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Models;
 using WarehouseInvoiceSystem.Application.Services;
@@ -7,6 +8,15 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 using WarehouseInvoiceSystem.Infrastructure.Repositories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Culture setup
+CultureInfo mkdCulture = new("mk-MK");
+mkdCulture.NumberFormat.CurrencySymbol = "MKD";
+mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
+mkdCulture.NumberFormat.CurrencyPositivePattern = 3;
+
+CultureInfo.DefaultThreadCurrentCulture = mkdCulture;
+CultureInfo.DefaultThreadCurrentUICulture = mkdCulture;
 
 // Add services to the container.
 builder.Services.AddControllers();

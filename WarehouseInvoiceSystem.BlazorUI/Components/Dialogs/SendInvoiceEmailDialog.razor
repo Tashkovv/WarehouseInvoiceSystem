@@ -1,0 +1,68 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="CustomMessage"
+                      Label="@Localization.GetString("CustomMessage")"
+                      HelperText="@Localization.GetString("CustomMessageHelper")"
+                      Variant="Variant.Outlined"
+                      FullWidth="true"
+                      Lines="4"
+                      Disabled="Sending"
+                      Class="mb-4" />
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="Sending">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton 
+            OnClick="SendEmail" 
+            Color="Color.Primary" 
+            Variant="Variant.Filled"
+            Disabled="Sending">
+            @if (Sending)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>@Localization.GetString("Sending")</span>
+            }
+            else
+            {
+                <span>@Localization.GetString("SendEmail")</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+    private string CustomMessage { get; set; } = string.Empty;
+    private bool Sending { get; set; } = false;
+
+    private async Task SendEmail()
+    {
+        Sending = true;
+
+        // This will be called from the parent component which has HttpClient access
+        SendEmailResult result = new()
+        {
+            CustomMessage = CustomMessage,
+            Success = true
+        };
+
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    public class SendEmailResult
+    {
+        public string? CustomMessage { get; set; }
+        public bool Success { get; set; }
+    }
+}

@@ -9,26 +9,15 @@
     using WarehouseInvoiceSystem.Application.Models;
     using WarehouseInvoiceSystem.Domain.Enums;
 
-    public class EmailService : IEmailService
+    public class EmailService(
+        IOptions<EmailSettings> emailSettings,
+        IInvoiceService invoiceService,
+        IExcelExportService excelExportService,
+        ILocalizationService translations) : IEmailService
     {
-        private readonly EmailSettings emailSettings;
-        private readonly IInvoiceService invoiceService;
-        private readonly IExcelExportService excelExportService;
-        private readonly ILocalizationService translations;
+        private readonly EmailSettings emailSettings = emailSettings.Value;
 
-        public EmailService(
-            IOptions<EmailSettings> emailSettings,
-            IInvoiceService invoiceService,
-            IExcelExportService excelExportService,
-            ILocalizationService translations)
-        {
-            this.emailSettings = emailSettings.Value;
-            this.invoiceService = invoiceService;
-            this.excelExportService = excelExportService;
-            this.translations = translations;
-        }
-
-        public async Task<bool> SendInvoiceEmailAsync(int invoiceId, string recipientEmail, string? customMessage = null)
+        public async Task<bool> SendInvoiceEmailAsync(int invoiceId, string? customMessage = null)
         {
             try
             {
@@ -37,8 +26,8 @@
                 // Create email message
                 MimeMessage message = new();
                 message.From.Add(new MailboxAddress(emailSettings.SenderName, emailSettings.SenderEmail));
-                message.To.Add(new MailboxAddress(invoice.CompanyName, recipientEmail));
-                message.Subject = $"Invoice {invoice.InvoiceNumber} from {emailSettings.SenderName}";
+                message.To.Add(new MailboxAddress(invoice.CompanyName, invoice.CompanyEmail));
+                message.Subject = $"{translations.GetString("Invoice")} {invoice.InvoiceNumber} {translations.GetString("From")} {emailSettings.SenderName}";
 
                 // Build email body
                 BodyBuilder bodyBuilder = new()
@@ -174,7 +163,7 @@
                             </div>
                             <div class='detail-row' style='margin-top: 20px;'>
                                 <span class='label'>Вкупна сума:</span>
-                                <span class='amount'>{invoice.TotalAmount:C}</span>
+                                <span class='amount'>{invoice.TotalAmount.ToString("C")}</span>
                             </div>
                         </div>
                         
