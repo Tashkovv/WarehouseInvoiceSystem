@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Application.Models;
+    using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
 
     [ApiController]
@@ -273,6 +274,9 @@
 
                 if (!result)
                     return StatusCode(500, "Failed to send email. Please check your email configuration and try again.");
+
+                // Update invoice status to Sent
+                await invoiceService.UpdateInvoiceStatusAsync(invoice.Id, InvoiceStatus.Sent);
 
                 return Ok(new { message = "Invoice email sent successfully", invoiceId = id });
             }

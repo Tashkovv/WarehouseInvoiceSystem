@@ -50,9 +50,6 @@
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
 
-                // Update invoice status to Sent
-                await invoiceService.UpdateInvoiceStatusAsync(invoiceId, InvoiceStatus.Sent);
-
                 return true;
             }
             catch (Exception ex)
