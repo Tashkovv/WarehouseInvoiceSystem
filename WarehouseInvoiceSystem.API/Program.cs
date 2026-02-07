@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using WarehouseInvoiceSystem.Application.BackgroundWorkers;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Models;
 using WarehouseInvoiceSystem.Application.Services;
@@ -44,6 +45,8 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+builder.Services.AddHostedService<BackgroundJobWorker>();
 
 WebApplication app = builder.Build();
 
