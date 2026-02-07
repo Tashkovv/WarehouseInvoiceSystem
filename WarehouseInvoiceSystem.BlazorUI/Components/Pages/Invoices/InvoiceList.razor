@@ -71,14 +71,15 @@
             <MudGrid>
                 <!-- Status Filter -->
                 <MudItem xs="12" sm="6" md="3">
-                    <MudAutocomplete T="InvoiceStatus?"
+                    <MudAutocomplete 
+                        T="InvoiceStatus?"
                         Value="_filterStatus"
                         Label="@Localization.GetString("Status")"
                         SearchFunc="@SearchStatus"
                         Dense="true"
                         Clearable="true"
-                        OnClearedClick="@(() => { _filterStatus = null; ApplyFilters(); })"
-                        ValueChanged="@((InvoiceStatus? val) => { _filterStatus = val; ApplyFilters(); })">
+                        OnClearedClick="@(() => { _filterStatus = null; ResetPaginationAndApplyFilters(); })"
+                        ValueChanged="@((InvoiceStatus? val) => { _filterStatus = val; ResetPaginationAndApplyFilters(); })">
                         <ItemTemplate>
                             <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context)">
                                 @GetStatusText(context)
@@ -98,8 +99,8 @@
                         SearchFunc="@SearchType"
                         Dense="true"
                         Clearable="true"
-                        OnClearedClick="@(() => { _filterType = null; ApplyFilters(); })"
-                        ValueChanged="@((InvoiceType? val) => { _filterType = val; ApplyFilters(); })">
+                        OnClearedClick="@(() => { _filterType = null; ResetPaginationAndApplyFilters(); })"
+                        ValueChanged="@((InvoiceType? val) => { _filterType = val; ResetPaginationAndApplyFilters(); })">
                         <ItemTemplate>
                             <MudChip T="string" Size="Size.Small" Color="@(context == InvoiceType.Receivable ? Color.Success : Color.Warning)">
                                 @(context == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
@@ -119,8 +120,8 @@
                         SearchFunc="@SearchCompanies"
                         Dense="true"
                         Clearable="true"
-                        OnClearedClick="@(() => { _filterCompany = null; ApplyFilters(); })"
-                        ValueChanged="@((string val) => { _filterCompany = val; ApplyFilters(); })" />
+                        OnClearedClick="@(() => { _filterCompany = null; ResetPaginationAndApplyFilters(); })"
+                        ValueChanged="@((string val) => { _filterCompany = val; ResetPaginationAndApplyFilters(); })" />
                 </MudItem>
 
                 <!-- Amount Range Filter -->
@@ -132,13 +133,13 @@
                             Label="@Localization.GetString("Min")"
                             HideSpinButtons="true"
                             Dense="true"
-                            ValueChanged="@((decimal? val) => { _filterAmountMin = val; ApplyFilters(); })" />
+                            ValueChanged="@((decimal? val) => { _filterAmountMin = val; ResetPaginationAndApplyFilters(); })" />
                         <MudNumericField T="decimal?" 
                             Value="_filterAmountMax"
                             Label="@Localization.GetString("Max")"
                             HideSpinButtons="true"
                             Dense="true"
-                            ValueChanged="@((decimal? val) => { _filterAmountMax = val; ApplyFilters(); })" />
+                            ValueChanged="@((decimal? val) => { _filterAmountMax = val; ResetPaginationAndApplyFilters(); })" />
                     </MudStack>
                 </MudItem>
 
@@ -149,11 +150,11 @@
                         <MudDatePicker Date="_filterIssueDateFrom"
                             Label="@Localization.GetString("From")"
                             Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterIssueDateFrom = val; ApplyFilters(); })" />
+                            DateChanged="@((DateTime? val) => { _filterIssueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
                         <MudDatePicker Date="_filterIssueDateTo"
                             Label="@Localization.GetString("To")"
                             Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterIssueDateTo = val; ApplyFilters(); })" />
+                            DateChanged="@((DateTime? val) => { _filterIssueDateTo = val; ResetPaginationAndApplyFilters(); })" />
                     </MudStack>
                 </MudItem>
 
@@ -164,11 +165,11 @@
                         <MudDatePicker Date="_filterDueDateFrom"
                             Label="@Localization.GetString("From")"
                             Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterDueDateFrom = val; ApplyFilters(); })" />
+                            DateChanged="@((DateTime? val) => { _filterDueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
                         <MudDatePicker Date="_filterDueDateTo"
                             Label="@Localization.GetString("To")"
                             Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterDueDateTo = val; ApplyFilters(); })" />
+                            DateChanged="@((DateTime? val) => { _filterDueDateTo = val; ResetPaginationAndApplyFilters(); })" />
                     </MudStack>
                 </MudItem>
 
@@ -186,19 +187,6 @@
                 </MudItem>
             </MudGrid>
         }
-
-        <!-- Tabs (kept for backward compatibility) -->
-        <MudTabs Elevation="0"
-                 Rounded="true"
-                 Class="mt-4"
-                 Visible="false"
-                 ActivePanelIndex="_activeTabIndex"
-                 ActivePanelIndexChanged="OnTabChanged">
-            <MudTabPanel Text="@Localization.GetString("AllInvoices")" Icon="@Icons.Material.Filled.List" />
-            <MudTabPanel Text="@Localization.GetString("Receivables")" Icon="@Icons.Material.Filled.TrendingUp" />
-            <MudTabPanel Text="@Localization.GetString("Payables")" Icon="@Icons.Material.Filled.TrendingDown" />
-            <MudTabPanel Text="@Localization.GetString("Overdue")" Icon="@Icons.Material.Filled.Warning" />
-        </MudTabs>
     </MudCardContent>
 </MudCard>
 
@@ -218,7 +206,7 @@
         }
         else
         {
-            <MudTable Items="_filteredInvoices" 
+            <MudTable Items="_paginatedInvoices" 
                       Hover="true" 
                       Breakpoint="Breakpoint.Sm" 
                       Dense="false"
@@ -301,6 +289,62 @@
                     </MudTd>
                 </RowTemplate>
             </MudTable>
+
+            <!-- Pagination Controls -->
+            <MudDivider />
+            <MudCardContent Class="pa-4">
+                <MudGrid>
+                    <!-- Left Side: Page Navigation -->
+                    <MudItem xs="12" sm="6">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudButton 
+                                Variant="Variant.Outlined"
+                                Size="Size.Small"
+                                OnClick="PreviousPage"
+                                Disabled="@(_currentPage == 1)">
+                                @Localization.GetString("Previous")
+                            </MudButton>
+
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
+                            </MudText>
+
+                            <MudButton 
+                                Variant="Variant.Outlined"
+                                Size="Size.Small"
+                                OnClick="NextPage"
+                                Disabled="@(_currentPage == _totalPages)">
+                                @Localization.GetString("Next")
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+
+                    <!-- Right Side: Items Per Page & Stats -->
+                    <MudItem xs="12" sm="6" Class="text-right">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.FlexEnd">
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("ItemsPerPage")
+                            </MudText>
+
+                            <MudSelect T="int" 
+                                Value="_itemsPerPage"
+                                Dense="true"
+                                Variant="Variant.Outlined"
+                                Style="min-width: 80px;"
+                                ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                <MudSelectItem Value="10">10</MudSelectItem>
+                                <MudSelectItem Value="25">25</MudSelectItem>
+                                <MudSelectItem Value="50">50</MudSelectItem>
+                                <MudSelectItem Value="100">100</MudSelectItem>
+                            </MudSelect>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                (@_totalInvoices @Localization.GetString("Total"))
+                            </MudText>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
         }
     </MudCardContent>
 </MudCard>
@@ -311,8 +355,15 @@
     private bool _showFilters = false;
     private List<InvoiceDto> _allInvoices = new();
     private List<InvoiceDto> _filteredInvoices = new();
+    private List<InvoiceDto> _paginatedInvoices = new();
     private string _searchString = "";
     private int _activeTabIndex = 0;
+
+    // Pagination variables
+    private int _currentPage = 1;
+    private int _itemsPerPage = 10;
+    private int _totalInvoices = 0;
+    private int _totalPages = 1;
 
     // Filter variables
     private InvoiceStatus? _filterStatus;
@@ -451,6 +502,35 @@
             : filtered.OrderByDescending(GetSortProperty);
 
         _filteredInvoices = filtered.ToList();
+        _totalInvoices = _filteredInvoices.Count;
+        
+        // Calculate pagination
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        // Calculate total pages
+        _totalPages = (int)Math.Ceiling((double)_totalInvoices / _itemsPerPage);
+        
+        // Ensure current page is valid
+        if (_currentPage > _totalPages && _totalPages > 0)
+        {
+            _currentPage = _totalPages;
+        }
+
+        // Get paginated items
+        int skipCount = (_currentPage - 1) * _itemsPerPage;
+        _paginatedInvoices = _filteredInvoices
+            .Skip(skipCount)
+            .Take(_itemsPerPage)
+            .ToList();
+    }
+
+    private void ResetPaginationAndApplyFilters()
+    {
+        _currentPage = 1;
+        ApplyFilters();
     }
 
     private object GetSortProperty(InvoiceDto invoice) => _sortBy switch
@@ -469,14 +549,14 @@
             return;
 
         _sortBy = sortDefinition.SortBy;
-        _sortAscending = sortDefinition.Descending == false;
+        _sortAscending = !sortDefinition.Descending;
         ApplyFilters();
     }
 
     private async Task OnSearch(string text)
     {
         _searchString = text;
-        ApplyFilters();
+        ResetPaginationAndApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -491,7 +571,32 @@
         _filterIssueDateTo = null;
         _filterDueDateFrom = null;
         _filterDueDateTo = null;
-        ApplyFilters();
+        ResetPaginationAndApplyFilters();
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void OnItemsPerPageChanged(int newItemsPerPage)
+    {
+        _itemsPerPage = newItemsPerPage;
+        _currentPage = 1; // Reset to first page when changing items per page
+        UpdatePagination();
     }
 
     private Color GetStatusColor(InvoiceStatus? status)
@@ -607,7 +712,7 @@
     private async Task OnTabChanged(int index)
     {
         _activeTabIndex = index;
-        ApplyFilters();
+        ResetPaginationAndApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 

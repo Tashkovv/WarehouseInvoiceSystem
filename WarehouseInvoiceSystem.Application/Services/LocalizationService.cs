@@ -79,6 +79,11 @@
                 ["To"] = "To",
                 ["ClearFilters"] = "Clear Filters",
                 ["NoItemsFound"] = "No items found",
+                ["Previous"] = "Previous",
+                ["Next"] = "Next",
+                ["Page"] = "Page",
+                ["Of"] = "of",
+                ["ItemsPerPage"] = "Items per page:",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -327,6 +332,11 @@
                 ["To"] = "До",
                 ["ClearFilters"] = "Очисти филтери",
                 ["NoItemsFound"] = "Нема пронајдени предмети",
+                ["Previous"] = "Претходно",
+                ["Next"] = "Следно",
+                ["Page"] = "Страна",
+                ["Of"] = "од",
+                ["ItemsPerPage"] = "Предмети по страна:",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
