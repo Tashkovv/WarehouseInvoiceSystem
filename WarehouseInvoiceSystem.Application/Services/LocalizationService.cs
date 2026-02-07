@@ -48,9 +48,9 @@
                 ["Draft"] = "Draft",
                 ["Sent"] = "Sent",
                 ["PartiallyPaid"] = "Partially Paid",
-                ["PaidStatus"] = "Paid",
+                ["Paid"] = "Paid",
                 ["OverdueStatus"] = "Overdue",
-                ["Cancelled"] = "Cancelled",
+                ["CancelledStatus"] = "Cancelled",
 
                 // Common
                 ["Loading"] = "Loading...",
@@ -330,7 +330,7 @@
                 ["Max"] = "Макс",
                 ["From"] = "Од",
                 ["To"] = "До",
-                ["ClearFilters"] = "Очисти филтери",
+                ["ClearFilters"] = "Избриши филтери",
                 ["NoItemsFound"] = "Нема пронајдени предмети",
                 ["Previous"] = "Претходно",
                 ["Next"] = "Следно",

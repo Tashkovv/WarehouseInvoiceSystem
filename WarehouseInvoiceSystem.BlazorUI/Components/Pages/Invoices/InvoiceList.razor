@@ -18,8 +18,8 @@
     <MudCardContent>
         <MudGrid>
             <MudItem xs="12" sm="3" md="2">
-                <MudButton StartIcon="@Icons.Material.Filled.Add" 
-                           Color="Color.Primary" 
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
                            Variant="Variant.Filled"
                            FullWidth="true"
                            Href="/invoices/create">
@@ -51,11 +51,10 @@
 
         <!-- Filter Toggle Button -->
         <div class="mt-4">
-            <MudButton 
-                StartIcon="@(_showFilters ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
-                Variant="Variant.Text"
-                Color="Color.Primary"
-                OnClick="@(() => _showFilters = !_showFilters)">
+            <MudButton StartIcon="@(_showFilters? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                       Variant="Variant.Text"
+                       Color="Color.Primary"
+                       OnClick="@(() => _showFilters = !_showFilters)">
                 @Localization.GetString("AdvancedFilters")
                 @if (_hasActiveFilters)
                 {
@@ -71,76 +70,67 @@
             <MudGrid>
                 <!-- Status Filter -->
                 <MudItem xs="12" sm="6" md="3">
-                    <MudAutocomplete 
-                        T="InvoiceStatus?"
-                        Value="_filterStatus"
-                        Label="@Localization.GetString("Status")"
-                        SearchFunc="@SearchStatus"
-                        Dense="true"
-                        Clearable="true"
-                        OnClearedClick="@(() => { _filterStatus = null; ResetPaginationAndApplyFilters(); })"
-                        ValueChanged="@((InvoiceStatus? val) => { _filterStatus = val; ResetPaginationAndApplyFilters(); })">
-                        <ItemTemplate>
-                            <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context)">
-                                @GetStatusText(context)
-                            </MudChip>
-                        </ItemTemplate>
-                        <NoItemsTemplate>
-                            <MudText Typo="Typo.body2">@Localization.GetString("NoItemsFound")</MudText>
-                        </NoItemsTemplate>
-                    </MudAutocomplete>
+                    <MudSelect T="InvoiceStatus ?"
+                               Value="_filterStatus"
+                               Label="@Localization.GetString("Status")"
+                               Clearable="true"
+                               Dense="true"
+                               ValueChanged="@((InvoiceStatus? val) => { _filterStatus = val; ResetPaginationAndApplyFilters(); })">
+                        @foreach (var status in Enum.GetValues<InvoiceStatus>())
+                        {
+                            <MudSelectItem T="InvoiceStatus ?" Value="@(status)">
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="GetStatusColor(status)">
+                                    @Localization.GetString(status.ToString())
+                                </MudChip>
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
                 </MudItem>
 
                 <!-- Type Filter -->
                 <MudItem xs="12" sm="6" md="3">
-                    <MudAutocomplete T="InvoiceType?"
-                        Value="_filterType"
-                        Label="@Localization.GetString("Type")"
-                        SearchFunc="@SearchType"
-                        Dense="true"
-                        Clearable="true"
-                        OnClearedClick="@(() => { _filterType = null; ResetPaginationAndApplyFilters(); })"
-                        ValueChanged="@((InvoiceType? val) => { _filterType = val; ResetPaginationAndApplyFilters(); })">
-                        <ItemTemplate>
-                            <MudChip T="string" Size="Size.Small" Color="@(context == InvoiceType.Receivable ? Color.Success : Color.Warning)">
-                                @(context == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
+                    <MudSelect T="InvoiceType ?"
+                               Value="_filterType"
+                               ValueChanged="@((InvoiceType? val) => { _filterType = val; ResetPaginationAndApplyFilters(); })"
+                               Label="@Localization.GetString("Type")"
+                               Clearable="true">
+                        <MudSelectItem T="InvoiceType ?" Value="@((InvoiceType?)InvoiceType.Receivable)">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Success">
+                                @Localization.GetString("Receivable")
                             </MudChip>
-                        </ItemTemplate>
-                        <NoItemsTemplate>
-                            <MudText Typo="Typo.body2">@Localization.GetString("NoItemsFound")</MudText>
-                        </NoItemsTemplate>
-                    </MudAutocomplete>
+                        </MudSelectItem>
+                        <MudSelectItem T="InvoiceType ?" Value="@((InvoiceType?)InvoiceType.Payable)">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                @Localization.GetString("Payable")
+                            </MudChip>
+                        </MudSelectItem>
+                    </MudSelect>
                 </MudItem>
 
                 <!-- Company Filter -->
                 <MudItem xs="12" sm="6" md="3">
                     <MudAutocomplete T="string"
-                        Value="_filterCompany"
-                        Label="@Localization.GetString("Company")"
-                        SearchFunc="@SearchCompanies"
-                        Dense="true"
-                        Clearable="true"
-                        OnClearedClick="@(() => { _filterCompany = null; ResetPaginationAndApplyFilters(); })"
-                        ValueChanged="@((string val) => { _filterCompany = val; ResetPaginationAndApplyFilters(); })" />
+                                     Value="_filterCompany"
+                                     Label="@Localization.GetString("Company")"
+                                     SearchFunc="@SearchCompanies"
+                                     Dense="true"
+                                     Clearable="true"
+                                     OnClearedClick="@(() => { _filterCompany = null; ResetPaginationAndApplyFilters(); })"
+                                     ValueChanged="@((string val) => { _filterCompany = val; ResetPaginationAndApplyFilters(); })" />
                 </MudItem>
 
-                <!-- Amount Range Filter -->
-                <MudItem xs="12" sm="6" md="3">
-                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("AmountRange")</MudText>
-                    <MudStack Row="true" Spacing="1">
-                        <MudNumericField T="decimal?" 
-                            Value="_filterAmountMin"
-                            Label="@Localization.GetString("Min")"
-                            HideSpinButtons="true"
-                            Dense="true"
-                            ValueChanged="@((decimal? val) => { _filterAmountMin = val; ResetPaginationAndApplyFilters(); })" />
-                        <MudNumericField T="decimal?" 
-                            Value="_filterAmountMax"
-                            Label="@Localization.GetString("Max")"
-                            HideSpinButtons="true"
-                            Dense="true"
-                            ValueChanged="@((decimal? val) => { _filterAmountMax = val; ResetPaginationAndApplyFilters(); })" />
-                    </MudStack>
+                <!-- Clear Filters Button -->
+                <MudItem xs="12" sm="3" md="2" Class="d-flex align-center">
+                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                               Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               FullWidth="true"
+                               OnClick="ClearFilters"
+                               Disabled="!_hasActiveFilters">
+                        @Localization.GetString("ClearFilters")
+                    </MudButton>
                 </MudItem>
 
                 <!-- Issue Date Range Filter -->
@@ -148,13 +138,13 @@
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("IssueDate")</MudText>
                     <MudStack Row="true" Spacing="1">
                         <MudDatePicker Date="_filterIssueDateFrom"
-                            Label="@Localization.GetString("From")"
-                            Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterIssueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
+                                       Label="@Localization.GetString("From")"
+                                       Dense="true"
+                                       DateChanged="@((DateTime? val) => { _filterIssueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
                         <MudDatePicker Date="_filterIssueDateTo"
-                            Label="@Localization.GetString("To")"
-                            Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterIssueDateTo = val; ResetPaginationAndApplyFilters(); })" />
+                                       Label="@Localization.GetString("To")"
+                                       Dense="true"
+                                       DateChanged="@((DateTime? val) => { _filterIssueDateTo = val; ResetPaginationAndApplyFilters(); })" />
                     </MudStack>
                 </MudItem>
 
@@ -163,27 +153,33 @@
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("DueDate")</MudText>
                     <MudStack Row="true" Spacing="1">
                         <MudDatePicker Date="_filterDueDateFrom"
-                            Label="@Localization.GetString("From")"
-                            Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterDueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
+                                       Label="@Localization.GetString("From")"
+                                       Dense="true"
+                                       DateChanged="@((DateTime? val) => { _filterDueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
                         <MudDatePicker Date="_filterDueDateTo"
-                            Label="@Localization.GetString("To")"
-                            Dense="true"
-                            DateChanged="@((DateTime? val) => { _filterDueDateTo = val; ResetPaginationAndApplyFilters(); })" />
+                                       Label="@Localization.GetString("To")"
+                                       Dense="true"
+                                       DateChanged="@((DateTime? val) => { _filterDueDateTo = val; ResetPaginationAndApplyFilters(); })" />
                     </MudStack>
                 </MudItem>
 
-                <!-- Clear Filters Button -->
-                <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
-                    <MudButton 
-                        StartIcon="@Icons.Material.Filled.Clear"
-                        Variant="Variant.Outlined"
-                        Color="Color.Error"
-                        FullWidth="true"
-                        OnClick="ClearFilters"
-                        Disabled="!_hasActiveFilters">
-                        @Localization.GetString("ClearFilters")
-                    </MudButton>
+                <!-- Amount Range Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("AmountRange")</MudText>
+                    <MudStack Row="true" Spacing="1">
+                        <MudNumericField T="decimal?"
+                                         Value="_filterAmountMin"
+                                         Label="@Localization.GetString("Min")"
+                                         HideSpinButtons="true"
+                                         Dense="true"
+                                         ValueChanged="@((decimal? val) => { _filterAmountMin = val; ResetPaginationAndApplyFilters(); })" />
+                        <MudNumericField T="decimal?"
+                                         Value="_filterAmountMax"
+                                         Label="@Localization.GetString("Max")"
+                                         HideSpinButtons="true"
+                                         Dense="true"
+                                         ValueChanged="@((decimal? val) => { _filterAmountMax = val; ResetPaginationAndApplyFilters(); })" />
+                    </MudStack>
                 </MudItem>
             </MudGrid>
         }
@@ -206,12 +202,12 @@
         }
         else
         {
-            <MudTable Items="_paginatedInvoices" 
-                      Hover="true" 
-                      Breakpoint="Breakpoint.Sm" 
+            <MudTable Items="_paginatedInvoices"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
-                      Height="600px"
+                      Height="710px"
                       Sort="@((SortDefinition<InvoiceDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
                     <MudTh><MudTableSortLabel SortBy="new Func<InvoiceDto, object>(x => x.InvoiceNumber)">@Localization.GetString("InvoiceNumber")</MudTableSortLabel></MudTh>
@@ -234,7 +230,7 @@
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Type")">
                         <MudChip T="string"
-                                 Size="Size.Small" 
+                                 Size="Size.Small"
                                  Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
                             @(context.Type == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
                         </MudChip>
@@ -266,21 +262,21 @@
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Actions")">
                         <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
-                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility" 
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
                                          OnClick="@(() => ViewInvoice(context.Id))">
                                 @Localization.GetString("View")
                             </MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" 
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
                                          OnClick="@(() => EditInvoice(context.Id))">
                                 @Localization.GetString("Edit")
                             </MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Payment" 
+                            <MudMenuItem Icon="@Icons.Material.Filled.Payment"
                                          OnClick="@(() => RecordPayment(context.Id))"
                                          Disabled="@(context.Status == InvoiceStatus.Paid)">
                                 @Localization.GetString("RecordPayment")
                             </MudMenuItem>
                             <MudDivider />
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete" 
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                          IconColor="Color.Error"
                                          OnClick="@(() => DeleteInvoice(context.Id))">
                                 @Localization.GetString("Delete")
@@ -297,11 +293,10 @@
                     <!-- Left Side: Page Navigation -->
                     <MudItem xs="12" sm="6">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudButton 
-                                Variant="Variant.Outlined"
-                                Size="Size.Small"
-                                OnClick="PreviousPage"
-                                Disabled="@(_currentPage == 1)">
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="PreviousPage"
+                                       Disabled="@(_currentPage == 1)">
                                 @Localization.GetString("Previous")
                             </MudButton>
 
@@ -309,29 +304,28 @@
                                 @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
                             </MudText>
 
-                            <MudButton 
-                                Variant="Variant.Outlined"
-                                Size="Size.Small"
-                                OnClick="NextPage"
-                                Disabled="@(_currentPage == _totalPages)">
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="NextPage"
+                                       Disabled="@(_currentPage == _totalPages)">
                                 @Localization.GetString("Next")
                             </MudButton>
                         </MudStack>
                     </MudItem>
 
                     <!-- Right Side: Items Per Page & Stats -->
-                    <MudItem xs="12" sm="6" Class="text-right">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Justify="Justify.FlexEnd">
+                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
                             <MudText Typo="Typo.body2">
                                 @Localization.GetString("ItemsPerPage")
                             </MudText>
 
-                            <MudSelect T="int" 
-                                Value="_itemsPerPage"
-                                Dense="true"
-                                Variant="Variant.Outlined"
-                                Style="min-width: 80px;"
-                                ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                            <MudSelect T="int"
+                                       Value="_itemsPerPage"
+                                       Dense="true"
+                                       Variant="Variant.Outlined"
+                                       Style="width: 100px;"
+                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
                                 <MudSelectItem Value="10">10</MudSelectItem>
                                 <MudSelectItem Value="25">25</MudSelectItem>
                                 <MudSelectItem Value="50">50</MudSelectItem>
@@ -380,9 +374,9 @@
     private string _sortBy = "CreatedAt";
     private bool _sortAscending = false;
 
-    private bool _hasActiveFilters => 
-        _filterStatus.HasValue || 
-        _filterType.HasValue || 
+    private bool _hasActiveFilters =>
+        _filterStatus.HasValue ||
+        _filterType.HasValue ||
         !string.IsNullOrWhiteSpace(_filterCompany) ||
         _filterAmountMin.HasValue ||
         _filterAmountMax.HasValue ||
@@ -391,7 +385,7 @@
         _filterDueDateFrom.HasValue ||
         _filterDueDateTo.HasValue;
 
-    private int _activeFilterCount => 
+    private int _activeFilterCount =>
         (_filterStatus.HasValue ? 1 : 0) +
         (_filterType.HasValue ? 1 : 0) +
         (!string.IsNullOrWhiteSpace(_filterCompany) ? 1 : 0) +
@@ -490,7 +484,7 @@
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
             string search = _searchString.ToLower();
-            filtered = filtered.Where(i => 
+            filtered = filtered.Where(i =>
                 i.InvoiceNumber.ToLower().Contains(search) ||
                 i.CompanyName.ToLower().Contains(search) ||
                 i.TotalAmount.ToString().Contains(search));
@@ -503,7 +497,7 @@
 
         _filteredInvoices = filtered.ToList();
         _totalInvoices = _filteredInvoices.Count;
-        
+
         // Calculate pagination
         UpdatePagination();
     }
@@ -512,7 +506,7 @@
     {
         // Calculate total pages
         _totalPages = (int)Math.Ceiling((double)_totalInvoices / _itemsPerPage);
-        
+
         // Ensure current page is valid
         if (_currentPage > _totalPages && _totalPages > 0)
         {
@@ -650,7 +644,7 @@
 
         var search = value.ToLower();
         return types
-            .Where(t => (t == InvoiceType.Receivable ? "Receivable" : "Payable").ToLower().Contains(search))
+            .Where(t => Localization.GetString(t.ToString()).ToLower().Contains(search))
             .Select(t => (InvoiceType?)t);
     }
 
