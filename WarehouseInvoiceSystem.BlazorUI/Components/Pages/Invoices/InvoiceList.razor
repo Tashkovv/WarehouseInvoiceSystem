@@ -49,9 +49,149 @@
             </MudItem>
         </MudGrid>
 
+        <!-- Filter Toggle Button -->
+        <div class="mt-4">
+            <MudButton 
+                StartIcon="@(_showFilters ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                Variant="Variant.Text"
+                Color="Color.Primary"
+                OnClick="@(() => _showFilters = !_showFilters)">
+                @Localization.GetString("AdvancedFilters")
+                @if (_hasActiveFilters)
+                {
+                    <MudChip T="int" Size="Size.Small" Class="ml-2">@_activeFilterCount</MudChip>
+                }
+            </MudButton>
+        </div>
+
+        <!-- Filters Panel (Collapsible) -->
+        @if (_showFilters)
+        {
+            <MudDivider Class="my-4" />
+            <MudGrid>
+                <!-- Status Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudAutocomplete T="InvoiceStatus?"
+                        Value="_filterStatus"
+                        Label="@Localization.GetString("Status")"
+                        SearchFunc="@SearchStatus"
+                        Dense="true"
+                        Clearable="true"
+                        OnClearedClick="@(() => { _filterStatus = null; ApplyFilters(); })"
+                        ValueChanged="@((InvoiceStatus? val) => { _filterStatus = val; ApplyFilters(); })">
+                        <ItemTemplate>
+                            <MudChip T="string" Size="Size.Small" Color="GetStatusColor(context)">
+                                @GetStatusText(context)
+                            </MudChip>
+                        </ItemTemplate>
+                        <NoItemsTemplate>
+                            <MudText Typo="Typo.body2">@Localization.GetString("NoItemsFound")</MudText>
+                        </NoItemsTemplate>
+                    </MudAutocomplete>
+                </MudItem>
+
+                <!-- Type Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudAutocomplete T="InvoiceType?"
+                        Value="_filterType"
+                        Label="@Localization.GetString("Type")"
+                        SearchFunc="@SearchType"
+                        Dense="true"
+                        Clearable="true"
+                        OnClearedClick="@(() => { _filterType = null; ApplyFilters(); })"
+                        ValueChanged="@((InvoiceType? val) => { _filterType = val; ApplyFilters(); })">
+                        <ItemTemplate>
+                            <MudChip T="string" Size="Size.Small" Color="@(context == InvoiceType.Receivable ? Color.Success : Color.Warning)">
+                                @(context == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
+                            </MudChip>
+                        </ItemTemplate>
+                        <NoItemsTemplate>
+                            <MudText Typo="Typo.body2">@Localization.GetString("NoItemsFound")</MudText>
+                        </NoItemsTemplate>
+                    </MudAutocomplete>
+                </MudItem>
+
+                <!-- Company Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudAutocomplete T="string"
+                        Value="_filterCompany"
+                        Label="@Localization.GetString("Company")"
+                        SearchFunc="@SearchCompanies"
+                        Dense="true"
+                        Clearable="true"
+                        OnClearedClick="@(() => { _filterCompany = null; ApplyFilters(); })"
+                        ValueChanged="@((string val) => { _filterCompany = val; ApplyFilters(); })" />
+                </MudItem>
+
+                <!-- Amount Range Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("AmountRange")</MudText>
+                    <MudStack Row="true" Spacing="1">
+                        <MudNumericField T="decimal?" 
+                            Value="_filterAmountMin"
+                            Label="@Localization.GetString("Min")"
+                            HideSpinButtons="true"
+                            Dense="true"
+                            ValueChanged="@((decimal? val) => { _filterAmountMin = val; ApplyFilters(); })" />
+                        <MudNumericField T="decimal?" 
+                            Value="_filterAmountMax"
+                            Label="@Localization.GetString("Max")"
+                            HideSpinButtons="true"
+                            Dense="true"
+                            ValueChanged="@((decimal? val) => { _filterAmountMax = val; ApplyFilters(); })" />
+                    </MudStack>
+                </MudItem>
+
+                <!-- Issue Date Range Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("IssueDate")</MudText>
+                    <MudStack Row="true" Spacing="1">
+                        <MudDatePicker Date="_filterIssueDateFrom"
+                            Label="@Localization.GetString("From")"
+                            Dense="true"
+                            DateChanged="@((DateTime? val) => { _filterIssueDateFrom = val; ApplyFilters(); })" />
+                        <MudDatePicker Date="_filterIssueDateTo"
+                            Label="@Localization.GetString("To")"
+                            Dense="true"
+                            DateChanged="@((DateTime? val) => { _filterIssueDateTo = val; ApplyFilters(); })" />
+                    </MudStack>
+                </MudItem>
+
+                <!-- Due Date Range Filter -->
+                <MudItem xs="12" sm="6" md="3">
+                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("DueDate")</MudText>
+                    <MudStack Row="true" Spacing="1">
+                        <MudDatePicker Date="_filterDueDateFrom"
+                            Label="@Localization.GetString("From")"
+                            Dense="true"
+                            DateChanged="@((DateTime? val) => { _filterDueDateFrom = val; ApplyFilters(); })" />
+                        <MudDatePicker Date="_filterDueDateTo"
+                            Label="@Localization.GetString("To")"
+                            Dense="true"
+                            DateChanged="@((DateTime? val) => { _filterDueDateTo = val; ApplyFilters(); })" />
+                    </MudStack>
+                </MudItem>
+
+                <!-- Clear Filters Button -->
+                <MudItem xs="12" sm="6" md="3" Class="d-flex align-center">
+                    <MudButton 
+                        StartIcon="@Icons.Material.Filled.Clear"
+                        Variant="Variant.Outlined"
+                        Color="Color.Error"
+                        FullWidth="true"
+                        OnClick="ClearFilters"
+                        Disabled="!_hasActiveFilters">
+                        @Localization.GetString("ClearFilters")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        }
+
+        <!-- Tabs (kept for backward compatibility) -->
         <MudTabs Elevation="0"
                  Rounded="true"
                  Class="mt-4"
+                 Visible="false"
                  ActivePanelIndex="_activeTabIndex"
                  ActivePanelIndexChanged="OnTabChanged">
             <MudTabPanel Text="@Localization.GetString("AllInvoices")" Icon="@Icons.Material.Filled.List" />
@@ -83,14 +223,15 @@
                       Breakpoint="Breakpoint.Sm" 
                       Dense="false"
                       FixedHeader="true"
-                      Height="600px">
+                      Height="600px"
+                      Sort="@((SortDefinition<InvoiceDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
-                    <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
-                    <MudTh>@Localization.GetString("Company")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<InvoiceDto, object>(x => x.InvoiceNumber)">@Localization.GetString("InvoiceNumber")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<InvoiceDto, object>(x => x.CompanyName)">@Localization.GetString("Company")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Type")</MudTh>
-                    <MudTh>@Localization.GetString("IssueDate")</MudTh>
-                    <MudTh>@Localization.GetString("DueDate")</MudTh>
-                    <MudTh>@Localization.GetString("Total")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<InvoiceDto, object>(x => x.IssueDate)">@Localization.GetString("IssueDate")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<InvoiceDto, object>(x => x.DueDate)">@Localization.GetString("DueDate")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<InvoiceDto, object>(x => x.TotalAmount)">@Localization.GetString("Total")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Status")</MudTh>
                     <MudTh>@Localization.GetString("Actions")</MudTh>
                 </HeaderContent>
@@ -167,10 +308,45 @@
 @code {
     private bool _loading = true;
     private bool _exporting = false;
+    private bool _showFilters = false;
     private List<InvoiceDto> _allInvoices = new();
     private List<InvoiceDto> _filteredInvoices = new();
     private string _searchString = "";
     private int _activeTabIndex = 0;
+
+    // Filter variables
+    private InvoiceStatus? _filterStatus;
+    private InvoiceType? _filterType;
+    private string? _filterCompany;
+    private decimal? _filterAmountMin;
+    private decimal? _filterAmountMax;
+    private DateTime? _filterIssueDateFrom;
+    private DateTime? _filterIssueDateTo;
+    private DateTime? _filterDueDateFrom;
+    private DateTime? _filterDueDateTo;
+
+    // Sort variables
+    private string _sortBy = "CreatedAt";
+    private bool _sortAscending = false;
+
+    private bool _hasActiveFilters => 
+        _filterStatus.HasValue || 
+        _filterType.HasValue || 
+        !string.IsNullOrWhiteSpace(_filterCompany) ||
+        _filterAmountMin.HasValue ||
+        _filterAmountMax.HasValue ||
+        _filterIssueDateFrom.HasValue ||
+        _filterIssueDateTo.HasValue ||
+        _filterDueDateFrom.HasValue ||
+        _filterDueDateTo.HasValue;
+
+    private int _activeFilterCount => 
+        (_filterStatus.HasValue ? 1 : 0) +
+        (_filterType.HasValue ? 1 : 0) +
+        (!string.IsNullOrWhiteSpace(_filterCompany) ? 1 : 0) +
+        (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0) +
+        (_filterIssueDateFrom.HasValue || _filterIssueDateTo.HasValue ? 1 : 0) +
+        (_filterDueDateFrom.HasValue || _filterDueDateTo.HasValue ? 1 : 0);
 
     protected override async Task OnInitializedAsync()
     {
@@ -191,7 +367,7 @@
         {
             IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
             _allInvoices = invoices.ToList();
-            FilterInvoices();
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -204,22 +380,62 @@
         }
     }
 
-    private void FilterInvoices()
+    private void ApplyFilters()
     {
         IEnumerable<InvoiceDto> filtered = _allInvoices;
 
-        // Filter by tab
-        filtered = _activeTabIndex switch
+        // Apply Status filter
+        if (_filterStatus.HasValue)
         {
-            1 => filtered.Where(i => i.Type == InvoiceType.Receivable),
-            2 => filtered.Where(i => i.Type == InvoiceType.Payable),
-            3 => filtered.Where(i => i.DueDate < DateTime.Now && 
-                                     i.Status != InvoiceStatus.Paid && 
-                                     i.Status != InvoiceStatus.Cancelled),
-            _ => filtered
-        };
+            filtered = filtered.Where(i => i.Status == _filterStatus.Value);
+        }
 
-        // Filter by search
+        // Apply Type filter
+        if (_filterType.HasValue)
+        {
+            filtered = filtered.Where(i => i.Type == _filterType.Value);
+        }
+
+        // Apply Company filter
+        if (!string.IsNullOrWhiteSpace(_filterCompany))
+        {
+            filtered = filtered.Where(i => i.CompanyName.Equals(_filterCompany, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Apply Amount Range filter
+        if (_filterAmountMin.HasValue)
+        {
+            filtered = filtered.Where(i => i.TotalAmount >= _filterAmountMin.Value);
+        }
+
+        if (_filterAmountMax.HasValue)
+        {
+            filtered = filtered.Where(i => i.TotalAmount <= _filterAmountMax.Value);
+        }
+
+        // Apply Issue Date Range filter
+        if (_filterIssueDateFrom.HasValue)
+        {
+            filtered = filtered.Where(i => i.IssueDate.Date >= _filterIssueDateFrom.Value.Date);
+        }
+
+        if (_filterIssueDateTo.HasValue)
+        {
+            filtered = filtered.Where(i => i.IssueDate.Date <= _filterIssueDateTo.Value.Date);
+        }
+
+        // Apply Due Date Range filter
+        if (_filterDueDateFrom.HasValue)
+        {
+            filtered = filtered.Where(i => i.DueDate.Date >= _filterDueDateFrom.Value.Date);
+        }
+
+        if (_filterDueDateTo.HasValue)
+        {
+            filtered = filtered.Where(i => i.DueDate.Date <= _filterDueDateTo.Value.Date);
+        }
+
+        // Apply Search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
             string search = _searchString.ToLower();
@@ -229,17 +445,56 @@
                 i.TotalAmount.ToString().Contains(search));
         }
 
-        _filteredInvoices = filtered.OrderByDescending(i => i.CreatedAt).ToList();
+        // Apply sorting
+        filtered = _sortAscending
+            ? filtered.OrderBy(GetSortProperty)
+            : filtered.OrderByDescending(GetSortProperty);
+
+        _filteredInvoices = filtered.ToList();
+    }
+
+    private object GetSortProperty(InvoiceDto invoice) => _sortBy switch
+    {
+        "InvoiceNumber" => invoice.InvoiceNumber,
+        "CompanyName" => invoice.CompanyName,
+        "IssueDate" => invoice.IssueDate,
+        "DueDate" => invoice.DueDate,
+        "TotalAmount" => invoice.TotalAmount,
+        _ => invoice.CreatedAt
+    };
+
+    private void HandleSort(SortDefinition<InvoiceDto> sortDefinition)
+    {
+        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
+            return;
+
+        _sortBy = sortDefinition.SortBy;
+        _sortAscending = sortDefinition.Descending == false;
+        ApplyFilters();
     }
 
     private async Task OnSearch(string text)
     {
         _searchString = text;
-        FilterInvoices();
+        ApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 
-    private Color GetStatusColor(InvoiceStatus status)
+    private void ClearFilters()
+    {
+        _filterStatus = null;
+        _filterType = null;
+        _filterCompany = null;
+        _filterAmountMin = null;
+        _filterAmountMax = null;
+        _filterIssueDateFrom = null;
+        _filterIssueDateTo = null;
+        _filterDueDateFrom = null;
+        _filterDueDateTo = null;
+        ApplyFilters();
+    }
+
+    private Color GetStatusColor(InvoiceStatus? status)
     {
         return status switch
         {
@@ -253,7 +508,7 @@
         };
     }
 
-    private string GetStatusText(InvoiceStatus status)
+    private string GetStatusText(InvoiceStatus? status)
     {
         return status switch
         {
@@ -263,8 +518,48 @@
             InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
             InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
             InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
-            _ => status.ToString()
+            _ => status?.ToString() ?? string.Empty
         };
+    }
+
+    private async Task<IEnumerable<InvoiceStatus?>> SearchStatus(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return Enum.GetValues(typeof(InvoiceStatus))
+                .Cast<InvoiceStatus>()
+                .Select(s => (InvoiceStatus?)s);
+
+        var search = value.ToLower();
+        return Enum.GetValues(typeof(InvoiceStatus))
+            .Cast<InvoiceStatus>()
+            .Where(s => GetStatusText(s).ToLower().Contains(search))
+            .Select(s => (InvoiceStatus?)s);
+    }
+
+    private async Task<IEnumerable<InvoiceType?>> SearchType(string value, CancellationToken cancellationToken)
+    {
+        var types = new[] { InvoiceType.Receivable, InvoiceType.Payable };
+
+        if (string.IsNullOrEmpty(value))
+            return types.Select(t => (InvoiceType?)t);
+
+        var search = value.ToLower();
+        return types
+            .Where(t => (t == InvoiceType.Receivable ? "Receivable" : "Payable").ToLower().Contains(search))
+            .Select(t => (InvoiceType?)t);
+    }
+
+    private async Task<IEnumerable<string>> SearchCompanies(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return _allInvoices.Select(i => i.CompanyName).Distinct().OrderBy(c => c);
+
+        var search = value.ToLower();
+        return _allInvoices
+            .Select(i => i.CompanyName)
+            .Distinct()
+            .Where(c => c.ToLower().Contains(search))
+            .OrderBy(c => c);
     }
 
     private void ViewInvoice(int id)
@@ -312,7 +607,7 @@
     private async Task OnTabChanged(int index)
     {
         _activeTabIndex = index;
-        FilterInvoices();
+        ApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 
