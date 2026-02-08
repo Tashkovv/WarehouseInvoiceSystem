@@ -251,6 +251,8 @@
                 ["DeletePaymentConfirm"] = "Are you sure you want to delete this payment? This will update the invoice balance.",
                 ["EditPayment"] = "Edit Payment",
                 ["NoPaymentsFound"] = "No payments found",
+                ["CreatedAt"] = "Created at",
+                ["Payment"] = "Payment",
 
                 // Export
                 ["ExportToExcel"] = "Export to Excel",
@@ -503,6 +505,8 @@
                 ["DeletePaymentConfirm"] = "Дали сте сигурни дека сакате да го избришете ова плаќање? Ова ќе го ажурира салдото на фактурата.",
                 ["EditPayment"] = "Измени плаќање",
                 ["NoPaymentsFound"] = "Нема пронајдени плаќања",
+                ["CreatedAt"] = "Извршено на",
+                ["Payment"] = "Плаќање",
 
                 // Export
                 ["ExportToExcel"] = "Извези во Excel",
