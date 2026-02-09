@@ -3,6 +3,7 @@
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Company.Domain;
     using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
     using WarehouseInvoiceSystem.Domain.Payment.Domain;
     using WarehouseInvoiceSystem.Domain.User.Domain;
     using WarehouseInvoiceSystem.Infrastructure.Data.Configuration;

@@ -5,6 +5,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Invoice.Domain;
     using WarehouseInvoiceSystem.Domain.Invoice.Enums;
+    using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
 
     public class InvoiceService(IInvoiceRepository invoiceRepository, ICompanyRepository companyRepository) : IInvoiceService
     {

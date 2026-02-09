@@ -2,7 +2,7 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
 
     public class InvoiceLineConfiguration : IEntityTypeConfiguration<InvoiceLine>
     {

@@ -2,6 +2,7 @@
 {
     using WarehouseInvoiceSystem.Domain.Company.Domain;
     using WarehouseInvoiceSystem.Domain.Invoice.Enums;
+    using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
     using WarehouseInvoiceSystem.Domain.Payment.Domain;
 
     public class Invoice
