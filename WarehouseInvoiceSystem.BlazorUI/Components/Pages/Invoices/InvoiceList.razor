@@ -238,7 +238,7 @@
                         @context.IssueDate.ToString("MMM dd, yyyy")
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("DueDate")">
-                        @if (context.DueDate < DateTime.Now && context.Status != InvoiceStatus.Paid)
+                        @if (context.DueDate < DateTime.UtcNow && context.Status != InvoiceStatus.Paid)
                         {
                             <MudText Color="Color.Error">
                                 @context.DueDate.ToString("MMM dd, yyyy")
@@ -634,22 +634,22 @@
             .OrderBy(c => c);
     }
 
-    private void ViewInvoice(int id)
+    private void ViewInvoice(Guid id)
     {
         Navigation.NavigateTo($"/invoices/{id}");
     }
 
-    private void EditInvoice(int id)
+    private void EditInvoice(Guid id)
     {
         Navigation.NavigateTo($"/invoices/edit/{id}");
     }
 
-    private void RecordPayment(int id)
+    private void RecordPayment(Guid id)
     {
         Navigation.NavigateTo($"/invoices/{id}?recordPayment=true");
     }
 
-    private async Task DeleteInvoice(int id)
+    private async Task DeleteInvoice(Guid id)
     {
         bool? result = await DialogService.ShowMessageBox(
             Localization.GetString("ConfirmDelete"),
@@ -714,7 +714,7 @@
                 ? await ExcelExportService.ExportInvoicesToExcelAsync(_filteredInvoices)
                 : await ExcelExportService.ExportInvoicesByDateRangeAsync(_filteredInvoices, exportResult.StartDate, exportResult.EndDate);
 
-            string fileName = $"{Localization.GetString("Invoices")}_{DateTime.Now:yyyyMMdd}.xlsx";
+            string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
             await JSRuntime.InvokeVoidAsync(
                 "fileDownloadHelper.downloadFileFromStream",

@@ -10,43 +10,21 @@
         {
             // Table name
             builder.ToTable("Company");
+
             builder.HasKey(e => e.Id);
+            builder.Property(e => e.Id).ValueGeneratedOnAdd();
+            builder.Property(e => e.CreatedAt).IsRequired();
+            builder.Property(e => e.DeletedOn);
 
-            builder.Property(e => e.Name)
-            .IsRequired()
-            .HasMaxLength(200);
-
-            builder.Property(e => e.Email)
-                .HasMaxLength(100);
-
-            builder.Property(e => e.Phone)
-                .HasMaxLength(50);
-
-            builder.Property(e => e.ContactPerson)
-                .HasMaxLength(100);
-
-            builder.Property(e => e.Address)
-                .HasMaxLength(500);
-
-            builder.Property(e => e.TaxId)
-                .HasMaxLength(50);
-
-            builder.Property(e => e.CreditLimit)
-                .HasPrecision(18, 2);
-
-            builder.Property(e => e.Type)
-                .IsRequired();
-
-            builder.Property(e => e.IsActive)
-                .IsRequired()
-                .HasDefaultValue(true);
-
-            builder.Property(e => e.CreatedAt)
-                .IsRequired()
-                .HasColumnType("timestamp without time zone");
-
-            builder.Property(e => e.DeletedOn)
-                .HasColumnType("timestamp without time zone");
+            builder.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            builder.Property(e => e.Email).HasMaxLength(100);
+            builder.Property(e => e.Phone).HasMaxLength(50);
+            builder.Property(e => e.ContactPerson).HasMaxLength(100);
+            builder.Property(e => e.Address).HasMaxLength(500);
+            builder.Property(e => e.TaxId).HasMaxLength(50);
+            builder.Property(e => e.CreditLimit).HasPrecision(18, 2);
+            builder.Property(e => e.Type).IsRequired();
+            builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
             // Indexes
             builder.HasIndex(e => e.Name);

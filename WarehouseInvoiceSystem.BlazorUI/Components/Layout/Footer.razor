@@ -6,7 +6,7 @@
     <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge">
         <div class="d-flex justify-space-between align-center flex-wrap">
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                © @DateTime.Now.Year @Localization.GetString("InvoiceSystem")
+                © @DateTime.UtcNow.Year @Localization.GetString("InvoiceSystem")
             </MudText>
             <div class="d-flex gap-4">
                 <MudLink Href="/help" Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Help")</MudLink>

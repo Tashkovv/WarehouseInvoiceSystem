@@ -1,4 +1,4 @@
-﻿@page "/invoices/{Id:int}"
+﻿@page "/invoices/{Id:guid}"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
@@ -138,7 +138,7 @@ else
                     <div class="mb-2">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("DueDate")</MudText>
                         <MudText Typo="Typo.body1" 
-                                 Color="@(_invoice.DueDate < DateTime.Now && _invoice.Status != InvoiceStatus.Paid ? Color.Error : Color.Default)">
+                                 Color="@(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? Color.Error : Color.Default)">
                             @_invoice.DueDate.ToString("MMMM dd, yyyy")
                         </MudText>
                     </div>
@@ -308,7 +308,7 @@ else
     }
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     private bool _loading = true;
     private bool _sendingEmail = false;
     private InvoiceDto? _invoice;
@@ -446,7 +446,7 @@ else
         try
         {
             byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(Id);
-            string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.Now:yyyyMMdd}.xlsx";
+            string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
             await JSRuntime.InvokeVoidAsync(
                 "fileDownloadHelper.downloadFileFromStream",

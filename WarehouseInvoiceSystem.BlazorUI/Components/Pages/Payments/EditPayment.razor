@@ -1,4 +1,4 @@
-﻿@page "/payments/edit/{Id:int}"
+﻿@page "/payments/edit/{Id:guid}"
 @implements IDisposable
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
@@ -145,7 +145,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private bool _loading = true;
     private bool _saving = false;
@@ -248,7 +248,7 @@ else
 
         try
         {
-            _updateDto.PaymentDate = _paymentDate ?? DateTime.Now;
+            _updateDto.PaymentDate = _paymentDate ?? DateTime.UtcNow;
             _updateDto.Amount = _amount;
             _updateDto.PaymentMethod = _paymentMethod;
             _updateDto.ReferenceNumber = _referenceNumber;

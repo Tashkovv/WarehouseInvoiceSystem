@@ -358,22 +358,22 @@
         };
     }
 
-    private void ViewCompany(int id)
+    private void ViewCompany(Guid id)
     {
         Navigation.NavigateTo($"/companies/{id}");
     }
 
-    private void EditCompany(int id)
+    private void EditCompany(Guid id)
     {
         Navigation.NavigateTo($"/companies/edit/{id}");
     }
 
-    private void ViewCompanyInvoices(int id)
+    private void ViewCompanyInvoices(Guid id)
     {
         Navigation.NavigateTo($"/invoices?companyId={id}");
     }
 
-    private async Task DeleteCompany(int id)
+    private async Task DeleteCompany(Guid id)
     {
         bool? result = await DialogService.ShowMessageBox(
             Localization.GetString("ConfirmDelete"),

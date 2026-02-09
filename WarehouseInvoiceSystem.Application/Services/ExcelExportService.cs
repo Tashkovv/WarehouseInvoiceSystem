@@ -10,7 +10,7 @@
     {
         private readonly string dateFormat = "dd/MM/yyyy";
 
-        public async Task<byte[]> ExportInvoiceForPrintingAsync(int invoiceId)
+        public async Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId)
         {
             InvoiceDto? invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId) ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
 

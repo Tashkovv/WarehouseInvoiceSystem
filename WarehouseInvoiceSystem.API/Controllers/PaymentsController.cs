@@ -32,7 +32,7 @@
         /// Get payment by ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<PaymentDto>> GetById(int id)
+        public async Task<ActionResult<PaymentDto>> GetById(Guid id)
         {
             try
             {
@@ -53,7 +53,7 @@
         /// Get all payments for a specific invoice
         /// </summary>
         [HttpGet("invoice/{invoiceId}")]
-        public async Task<ActionResult<IEnumerable<PaymentDto>>> GetByInvoice(int invoiceId)
+        public async Task<ActionResult<IEnumerable<PaymentDto>>> GetByInvoice(Guid invoiceId)
         {
             try
             {
@@ -100,7 +100,7 @@
         /// Update an existing payment
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult<PaymentDto>> Update(int id, [FromBody] UpdatePaymentDto updateDto)
+        public async Task<ActionResult<PaymentDto>> Update(Guid id, [FromBody] UpdatePaymentDto updateDto)
         {
             try
             {
@@ -129,7 +129,7 @@
         /// Delete a payment
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<ActionResult> Delete(Guid id)
         {
             try
             {

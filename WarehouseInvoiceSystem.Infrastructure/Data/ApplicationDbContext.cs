@@ -1,11 +1,15 @@
 ﻿namespace WarehouseInvoiceSystem.Infrastructure.Data
 {
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
     using WarehouseInvoiceSystem.Domain.Company.Domain;
+    using WarehouseInvoiceSystem.Domain.InventoryTransaction.Domain;
     using WarehouseInvoiceSystem.Domain.Invoice.Domain;
     using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
     using WarehouseInvoiceSystem.Domain.Payment.Domain;
+    using WarehouseInvoiceSystem.Domain.Product.Domain;
     using WarehouseInvoiceSystem.Domain.User.Domain;
+    using WarehouseInvoiceSystem.Domain.Warehouse.Domain;
     using WarehouseInvoiceSystem.Infrastructure.Data.Configuration;
 
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
@@ -14,6 +18,9 @@
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceLine> InvoiceLines { get; set; }
         public DbSet<Payment> Payments { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<Warehouse> Warehouses { get; set; }
+        public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
         public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -25,15 +32,30 @@
             modelBuilder.ApplyConfiguration(new InvoiceConfiguration());
             modelBuilder.ApplyConfiguration(new InvoiceLineConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
+            modelBuilder.ApplyConfiguration(new ProductConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
         }
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
-            // Configure all DateTime properties to use timestamp without time zone
+            base.ConfigureConventions(configurationBuilder);
+
+            // Apply UTC converter to all DateTime properties
             configurationBuilder
                 .Properties<DateTime>()
-                .HaveColumnType("timestamp without time zone");
+                .HaveConversion<UtcDateTimeConverter>();
+        }
+
+        public class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
+        {
+            public UtcDateTimeConverter()
+                : base(
+                    v => v.Kind == DateTimeKind.Utc
+                        ? v
+                        : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+                    v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
+            {
+            }
         }
     }
 }

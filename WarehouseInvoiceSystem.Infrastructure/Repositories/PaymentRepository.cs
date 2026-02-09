@@ -19,7 +19,7 @@
             return payments;
         }
 
-        public async Task<IEnumerable<Payment>> GetByInvoiceIdAsync(int invoiceId)
+        public async Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId)
         {
             IEnumerable<Payment> payments = await context.Payments
                 .Include(p => p.Invoice)
@@ -30,7 +30,7 @@
             return payments;
         }
 
-        public async Task<Payment?> GetByIdAsync(int id)
+        public async Task<Payment?> GetByIdAsync(Guid id)
         {
             Payment? payment = await context.Payments
                 .Include(p => p.Invoice)
@@ -42,7 +42,7 @@
 
         public async Task<Payment> CreateAsync(Payment payment)
         {
-            payment.CreatedAt = DateTime.Now;
+            payment.CreatedAt = DateTime.UtcNow;
             context.Payments.Add(payment);
             await context.SaveChangesAsync();
 
@@ -61,19 +61,19 @@
             return updated!;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
             Payment? payment = await context.Payments.IgnoreQueryFilters()
                                                      .FirstOrDefaultAsync(p => p.Id == id);
             if (payment == null)
                 return false;
 
-            payment.DeletedOn = DateTime.Now;
+            payment.DeletedOn = DateTime.UtcNow;
             await context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<decimal> GetTotalPaymentsByInvoiceAsync(int invoiceId)
+        public async Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId)
         {
             decimal total = await context.Payments
                 .Where(p => p.InvoiceId == invoiceId && p.DeletedOn == null)

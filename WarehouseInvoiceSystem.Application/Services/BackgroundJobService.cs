@@ -22,7 +22,7 @@
                     .Where(i => i.Status != InvoiceStatus.Paid &&
                                 i.Status != InvoiceStatus.Cancelled &&
                                 i.Status != InvoiceStatus.Overdue &&
-                                i.DueDate < DateTime.Now.Date)
+                                i.DueDate < DateTime.UtcNow.Date)
                     .ToList();
 
                 logger.LogInformation("Found {Count} invoices to mark as overdue", invoicesToUpdate.Count);

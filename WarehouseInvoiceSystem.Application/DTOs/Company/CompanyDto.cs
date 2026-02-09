@@ -4,7 +4,7 @@
 
     public class CompanyDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public CompanyType Type { get; set; }
         public string? ContactPerson { get; set; }
@@ -16,6 +16,5 @@
         public decimal? CreditLimit { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
     }
 }

@@ -5,11 +5,11 @@
     public interface IPaymentRepository
     {
         Task<IEnumerable<Payment>> GetAllAsync();
-        Task<IEnumerable<Payment>> GetByInvoiceIdAsync(int invoiceId);
-        Task<Payment?> GetByIdAsync(int id);
+        Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId);
+        Task<Payment?> GetByIdAsync(Guid id);
         Task<Payment> CreateAsync(Payment payment);
         Task<Payment> UpdateAsync(Payment payment);
-        Task<bool> DeleteAsync(int id);
-        Task<decimal> GetTotalPaymentsByInvoiceAsync(int invoiceId);
+        Task<bool> DeleteAsync(Guid id);
+        Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId);
     }
 }

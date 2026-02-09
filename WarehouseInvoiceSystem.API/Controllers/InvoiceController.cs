@@ -34,7 +34,7 @@
         /// Get invoice by ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<InvoiceDto>> GetById(int id)
+        public async Task<ActionResult<InvoiceDto>> GetById(Guid id)
         {
             try
             {
@@ -76,7 +76,7 @@
         /// Get invoices by company ID
         /// </summary>
         [HttpGet("company/{companyId}")]
-        public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetByCompany(int companyId)
+        public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetByCompany(Guid companyId)
         {
             try
             {
@@ -191,7 +191,7 @@
         /// Update an existing invoice
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult<InvoiceDto>> Update(int id, [FromBody] UpdateInvoiceDto updateDto)
+        public async Task<ActionResult<InvoiceDto>> Update(Guid id, [FromBody] UpdateInvoiceDto updateDto)
         {
             try
             {
@@ -216,7 +216,7 @@
         /// Update invoice status
         /// </summary>
         [HttpPatch("{id}/status")]
-        public async Task<ActionResult<InvoiceDto>> UpdateStatus(int id, [FromBody] InvoiceStatus status)
+        public async Task<ActionResult<InvoiceDto>> UpdateStatus(Guid id, [FromBody] InvoiceStatus status)
         {
             try
             {
@@ -238,7 +238,7 @@
         /// Delete an invoice
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<ActionResult> Delete(Guid id)
         {
             try
             {
@@ -259,7 +259,7 @@
         /// Send invoice via email
         /// </summary>
         [HttpPost("{id}/send-email")]
-        public async Task<ActionResult<InvoiceDto>> SendInvoiceEmail(int id, [FromBody] SendInvoiceEmailRequest request)
+        public async Task<ActionResult<InvoiceDto>> SendInvoiceEmail(Guid id, [FromBody] SendInvoiceEmailRequest request)
         {
             try
             {

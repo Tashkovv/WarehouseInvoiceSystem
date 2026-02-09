@@ -25,7 +25,7 @@
                 .ToListAsync();
         }
 
-        public async Task<Company?> GetByIdAsync(int id)
+        public async Task<Company?> GetByIdAsync(Guid id)
         {
             return await context.Companies
                 .Include(c => c.Invoices)
@@ -34,7 +34,7 @@
 
         public async Task<Company> CreateAsync(Company company)
         {
-            company.CreatedAt = DateTime.Now;
+            company.CreatedAt = DateTime.UtcNow;
             context.Companies.Add(company);
 
             await context.SaveChangesAsync();
@@ -49,7 +49,7 @@
             return company;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
             Company? company = await context.Companies
                 .Where(x => x.Id == id)
@@ -61,18 +61,18 @@
 
             // Soft delete
             company.IsActive = false;
-            company.DeletedOn = DateTime.Now;
+            company.DeletedOn = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> ExistsAsync(int id)
+        public async Task<bool> ExistsAsync(Guid id)
         {
             return await context.Companies.AnyAsync(c => c.Id == id && c.IsActive && c.DeletedOn == null);
         }
 
-        public async Task<decimal> GetTotalOwedByCompanyAsync(int companyId)
+        public async Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId)
         {
             return await context.Invoices
                 .Where(i => i.CompanyId == companyId &&
@@ -83,7 +83,7 @@
                 .SumAsync(i => i.TotalAmount - i.AmountPaid);
         }
 
-        public async Task<decimal> GetTotalOwedToCompanyAsync(int companyId)
+        public async Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId)
         {
             return await context.Invoices
                 .Where(i => i.CompanyId == companyId &&

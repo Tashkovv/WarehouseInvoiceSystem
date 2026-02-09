@@ -17,14 +17,14 @@
             return paymentDtos;
         }
 
-        public async Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(int invoiceId)
+        public async Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(Guid invoiceId)
         {
             IEnumerable<Payment> payments = await paymentRepository.GetByInvoiceIdAsync(invoiceId);
             IEnumerable<PaymentDto> paymentDtos = payments.Select(MapToDto);
             return paymentDtos;
         }
 
-        public async Task<PaymentDto?> GetPaymentByIdAsync(int id)
+        public async Task<PaymentDto?> GetPaymentByIdAsync(Guid id)
         {
             Payment? payment = await paymentRepository.GetByIdAsync(id);
             PaymentDto? paymentDto = payment == null ? null : MapToDto(payment);
@@ -76,7 +76,7 @@
             return paymentDto;
         }
 
-        public async Task<PaymentDto> UpdatePaymentAsync(int id, UpdatePaymentDto updateDto)
+        public async Task<PaymentDto> UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto)
         {
             Payment? payment = await paymentRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Payment with ID {id} not found");
@@ -125,7 +125,7 @@
             return paymentDto;
         }
 
-        public async Task<bool> DeletePaymentAsync(int id)
+        public async Task<bool> DeletePaymentAsync(Guid id)
         {
             Payment? payment = await paymentRepository.GetByIdAsync(id);
             if (payment == null)

@@ -15,7 +15,7 @@
             return invoices.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(int companyId)
+        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId)
         {
             IEnumerable<Invoice> invoices = await invoiceRepository.GetByCompanyIdAsync(companyId);
             return invoices.Select(MapToDto);
@@ -39,7 +39,7 @@
             return invoices.Select(MapToDto);
         }
 
-        public async Task<InvoiceDto?> GetInvoiceByIdAsync(int id)
+        public async Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id);
             return invoice == null ? null : MapToDto(invoice);
@@ -93,7 +93,7 @@
             return MapToDto(created);
         }
 
-        public async Task<InvoiceDto> UpdateInvoiceAsync(int id, UpdateInvoiceDto updateDto)
+        public async Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
@@ -133,12 +133,12 @@
             return MapToDto(updated);
         }
 
-        public async Task<bool> DeleteInvoiceAsync(int id)
+        public async Task<bool> DeleteInvoiceAsync(Guid id)
         {
             return await invoiceRepository.DeleteAsync(id);
         }
 
-        public async Task<InvoiceDto> UpdateInvoiceStatusAsync(int id, InvoiceStatus status)
+        public async Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus status)
         {
             Invoice invoice = await invoiceRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
             invoice.Status = status;

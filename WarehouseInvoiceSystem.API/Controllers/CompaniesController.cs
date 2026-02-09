@@ -49,7 +49,7 @@
         /// Get company by ID
         /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<CompanyDto>> GetById(int id)
+        public async Task<ActionResult<CompanyDto>> GetById(Guid id)
         {
             try
             {
@@ -70,7 +70,7 @@
         /// Get company balance (what they owe us vs what we owe them)
         /// </summary>
         [HttpGet("{id}/balance")]
-        public async Task<ActionResult<CompanyBalanceDto>> GetBalance(int id)
+        public async Task<ActionResult<CompanyBalanceDto>> GetBalance(Guid id)
         {
             try
             {
@@ -115,7 +115,7 @@
         /// Update an existing company
         /// </summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult<CompanyDto>> Update(int id, [FromBody] UpdateCompanyDto updateDto)
+        public async Task<ActionResult<CompanyDto>> Update(Guid id, [FromBody] UpdateCompanyDto updateDto)
         {
             try
             {
@@ -142,7 +142,7 @@
         /// Delete a company (soft delete)
         /// </summary>
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<ActionResult> Delete(Guid id)
         {
             try
             {

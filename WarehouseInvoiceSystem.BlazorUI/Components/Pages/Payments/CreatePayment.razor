@@ -37,17 +37,17 @@ else
             <MudCardContent>
                 <MudGrid>
                     <MudItem xs="12">
-                        <MudSelect T="int?"
+                        <MudSelect T="Guid?"
                                    Value="_selectedInvoiceId"
                                    ValueChanged="OnInvoiceSelected"
                                    Label="@Localization.GetString("SelectInvoice")"
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    AnchorOrigin="Origin.BottomCenter">
-                            <MudSelectItem T="int?" Value="null">@Localization.GetString("SelectInvoice")</MudSelectItem>
+                            <MudSelectItem T="Guid?" Value="null">@Localization.GetString("SelectInvoice")</MudSelectItem>
                             @foreach (InvoiceDto invoice in _unpaidInvoices)
                             {
-                                <MudSelectItem T="int?" Value="invoice.Id">
+                                <MudSelectItem T="Guid?" Value="invoice.Id">
                                     @invoice.InvoiceNumber - @invoice.CompanyName (@invoice.AmountDue.ToString("C") @Localization.GetString("AmountDue"))
                                 </MudSelectItem>
                             }
@@ -187,7 +187,7 @@ else
 @code {
     [Parameter]
     [SupplyParameterFromQuery(Name = "invoiceId")]
-    public int? PreSelectedInvoiceId { get; set; }
+    public Guid? PreSelectedInvoiceId { get; set; }
 
     private bool _loadingInvoices = true;
     private bool _saving = false;
@@ -196,8 +196,8 @@ else
     private InvoiceDto? _selectedInvoice;
     private readonly CreatePaymentDto _createDto = new();
 
-    private int? _selectedInvoiceId;
-    private DateTime? _paymentDate = DateTime.Now;
+    private Guid? _selectedInvoiceId;
+    private DateTime? _paymentDate = DateTime.UtcNow;
     private decimal _amount = 0;
     private PaymentMethod _paymentMethod = PaymentMethod.BankTransfer;
     private string? _referenceNumber;
@@ -247,7 +247,7 @@ else
         }
     }
 
-    private async Task OnInvoiceSelected(int? invoiceId)
+    private async Task OnInvoiceSelected(Guid? invoiceId)
     {
         _selectedInvoiceId = invoiceId;
 
@@ -293,7 +293,7 @@ else
         try
         {
             _createDto.InvoiceId = _selectedInvoiceId.Value;
-            _createDto.PaymentDate = _paymentDate ?? DateTime.Now;
+            _createDto.PaymentDate = _paymentDate ?? DateTime.UtcNow;
             _createDto.Amount = _amount;
             _createDto.PaymentMethod = _paymentMethod;
             _createDto.ReferenceNumber = _referenceNumber;

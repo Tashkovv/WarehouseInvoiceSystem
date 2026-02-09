@@ -488,17 +488,17 @@
         };
     }
 
-    private void ViewPayment(int id)
+    private void ViewPayment(Guid id)
     {
         Navigation.NavigateTo($"/payments/{id}");
     }
 
-    private void EditPayment(int id)
+    private void EditPayment(Guid id)
     {
         Navigation.NavigateTo($"/payments/edit/{id}");
     }
 
-    private async Task DeletePayment(int id)
+    private async Task DeletePayment(Guid id)
     {
         bool? result = await DialogService.ShowMessageBox(
             Localization.GetString("ConfirmDelete"),

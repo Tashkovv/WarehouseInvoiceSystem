@@ -41,16 +41,16 @@ else
                     <MudCardContent>
                         <MudGrid>
                             <MudItem xs="12" md="6">
-                                <MudSelect T="int?"
+                                <MudSelect T="Guid?"
                                            @bind-Value="_selectedCompanyId"
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomCenter">
-                                    <MudSelectItem T="int?" Value="null">@Localization.GetString("SelectCompany")</MudSelectItem>
+                                    <MudSelectItem T="Guid?" Value="null">@Localization.GetString("SelectCompany")</MudSelectItem>
                                     @foreach (CompanyDto company in _companies)
                                     {
-                                        <MudSelectItem T="int?" Value="company.Id">@company.Name</MudSelectItem>
+                                        <MudSelectItem T="Guid?" Value="company.Id">@company.Name</MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudItem>
@@ -260,10 +260,10 @@ else
     private List<CompanyDto> _companies = new();
     private readonly CreateInvoiceDto _createDto = new();
 
-    private int? _selectedCompanyId;
+    private Guid? _selectedCompanyId;
     private InvoiceType? _selectedType;
-    private DateTime? _issueDate = DateTime.Now;
-    private DateTime? _dueDate = DateTime.Now.AddDays(30);
+    private DateTime? _issueDate = DateTime.UtcNow;
+    private DateTime? _dueDate = DateTime.UtcNow.AddDays(30);
     private int _paymentTermsDays = 30;
     private string? _notes;
 
@@ -369,8 +369,8 @@ else
         {
             _createDto.CompanyId = _selectedCompanyId.Value;
             _createDto.Type = _selectedType.Value;
-            _createDto.IssueDate = _issueDate ?? DateTime.Now;
-            _createDto.DueDate = _dueDate ?? DateTime.Now.AddDays(30);
+            _createDto.IssueDate = _issueDate ?? DateTime.UtcNow;
+            _createDto.DueDate = _dueDate ?? DateTime.UtcNow.AddDays(30);
             _createDto.Notes = _notes;
             _createDto.LineItems = _lineItems
                 .Where(i => !string.IsNullOrWhiteSpace(i.Description))

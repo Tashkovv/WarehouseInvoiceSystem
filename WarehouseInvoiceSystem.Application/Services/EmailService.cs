@@ -17,7 +17,7 @@
     {
         private readonly EmailSettings emailSettings = emailSettings.Value;
 
-        public async Task<bool> SendInvoiceEmailAsync(int invoiceId, string? customMessage = null)
+        public async Task<bool> SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null)
         {
             try
             {

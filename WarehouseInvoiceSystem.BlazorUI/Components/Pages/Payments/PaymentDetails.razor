@@ -1,4 +1,4 @@
-﻿@page "/payments/{Id:int}"
+﻿@page "/payments/{Id:guid}"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
@@ -184,7 +184,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private bool _loading = true;
     private bool _loadingInvoice = true;

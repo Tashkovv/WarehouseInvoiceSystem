@@ -4,9 +4,9 @@
 
     public class InvoiceDto
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public string InvoiceNumber { get; set; } = string.Empty;
-        public int CompanyId { get; set; }
+        public Guid CompanyId { get; set; }
         public string CompanyName { get; set; } = string.Empty;
         public string CompanyEmail { get; set; } = string.Empty;
         public InvoiceType Type { get; set; }
@@ -20,7 +20,6 @@
         public decimal AmountDue { get; set; }
         public string? Notes { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public List<InvoiceLineDto> LineItems { get; set; } = new();
+        public List<InvoiceLineDto> LineItems { get; set; } = [];
     }
 }

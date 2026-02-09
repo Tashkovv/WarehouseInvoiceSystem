@@ -1,4 +1,4 @@
-﻿@page "/companies/edit/{Id:int}"
+﻿@page "/companies/edit/{Id:guid}"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.Interfaces
@@ -170,7 +170,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private bool _loading = true;
     private bool _saving = false;

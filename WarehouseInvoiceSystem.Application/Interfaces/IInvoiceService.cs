@@ -6,16 +6,16 @@
     public interface IInvoiceService
     {
         Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync();
-        Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(int companyId);
+        Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId);
         Task<IEnumerable<InvoiceDto>> GetInvoicesByTypeAsync(InvoiceType type);
         Task<IEnumerable<InvoiceDto>> GetInvoicesByStatusAsync(InvoiceStatus status);
         Task<IEnumerable<InvoiceDto>> GetOverdueInvoicesAsync();
-        Task<InvoiceDto?> GetInvoiceByIdAsync(int id);
+        Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id);
         Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber);
         Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createDto);
-        Task<InvoiceDto> UpdateInvoiceAsync(int id, UpdateInvoiceDto updateDto);
-        Task<bool> DeleteInvoiceAsync(int id);
-        Task<InvoiceDto> UpdateInvoiceStatusAsync(int id, InvoiceStatus status);
+        Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
+        Task<bool> DeleteInvoiceAsync(Guid id);
+        Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus status);
         Task<InvoiceSummaryDto> GetInvoiceSummaryAsync();
     }
 }

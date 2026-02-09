@@ -1,4 +1,4 @@
-﻿@page "/invoices/edit/{Id:int}"
+﻿@page "/invoices/edit/{Id:guid}"
 @implements IDisposable
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Company
@@ -47,16 +47,16 @@ else
                     <MudCardContent>
                         <MudGrid>
                             <MudItem xs="12" md="6">
-                                <MudSelect T="int"
+                                <MudSelect T="Guid"
                                            Value="_selectedCompanyId"
-                                           ValueChanged="@((int val) => _selectedCompanyId = val)"
+                                           ValueChanged="@((Guid val) => _selectedCompanyId = val)"
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomCenter">
                                     @foreach (CompanyDto company in _companies)
                                     {
-                                        <MudSelectItem T="int" Value="company.Id">@company.Name</MudSelectItem>
+                                        <MudSelectItem T="Guid" Value="company.Id">@company.Name</MudSelectItem>
                                     }
                                 </MudSelect>
                             </MudItem>
@@ -306,7 +306,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public Guid Id { get; set; }
 
     private bool _loading = true;
     private bool _saving = false;
@@ -315,7 +315,7 @@ else
     private List<CompanyDto> _companies = new();
     private readonly UpdateInvoiceDto _updateDto = new();
     
-    private int _selectedCompanyId;
+    private Guid _selectedCompanyId;
     private InvoiceType _selectedType;
     private InvoiceStatus _selectedStatus;
     private DateTime? _issueDate;
@@ -455,8 +455,8 @@ else
             _updateDto.CompanyId = _selectedCompanyId;
             _updateDto.Type = _selectedType;
             _updateDto.Status = _selectedStatus;
-            _updateDto.IssueDate = _issueDate ?? DateTime.Now;
-            _updateDto.DueDate = _dueDate ?? DateTime.Now.AddDays(30);
+            _updateDto.IssueDate = _issueDate ?? DateTime.UtcNow;
+            _updateDto.DueDate = _dueDate ?? DateTime.UtcNow.AddDays(30);
             _updateDto.Notes = _notes;
             _updateDto.LineItems = _lineItems
                 .Where(i => !string.IsNullOrWhiteSpace(i.Description))
@@ -490,9 +490,9 @@ else
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
-    private class LineItemModel
+    private sealed class LineItemModel
     {
-        public int? Id { get; set; }
+        public Guid Id { get; set; }
         public string Description { get; set; } = string.Empty;
         public int Quantity { get; set; } = 1;
         public decimal UnitPrice { get; set; } = 0;

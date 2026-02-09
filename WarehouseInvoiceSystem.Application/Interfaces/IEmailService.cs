@@ -2,7 +2,7 @@
 {
     public interface IEmailService
     {
-        Task<bool> SendInvoiceEmailAsync(int invoiceId, string? customMessage = null);
+        Task<bool> SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null);
         Task<bool> SendTestEmailAsync(string recipientEmail);
     }
 }

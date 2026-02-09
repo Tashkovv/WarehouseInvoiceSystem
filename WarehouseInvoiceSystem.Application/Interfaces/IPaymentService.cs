@@ -5,10 +5,10 @@
     public interface IPaymentService
     {
         Task<IEnumerable<PaymentDto>> GetAllPaymentsAsync();
-        Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(int invoiceId);
-        Task<PaymentDto?> GetPaymentByIdAsync(int id);
+        Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(Guid invoiceId);
+        Task<PaymentDto?> GetPaymentByIdAsync(Guid id);
         Task<PaymentDto> CreatePaymentAsync(CreatePaymentDto createDto);
-        Task<PaymentDto> UpdatePaymentAsync(int id, UpdatePaymentDto updateDto);
-        Task<bool> DeletePaymentAsync(int id);
+        Task<PaymentDto> UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto);
+        Task<bool> DeletePaymentAsync(Guid id);
     }
 }

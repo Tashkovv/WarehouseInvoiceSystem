@@ -10,26 +10,16 @@
         {
             // Table name
             builder.ToTable("InvoiceLine");
+
             builder.HasKey(e => e.Id);
+            builder.Property(e => e.Id).ValueGeneratedOnAdd();
+            builder.Property(e => e.CreatedAt);
+            builder.Property(e => e.DeletedOn);
 
-            builder.Property(e => e.Description)
-                .IsRequired()
-                .HasMaxLength(500);
-
-            builder.Property(e => e.Quantity)
-                .IsRequired();
-
-            builder.Property(e => e.UnitPrice)
-                .HasPrecision(18, 2)
-                .IsRequired();
-
-            builder.Property(e => e.TaxRate)
-                .HasPrecision(5, 2)
-                .IsRequired()
-                .HasDefaultValue(0);
-
-            builder.Property(e => e.DeletedOn)
-                .HasColumnType("timestamp without time zone");
+            builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
+            builder.Property(e => e.Quantity).IsRequired();
+            builder.Property(e => e.UnitPrice).HasPrecision(18, 2).IsRequired();
+            builder.Property(e => e.TaxRate).HasPrecision(5, 2).IsRequired().HasDefaultValue(0);            
 
             // Computed properties - not stored in database
             builder.Ignore(e => e.Amount);
@@ -42,9 +32,9 @@
 
             // Relationships
             builder.HasOne(e => e.Invoice)
-                .WithMany(i => i.LineItems)
-                .HasForeignKey(e => e.InvoiceId)
-                .OnDelete(DeleteBehavior.Cascade);
+                   .WithMany(i => i.LineItems)
+                   .HasForeignKey(e => e.InvoiceId)
+                   .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

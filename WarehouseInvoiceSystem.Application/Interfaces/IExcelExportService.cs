@@ -4,7 +4,7 @@
 
     public interface IExcelExportService
     {
-        Task<byte[]> ExportInvoiceForPrintingAsync(int invoiceId);
+        Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId);
         Task<byte[]> ExportInvoicesToExcelAsync(List<InvoiceDto> invoicesToExport);
         Task<byte[]> ExportInvoicesByDateRangeAsync(List<InvoiceDto> invoicesToExport, DateTime startDate, DateTime endDate);
     }

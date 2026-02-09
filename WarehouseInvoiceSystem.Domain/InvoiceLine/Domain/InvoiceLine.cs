@@ -1,9 +1,11 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.InvoiceLine.Domain
 {
-    public class InvoiceLine
+    using WarehouseInvoiceSystem.Domain.Common;
+    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+
+    public class InvoiceLine : AuditableEntity
     {
-        public int Id { get; set; }
-        public int InvoiceId { get; set; }
+        public Guid InvoiceId { get; set; }
         public string Description { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
@@ -11,7 +13,6 @@
         public decimal Amount => Quantity * UnitPrice;
         public decimal TaxAmount => Amount * (TaxRate / 100);
         public decimal TotalAmount => Amount + TaxAmount;
-        public DateTime? DeletedOn { get; set; }
 
         // Navigation property
         public Invoice Invoice { get; set; } = null!;

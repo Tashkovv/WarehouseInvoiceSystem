@@ -163,7 +163,7 @@ else
                             </MudChip>
                         </MudTd>
                         <MudTd DataLabel="@Localization.GetString("DueDate")">
-                            @if (context.DueDate < DateTime.Now && context.Status != InvoiceStatus.Paid)
+                            @if (context.DueDate < DateTime.UtcNow && context.Status != InvoiceStatus.Paid)
                             {
                                 <MudText Color="Color.Error">
                                     @context.DueDate.ToString("MMM dd, yyyy")
@@ -256,7 +256,7 @@ else
         };
     }
 
-    private void ViewInvoice(int id)
+    private void ViewInvoice(Guid id)
     {
         Navigation.NavigateTo($"/invoices/{id}");
     }

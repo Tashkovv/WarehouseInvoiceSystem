@@ -19,7 +19,7 @@
             return companies.Select(MapToDto);
         }
 
-        public async Task<CompanyDto?> GetCompanyByIdAsync(int id)
+        public async Task<CompanyDto?> GetCompanyByIdAsync(Guid id)
         {
             Company? company = await companyRepository.GetByIdAsync(id);
             return company == null ? null : MapToDto(company);
@@ -45,7 +45,7 @@
             return MapToDto(created);
         }
 
-        public async Task<CompanyDto> UpdateCompanyAsync(int id, UpdateCompanyDto updateDto)
+        public async Task<CompanyDto> UpdateCompanyAsync(Guid id, UpdateCompanyDto updateDto)
         {
             Company company = await companyRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Company with ID {id} not found");
 
@@ -64,12 +64,12 @@
             return MapToDto(updated);
         }
 
-        public async Task<bool> DeleteCompanyAsync(int id)
+        public async Task<bool> DeleteCompanyAsync(Guid id)
         {
             return await companyRepository.DeleteAsync(id);
         }
 
-        public async Task<CompanyBalanceDto> GetCompanyBalanceAsync(int id)
+        public async Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id)
         {
             Company? company = await companyRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Company with ID {id} not found");
 

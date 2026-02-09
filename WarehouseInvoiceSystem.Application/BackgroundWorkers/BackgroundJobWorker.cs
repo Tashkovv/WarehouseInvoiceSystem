@@ -31,7 +31,7 @@
                 try
                 {
                     // Get current time
-                    DateTime now = DateTime.Now;
+                    DateTime now = DateTime.UtcNow;
                     DateTime todayAtCheckTime = now.Date.AddHours(_overdueCheckHour).AddMinutes(_overdueCheckMinute);
 
                     // Check if it's time to run the overdue check

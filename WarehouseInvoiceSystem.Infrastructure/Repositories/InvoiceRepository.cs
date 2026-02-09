@@ -19,7 +19,7 @@
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Invoice>> GetByCompanyIdAsync(int companyId)
+        public async Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId)
         {
             return await context.Invoices
                 .Include(i => i.Company)
@@ -51,7 +51,7 @@
 
         public async Task<IEnumerable<Invoice>> GetOverdueInvoicesAsync()
         {
-            DateTime today = DateTime.Now.Date;
+            DateTime today = DateTime.UtcNow.Date;
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
@@ -63,7 +63,7 @@
                 .ToListAsync();
         }
 
-        public async Task<Invoice?> GetByIdAsync(int id)
+        public async Task<Invoice?> GetByIdAsync(Guid id)
         {
             return await context.Invoices
                 .Where(i => i.DeletedOn == null)
@@ -84,7 +84,7 @@
 
         public async Task<Invoice> CreateAsync(Invoice invoice)
         {
-            invoice.CreatedAt = DateTime.Now;
+            invoice.CreatedAt = DateTime.UtcNow;
             context.Invoices.Add(invoice);
             await context.SaveChangesAsync();
 
@@ -101,7 +101,7 @@
             return (await GetByIdAsync(invoice.Id))!;
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(Guid id)
         {
             Invoice? invoice = await context.Invoices.IgnoreQueryFilters()
                                                      .FirstOrDefaultAsync(i => i.Id == id);
@@ -110,12 +110,12 @@
                 return false;
             }
 
-            invoice.DeletedOn = DateTime.Now;
+            invoice.DeletedOn = DateTime.UtcNow;
             await context.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> ExistsAsync(int id)
+        public async Task<bool> ExistsAsync(Guid id)
         {
             return await context.Invoices.AnyAsync(i => i.Id == id && i.DeletedOn == null);
         }
@@ -123,8 +123,8 @@
         public async Task<string> GenerateInvoiceNumberAsync(InvoiceType type)
         {
             string prefix = type == InvoiceType.Receivable ? "INV" : "BILL";
-            int year = DateTime.Now.Year;
-            int month = DateTime.Now.Month;
+            int year = DateTime.UtcNow.Year;
+            int month = DateTime.UtcNow.Month;
 
             Invoice? lastInvoice = await context.Invoices
                 .Where(i => i.Type == type &&
@@ -147,7 +147,7 @@
 
         public async Task<(int total, int paid, int unpaid, int overdue)> GetInvoiceCountsAsync()
         {
-            DateTime today = DateTime.Now.Date;
+            DateTime today = DateTime.UtcNow.Date;
 
             int total = await context.Invoices.CountAsync(i => i.DeletedOn == null);
             int paid = await context.Invoices.CountAsync(i => i.Status == InvoiceStatus.Paid && i.DeletedOn == null);
