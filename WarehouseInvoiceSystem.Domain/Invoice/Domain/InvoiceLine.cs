@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Entities
+﻿namespace WarehouseInvoiceSystem.Domain.Invoice.Domain
 {
     public class InvoiceLine
     {

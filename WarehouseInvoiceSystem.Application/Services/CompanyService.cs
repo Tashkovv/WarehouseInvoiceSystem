@@ -2,8 +2,8 @@
 {
     using WarehouseInvoiceSystem.Application.DTOs.Company;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Entities;
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Company.Domain;
+    using WarehouseInvoiceSystem.Domain.Company.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     public class CompanyService(ICompanyRepository companyRepository) : ICompanyService
     {

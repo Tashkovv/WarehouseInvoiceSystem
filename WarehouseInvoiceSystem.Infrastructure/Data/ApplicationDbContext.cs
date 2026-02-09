@@ -1,7 +1,10 @@
 ﻿namespace WarehouseInvoiceSystem.Infrastructure.Data
 {
     using Microsoft.EntityFrameworkCore;
-    using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Company.Domain;
+    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.Payment.Domain;
+    using WarehouseInvoiceSystem.Domain.User.Domain;
     using WarehouseInvoiceSystem.Infrastructure.Data.Configuration;
 
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)

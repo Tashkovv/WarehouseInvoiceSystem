@@ -1,7 +1,8 @@
 ﻿@page "/payments"
 @implements IDisposable
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Domain.Payment.Enums
 @inject IPaymentService PaymentService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation

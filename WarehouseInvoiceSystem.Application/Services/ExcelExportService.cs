@@ -3,7 +3,7 @@
     using ClosedXML.Excel;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
 
     public class ExcelExportService(IInvoiceService invoiceService,
                                     ILocalizationService translations) : IExcelExportService

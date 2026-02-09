@@ -1,6 +1,7 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Entities
+﻿namespace WarehouseInvoiceSystem.Domain.Payment.Domain
 {
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.Payment.Enums;
 
     public class Payment
     {

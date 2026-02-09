@@ -1,8 +1,8 @@
 ﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
-    using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Payment.Domain;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class PaymentRepository(ApplicationDbContext context) : IPaymentRepository

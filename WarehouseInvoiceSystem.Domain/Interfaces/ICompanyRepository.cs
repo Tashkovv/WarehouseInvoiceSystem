@@ -1,7 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.Interfaces
 {
-    using WarehouseInvoiceSystem.Domain.Entities;
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Company.Domain;
+    using WarehouseInvoiceSystem.Domain.Company.Enums;
 
     public interface ICompanyRepository
     {

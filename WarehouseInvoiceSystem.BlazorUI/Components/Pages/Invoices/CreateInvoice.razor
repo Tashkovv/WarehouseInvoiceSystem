@@ -1,9 +1,10 @@
 ﻿@page "/invoices/create"
 @implements IDisposable
 @using System.Globalization
-@using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Domain.Invoice.Enums
 @inject IInvoiceService InvoiceService
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization

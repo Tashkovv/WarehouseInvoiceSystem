@@ -2,9 +2,10 @@
 {
     using WarehouseInvoiceSystem.Application.DTOs.Payment;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Entities;
-    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
+    using WarehouseInvoiceSystem.Domain.Payment.Domain;
 
     public class PaymentService(IPaymentRepository paymentRepository,
                                 IInvoiceRepository invoiceRepository) : IPaymentService

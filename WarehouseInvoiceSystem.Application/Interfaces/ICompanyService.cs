@@ -1,7 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Interfaces
 {
     using WarehouseInvoiceSystem.Application.DTOs.Company;
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Company.Enums;
 
     public interface ICompanyService
     {

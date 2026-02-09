@@ -1,6 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Company
 {
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Company.Enums;
 
     public class CompanyDto
     {

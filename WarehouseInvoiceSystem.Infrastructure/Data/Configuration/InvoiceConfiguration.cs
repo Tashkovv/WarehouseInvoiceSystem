@@ -2,7 +2,8 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
-    using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
 
     public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
 
@@ -22,7 +23,7 @@
 
             builder.Property(e => e.Status)
                 .IsRequired()
-                .HasDefaultValue(Domain.Enums.InvoiceStatus.Draft);
+                .HasDefaultValue(InvoiceStatus.Draft);
 
             builder.Property(e => e.SubTotal)
                 .HasPrecision(18, 2)

@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Entities
+﻿namespace WarehouseInvoiceSystem.Domain.User.Domain
 {
     public class User
     {

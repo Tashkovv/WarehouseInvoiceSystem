@@ -1,9 +1,10 @@
 ﻿@page "/payments/edit/{Id:int}"
 @implements IDisposable
 @using System.Globalization
-@using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.Payment
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Domain.Payment.Enums
 @inject IPaymentService PaymentService
 @inject IInvoiceService InvoiceService
 @inject ILocalizationService Localization

@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Enums
+﻿namespace WarehouseInvoiceSystem.Domain.Payment.Enums
 {
     public enum PaymentMethod
     {

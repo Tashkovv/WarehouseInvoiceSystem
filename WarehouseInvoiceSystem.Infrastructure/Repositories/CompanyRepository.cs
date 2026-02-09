@@ -1,9 +1,10 @@
 ﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
-    using WarehouseInvoiceSystem.Domain.Entities;
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Company.Domain;
+    using WarehouseInvoiceSystem.Domain.Company.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class CompanyRepository(ApplicationDbContext context) : ICompanyRepository

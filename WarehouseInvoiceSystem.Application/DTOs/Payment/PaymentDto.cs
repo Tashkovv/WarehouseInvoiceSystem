@@ -1,6 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Payment
 {
-    using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Payment.Enums;
 
     public class PaymentDto
     {

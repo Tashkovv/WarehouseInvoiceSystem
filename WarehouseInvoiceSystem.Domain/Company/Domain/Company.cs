@@ -1,6 +1,6 @@
-﻿using WarehouseInvoiceSystem.Domain.Enums;
+﻿using WarehouseInvoiceSystem.Domain.Company.Enums;
 
-namespace WarehouseInvoiceSystem.Domain.Entities
+namespace WarehouseInvoiceSystem.Domain.Company.Domain
 {
     public class Company
     {
