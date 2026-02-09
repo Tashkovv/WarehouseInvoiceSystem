@@ -3,8 +3,6 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Domain.Invoice.Enums
-@using WarehouseInvoiceSystem.Domain.Payment.Enums
 @inject IInvoiceService InvoiceService
 @inject IPaymentService PaymentService
 @inject ILocalizationService Localization
@@ -41,7 +39,7 @@ else
                        Variant="Variant.Filled"
                        Class="mr-2"
                        Disabled="@(_sendingEmail)"
-                       hidden="@(_invoice.Status != InvoiceStatus.Draft || _invoice.Type == InvoiceType.Payable)"
+                       hidden="@(_hideEmailButton)"
                        OnClick="OpenSendEmailDialog">
                 @if (_sendingEmail)
                 {
@@ -315,6 +313,7 @@ else
     private bool _sendingEmail = false;
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = new();
+    private bool _hideEmailButton = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -341,6 +340,7 @@ else
         try
         {
             _invoice = await InvoiceService.GetInvoiceByIdAsync(Id);
+            _hideEmailButton = _invoice?.Status != InvoiceStatus.Draft || _invoice.Type == InvoiceType.Payable;
         }
         catch (Exception ex)
         {

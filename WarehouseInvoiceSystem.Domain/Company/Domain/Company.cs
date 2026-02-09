@@ -1,7 +1,8 @@
-﻿using WarehouseInvoiceSystem.Domain.Company.Enums;
-
-namespace WarehouseInvoiceSystem.Domain.Company.Domain
+﻿namespace WarehouseInvoiceSystem.Domain.Company.Domain
 {
+    using WarehouseInvoiceSystem.Domain.Company.Enums;
+    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+
     public class Company
     {
         public int Id { get; set; }
