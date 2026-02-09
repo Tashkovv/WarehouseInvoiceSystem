@@ -122,13 +122,12 @@
                 </MudItem>
 
                 <!-- Clear Filters Button -->
-                <MudItem xs="12" sm="3" md="2" Class="d-flex align-center">
-                    <MudButton StartIcon="@Icons.Material.Filled.Clear"
+                <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
+                    <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
                                Variant="Variant.Outlined"
-                               Color="Color.Error"
-                               FullWidth="true"
+                               Color="Color.Default"
                                OnClick="ClearFilters"
-                               Disabled="!_hasActiveFilters">
+                               Disabled="@(!_hasActiveFilters)">
                         @Localization.GetString("ClearFilters")
                     </MudButton>
                 </MudItem>
@@ -568,6 +567,7 @@
         ResetPaginationAndApplyFilters();
     }
 
+    // Pagination methods
     private void PreviousPage()
     {
         if (_currentPage > 1)
@@ -619,33 +619,6 @@
             InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
             _ => status?.ToString() ?? string.Empty
         };
-    }
-
-    private async Task<IEnumerable<InvoiceStatus?>> SearchStatus(string value, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(value))
-            return Enum.GetValues(typeof(InvoiceStatus))
-                .Cast<InvoiceStatus>()
-                .Select(s => (InvoiceStatus?)s);
-
-        var search = value.ToLower();
-        return Enum.GetValues(typeof(InvoiceStatus))
-            .Cast<InvoiceStatus>()
-            .Where(s => GetStatusText(s).ToLower().Contains(search))
-            .Select(s => (InvoiceStatus?)s);
-    }
-
-    private async Task<IEnumerable<InvoiceType?>> SearchType(string value, CancellationToken cancellationToken)
-    {
-        var types = new[] { InvoiceType.Receivable, InvoiceType.Payable };
-
-        if (string.IsNullOrEmpty(value))
-            return types.Select(t => (InvoiceType?)t);
-
-        var search = value.ToLower();
-        return types
-            .Where(t => Localization.GetString(t.ToString()).ToLower().Contains(search))
-            .Select(t => (InvoiceType?)t);
     }
 
     private async Task<IEnumerable<string>> SearchCompanies(string value, CancellationToken cancellationToken)

@@ -12,7 +12,7 @@
 
 <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Companies")</MudText>
 
-<MudCard Elevation="2">
+<MudCard Elevation="2" Class="mb-4">
     <MudCardContent>
         <MudGrid>
             <MudItem xs="12" sm="6" md="3">
@@ -50,7 +50,7 @@
     </MudCardContent>
 </MudCard>
 
-<MudCard Elevation="2" Class="mt-4">
+<MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
         @if (_loading)
         {
@@ -66,18 +66,19 @@
         }
         else
         {
-            <MudTable Items="_filteredCompanies"
+            <MudTable Items="_paginatedCompanies"
                       Hover="true"
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
-                      Height="600px">
+                      Height="710px"
+                      Sort="@((SortDefinition<CompanyDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
-                    <MudTh>@Localization.GetString("CompanyName")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.Name)">@Localization.GetString("CompanyName")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Type")</MudTh>
-                    <MudTh>@Localization.GetString("ContactPerson")</MudTh>
-                    <MudTh>@Localization.GetString("Email")</MudTh>
-                    <MudTh>@Localization.GetString("Phone")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.ContactPerson ?? string.Empty)">@Localization.GetString("ContactPerson")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.Email ?? string.Empty)">@Localization.GetString("Email")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.Phone ?? string.Empty)">@Localization.GetString("Phone")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Status")</MudTh>
                     <MudTh>@Localization.GetString("Actions")</MudTh>
                 </HeaderContent>
@@ -134,16 +135,81 @@
                     </MudTd>
                 </RowTemplate>
             </MudTable>
+
+            <!-- Pagination Controls -->
+            <MudDivider />
+            <MudCardContent Class="pa-4">
+                <MudGrid>
+                    <!-- Left Side: Page Navigation -->
+                    <MudItem xs="12" sm="6">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="PreviousPage"
+                                       Disabled="@(_currentPage == 1)">
+                                @Localization.GetString("Previous")
+                            </MudButton>
+
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
+                            </MudText>
+
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="NextPage"
+                                       Disabled="@(_currentPage == _totalPages)">
+                                @Localization.GetString("Next")
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+
+                    <!-- Right Side: Items Per Page & Stats -->
+                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("ItemsPerPage")
+                            </MudText>
+
+                            <MudSelect T="int"
+                                       Value="_itemsPerPage"
+                                       Dense="true"
+                                       Variant="Variant.Outlined"
+                                       Style="width: 100px;"
+                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                <MudSelectItem Value="10">10</MudSelectItem>
+                                <MudSelectItem Value="25">25</MudSelectItem>
+                                <MudSelectItem Value="50">50</MudSelectItem>
+                                <MudSelectItem Value="100">100</MudSelectItem>
+                            </MudSelect>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                (@_totalCompanies @Localization.GetString("Total"))
+                            </MudText>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
         }
     </MudCardContent>
 </MudCard>
 
 @code {
     private bool _loading = true;
-    private List<CompanyDto> _allCompanies = new();
-    private List<CompanyDto> _filteredCompanies = new();
+    private List<CompanyDto> _allCompanies = [];
+    private List<CompanyDto> _filteredCompanies = [];
+    private List<CompanyDto> _paginatedCompanies = [];
     private string _searchString = "";
     private int _activeTabIndex = 0;
+
+    // Pagination variables
+    private int _currentPage = 1;
+    private int _itemsPerPage = 10;
+    private int _totalCompanies = 0;
+    private int _totalPages = 1;
+
+    // Sorting variables
+    private string _sortBy = "CreatedAt";
+    private bool _sortAscending = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -164,7 +230,7 @@
         {
             IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
             _allCompanies = companies.ToList();
-            FilterCompanies();
+            ApplyFilters();
         }
         catch (Exception ex)
         {
@@ -177,7 +243,7 @@
         }
     }
 
-    private void FilterCompanies()
+    private void ApplyFilters()
     {
         IEnumerable<CompanyDto> filtered = _allCompanies;
 
@@ -189,7 +255,7 @@
             _ => filtered
         };
 
-        // Filter by search
+        // Apply Search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
             string search = _searchString.ToLower();
@@ -200,20 +266,73 @@
                 (c.Phone?.ToLower().Contains(search) ?? false));
         }
 
-        _filteredCompanies = filtered.OrderBy(c => c.Name).ToList();
+        // Apply sorting
+        filtered = _sortAscending
+            ? filtered.OrderBy(GetSortProperty)
+            : filtered.OrderByDescending(GetSortProperty);
+
+        _filteredCompanies = filtered.ToList();
+        _totalCompanies = _filteredCompanies.Count;
+
+        // Calculate pagination
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        // Calculate total pages
+        _totalPages = (int)Math.Ceiling((double)_totalCompanies / _itemsPerPage);
+
+        // Ensure current page is valid
+        if (_currentPage > _totalPages && _totalPages > 0)
+        {
+            _currentPage = _totalPages;
+        }
+
+        // Get paginated items
+        int skipCount = (_currentPage - 1) * _itemsPerPage;
+        _paginatedCompanies = _filteredCompanies
+            .Skip(skipCount)
+            .Take(_itemsPerPage)
+            .ToList();
+    }
+
+    private void ResetPaginationAndApplyFilters()
+    {
+        _currentPage = 1;
+        ApplyFilters();
+    }
+
+    private object GetSortProperty(CompanyDto company) => _sortBy switch
+    {
+        "Name" => company.Name,
+        "ContactPerson" => company.ContactPerson ?? string.Empty,
+        "Email" => company.Email ?? string.Empty,
+        "Phone" => company.Phone ?? string.Empty,
+        _ => company.CreatedAt
+    };
+
+    private void HandleSort(SortDefinition<CompanyDto> sortDefinition)
+    {
+        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
+            return;
+
+        _sortBy = sortDefinition.SortBy;
+        _sortAscending = !sortDefinition.Descending;
+        ApplyFilters();
     }
 
     private async Task OnSearch(string text)
     {
         _searchString = text;
-        FilterCompanies();
+        ResetPaginationAndApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 
     private async Task OnTabChanged(int index)
     {
         _activeTabIndex = index;
-        FilterCompanies();
+        ResetPaginationAndApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -279,6 +398,32 @@
                 Snackbar.Add(Localization.GetString("ErrorDeletingCompany"), Severity.Error);
             }
         }
+    }
+
+    // Pagination methods
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void OnItemsPerPageChanged(int newItemsPerPage)
+    {
+        _itemsPerPage = newItemsPerPage;
+        _currentPage = 1;
+        UpdatePagination();
     }
 
     public void Dispose()
