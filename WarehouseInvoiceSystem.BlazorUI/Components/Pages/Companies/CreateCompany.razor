@@ -44,7 +44,7 @@
                                Label="@Localization.GetString("Type")"
                                Variant="Variant.Outlined"
                                Required="true"
-                               AnchorOrigin="Origin.BottomCenter">
+                               AnchorOrigin="Origin.BottomLeft">
                         <MudSelectItem T="CompanyType" Value="CompanyType.Client">@Localization.GetString("Client")</MudSelectItem>
                         <MudSelectItem T="CompanyType" Value="CompanyType.Vendor">@Localization.GetString("Vendor")</MudSelectItem>
                         <MudSelectItem T="CompanyType" Value="CompanyType.Both">@Localization.GetString("ClientAndVendor")</MudSelectItem>
@@ -109,16 +109,15 @@
                                      AdornmentText="@Localization.GetString("Days")"
                                      Min="0" />
                 </MudItem>
-
-                <MudItem xs="12" md="6">
-                    <MudNumericField T="decimal?"
-                                     Value="_creditLimit"
-                                     ValueChanged="@((decimal? val) => _creditLimit = val)"
+                <MudItem xs="12" sm="6" md="6">
+                    <MudNumericField T="decimal"
                                      Label="@Localization.GetString("CreditLimit")"
+                                     ValueChanged="@((decimal val) => _creditLimit = val)"
                                      Variant="Variant.Outlined"
+                                     Min="0"
+                                     Step="0.01m"
                                      Format="C2"
                                      Culture="@System.Globalization.CultureInfo.CurrentCulture"
-                                     Min="0"
                                      Placeholder="@Localization.GetString("EnterCreditLimit")" />
                 </MudItem>
             </MudGrid>
@@ -161,7 +160,7 @@
     private string? _address;
     private string? _taxId;
     private int _paymentTermsDays = 30;
-    private decimal? _creditLimit;
+    private decimal _creditLimit;
 
     protected override void OnInitialized()
     {

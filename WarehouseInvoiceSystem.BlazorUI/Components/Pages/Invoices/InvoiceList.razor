@@ -79,7 +79,7 @@
                         @foreach (var status in Enum.GetValues<InvoiceStatus>())
                         {
                             <MudSelectItem T="InvoiceStatus ?" Value="@(status)">
-                                <MudChip T="string"
+                                <MudChip T="InvoiceStatus"
                                          Size="Size.Small"
                                          Color="GetStatusColor(status)">
                                     @Localization.GetString(status.ToString())
@@ -231,7 +231,7 @@
                         <MudChip T="string"
                                  Size="Size.Small"
                                  Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
-                            @(context.Type == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
+                            @(Localization.GetString(context.Type.ToString()))
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("IssueDate")">

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class UseDateTimeWithTimeZone : Migration
+    public partial class ChangeCompanyCreditAsRequired : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -24,7 +24,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     TaxId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     PaymentTermsDays = table.Column<int>(type: "integer", nullable: false),
-                    CreditLimit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: true),
+                    CreditLimit = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -55,22 +55,22 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "Product",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Code = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    Unit = table.Column<string>(type: "text", nullable: false),
-                    DefaultPrice = table.Column<decimal>(type: "numeric", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
+                    Code = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Unit = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    DefaultPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.PrimaryKey("PK_Product", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -302,7 +302,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "Payment");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "Product");
 
             migrationBuilder.DropTable(
                 name: "User");

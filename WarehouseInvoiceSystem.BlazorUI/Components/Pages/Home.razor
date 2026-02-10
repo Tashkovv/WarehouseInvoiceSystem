@@ -99,7 +99,7 @@ else
                         <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" />
                     </div>
                     <MudText Typo="Typo.h4" Class="mb-1">
-                        @(_summary?.TotalPaid.ToString("C") ?? "$0.00")
+                        @(_summary?.TotalPaid.ToString("C") ?? "0.00 MKD")
                     </MudText>
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
                         @Localization.GetString("AllTimeCollected")
@@ -138,6 +138,7 @@ else
                     <HeaderContent>
                         <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
                         <MudTh>@Localization.GetString("Company")</MudTh>
+                        <MudTh>@Localization.GetString("Type")</MudTh>
                         <MudTh>@Localization.GetString("Amount")</MudTh>
                         <MudTh>@Localization.GetString("Status")</MudTh>
                         <MudTh>@Localization.GetString("DueDate")</MudTh>
@@ -151,6 +152,13 @@ else
                         </MudTd>
                         <MudTd DataLabel="@Localization.GetString("Company")">
                             @context.CompanyName
+                        </MudTd>
+                        <MudTd DataLabel="@Localization.GetString("Type")">
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
+                                @(Localization.GetString(context.Type.ToString()))
+                            </MudChip>
                         </MudTd>
                         <MudTd DataLabel="@Localization.GetString("Amount")">
                             <MudText Typo="Typo.body2" Class="font-weight-medium">
@@ -213,7 +221,7 @@ else
         
         try
         {
-            _summary = await InvoiceService.GetInvoiceSummaryAsync();
+            _summary = await InvoiceService.GetPayableInvoiceSummaryAsync();
             
             IEnumerable<InvoiceDto> allInvoices = await InvoiceService.GetAllInvoicesAsync();
             _recentInvoices = allInvoices.OrderByDescending(i => i.CreatedAt).Take(5).ToList();

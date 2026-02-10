@@ -16,6 +16,6 @@
         Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
         Task<bool> DeleteInvoiceAsync(Guid id);
         Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus status);
-        Task<InvoiceSummaryDto> GetInvoiceSummaryAsync();
+        Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync();
     }
 }

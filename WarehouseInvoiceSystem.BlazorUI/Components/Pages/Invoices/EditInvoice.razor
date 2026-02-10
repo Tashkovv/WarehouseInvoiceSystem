@@ -53,7 +53,7 @@ else
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
                                            Variant="Variant.Outlined"
-                                           AnchorOrigin="Origin.BottomCenter">
+                                           AnchorOrigin="Origin.BottomLeft">
                                     @foreach (CompanyDto company in _companies)
                                     {
                                         <MudSelectItem T="Guid" Value="company.Id">@company.Name</MudSelectItem>
@@ -68,7 +68,7 @@ else
                                            Label="@Localization.GetString("Type")"
                                            Required="true"
                                            Variant="Variant.Outlined"
-                                           AnchorOrigin="Origin.BottomCenter">
+                                           AnchorOrigin="Origin.BottomLeft">
                                     <MudSelectItem T="InvoiceType" Value="InvoiceType.Receivable">@Localization.GetString("Receivable")</MudSelectItem>
                                     <MudSelectItem T="InvoiceType" Value="InvoiceType.Payable">@Localization.GetString("Payable")</MudSelectItem>
                                 </MudSelect>
@@ -81,7 +81,7 @@ else
                                            Label="@Localization.GetString("Status")"
                                            Required="true"
                                            Variant="Variant.Outlined"
-                                           AnchorOrigin="Origin.BottomCenter">
+                                           AnchorOrigin="Origin.BottomLeft">
                                     <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Draft">@Localization.GetString("Draft")</MudSelectItem>
                                     <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Sent">@Localization.GetString("Sent")</MudSelectItem>
                                     <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.PartiallyPaid">@Localization.GetString("PartiallyPaid")</MudSelectItem>

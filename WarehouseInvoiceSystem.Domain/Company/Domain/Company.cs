@@ -14,7 +14,7 @@
         public string? Address { get; set; }
         public string? TaxId { get; set; }
         public int PaymentTermsDays { get; set; } = 30; // Net 30 default
-        public decimal? CreditLimit { get; set; }
+        public decimal CreditLimit { get; set; }
         public bool IsActive { get; set; } = true;
 
         // Navigation properties

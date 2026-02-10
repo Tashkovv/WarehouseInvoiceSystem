@@ -39,7 +39,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal?>("CreditLimit")
+                    b.Property<decimal>("CreditLimit")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
@@ -307,34 +307,41 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.Property<string>("Code")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("DefaultPrice")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Unit")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("Product", (string)null);
                 });
 
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.User.Domain.User", b =>

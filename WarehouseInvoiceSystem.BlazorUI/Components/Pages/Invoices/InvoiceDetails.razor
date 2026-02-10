@@ -35,6 +35,7 @@ else
         </div>
         <div>
             <MudButton StartIcon="@Icons.Material.Filled.Email"
+                       Style="width:210px" 
                        Color="Color.Success"
                        Variant="Variant.Filled"
                        Class="mr-2"
@@ -52,13 +53,15 @@ else
                 }
             </MudButton>
             <MudButton StartIcon="@Icons.Material.Filled.Print"
+                       Style="width:125px"
                        Color="Color.Secondary"
                        Variant="Variant.Outlined"
                        Class="mr-2"
                        OnClick="ExportForPrinting">
                 @Localization.GetString("Export")
             </MudButton>
-            <MudButton StartIcon="@Icons.Material.Filled.Edit" 
+            <MudButton StartIcon="@Icons.Material.Filled.Edit"
+                       Style="width:125px"
                        Color="Color.Primary" 
                        Variant="Variant.Filled"
                        Class="mr-2"
@@ -66,6 +69,7 @@ else
                 @Localization.GetString("Edit")
             </MudButton>
             <MudButton StartIcon="@Icons.Material.Filled.Delete"
+                       Style="width:125px"
                        Color="Color.Error"
                        Variant="Variant.Outlined"
                        OnClick="DeleteInvoice">

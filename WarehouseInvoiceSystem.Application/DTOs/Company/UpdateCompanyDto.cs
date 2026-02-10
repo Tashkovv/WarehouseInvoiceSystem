@@ -12,7 +12,7 @@
         public string? Address { get; set; }
         public string? TaxId { get; set; }
         public int PaymentTermsDays { get; set; }
-        public decimal? CreditLimit { get; set; }
+        public decimal CreditLimit { get; set; }
         public bool IsActive { get; set; }
     }
 }

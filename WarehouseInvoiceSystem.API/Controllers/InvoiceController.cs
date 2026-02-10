@@ -152,7 +152,7 @@
         {
             try
             {
-                InvoiceSummaryDto summary = await invoiceService.GetInvoiceSummaryAsync();
+                InvoiceSummaryDto summary = await invoiceService.GetPayableInvoiceSummaryAsync();
                 return Ok(summary);
             }
             catch (Exception ex)
@@ -164,7 +164,7 @@
 
         /// <summary>
         /// Create a new invoice
-        /// </summary>
+        /// </summary>s
         [HttpPost]
         public async Task<ActionResult<InvoiceDto>> Create([FromBody] CreateInvoiceDto createDto)
         {

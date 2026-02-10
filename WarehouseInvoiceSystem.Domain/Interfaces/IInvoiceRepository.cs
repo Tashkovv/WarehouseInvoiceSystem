@@ -17,7 +17,7 @@
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<string> GenerateInvoiceNumberAsync(InvoiceType type);
-        Task<(int total, int paid, int unpaid, int overdue)> GetInvoiceCountsAsync();
-        Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetInvoiceTotalsAsync();
+        Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync();
+        Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync();
     }
 }

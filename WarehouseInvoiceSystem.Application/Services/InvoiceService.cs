@@ -147,10 +147,10 @@
             return MapToDto(updated);
         }
 
-        public async Task<InvoiceSummaryDto> GetInvoiceSummaryAsync()
+        public async Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync()
         {
-            (int total, int paid, int unpaid, int overdue) = await invoiceRepository.GetInvoiceCountsAsync();
-            (decimal totalAmount, decimal totalPaid, decimal totalDue) = await invoiceRepository.GetInvoiceTotalsAsync();
+            (int total, int paid, int unpaid, int overdue) = await invoiceRepository.GetPayableInvoiceCountsAsync();
+            (decimal totalAmount, decimal totalPaid, decimal totalDue) = await invoiceRepository.GetPayableInvoiceTotalsAsync();
 
             return new InvoiceSummaryDto
             {

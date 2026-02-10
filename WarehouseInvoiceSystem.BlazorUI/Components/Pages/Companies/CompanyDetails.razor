@@ -131,11 +131,11 @@ else
                         <MudText Typo="Typo.body1">@_company.PaymentTermsDays @Localization.GetString("Days")</MudText>
                     </div>
 
-                    @if (_company.CreditLimit.HasValue)
+                    @if (_company.CreditLimit != 0)
                     {
                         <div>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("CreditLimit")</MudText>
-                            <MudText Typo="Typo.body1">@_company.CreditLimit.Value.ToString("C")</MudText>
+                            <MudText Typo="Typo.body1">@_company.CreditLimit.ToString("C")</MudText>
                         </div>
                     }
                 </MudCardContent>

@@ -145,28 +145,29 @@
             return $"{prefix}-{year:D4}{month:D2}{nextNumber:D4}";
         }
 
-        public async Task<(int total, int paid, int unpaid, int overdue)> GetInvoiceCountsAsync()
+        public async Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync()
         {
             DateTime today = DateTime.UtcNow.Date;
+            IEnumerable<Invoice> invoices = context.Invoices.Where(i => i.DeletedOn == null);
 
-            int total = await context.Invoices.CountAsync(i => i.DeletedOn == null);
-            int paid = await context.Invoices.CountAsync(i => i.Status == InvoiceStatus.Paid && i.DeletedOn == null);
-            int unpaid = await context.Invoices.CountAsync(i =>
-                i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled && i.DeletedOn == null);
-            int overdue = await context.Invoices.CountAsync(i =>
-                i.DueDate < today &&
-                i.Status != InvoiceStatus.Paid &&
-                i.Status != InvoiceStatus.Cancelled &&
-                i.DeletedOn == null);
+            int total = invoices.Count();
+            int paid = invoices.Count(i => i.Status.Equals(InvoiceStatus.Paid));
+            int unpaid = invoices.Count(i => i.Type.Equals(InvoiceType.Payable) &&
+                                             i.Status != InvoiceStatus.Paid &&
+                                             i.Status != InvoiceStatus.Cancelled);
+            int overdue = invoices.Count(i => i.DueDate < today &&
+                                              i.Status != InvoiceStatus.Paid &&
+                                              i.Status != InvoiceStatus.Cancelled);
 
             return (total, paid, unpaid, overdue);
         }
 
-        public async Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetInvoiceTotalsAsync()
+        public async Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync()
         {
-            List<Invoice> invoices = await context.Invoices
-                .Where(i => i.Status != InvoiceStatus.Cancelled && i.DeletedOn == null)
-                .ToListAsync();
+            IEnumerable<Invoice> invoices = context.Invoices
+                                                   .Where(i => i.Status != InvoiceStatus.Cancelled &&
+                                                               i.Type.Equals(InvoiceType.Payable) &&
+                                                               i.DeletedOn == null);
 
 
             decimal totalAmount = invoices.Sum(i => i.TotalAmount);
