@@ -46,8 +46,8 @@ else
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
                                            Variant="Variant.Outlined"
-                                           AnchorOrigin="Origin.BottomLeft">
-                                    <MudSelectItem T="Guid?" Value="null">@Localization.GetString("SelectCompany")</MudSelectItem>
+                                           AnchorOrigin="Origin.BottomLeft"
+                                           Placeholder="@Localization.GetString("SelectCompany")">
                                     @foreach (CompanyDto company in _companies)
                                     {
                                         <MudSelectItem T="Guid?" Value="company.Id">@company.Name</MudSelectItem>
@@ -61,8 +61,8 @@ else
                                            Label="@Localization.GetString("Type")"
                                            Required="true"
                                            Variant="Variant.Outlined"
-                                           AnchorOrigin="Origin.BottomLeft">
-                                    <MudSelectItem T="InvoiceType ?" Value="null">@Localization.GetString("SelectInvoiceType")</MudSelectItem>
+                                           AnchorOrigin="Origin.BottomLeft"
+                                           Placeholder="@Localization.GetString("SelectInvoiceType")">
                                     <MudSelectItem T="InvoiceType ?" Value="@((InvoiceType?)InvoiceType.Receivable)">
                                         <MudChip T="InvoiceType" Size="Size.Medium" Color="Color.Success">
                                             @Localization.GetString("Receivable")
@@ -162,21 +162,22 @@ else
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField Label="@Localization.GetString("Quantity")"
+                                                                 @bind-Value="item.Quantity"
+                                                                 @bind-Value:after="CalculateTotals"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="1"
-                                                                 Step="1"
-                                                                 ValueChanged="@((int val) => { item.Quantity = val; CalculateTotals(); })" />
+                                                                 Step="1" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField Label="@Localization.GetString("UnitPrice")"
+                                                                 @bind-Value="item.UnitPrice"
+                                                                 @bind-Value:after="CalculateTotals"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="0"
-                                                                 Step="0.01m"
                                                                  Format="C2"
-                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"
-                                                                 ValueChanged="@((decimal val) => { item.UnitPrice = val; CalculateTotals(); })" />
+                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"/>
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField Label="@Localization.GetString("TaxRate")"

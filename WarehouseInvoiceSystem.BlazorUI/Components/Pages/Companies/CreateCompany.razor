@@ -34,20 +34,33 @@
                                   Label="@Localization.GetString("CompanyName")"
                                   Variant="Variant.Outlined"
                                   Required="true"
-                                  Placeholder="@Localization.GetString("EnterCompanyName")" />
+                                  Placeholder="@Localization.GetString("EnterCompanyName")"/>
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudSelect T="CompanyType"
+                    <MudSelect T="CompanyType?"
                                Value="_type"
-                               ValueChanged="@((CompanyType val) => _type = val)"
+                               ValueChanged="@((CompanyType? val) => _type = val)"
                                Label="@Localization.GetString("Type")"
                                Variant="Variant.Outlined"
                                Required="true"
-                               AnchorOrigin="Origin.BottomLeft">
-                        <MudSelectItem T="CompanyType" Value="CompanyType.Client">@Localization.GetString("Client")</MudSelectItem>
-                        <MudSelectItem T="CompanyType" Value="CompanyType.Vendor">@Localization.GetString("Vendor")</MudSelectItem>
-                        <MudSelectItem T="CompanyType" Value="CompanyType.Both">@Localization.GetString("ClientAndVendor")</MudSelectItem>
+                               AnchorOrigin="Origin.BottomLeft"
+                               Placeholder="@Localization.GetString("ChooseCompanyType")">
+                        <MudSelectItem T="CompanyType?" Value="@(CompanyType.Client)">
+                            <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Success">
+                                @Localization.GetString("Client")
+                            </MudChip>
+                        </MudSelectItem>
+                        <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Vendor)">
+                            <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Warning">
+                                @Localization.GetString("Vendor")
+                            </MudChip>
+                        </MudSelectItem>
+                        <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Both)">
+                            <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Info">
+                                @Localization.GetString("ClientAndVendor")
+                            </MudChip>
+                        </MudSelectItem>
                     </MudSelect>
                 </MudItem>
 
@@ -153,7 +166,7 @@
     private readonly CreateCompanyDto _createDto = new();
 
     private string _name = string.Empty;
-    private CompanyType _type = CompanyType.Client;
+    private CompanyType? _type;
     private string? _contactPerson;
     private string? _email;
     private string? _phone;
@@ -180,12 +193,18 @@
             return;
         }
 
+        if (!_type.HasValue)
+        {
+            Snackbar.Add(Localization.GetString("PleaseEnterCompanyType"), Severity.Warning);
+            return;
+        }
+
         _saving = true;
 
         try
         {
             _createDto.Name = _name;
-            _createDto.Type = _type;
+            _createDto.Type = _type.Value;
             _createDto.ContactPerson = _contactPerson;
             _createDto.Email = _email;
             _createDto.Phone = _phone;

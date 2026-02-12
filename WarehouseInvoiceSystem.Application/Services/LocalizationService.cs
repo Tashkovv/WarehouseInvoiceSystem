@@ -131,12 +131,15 @@
                 ["ErrorDeletingCompany"] = "Error deleting company",
                 ["DeleteCompanyConfirm"] = "Are you sure you want to delete this company? This action cannot be undone.",
                 ["PleaseEnterCompanyName"] = "Please enter company name",
+                ["PleaseEnterCompanyType"] = "Please enter company type",
                 ["BalanceOwed"] = "Balance Owed",
                 ["WeOwe"] = "We Owe",
                 ["TheyOwe"] = "They Owe Us",
                 ["NetBalance"] = "Net Balance",
                 ["ViewInvoices"] = "View Invoices",
                 ["TotalInvoicesCount"] = "Total Invoices",
+                ["Settled"] = "Settled",
+                ["ChooseCompanyType"] = "Choose company type",
 
                 // Invoices
                 ["Invoice"] = "Invoice",
@@ -386,12 +389,15 @@
                 ["ErrorDeletingCompany"] = "Грешка при бришење на компанија",
                 ["DeleteCompanyConfirm"] = "Дали сте сигурни дека сакате да ја избришете оваа компанија? Ова дејство не може да се врати.",
                 ["PleaseEnterCompanyName"] = "Ве молиме внесете име на компанија",
+                ["PleaseEnterCompanyType"] = "Ве молиме внесете тип на компанија",
                 ["BalanceOwed"] = "Салдо",
                 ["WeOwe"] = "Ние должиме",
                 ["TheyOwe"] = "Тие ни должат",
                 ["NetBalance"] = "Нето салдо",
                 ["ViewInvoices"] = "Прегледај фактури",
                 ["TotalInvoicesCount"] = "Вкупно фактури",
+                ["Settled"] = "Чисти",
+                ["ChooseCompanyType"] = "Одбери тип на компанија",
 
                 // Invoices
                 ["Invoice"] = "Фактура",

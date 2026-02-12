@@ -62,3 +62,8 @@ h1:focus {
 .tabular-numbers {
     font-variant-numeric: tabular-nums;
 }
+
+.mud-select .mud-select-input.mud-input-slot {
+    display: flex !important;
+    align-items: center;
+}

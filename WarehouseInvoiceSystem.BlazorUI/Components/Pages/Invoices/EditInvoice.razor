@@ -186,37 +186,36 @@ else
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField T="int"
-                                                                 Value="item.Quantity"
+                                                                 @bind-Value="item.Quantity"
+                                                                 @bind-Value:after="CalculateTotals"
                                                                  Label="@Localization.GetString("Quantity")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="0"
-                                                                 Step="1"
-                                                                 ValueChanged="@((int val) => { item.Quantity = val; CalculateTotals(); })" />
+                                                                 Step="1"/>
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField T="decimal"
-                                                                 Value="item.UnitPrice"
+                                                                 @bind-Value="item.UnitPrice"
+                                                                 @bind-Value:after="CalculateTotals"
                                                                  Label="@Localization.GetString("UnitPrice")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="0"
-                                                                 Step="0.01m"
                                                                  Format="C2"
-                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"
-                                                                 ValueChanged="@((decimal val) => { item.UnitPrice = val; CalculateTotals(); })" />
+                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"/>
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField T="decimal"
-                                                                 Value="item.TaxRate"
+                                                                 @bind-Value="item.TaxRate"
+                                                                 @bind-Value:after="CalculateTotals"
                                                                  Label="@Localization.GetString("TaxRate")"
                                                                  Variant="Variant.Outlined"
                                                                  Min="0"
                                                                  Max="100"
                                                                  Step="0.1m"
                                                                  Adornment="Adornment.End"
-                                                                 AdornmentText="%"
-                                                                 ValueChanged="@((decimal val) => { item.TaxRate = val; CalculateTotals(); })" />
+                                                                 AdornmentText="%" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudTextField Value="@item.LineTotal.ToString("C")"

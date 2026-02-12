@@ -48,16 +48,29 @@ else
                     </MudItem>
 
                     <MudItem xs="12" md="6">
-                        <MudSelect T="CompanyType"
+                        <MudSelect T="CompanyType ?"
                                    Value="_type"
-                                   ValueChanged="@((CompanyType val) => _type = val)"
+                                   ValueChanged="@((CompanyType? val) => _type = val)"
                                    Label="@Localization.GetString("Type")"
                                    Variant="Variant.Outlined"
                                    Required="true"
-                                   AnchorOrigin="Origin.BottomLeft">
-                            <MudSelectItem T="CompanyType" Value="CompanyType.Client">@Localization.GetString("Client")</MudSelectItem>
-                            <MudSelectItem T="CompanyType" Value="CompanyType.Vendor">@Localization.GetString("Vendor")</MudSelectItem>
-                            <MudSelectItem T="CompanyType" Value="CompanyType.Both">@Localization.GetString("ClientAndVendor")</MudSelectItem>
+                                   AnchorOrigin="Origin.BottomLeft"
+                                   Placeholder="@Localization.GetString("ChooseCompanyType")">
+                            <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Client)">
+                                <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Success">
+                                    @Localization.GetString("Client")
+                                </MudChip>
+                            </MudSelectItem>
+                            <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Vendor)">
+                                <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Warning">
+                                    @Localization.GetString("Vendor")
+                                </MudChip>
+                            </MudSelectItem>
+                            <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Both)">
+                                <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Info">
+                                    @Localization.GetString("ClientAndVendor")
+                                </MudChip>
+                            </MudSelectItem>
                         </MudSelect>
                     </MudItem>
 
@@ -123,10 +136,10 @@ else
                     <MudItem xs="12" sm="6" md="4">
                         <MudNumericField T="decimal"
                                          Label="@Localization.GetString("CreditLimit")"
+                                         Value="_creditLimit"
                                          ValueChanged="@((decimal val) => _creditLimit = val)"
                                          Variant="Variant.Outlined"
                                          Min="0"
-                                         Step="0.01m"
                                          Format="C2"
                                          Culture="@System.Globalization.CultureInfo.CurrentCulture"
                                          Placeholder="@Localization.GetString("EnterCreditLimit")" />
@@ -178,7 +191,7 @@ else
     private readonly UpdateCompanyDto _updateDto = new();
 
     private string _name = string.Empty;
-    private CompanyType _type = CompanyType.Client;
+    private CompanyType? _type;
     private string? _contactPerson;
     private string? _email;
     private string? _phone;
@@ -240,12 +253,18 @@ else
             return;
         }
 
+        if (!_type.HasValue)
+        {
+            Snackbar.Add(Localization.GetString("PleaseEnterCompanyType"), Severity.Warning);
+            return;
+        }
+
         _saving = true;
 
         try
         {
             _updateDto.Name = _name;
-            _updateDto.Type = _type;
+            _updateDto.Type = _type.Value;
             _updateDto.ContactPerson = _contactPerson;
             _updateDto.Email = _email;
             _updateDto.Phone = _phone;
