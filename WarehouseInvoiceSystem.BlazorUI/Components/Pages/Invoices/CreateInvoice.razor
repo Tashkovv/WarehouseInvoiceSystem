@@ -78,20 +78,22 @@ else
 
                             <MudItem xs="12" md="4">
                                 <MudDatePicker @key="_currentCultureKey"
+                                               @bind-Date="_issueDate"
+                                               @bind-Date:after="OnIssueDateChanged"
                                                Label="@Localization.GetString("IssueDate")"
                                                Required="true"
-                                               Variant="Variant.Outlined"
-                                               DateChanged="OnIssueDateChanged" />
+                                               Variant="Variant.Outlined"/>
                             </MudItem>
 
                             <MudItem xs="12" md="4">
                                 <MudNumericField T="int"
                                                  Label="@Localization.GetString("Terms")"
+                                                 @bind-Value="_paymentTermsDays"
+                                                 @bind-Value:after="OnPaymentTermsChanged"
                                                  Variant="Variant.Outlined"
                                                  Adornment="Adornment.End"
                                                  AdornmentText="@Localization.GetString("Days")"
-                                                 Min="0"
-                                                 ValueChanged="OnPaymentTermsChanged" />
+                                                 Min="0"/>
                             </MudItem>
 
                             <MudItem xs="12" md="4">
@@ -173,27 +175,32 @@ else
                                                 <MudNumericField Label="@Localization.GetString("UnitPrice")"
                                                                  @bind-Value="item.UnitPrice"
                                                                  @bind-Value:after="CalculateTotals"
+                                                                 HelperText="@item.UnitPrice.ToString("C")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="0"
-                                                                 Format="C2"
-                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"/>
+                                                                 Step="1"
+                                                                 Format="N2"
+                                                                 Immediate="true" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField Label="@Localization.GetString("TaxRate")"
+                                                                 Value="item.TaxRate"
+                                                                 ValueChanged="@((decimal v) => OnTaxRateChanged(item, v))"
                                                                  Variant="Variant.Outlined"
                                                                  Min="0"
                                                                  Max="100"
                                                                  Step="0.1m"
+                                                                 Format="N2"
                                                                  Adornment="Adornment.End"
                                                                  AdornmentText="%"
-                                                                 ValueChanged="@((decimal val) => { item.TaxRate = val; CalculateTotals(); })" />
+                                                                 TextUpdateSuppression="false" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudTextField Value="@item.LineTotal.ToString("C")"
                                                               Label="@Localization.GetString("Total")"
                                                               Variant="Variant.Outlined"
-                                                              ReadOnly="true" />
+                                                              ReadOnly="true"/>
                                             </MudItem>
                                         </MudGrid>
                                     </MudCardContent>
@@ -285,7 +292,7 @@ else
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadCompanies();
-        AddLineItem(); // Start with one line item
+        AddLineItem();
     }
 
     private async void OnLanguageChanged()
@@ -314,18 +321,22 @@ else
         }
     }
 
-    private void OnIssueDateChanged(DateTime? date)
+    private void OnTaxRateChanged(LineItemModel item, decimal value)
     {
-        _issueDate = date;
+        item.TaxRate = Math.Clamp(value, 0m, 100m);
+        CalculateTotals();
+    }
+
+    private void OnIssueDateChanged()
+    {
         if (_issueDate.HasValue)
         {
             _dueDate = _issueDate.Value.AddDays(_paymentTermsDays);
         }
     }
 
-    private void OnPaymentTermsChanged(int days)
+    private void OnPaymentTermsChanged()
     {
-        _paymentTermsDays = days;
         if (_issueDate.HasValue)
         {
             _dueDate = _issueDate.Value.AddDays(_paymentTermsDays);

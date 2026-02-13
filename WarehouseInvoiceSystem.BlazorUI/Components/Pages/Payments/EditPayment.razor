@@ -57,8 +57,7 @@ else
 
                     <MudItem xs="12" md="6">
                         <MudDatePicker @key="_currentCultureKey"
-                                       Date="_paymentDate"
-                                       DateChanged="@((DateTime? val) => _paymentDate = val)"
+                                       @bind-Date="_paymentDate"
                                        Label="@Localization.GetString("PaymentDate")"
                                        Variant="Variant.Outlined"
                                        Required="true" />
@@ -66,40 +65,41 @@ else
 
                     <MudItem xs="12" md="6">
                         <MudNumericField T="decimal"
-                                         Value="_amount"
-                                         ValueChanged="@((decimal val) => _amount = val)"
+                                         @bind-Value="_amount"
                                          Label="@Localization.GetString("Amount")"
                                          Variant="Variant.Outlined"
                                          Required="true"
                                          Min="0.01m"
                                          Max="@_maxAmount"
-                                         Format="C2"
-                                         Culture="@System.Globalization.CultureInfo.CurrentCulture"
-                                         HelperText="@($"{Localization.GetString("MaximumAmount")}: {_maxAmount.ToString("C")}")"
+                                         HelperText="@_amount.ToString("C")"
+                                         Format="N2"
+                                         Immediate="true"
                                          Placeholder="@Localization.GetString("EnterAmount")" />
                     </MudItem>
 
                     <MudItem xs="12" md="6">
                         <MudSelect T="PaymentMethod"
-                                   Value="_paymentMethod"
-                                   ValueChanged="@((PaymentMethod val) => _paymentMethod = val)"
+                                   @bind-Value="_paymentMethod"
                                    Label="@Localization.GetString("PaymentMethod")"
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    AnchorOrigin="Origin.BottomLeft">
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.Cash">@Localization.GetString("Cash")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.Check">@Localization.GetString("Check")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.BankTransfer">@Localization.GetString("BankTransfer")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.CreditCard">@Localization.GetString("CreditCard")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.DebitCard">@Localization.GetString("DebitCard")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.Other">@Localization.GetString("Other")</MudSelectItem>
+                            @foreach (var method in Enum.GetValues<PaymentMethod>())
+                            {
+                                <MudSelectItem T="PaymentMethod" Value="@(method)">
+                                    <MudChip T="InvoiceStatus"
+                                             Size="Size.Small"
+                                             Color="Color.Info">
+                                        @Localization.GetString(method.ToString())
+                                    </MudChip>
+                                </MudSelectItem>
+                            }
                         </MudSelect>
                     </MudItem>
 
                     <MudItem xs="12" md="6">
                         <MudTextField T="string"
-                                      Value="_referenceNumber"
-                                      ValueChanged="@((string val) => _referenceNumber = val)"
+                                      @bind-Value="_referenceNumber"
                                       Label="@Localization.GetString("ReferenceNumber")"
                                       Variant="Variant.Outlined"
                                       Placeholder="@Localization.GetString("EnterReferenceNumber")" />
@@ -107,8 +107,7 @@ else
 
                     <MudItem xs="12">
                         <MudTextField T="string"
-                                      Value="_notes"
-                                      ValueChanged="@((string val) => _notes = val)"
+                                      @bind-Value="_notes"
                                       Label="@Localization.GetString("Notes")"
                                       Variant="Variant.Outlined"
                                       Lines="3"
@@ -224,7 +223,6 @@ else
     {
         if (_invoice != null && _payment != null)
         {
-            // Remaining balance = current amount due + this payment amount (since we're editing)
             _remainingBalance = _invoice.AmountDue + _payment.Amount;
             _maxAmount = _remainingBalance;
         }

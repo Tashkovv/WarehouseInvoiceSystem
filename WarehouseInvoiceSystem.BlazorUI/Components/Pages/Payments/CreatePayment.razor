@@ -38,8 +38,8 @@ else
                 <MudGrid>
                     <MudItem xs="12">
                         <MudSelect T="Guid?"
-                                   Value="_selectedInvoiceId"
-                                   ValueChanged="OnInvoiceSelected"
+                                   @bind-Value="_selectedInvoiceId"
+                                   @bind-Value:after="OnInvoiceSelected"
                                    Label="@Localization.GetString("SelectInvoice")"
                                    Variant="Variant.Outlined"
                                    Required="true"
@@ -90,8 +90,7 @@ else
 
                     <MudItem xs="12" md="6">
                         <MudDatePicker @key="_currentCultureKey"
-                                       Date="_paymentDate"
-                                       DateChanged="@((DateTime? val) => _paymentDate = val)"
+                                       @bind-Date="_paymentDate"
                                        Label="@Localization.GetString("PaymentDate")"
                                        Variant="Variant.Outlined"
                                        Required="true" />
@@ -99,40 +98,41 @@ else
 
                     <MudItem xs="12" md="6">
                         <MudNumericField T="decimal"
-                                         Value="_amount"
-                                         ValueChanged="@((decimal val) => _amount = val)"
+                                         @bind-Value="_amount"
                                          Label="@Localization.GetString("Amount")"
                                          Variant="Variant.Outlined"
                                          Required="true"
-                                         Min="0"
+                                         Min="0.01m"
                                          Max="@(_selectedInvoice?.AmountDue ?? 999999999)"
-                                         Format="C2"
-                                         Culture="@System.Globalization.CultureInfo.CurrentCulture"
-                                         HelperText="@($"{Localization.GetString("MaximumAmount")}: {_selectedInvoice?.AmountDue.ToString("C") ?? "N/A"}")"
+                                         HelperText="@_amount.ToString("C")"
+                                         Format="N2"
+                                         Immediate="true"
                                          Placeholder="@Localization.GetString("EnterAmount")" />
                     </MudItem>
 
                     <MudItem xs="12" md="6">
                         <MudSelect T="PaymentMethod"
-                                   Value="_paymentMethod"
-                                   ValueChanged="@((PaymentMethod val) => _paymentMethod = val)"
+                                   @bind-Value="_paymentMethod"
                                    Label="@Localization.GetString("PaymentMethod")"
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    AnchorOrigin="Origin.BottomLeft">
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.Cash">@Localization.GetString("Cash")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.Check">@Localization.GetString("Check")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.BankTransfer">@Localization.GetString("BankTransfer")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.CreditCard">@Localization.GetString("CreditCard")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.DebitCard">@Localization.GetString("DebitCard")</MudSelectItem>
-                            <MudSelectItem T="PaymentMethod" Value="PaymentMethod.Other">@Localization.GetString("Other")</MudSelectItem>
+                            @foreach (var method in Enum.GetValues<PaymentMethod>())
+                            {
+                                <MudSelectItem T="PaymentMethod" Value="@(method)">
+                                    <MudChip T="InvoiceStatus"
+                                             Size="Size.Small"
+                                             Color="Color.Info">
+                                        @Localization.GetString(method.ToString())
+                                    </MudChip>
+                                </MudSelectItem>
+                            }
                         </MudSelect>
                     </MudItem>
 
                     <MudItem xs="12" md="6">
                         <MudTextField T="string"
-                                      Value="_referenceNumber"
-                                      ValueChanged="@((string val) => _referenceNumber = val)"
+                                      @bind-Value="_referenceNumber"
                                       Label="@Localization.GetString("ReferenceNumber")"
                                       Variant="Variant.Outlined"
                                       Placeholder="@Localization.GetString("EnterReferenceNumber")" />
@@ -140,16 +140,14 @@ else
 
                     <MudItem xs="12" md="6">
                         <MudTextField T="string"
-                                      Value="_recordedBy"
-                                      ValueChanged="@((string val) => _recordedBy = val)"
+                                      @bind-Value="_recordedBy"
                                       Label="@Localization.GetString("RecordedBy")"
                                       Variant="Variant.Outlined" />
                     </MudItem>
 
                     <MudItem xs="12">
                         <MudTextField T="string"
-                                      Value="_notes"
-                                      ValueChanged="@((string val) => _notes = val)"
+                                      @bind-Value="_notes"
                                       Label="@Localization.GetString("Notes")"
                                       Variant="Variant.Outlined"
                                       Lines="3"
@@ -212,7 +210,7 @@ else
         if (PreSelectedInvoiceId.HasValue)
         {
             _selectedInvoiceId = PreSelectedInvoiceId.Value;
-            await OnInvoiceSelected(PreSelectedInvoiceId.Value);
+            await OnInvoiceSelected();
         }
     }
 
@@ -247,13 +245,11 @@ else
         }
     }
 
-    private async Task OnInvoiceSelected(Guid? invoiceId)
+    private async Task OnInvoiceSelected()
     {
-        _selectedInvoiceId = invoiceId;
-
-        if (invoiceId.HasValue)
+        if (_selectedInvoiceId.HasValue)
         {
-            _selectedInvoice = _unpaidInvoices.FirstOrDefault(i => i.Id == invoiceId.Value);
+            _selectedInvoice = _unpaidInvoices.FirstOrDefault(i => i.Id == _selectedInvoiceId.Value);
             if (_selectedInvoice != null)
             {
                 _amount = _selectedInvoice.AmountDue;

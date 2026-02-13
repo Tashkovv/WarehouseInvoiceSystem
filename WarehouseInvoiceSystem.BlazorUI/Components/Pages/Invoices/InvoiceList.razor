@@ -71,11 +71,11 @@
                 <!-- Status Filter -->
                 <MudItem xs="12" sm="6" md="3">
                     <MudSelect T="InvoiceStatus ?"
-                               Value="_filterStatus"
+                               @bind-Value="_filterStatus"
+                               @bind-Value:after="ResetPaginationAndApplyFilters"
                                Label="@Localization.GetString("Status")"
                                Clearable="true"
-                               Dense="true"
-                               ValueChanged="@((InvoiceStatus? val) => { _filterStatus = val; ResetPaginationAndApplyFilters(); })">
+                               Dense="true">
                         @foreach (var status in Enum.GetValues<InvoiceStatus>())
                         {
                             <MudSelectItem T="InvoiceStatus ?" Value="@(status)">
@@ -92,8 +92,8 @@
                 <!-- Type Filter -->
                 <MudItem xs="12" sm="6" md="3">
                     <MudSelect T="InvoiceType ?"
-                               Value="_filterType"
-                               ValueChanged="@((InvoiceType? val) => { _filterType = val; ResetPaginationAndApplyFilters(); })"
+                               @bind-Value="_filterType"
+                               @bind-Value:after="ResetPaginationAndApplyFilters"
                                Label="@Localization.GetString("Type")"
                                Clearable="true">
                         <MudSelectItem T="InvoiceType ?" Value="@((InvoiceType?)InvoiceType.Receivable)">
@@ -112,13 +112,13 @@
                 <!-- Company Filter -->
                 <MudItem xs="12" sm="6" md="3">
                     <MudAutocomplete T="string"
-                                     Value="_filterCompany"
+                                     @bind-Value="_filterCompany"
+                                     @bind-Value:after="ResetPaginationAndApplyFilters"
                                      Label="@Localization.GetString("Company")"
                                      SearchFunc="@SearchCompanies"
                                      Dense="true"
                                      Clearable="true"
-                                     OnClearedClick="@(() => { _filterCompany = null; ResetPaginationAndApplyFilters(); })"
-                                     ValueChanged="@((string val) => { _filterCompany = val; ResetPaginationAndApplyFilters(); })" />
+                                     OnClearedClick="@(() => { _filterCompany = null; ResetPaginationAndApplyFilters(); })"/>
                 </MudItem>
 
                 <!-- Clear Filters Button -->
@@ -136,14 +136,14 @@
                 <MudItem xs="12" sm="6" md="3">
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("IssueDate")</MudText>
                     <MudStack Row="true" Spacing="1">
-                        <MudDatePicker Date="_filterIssueDateFrom"
+                        <MudDatePicker @bind-Date="_filterIssueDateFrom"
+                                       @bind-Date:after="ResetPaginationAndApplyFilters"
                                        Label="@Localization.GetString("From")"
-                                       Dense="true"
-                                       DateChanged="@((DateTime? val) => { _filterIssueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
-                        <MudDatePicker Date="_filterIssueDateTo"
+                                       Dense="true"/>
+                        <MudDatePicker @bind-Date="_filterIssueDateTo"
+                                       @bind-Date:after="ResetPaginationAndApplyFilters"
                                        Label="@Localization.GetString("To")"
-                                       Dense="true"
-                                       DateChanged="@((DateTime? val) => { _filterIssueDateTo = val; ResetPaginationAndApplyFilters(); })" />
+                                       Dense="true"/>
                     </MudStack>
                 </MudItem>
 
@@ -151,14 +151,14 @@
                 <MudItem xs="12" sm="6" md="3">
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("DueDate")</MudText>
                     <MudStack Row="true" Spacing="1">
-                        <MudDatePicker Date="_filterDueDateFrom"
+                        <MudDatePicker @bind-Date="_filterDueDateFrom"
+                                       @bind-Date:after="ResetPaginationAndApplyFilters"
                                        Label="@Localization.GetString("From")"
-                                       Dense="true"
-                                       DateChanged="@((DateTime? val) => { _filterDueDateFrom = val; ResetPaginationAndApplyFilters(); })" />
-                        <MudDatePicker Date="_filterDueDateTo"
+                                       Dense="true"/>
+                        <MudDatePicker @bind-Date="_filterDueDateTo"
+                                       @bind-Date:after="ResetPaginationAndApplyFilters"
                                        Label="@Localization.GetString("To")"
-                                       Dense="true"
-                                       DateChanged="@((DateTime? val) => { _filterDueDateTo = val; ResetPaginationAndApplyFilters(); })" />
+                                       Dense="true"/>
                     </MudStack>
                 </MudItem>
 
@@ -167,17 +167,21 @@
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("AmountRange")</MudText>
                     <MudStack Row="true" Spacing="1">
                         <MudNumericField T="decimal?"
-                                         Value="_filterAmountMin"
+                                         @bind-Value="_filterAmountMin"
+                                         @bind-Value:after="ResetPaginationAndApplyFilters"
                                          Label="@Localization.GetString("Min")"
                                          HideSpinButtons="true"
                                          Dense="true"
-                                         ValueChanged="@((decimal? val) => { _filterAmountMin = val; ResetPaginationAndApplyFilters(); })" />
+                                         Format="N2"
+                                         Immediate="true" />
                         <MudNumericField T="decimal?"
-                                         Value="_filterAmountMax"
+                                         @bind-Value="_filterAmountMax"
+                                         @bind-Value:after="ResetPaginationAndApplyFilters"
                                          Label="@Localization.GetString("Max")"
                                          HideSpinButtons="true"
                                          Dense="true"
-                                         ValueChanged="@((decimal? val) => { _filterAmountMax = val; ResetPaginationAndApplyFilters(); })" />
+                                         Format="N2"
+                                         Immediate="true" />
                     </MudStack>
                 </MudItem>
             </MudGrid>
@@ -320,11 +324,11 @@
                             </MudText>
 
                             <MudSelect T="int"
-                                       Value="_itemsPerPage"
+                                       @bind-Value="_itemsPerPage"
+                                       @bind-Value:after="UpdatePagination"
                                        Dense="true"
                                        Variant="Variant.Outlined"
-                                       Style="width: 100px;"
-                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                       Style="width: 100px;">
                                 <MudSelectItem Value="10">10</MudSelectItem>
                                 <MudSelectItem Value="25">25</MudSelectItem>
                                 <MudSelectItem Value="50">50</MudSelectItem>
@@ -503,6 +507,7 @@
 
     private void UpdatePagination()
     {
+        _currentPage = 1;
         // Calculate total pages
         _totalPages = (int)Math.Ceiling((double)_totalInvoices / _itemsPerPage);
 
@@ -584,13 +589,6 @@
             _currentPage++;
             UpdatePagination();
         }
-    }
-
-    private void OnItemsPerPageChanged(int newItemsPerPage)
-    {
-        _itemsPerPage = newItemsPerPage;
-        _currentPage = 1; // Reset to first page when changing items per page
-        UpdatePagination();
     }
 
     private Color GetStatusColor(InvoiceStatus? status)

@@ -396,7 +396,7 @@
                 ["NetBalance"] = "Нето салдо",
                 ["ViewInvoices"] = "Прегледај фактури",
                 ["TotalInvoicesCount"] = "Вкупно фактури",
-                ["Settled"] = "Чисти",
+                ["Settled"] = "Намирени",
                 ["ChooseCompanyType"] = "Одбери тип на компанија",
 
                 // Invoices

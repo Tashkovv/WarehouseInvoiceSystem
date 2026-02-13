@@ -48,8 +48,7 @@ else
                         <MudGrid>
                             <MudItem xs="12" md="6">
                                 <MudSelect T="Guid"
-                                           Value="_selectedCompanyId"
-                                           ValueChanged="@((Guid val) => _selectedCompanyId = val)"
+                                           @bind-Value="_selectedCompanyId"
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
                                            Variant="Variant.Outlined"
@@ -63,31 +62,41 @@ else
 
                             <MudItem xs="12" md="6">
                                 <MudSelect T="InvoiceType"
-                                           Value="_selectedType"
-                                           ValueChanged="@((InvoiceType val) => _selectedType = val)"
+                                           @bind-Value="_selectedType"
                                            Label="@Localization.GetString("Type")"
                                            Required="true"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomLeft">
-                                    <MudSelectItem T="InvoiceType" Value="InvoiceType.Receivable">@Localization.GetString("Receivable")</MudSelectItem>
-                                    <MudSelectItem T="InvoiceType" Value="InvoiceType.Payable">@Localization.GetString("Payable")</MudSelectItem>
+                                    <MudSelectItem T="InvoiceType" Value="@(InvoiceType.Receivable)">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">
+                                            @Localization.GetString("Receivable")
+                                        </MudChip>
+                                    </MudSelectItem>
+                                    <MudSelectItem T="InvoiceType" Value="@(InvoiceType.Payable)">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">
+                                            @Localization.GetString("Payable")
+                                        </MudChip>
+                                    </MudSelectItem>
                                 </MudSelect>
                             </MudItem>
 
                             <MudItem xs="12" md="6">
                                 <MudSelect T="InvoiceStatus"
-                                           Value="_selectedStatus"
-                                           ValueChanged="@((InvoiceStatus val) => _selectedStatus = val)"
+                                           @bind-Value="_selectedStatus"
                                            Label="@Localization.GetString("Status")"
                                            Required="true"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomLeft">
-                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Draft">@Localization.GetString("Draft")</MudSelectItem>
-                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Sent">@Localization.GetString("Sent")</MudSelectItem>
-                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.PartiallyPaid">@Localization.GetString("PartiallyPaid")</MudSelectItem>
-                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Paid">@Localization.GetString("PaidStatus")</MudSelectItem>
-                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Overdue">@Localization.GetString("OverdueStatus")</MudSelectItem>
-                                    <MudSelectItem T="InvoiceStatus" Value="InvoiceStatus.Cancelled">@Localization.GetString("Cancelled")</MudSelectItem>
+                                    @foreach (var status in Enum.GetValues<InvoiceStatus>())
+                                    {
+                                        <MudSelectItem T="InvoiceStatus" Value="@(status)">
+                                            <MudChip T="InvoiceStatus"
+                                                     Size="Size.Small"
+                                                     Color="GetStatusColor(status)">
+                                                @Localization.GetString(status.ToString())
+                                            </MudChip>
+                                        </MudSelectItem>
+                                    }
                                 </MudSelect>
                             </MudItem>
 
@@ -97,8 +106,8 @@ else
 
                             <MudItem xs="12" md="4">
                                 <MudDatePicker @key="_currentCultureKey"
-                                               Date="_issueDate"
-                                               DateChanged="OnIssueDateChanged"
+                                               @bind-Date="_issueDate"
+                                               @bind-Date:after="OnIssueDateChanged"
                                                Label="@Localization.GetString("IssueDate")"
                                                Required="true"
                                                Variant="Variant.Outlined" />
@@ -106,8 +115,8 @@ else
 
                             <MudItem xs="12" md="4">
                                 <MudNumericField T="int"
-                                                 Value="_paymentTermsDays"
-                                                 ValueChanged="OnPaymentTermsChanged"
+                                                 @bind-Value="_paymentTermsDays"
+                                                 @bind-Value:after="OnPaymentTermsChanged"
                                                  Label="@Localization.GetString("Terms")"
                                                  Variant="Variant.Outlined"
                                                  Adornment="Adornment.End"
@@ -117,16 +126,14 @@ else
 
                             <MudItem xs="12" md="4">
                                 <MudDatePicker @key="_currentCultureKey"
-                                               Date="_dueDate"
-                                               DateChanged="@((DateTime? val) => _dueDate = val)"
+                                               @bind-Date="_dueDate"
                                                Label="@Localization.GetString("DueDate")"
                                                Required="true"
                                                Variant="Variant.Outlined" />
                             </MudItem>
 
                             <MudItem xs="12">
-                                <MudTextField Value="_notes"
-                                              ValueChanged="@((string val) => _notes = val)"
+                                <MudTextField @bind-Value="_notes"
                                               Label="@Localization.GetString("Notes")"
                                               Variant="Variant.Outlined"
                                               Lines="3" />
@@ -177,8 +184,7 @@ else
                                         </div>
                                         <MudGrid>
                                             <MudItem xs="12">
-                                                <MudTextField Value="item.Description"
-                                                              ValueChanged="@((string val) => item.Description = val)"
+                                                <MudTextField @bind-Value="item.Description"
                                                               Label="@Localization.GetString("Description")"
                                                               Variant="Variant.Outlined"
                                                               Required="true"
@@ -198,24 +204,28 @@ else
                                                 <MudNumericField T="decimal"
                                                                  @bind-Value="item.UnitPrice"
                                                                  @bind-Value:after="CalculateTotals"
+                                                                 HelperText="@item.UnitPrice.ToString("C")"
                                                                  Label="@Localization.GetString("UnitPrice")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="0"
-                                                                 Format="C2"
-                                                                 Culture="@System.Globalization.CultureInfo.CurrentCulture"/>
+                                                                 Step="1"
+                                                                 Format="N2"
+                                                                 Immediate="true"/>
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField T="decimal"
-                                                                 @bind-Value="item.TaxRate"
-                                                                 @bind-Value:after="CalculateTotals"
+                                                                 Value="item.TaxRate"
+                                                                 ValueChanged="@((decimal v) => OnTaxRateChanged(item, v))"
                                                                  Label="@Localization.GetString("TaxRate")"
                                                                  Variant="Variant.Outlined"
                                                                  Min="0"
                                                                  Max="100"
                                                                  Step="0.1m"
+                                                                 Format="N2"
                                                                  Adornment="Adornment.End"
-                                                                 AdornmentText="%" />
+                                                                 AdornmentText="%"
+                                                                 TextUpdateSuppression="false" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudTextField Value="@item.LineTotal.ToString("C")"
@@ -401,18 +411,50 @@ else
         }
     }
 
-    private void OnIssueDateChanged(DateTime? date)
+    private Color GetStatusColor(InvoiceStatus status)
     {
-        _issueDate = date;
+        return status switch
+        {
+            InvoiceStatus.Draft => Color.Default,
+            InvoiceStatus.Sent => Color.Info,
+            InvoiceStatus.PartiallyPaid => Color.Warning,
+            InvoiceStatus.Paid => Color.Success,
+            InvoiceStatus.Overdue => Color.Error,
+            InvoiceStatus.Cancelled => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private string GetStatusText(InvoiceStatus status)
+    {
+        return status switch
+        {
+            InvoiceStatus.Draft => Localization.GetString("Draft"),
+            InvoiceStatus.Sent => Localization.GetString("Sent"),
+            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
+            InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
+            InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
+            InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+            _ => status.ToString()
+        };
+    }
+
+    private void OnTaxRateChanged(LineItemModel item, decimal value)
+    {
+        item.TaxRate = Math.Clamp(value, 0m, 100m);
+        CalculateTotals();
+    }
+
+    private void OnIssueDateChanged()
+    {
         if (_issueDate.HasValue)
         {
             _dueDate = _issueDate.Value.AddDays(_paymentTermsDays);
         }
     }
 
-    private void OnPaymentTermsChanged(int days)
+    private void OnPaymentTermsChanged()
     {
-        _paymentTermsDays = days;
         if (_issueDate.HasValue)
         {
             _dueDate = _issueDate.Value.AddDays(_paymentTermsDays);
@@ -494,8 +536,8 @@ else
         public Guid Id { get; set; }
         public string Description { get; set; } = string.Empty;
         public int Quantity { get; set; } = 1;
-        public decimal UnitPrice { get; set; } = 0;
-        public decimal TaxRate { get; set; } = 0;
+        public decimal UnitPrice { get; set; } = 0m;
+        public decimal TaxRate { get; set; } = 0m;
         public decimal LineTotal => (Quantity * UnitPrice) * (1 + TaxRate / 100);
     }
 }

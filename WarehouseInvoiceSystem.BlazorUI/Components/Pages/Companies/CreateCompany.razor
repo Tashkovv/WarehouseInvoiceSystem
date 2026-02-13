@@ -29,8 +29,7 @@
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudTextField T="string"
-                                  Value="_name"
-                                  ValueChanged="@((string val) => _name = val)"
+                                  @bind-Value="_name"
                                   Label="@Localization.GetString("CompanyName")"
                                   Variant="Variant.Outlined"
                                   Required="true"
@@ -39,8 +38,7 @@
 
                 <MudItem xs="12" md="6">
                     <MudSelect T="CompanyType?"
-                               Value="_type"
-                               ValueChanged="@((CompanyType? val) => _type = val)"
+                               @bind-Value="_type"
                                Label="@Localization.GetString("Type")"
                                Variant="Variant.Outlined"
                                Required="true"
@@ -66,8 +64,7 @@
 
                 <MudItem xs="12" md="6">
                     <MudTextField T="string"
-                                  Value="_contactPerson"
-                                  ValueChanged="@((string val) => _contactPerson = val)"
+                                  @bind-Value="_contactPerson"
                                   Label="@Localization.GetString("ContactPerson")"
                                   Variant="Variant.Outlined"
                                   Placeholder="@Localization.GetString("EnterContactPerson")" />
@@ -75,8 +72,7 @@
 
                 <MudItem xs="12" md="6">
                     <MudTextField T="string"
-                                  Value="_email"
-                                  ValueChanged="@((string val) => _email = val)"
+                                  @bind-Value="_email"
                                   Label="@Localization.GetString("Email")"
                                   Variant="Variant.Outlined"
                                   InputType="InputType.Email"
@@ -85,8 +81,7 @@
 
                 <MudItem xs="12" md="6">
                     <MudTextField T="string"
-                                  Value="_phone"
-                                  ValueChanged="@((string val) => _phone = val)"
+                                  @bind-Value="_phone"
                                   Label="@Localization.GetString("Phone")"
                                   Variant="Variant.Outlined"
                                   InputType="InputType.Telephone"
@@ -95,8 +90,7 @@
 
                 <MudItem xs="12" md="6">
                     <MudTextField T="string"
-                                  Value="_taxId"
-                                  ValueChanged="@((string val) => _taxId = val)"
+                                  @bind-Value="_taxId"
                                   Label="@Localization.GetString("TaxID")"
                                   Variant="Variant.Outlined"
                                   Placeholder="@Localization.GetString("EnterTaxID")" />
@@ -104,8 +98,7 @@
 
                 <MudItem xs="12">
                     <MudTextField T="string"
-                                  Value="_address"
-                                  ValueChanged="@((string val) => _address = val)"
+                                  @bind-Value="_address"
                                   Label="@Localization.GetString("Address")"
                                   Variant="Variant.Outlined"
                                   Lines="3"
@@ -114,23 +107,22 @@
 
                 <MudItem xs="12" md="6">
                     <MudNumericField T="int"
-                                     Value="_paymentTermsDays"
-                                     ValueChanged="@((int val) => _paymentTermsDays = val)"
+                                     @bind-Value="_paymentTermsDays"
                                      Label="@Localization.GetString("Terms")"
                                      Variant="Variant.Outlined"
                                      Adornment="Adornment.End"
                                      AdornmentText="@Localization.GetString("Days")"
-                                     Min="0" />
+                                     Min="0"/>
                 </MudItem>
                 <MudItem xs="12" sm="6" md="6">
                     <MudNumericField T="decimal"
+                                     @bind-Value="_creditLimit"
                                      Label="@Localization.GetString("CreditLimit")"
-                                     ValueChanged="@((decimal val) => _creditLimit = val)"
                                      Variant="Variant.Outlined"
+                                     HelperText="@_creditLimit.ToString("C")"
                                      Min="0"
-                                     Step="0.01m"
-                                     Format="C2"
-                                     Culture="@System.Globalization.CultureInfo.CurrentCulture"
+                                     Format="N2"
+                                     Immediate="true"
                                      Placeholder="@Localization.GetString("EnterCreditLimit")" />
                 </MudItem>
             </MudGrid>

@@ -171,11 +171,11 @@
                             </MudText>
 
                             <MudSelect T="int"
-                                       Value="_itemsPerPage"
+                                       @bind-Value="_itemsPerPage"
+                                       @bind-Value:after="UpdatePagination"
                                        Dense="true"
                                        Variant="Variant.Outlined"
-                                       Style="width: 100px;"
-                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                       Style="width: 100px;">
                                 <MudSelectItem Value="10">10</MudSelectItem>
                                 <MudSelectItem Value="25">25</MudSelectItem>
                                 <MudSelectItem Value="50">50</MudSelectItem>
@@ -280,6 +280,8 @@
 
     private void UpdatePagination()
     {
+        _currentPage = 1; 
+
         // Calculate total pages
         _totalPages = (int)Math.Ceiling((double)_totalCompanies / _itemsPerPage);
 
@@ -417,13 +419,6 @@
             _currentPage++;
             UpdatePagination();
         }
-    }
-
-    private void OnItemsPerPageChanged(int newItemsPerPage)
-    {
-        _itemsPerPage = newItemsPerPage;
-        _currentPage = 1;
-        UpdatePagination();
     }
 
     public void Dispose()

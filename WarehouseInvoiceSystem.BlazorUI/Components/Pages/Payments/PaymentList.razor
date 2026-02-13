@@ -60,11 +60,11 @@
                 <!-- Payment Method Filter -->
                 <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
                     <MudSelect T="PaymentMethod ?"
-                               Value="_filterMethod"
+                               @bind-Value="_filterMethod"
+                               @bind-Value:after="ResetPaginationAndApplyFilters"
                                Label="@Localization.GetString("PaymentMethod")"
                                Clearable="true"
-                               Dense="true"
-                               ValueChanged="@((PaymentMethod? val) => { _filterMethod = val; ResetPaginationAndApplyFilters(); })">
+                               Dense="true">
                         @foreach (var method in Enum.GetValues<PaymentMethod>())
                         {
                             <MudSelectItem T="PaymentMethod ?" Value="@(method)">
@@ -82,14 +82,14 @@
                 <MudItem xs="12" sm="6" md="3">
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("PaymentDate")</MudText>
                     <MudStack Row="true" Spacing="1">
-                        <MudDatePicker Date="_filterPaymentDateFrom"
+                        <MudDatePicker @bind-Date="_filterPaymentDateFrom"
+                                       @bind-Date:after="ResetPaginationAndApplyFilters"
                                        Label="@Localization.GetString("From")"
-                                       Dense="true"
-                                       DateChanged="@((DateTime? val) => { _filterPaymentDateFrom = val; ResetPaginationAndApplyFilters(); })" />
-                        <MudDatePicker Date="_filterPaymentDateTo"
+                                       Dense="true"/>
+                        <MudDatePicker @bind-Date="_filterPaymentDateTo"
+                                       @bind-Date:after="ResetPaginationAndApplyFilters"
                                        Label="@Localization.GetString("To")"
-                                       Dense="true"
-                                       DateChanged="@((DateTime? val) => { _filterPaymentDateTo = val; ResetPaginationAndApplyFilters(); })" />
+                                       Dense="true"/>
                     </MudStack>
                 </MudItem>
 
@@ -98,17 +98,21 @@
                     <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("AmountRange")</MudText>
                     <MudStack Row="true" Spacing="1">
                         <MudNumericField T="decimal?"
-                                         Value="_filterAmountMin"
+                                         @bind-Value="_filterAmountMin"
+                                         @bind-Value:after="ResetPaginationAndApplyFilters"
                                          Label="@Localization.GetString("Min")"
                                          HideSpinButtons="true"
                                          Dense="true"
-                                         ValueChanged="@((decimal? val) => { _filterAmountMin = val; ResetPaginationAndApplyFilters(); })" />
+                                         Format="N2"
+                                         Immediate="true" />
                         <MudNumericField T="decimal?"
-                                         Value="_filterAmountMax"
+                                         @bind-Value="_filterAmountMax"
+                                         @bind-Value:after="ResetPaginationAndApplyFilters"
                                          Label="@Localization.GetString("Max")"
                                          HideSpinButtons="true"
                                          Dense="true"
-                                         ValueChanged="@((decimal? val) => { _filterAmountMax = val; ResetPaginationAndApplyFilters(); })" />
+                                         Format="N2"
+                                         Immediate="true" />
                     </MudStack>
                 </MudItem>
 
@@ -240,11 +244,11 @@
                             </MudText>
 
                             <MudSelect T="int"
-                                       Value="_itemsPerPage"
+                                       @bind-Value="_itemsPerPage"
+                                       @bind-Value:after="UpdatePagination"
                                        Dense="true"
                                        Variant="Variant.Outlined"
-                                       Style="width: 100px;"
-                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                       Style="width: 100px;">
                                 <MudSelectItem Value="10">10</MudSelectItem>
                                 <MudSelectItem Value="25">25</MudSelectItem>
                                 <MudSelectItem Value="50">50</MudSelectItem>
@@ -388,6 +392,8 @@
 
     private void UpdatePagination()
     {
+        _currentPage = 1;
+
         // Calculate total pages
         _totalPages = (int)Math.Ceiling((double)_totalPayments / _itemsPerPage);
 
@@ -465,13 +471,6 @@
             _currentPage++;
             UpdatePagination();
         }
-    }
-
-    private void OnItemsPerPageChanged(int newItemsPerPage)
-    {
-        _itemsPerPage = newItemsPerPage;
-        _currentPage = 1;
-        UpdatePagination();
     }
 
     private string GetPaymentMethodText(PaymentMethod method)
