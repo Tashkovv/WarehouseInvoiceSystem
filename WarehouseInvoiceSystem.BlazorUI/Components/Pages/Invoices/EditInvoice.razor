@@ -201,8 +201,7 @@ else
                                                                  Step="1"/>
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
-                                                <MudNumericField T="decimal"
-                                                                 @bind-Value="item.UnitPrice"
+                                                <MudNumericField @bind-Value="item.UnitPrice"
                                                                  @bind-Value:after="CalculateTotals"
                                                                  HelperText="@item.UnitPrice.ToString("C")"
                                                                  Label="@Localization.GetString("UnitPrice")"
@@ -211,11 +210,10 @@ else
                                                                  Min="0"
                                                                  Step="1"
                                                                  Format="N2"
-                                                                 Immediate="true"/>
+                                                                 TextUpdateSuppression="false" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
-                                                <MudNumericField T="decimal"
-                                                                 Value="item.TaxRate"
+                                                <MudNumericField Value="item.TaxRate"
                                                                  ValueChanged="@((decimal v) => OnTaxRateChanged(item, v))"
                                                                  Label="@Localization.GetString("TaxRate")"
                                                                  Variant="Variant.Outlined"

@@ -106,7 +106,7 @@ else
                                          Max="@(_selectedInvoice?.AmountDue ?? 999999999)"
                                          HelperText="@_amount.ToString("C")"
                                          Format="N2"
-                                         Immediate="true"
+                                         TextUpdateSuppression="false"
                                          Placeholder="@Localization.GetString("EnterAmount")" />
                     </MudItem>
 

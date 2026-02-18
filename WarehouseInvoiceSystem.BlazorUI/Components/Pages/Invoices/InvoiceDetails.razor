@@ -1,5 +1,6 @@
 ﻿@page "/invoices/{Id:guid}"
 @implements IDisposable
+@using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.Interfaces
@@ -178,7 +179,7 @@ else
                             <MudTd DataLabel="@Localization.GetString("Description")">@context.Description</MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")">@context.Quantity</MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")">@context.UnitPrice.ToString("C")</MudTd>
-                            <MudTd DataLabel="@Localization.GetString("TaxRate")">@context.TaxRate%</MudTd>
+                            <MudTd DataLabel="@Localization.GetString("TaxRate")">@context.TaxRate.ToString("0.00", _currentCultureKey)%</MudTd>
                             <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
                                 <MudText Typo="Typo.body2" Class="font-weight-medium">
                                     @context.TotalAmount.ToString("C")
@@ -315,6 +316,7 @@ else
     public Guid Id { get; set; }
     private bool _loading = true;
     private bool _sendingEmail = false;
+    private readonly IFormatProvider _currentCultureKey = CultureInfo.CurrentCulture;
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = new();
     private bool _hideEmailButton = true;

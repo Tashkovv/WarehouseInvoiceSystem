@@ -181,7 +181,7 @@ else
                                                                  Min="0"
                                                                  Step="1"
                                                                  Format="N2"
-                                                                 Immediate="true" />
+                                                                 TextUpdateSuppression="false" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField Label="@Localization.GetString("TaxRate")"
@@ -427,8 +427,8 @@ else
     {
         public string Description { get; set; } = string.Empty;
         public int Quantity { get; set; } = 1;
-        public decimal UnitPrice { get; set; } = 0;
-        public decimal TaxRate { get; set; } = 0;
+        public decimal UnitPrice { get; set; } = 0m;
+        public decimal TaxRate { get; set; } = 0m;
         public decimal LineTotal => (Quantity * UnitPrice) * (1 + TaxRate / 100);
     }
 }

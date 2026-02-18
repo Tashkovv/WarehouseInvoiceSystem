@@ -87,11 +87,6 @@ else
                         </MudLink>
                     </div>
 
-                    <div class="mb-3">
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("PaymentMethod")</MudText>
-                        <MudText Typo="Typo.body1">@GetPaymentMethodText(_payment.PaymentMethod)</MudText>
-                    </div>
-
                     @if (!string.IsNullOrWhiteSpace(_payment.ReferenceNumber))
                     {
                         <div class="mb-3">

@@ -66,7 +66,8 @@
                 Description = li.Description,
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
-                TaxRate = li.TaxRate
+                TaxRate = li.TaxRate,
+                CreatedAt = DateTime.UtcNow,
             }).ToList();
 
             decimal subTotal = lineItems.Sum(li => li.Amount);
