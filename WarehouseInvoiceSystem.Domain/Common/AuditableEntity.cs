@@ -4,7 +4,5 @@
     {
         public DateTime CreatedAt { get; set; }
         public DateTime? DeletedOn { get; set; }
-
-        public bool IsDeleted => DeletedOn.HasValue;
     }
 }
