@@ -31,7 +31,7 @@
                            Color="Color.Secondary"
                            Variant="Variant.Outlined"
                            FullWidth="true"
-                           OnClick="OpenExportDialog"
+                           OnClick="PerformExport"
                            Disabled="_exporting">
                     @Localization.GetString("ExportToExcel")
                 </MudButton>
@@ -681,36 +681,13 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task OpenExportDialog()
-    {
-        DialogOptions options = new DialogOptions
-        {
-            CloseOnEscapeKey = true,
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true
-        };
-
-        IDialogReference? dialog = await DialogService.ShowAsync<ExportInvoicesDialog>(
-            Localization.GetString("ExportInvoices"),
-            options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result != null && !result.Canceled && result.Data is ExportDialogResult exportResult)
-        {
-            await PerformExport(exportResult);
-        }
-    }
-
-    private async Task PerformExport(ExportDialogResult exportResult)
+    private async Task PerformExport()
     {
         _exporting = true;
 
         try
         {
-            byte[] fileBytes = exportResult.ExportAll
-                ? await ExcelExportService.ExportInvoicesToExcelAsync(_filteredInvoices)
-                : await ExcelExportService.ExportInvoicesByDateRangeAsync(_filteredInvoices, exportResult.StartDate, exportResult.EndDate);
+            byte[] fileBytes = await ExcelExportService.ExportInvoicesToExcelAsync(_filteredInvoices);
 
             string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
