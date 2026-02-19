@@ -1,6 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Invoice
 {
-    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class UpdateInvoiceDto
     {

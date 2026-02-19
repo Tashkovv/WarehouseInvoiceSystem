@@ -1,6 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Company
 {
-    using WarehouseInvoiceSystem.Domain.Company.Enums;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class UpdateCompanyDto
     {

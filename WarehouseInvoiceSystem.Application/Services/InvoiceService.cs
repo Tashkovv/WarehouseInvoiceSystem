@@ -2,10 +2,9 @@
 {
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
-    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
-    using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
 
     public class InvoiceService(IInvoiceRepository invoiceRepository, ICompanyRepository companyRepository) : IInvoiceService
     {

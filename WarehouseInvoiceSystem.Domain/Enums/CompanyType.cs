@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Company.Enums
+﻿namespace WarehouseInvoiceSystem.Domain.Enums
 {
     public enum CompanyType
     {

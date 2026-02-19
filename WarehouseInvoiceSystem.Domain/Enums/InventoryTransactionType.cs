@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.InventoryTransaction.Enums
+﻿namespace WarehouseInvoiceSystem.Domain.Enums
 {
     public enum InventoryTransactionType
     {

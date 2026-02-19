@@ -2,8 +2,8 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
-    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
+    using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
 

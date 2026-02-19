@@ -1,8 +1,7 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Company.Domain
+﻿namespace WarehouseInvoiceSystem.Domain.Entities
 {
     using WarehouseInvoiceSystem.Domain.Common;
-    using WarehouseInvoiceSystem.Domain.Company.Enums;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class Company : AuditableEntity
     {

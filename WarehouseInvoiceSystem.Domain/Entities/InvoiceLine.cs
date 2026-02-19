@@ -1,7 +1,6 @@
-﻿namespace WarehouseInvoiceSystem.Domain.InvoiceLine.Domain
+﻿namespace WarehouseInvoiceSystem.Domain.Entities
 {
     using WarehouseInvoiceSystem.Domain.Common;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
 
     public class InvoiceLine : AuditableEntity
     {

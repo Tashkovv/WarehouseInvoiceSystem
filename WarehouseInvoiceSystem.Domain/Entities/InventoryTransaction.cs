@@ -1,7 +1,7 @@
-﻿namespace WarehouseInvoiceSystem.Domain.InventoryTransaction.Domain
+﻿namespace WarehouseInvoiceSystem.Domain.Entities
 {
     using WarehouseInvoiceSystem.Domain.Common;
-    using WarehouseInvoiceSystem.Domain.InventoryTransaction.Enums;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class InventoryTransaction : AuditableEntity
     {

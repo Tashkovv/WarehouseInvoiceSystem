@@ -2,9 +2,9 @@
 {
     using Microsoft.EntityFrameworkCore;
     using System.Collections.Generic;
+    using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
-    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class InvoiceRepository(ApplicationDbContext context) : IInvoiceRepository

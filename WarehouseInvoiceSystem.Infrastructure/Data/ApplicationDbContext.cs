@@ -2,14 +2,7 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-    using WarehouseInvoiceSystem.Domain.Company.Domain;
-    using WarehouseInvoiceSystem.Domain.InventoryTransaction.Domain;
-    using WarehouseInvoiceSystem.Domain.Invoice.Domain;
-    using WarehouseInvoiceSystem.Domain.InvoiceLine.Domain;
-    using WarehouseInvoiceSystem.Domain.Payment.Domain;
-    using WarehouseInvoiceSystem.Domain.Product.Domain;
-    using WarehouseInvoiceSystem.Domain.User.Domain;
-    using WarehouseInvoiceSystem.Domain.Warehouse.Domain;
+    using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Infrastructure.Data.Configuration;
 
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)

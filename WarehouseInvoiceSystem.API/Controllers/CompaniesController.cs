@@ -3,7 +3,7 @@
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Company;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Company.Enums;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     [ApiController]
     [Route("api/[controller]")]

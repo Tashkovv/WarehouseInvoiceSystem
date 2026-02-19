@@ -1,6 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.Interfaces
 {
-    using WarehouseInvoiceSystem.Domain.Payment.Domain;
+    using WarehouseInvoiceSystem.Domain.Entities;
 
     public interface IPaymentRepository
     {

@@ -1,7 +1,7 @@
-﻿using WarehouseInvoiceSystem.Domain.Common;
-
-namespace WarehouseInvoiceSystem.Domain.User.Domain
+﻿namespace WarehouseInvoiceSystem.Domain.Entities
 {
+    using WarehouseInvoiceSystem.Domain.Common;
+
     public class User : AuditableEntity
     {
         public string Username { get; set; } = string.Empty;

@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Invoice.Enums
+﻿namespace WarehouseInvoiceSystem.Domain.Enums
 {
     public enum InvoiceType
     {

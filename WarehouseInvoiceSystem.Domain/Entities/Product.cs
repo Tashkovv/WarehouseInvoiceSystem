@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Domain.Product.Domain
+﻿namespace WarehouseInvoiceSystem.Domain.Entities
 {
     using WarehouseInvoiceSystem.Domain.Common;
 

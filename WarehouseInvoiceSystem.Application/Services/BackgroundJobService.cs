@@ -2,7 +2,7 @@
 {
     using Microsoft.Extensions.Logging;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Domain.Invoice.Enums;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class BackgroundJobService(
         IInvoiceService invoiceService,

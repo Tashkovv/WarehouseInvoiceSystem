@@ -2,7 +2,7 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
-    using WarehouseInvoiceSystem.Domain.User.Domain;
+    using WarehouseInvoiceSystem.Domain.Entities;
 
     public class UserConfiguration : IEntityTypeConfiguration<User>
     {

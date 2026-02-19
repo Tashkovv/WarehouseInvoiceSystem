@@ -2,7 +2,7 @@
 {
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
-    using WarehouseInvoiceSystem.Domain.Payment.Domain;
+    using WarehouseInvoiceSystem.Domain.Entities;
 
     public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
     {
