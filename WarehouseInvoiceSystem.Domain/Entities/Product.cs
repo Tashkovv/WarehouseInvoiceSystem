@@ -4,13 +4,17 @@
 
     public class Product : AuditableEntity
     {
-        public string Code { get; set; } = string.Empty;  // SKU / internal code
+        public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
 
-        public string Unit { get; set; } = string.Empty;  // pcs, kg, l
+        public string Unit { get; set; } = string.Empty;
         public decimal DefaultPrice { get; set; }
 
-        public bool IsActive { get; set; }
+        public bool IsActive { get; set; } = true;
+
+        public ICollection<InvoiceLine> InvoiceLines { get; set; } = [];
+        public ICollection<StockLevel> StockLevels { get; set; } = [];
+        public ICollection<InventoryTransaction> InventoryTransactions { get; set; } = [];
     }
 }

@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260210202121_ChangeCompanyCreditAsRequired")]
-    partial class ChangeCompanyCreditAsRequired
+    [Migration("20260219172853_AddProductInventoryRelationships")]
+    partial class AddProductInventoryRelationships
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Company.Domain.Company", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Company", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -90,7 +90,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.ToTable("Company", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.InventoryTransaction.Domain.InventoryTransaction", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.InventoryTransaction", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -103,19 +103,22 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Note")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Quantity")
-                        .HasColumnType("numeric");
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
 
                     b.Property<Guid?>("SourceDocumentId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("SourceDocumentType")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
@@ -125,10 +128,20 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("InventoryTransactions");
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("SourceDocumentId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("InventoryTransaction", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Invoice.Domain.Invoice", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Invoice", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -210,7 +223,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.ToTable("Invoice", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.InvoiceLine.Domain.InvoiceLine", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.InvoiceLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -228,6 +241,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("character varying(500)");
 
                     b.Property<Guid>("InvoiceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProductId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Quantity")
@@ -249,10 +265,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasIndex("InvoiceId");
 
+                    b.HasIndex("ProductId");
+
                     b.ToTable("InvoiceLine", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Payment.Domain.Payment", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -302,7 +320,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.ToTable("Payment", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Product.Domain.Product", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -347,7 +365,58 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.ToTable("Product", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.User.Domain.User", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.StockLevel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("LastRestockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("MinimumQuantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal?>("ReorderPoint")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("ReservedQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.HasIndex("ProductId", "WarehouseId")
+                        .IsUnique();
+
+                    b.ToTable("StockLevel", (string)null);
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -404,14 +473,15 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.ToTable("User", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Warehouse.Domain.Warehouse", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Warehouse", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
                     b.Property<string>("Address")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -424,16 +494,36 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Warehouses");
+                    b.ToTable("Warehouse", (string)null);
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Invoice.Domain.Invoice", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.InventoryTransaction", b =>
                 {
-                    b.HasOne("WarehouseInvoiceSystem.Domain.Company.Domain.Company", "Company")
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Product", "Product")
+                        .WithMany("InventoryTransactions")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("InventoryTransactions")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Invoice", b =>
+                {
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Company", "Company")
                         .WithMany("Invoices")
                         .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -442,20 +532,27 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Navigation("Company");
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.InvoiceLine.Domain.InvoiceLine", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.InvoiceLine", b =>
                 {
-                    b.HasOne("WarehouseInvoiceSystem.Domain.Invoice.Domain.Invoice", "Invoice")
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Invoice", "Invoice")
                         .WithMany("LineItems")
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Product", "Product")
+                        .WithMany("InvoiceLines")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("Invoice");
+
+                    b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Payment.Domain.Payment", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Payment", b =>
                 {
-                    b.HasOne("WarehouseInvoiceSystem.Domain.Invoice.Domain.Invoice", "Invoice")
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Invoice", "Invoice")
                         .WithMany("Payments")
                         .HasForeignKey("InvoiceId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -464,16 +561,51 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Navigation("Invoice");
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Company.Domain.Company", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.StockLevel", b =>
+                {
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Product", "Product")
+                        .WithMany("StockLevels")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany("StockLevels")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Invoices");
                 });
 
-            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Invoice.Domain.Invoice", b =>
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Invoice", b =>
                 {
                     b.Navigation("LineItems");
 
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Product", b =>
+                {
+                    b.Navigation("InventoryTransactions");
+
+                    b.Navigation("InvoiceLines");
+
+                    b.Navigation("StockLevels");
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Warehouse", b =>
+                {
+                    b.Navigation("InventoryTransactions");
+
+                    b.Navigation("StockLevels");
                 });
 #pragma warning restore 612, 618
         }

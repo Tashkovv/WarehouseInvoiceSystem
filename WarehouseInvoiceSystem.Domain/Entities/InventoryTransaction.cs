@@ -18,5 +18,9 @@
         public string? SourceDocumentType { get; set; }  // Examples: "Invoice", "ManualAdjustment"
 
         public string? Note { get; set; }
+
+        public Product Product { get; set; } = null!;
+
+        public Warehouse Warehouse { get; set; } = null!;
     }
 }

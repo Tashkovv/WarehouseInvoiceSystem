@@ -14,6 +14,7 @@
         public DbSet<Product> Products { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+        public DbSet<StockLevel> StockLevels { get; set; }
         public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -26,6 +27,9 @@
             modelBuilder.ApplyConfiguration(new InvoiceLineConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
             modelBuilder.ApplyConfiguration(new ProductConfiguration());
+            modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
+            modelBuilder.ApplyConfiguration(new StockLevelConfiguration());
+            modelBuilder.ApplyConfiguration(new InventoryTransactionConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
         }
 

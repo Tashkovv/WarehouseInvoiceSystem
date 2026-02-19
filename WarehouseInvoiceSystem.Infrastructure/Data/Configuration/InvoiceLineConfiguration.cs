@@ -28,6 +28,7 @@
 
             // Indexes
             builder.HasIndex(e => e.InvoiceId);
+            builder.HasIndex(e => e.ProductId);
             builder.HasIndex(e => e.DeletedOn);
 
             // Relationships
@@ -35,6 +36,11 @@
                    .WithMany(i => i.LineItems)
                    .HasForeignKey(e => e.InvoiceId)
                    .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(e => e.Product)
+                   .WithMany(p => p.InvoiceLines)
+                   .HasForeignKey(e => e.ProductId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
