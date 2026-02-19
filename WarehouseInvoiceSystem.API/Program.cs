@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using WarehouseInvoiceSystem.Application.BackgroundWorkers;
 using WarehouseInvoiceSystem.Application.Interfaces;
-using WarehouseInvoiceSystem.Application.Models;
 using WarehouseInvoiceSystem.Application.Services;
+using WarehouseInvoiceSystem.Application.Settings;
 using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Data;
 using WarehouseInvoiceSystem.Infrastructure.Repositories;
@@ -37,11 +37,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
+builder.Services.AddScoped<IStockLevelRepository, StockLevelRepository>();
+builder.Services.AddScoped<IInventoryTransactionRepository, InventoryTransactionRepository>();
 
 // Register Services
 builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IWarehouseService, WarehouseService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<IEmailService, EmailService>();

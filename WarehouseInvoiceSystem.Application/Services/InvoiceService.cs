@@ -62,6 +62,7 @@
             // Calculate totals
             List<InvoiceLine> lineItems = createDto.LineItems.Select(li => new InvoiceLine
             {
+                ProductId = li.ProductId,
                 Description = li.Description,
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
@@ -116,6 +117,7 @@
             // Add new/updated items
             List<InvoiceLine> newLineItems = [.. updateDto.LineItems.Select(li => new InvoiceLine
             {
+                ProductId = li.ProductId,
                 Description = li.Description,
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
@@ -187,6 +189,7 @@
                 LineItems = [.. invoice.LineItems.Select(li => new InvoiceLineDto
                 {
                     Id = li.Id,
+                    ProductId = li.ProductId,
                     Description = li.Description,
                     Quantity = li.Quantity,
                     UnitPrice = li.UnitPrice,

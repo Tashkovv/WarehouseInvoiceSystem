@@ -1,0 +1,391 @@
+﻿@page "/products"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@inject IProductService ProductService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("Products") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Products")</MudText>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           FullWidth="true"
+                           Href="/products/create">
+                    @Localization.GetString("CreateProduct")
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="9">
+                <MudTextField T="string"
+                              Value="_searchString"
+                              ValueChanged="OnSearch"
+                              Placeholder="@Localization.GetString("Search")"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Immediate="true"
+                              DebounceInterval="300"
+                              Class="mt-0" />
+            </MudItem>
+        </MudGrid>
+
+        <MudTabs Elevation="0"
+                 Rounded="true"
+                 Class="mt-4"
+                 ActivePanelIndex="_activeTabIndex"
+                 ActivePanelIndexChanged="OnTabChanged">
+            <MudTabPanel Text="@Localization.GetString("AllProducts")" Icon="@Icons.Material.Filled.List" />
+            <MudTabPanel Text="@Localization.GetString("ActiveProducts")" Icon="@Icons.Material.Filled.CheckCircle" />
+            <MudTabPanel Text="@Localization.GetString("InactiveProducts")" Icon="@Icons.Material.Filled.Block" />
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent Class="pa-0">
+        @if (_loading)
+        {
+            <div class="pa-6">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_filteredProducts == null || !_filteredProducts.Any())
+        {
+            <div class="pa-6 text-center">
+                <MudText Color="Color.Secondary">@Localization.GetString("NoProductsFound")</MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="_paginatedProducts"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      Dense="false"
+                      FixedHeader="true"
+                      Height="600px"
+                      Sort="@((SortDefinition<ProductDto> sortDefinition) => HandleSort(sortDefinition))">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.Code)">@Localization.GetString("Code")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.Name)">@Localization.GetString("ProductName")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.GetString("Unit")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.DefaultPrice)">@Localization.GetString("Price")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.GetString("Status")</MudTh>
+                    <MudTh>@Localization.GetString("Actions")</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localization.GetString("Code")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.Code
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("ProductName")">
+                        @context.Name
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Unit")">
+                        @context.Unit
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Price")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.DefaultPrice.ToString("C")
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Status")">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
+                            @(context.IsActive ? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Actions")">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                         OnClick="@(() => ViewProduct(context.Id))">
+                                @Localization.GetString("View")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                         OnClick="@(() => EditProduct(context.Id))">
+                                @Localization.GetString("Edit")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Inventory"
+                                         OnClick="@(() => ViewStock(context.Id))">
+                                @Localization.GetString("ViewStock")
+                            </MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                         IconColor="Color.Error"
+                                         OnClick="@(() => DeleteProduct(context.Id))">
+                                @Localization.GetString("Delete")
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <!-- Pagination Controls -->
+            <MudDivider />
+            <MudCardContent Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="PreviousPage"
+                                       Disabled="@(_currentPage == 1)">
+                                @Localization.GetString("Previous")
+                            </MudButton>
+
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
+                            </MudText>
+
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="NextPage"
+                                       Disabled="@(_currentPage == _totalPages)">
+                                @Localization.GetString("Next")
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("ItemsPerPage")
+                            </MudText>
+
+                            <MudSelect T="int"
+                                       Value="_itemsPerPage"
+                                       Dense="true"
+                                       Variant="Variant.Outlined"
+                                       Style="width: 100px;"
+                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                <MudSelectItem Value="10">10</MudSelectItem>
+                                <MudSelectItem Value="25">25</MudSelectItem>
+                                <MudSelectItem Value="50">50</MudSelectItem>
+                                <MudSelectItem Value="100">100</MudSelectItem>
+                            </MudSelect>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                (@_totalProducts @Localization.GetString("Total"))
+                            </MudText>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool _loading = true;
+    private List<ProductDto> _allProducts = [];
+    private List<ProductDto> _filteredProducts = [];
+    private List<ProductDto> _paginatedProducts = [];
+    private string _searchString = "";
+    private int _activeTabIndex = 0;
+
+    private int _currentPage = 1;
+    private int _itemsPerPage = 10;
+    private int _totalProducts = 0;
+    private int _totalPages = 1;
+
+    private string _sortBy = "CreatedAt";
+    private bool _sortAscending = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadProducts();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadProducts()
+    {
+        _loading = true;
+
+        try
+        {
+            IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync();
+            _allProducts = products.ToList();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading products: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingProducts"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<ProductDto> filtered = _allProducts;
+
+        filtered = _activeTabIndex switch
+        {
+            1 => filtered.Where(p => p.IsActive),
+            2 => filtered.Where(p => !p.IsActive),
+            _ => filtered
+        };
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            string search = _searchString.ToLower();
+            filtered = filtered.Where(p =>
+                p.Code.ToLower().Contains(search) ||
+                p.Name.ToLower().Contains(search) ||
+                (p.Description?.ToLower().Contains(search) ?? false));
+        }
+
+        filtered = _sortAscending
+            ? filtered.OrderBy(GetSortProperty)
+            : filtered.OrderByDescending(GetSortProperty);
+
+        _filteredProducts = filtered.ToList();
+        _totalProducts = _filteredProducts.Count;
+
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        _totalPages = (int)Math.Ceiling((double)_totalProducts / _itemsPerPage);
+
+        if (_currentPage > _totalPages && _totalPages > 0)
+        {
+            _currentPage = _totalPages;
+        }
+
+        int skipCount = (_currentPage - 1) * _itemsPerPage;
+        _paginatedProducts = _filteredProducts
+            .Skip(skipCount)
+            .Take(_itemsPerPage)
+            .ToList();
+    }
+
+    private void ResetPaginationAndApplyFilters()
+    {
+        _currentPage = 1;
+        ApplyFilters();
+    }
+
+    private object GetSortProperty(ProductDto product) => _sortBy switch
+    {
+        "Code" => product.Code,
+        "Name" => product.Name,
+        "DefaultPrice" => product.DefaultPrice,
+        _ => product.CreatedAt
+    };
+
+    private void HandleSort(SortDefinition<ProductDto> sortDefinition)
+    {
+        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
+            return;
+
+        _sortBy = sortDefinition.SortBy;
+        _sortAscending = !sortDefinition.Descending;
+        ApplyFilters();
+    }
+
+    private async Task OnSearch(string text)
+    {
+        _searchString = text;
+        ResetPaginationAndApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnTabChanged(int index)
+    {
+        _activeTabIndex = index;
+        ResetPaginationAndApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ViewProduct(Guid id)
+    {
+        Navigation.NavigateTo($"/products/{id}");
+    }
+
+    private void EditProduct(Guid id)
+    {
+        Navigation.NavigateTo($"/products/edit/{id}");
+    }
+
+    private void ViewStock(Guid id)
+    {
+        Navigation.NavigateTo($"/inventory/product/{id}");
+    }
+
+    private async Task DeleteProduct(Guid id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteProductConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await ProductService.DeleteProductAsync(id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("ProductDeleted"), Severity.Success);
+                    await LoadProducts();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting product: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
+            }
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void OnItemsPerPageChanged(int newItemsPerPage)
+    {
+        _itemsPerPage = newItemsPerPage;
+        _currentPage = 1;
+        UpdatePagination();
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

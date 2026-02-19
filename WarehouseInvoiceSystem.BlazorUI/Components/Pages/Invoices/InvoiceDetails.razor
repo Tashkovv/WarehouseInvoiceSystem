@@ -176,7 +176,15 @@ else
                             <MudTh Class="text-right">@Localization.GetString("Total")</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="@Localization.GetString("Description")">@context.Description</MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Description")">
+                                @if (context.ProductId.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" /> @Localization.GetString("Product")
+                                    </MudText>
+                                }
+                                <MudText Typo="Typo.body2">@context.Description</MudText>
+                            </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")">@context.Quantity</MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")">@context.UnitPrice.ToString("C")</MudTd>
                             <MudTd DataLabel="@Localization.GetString("TaxRate")">@context.TaxRate.ToString("0.00", _currentCultureKey)%</MudTd>

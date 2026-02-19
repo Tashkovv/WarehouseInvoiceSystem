@@ -6,7 +6,7 @@
     using MimeKit;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Application.Models;
+    using WarehouseInvoiceSystem.Application.Settings;
     using WarehouseInvoiceSystem.Domain.Enums;
 
     public class EmailService(

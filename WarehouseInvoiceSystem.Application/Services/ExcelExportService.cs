@@ -219,6 +219,21 @@
                 row++;
             }
 
+            // Totals
+            row++;
+            worksheet.Cell(row, 6).Value = $"{translations.GetString("Total").ToUpper()}:";
+            worksheet.Cell(row, 6).Style.Font.Bold = true;
+            worksheet.Cell(row, 7).Value = invoicesToExport.Sum(i => i.SubTotal).ToString("C");
+            worksheet.Cell(row, 8).Value = invoicesToExport.Sum(i => i.TaxAmount).ToString("C");
+            worksheet.Cell(row, 9).Value = invoicesToExport.Sum(i => i.TotalAmount).ToString("C");
+            worksheet.Cell(row, 10).Value = invoicesToExport.Sum(i => i.AmountPaid).ToString("C");
+            worksheet.Cell(row, 11).Value = invoicesToExport.Sum(i => i.AmountDue).ToString("C");
+
+            IXLRange totalsRange = worksheet.Range(row, 6, row, 11);
+            totalsRange.Style.Font.Bold = true;
+            totalsRange.Style.Fill.BackgroundColor = XLColor.LightYellow;
+            totalsRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+
             // Auto-fit columns
             worksheet.Columns().AdjustToContents();
 

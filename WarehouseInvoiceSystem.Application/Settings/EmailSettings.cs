@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Application.Models
+﻿namespace WarehouseInvoiceSystem.Application.Settings
 {
     public class EmailSettings
     {

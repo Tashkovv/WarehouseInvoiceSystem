@@ -2,10 +2,12 @@
 @implements IDisposable
 @using MudBlazor
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.Interfaces
 @inject IInvoiceService InvoiceService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
+@inject IProductService ProductService
 
 <PageTitle>@Localization.GetString("Dashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -106,6 +108,24 @@ else
                 </MudCardContent>
             </MudCard>
         </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <div class="d-flex justify-space-between align-center mb-2">
+                        <div>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localization.GetString("Products")
+                            </MudText>
+                            <MudText Typo="Typo.h5">@_totalProducts</MudText>
+                        </div>
+                        <MudAvatar Color="Color.Info" Variant="Variant.Filled">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" />
+                        </MudAvatar>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
     </MudGrid>
 
     <MudCard Elevation="2" Class="mb-4">
@@ -200,6 +220,7 @@ else
 
 @code {
     private bool _loading = true;
+    private int _totalProducts = 0;
     private InvoiceSummaryDto? _summary;
     private List<InvoiceDto> _recentInvoices = new();
 
@@ -224,6 +245,10 @@ else
             
             IEnumerable<InvoiceDto> allInvoices = await InvoiceService.GetAllInvoicesAsync();
             _recentInvoices = allInvoices.OrderByDescending(i => i.CreatedAt).Take(5).ToList();
+
+            // Add product count
+            IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync();
+            _totalProducts = products.Count();
         }
         catch (Exception ex)
         {
