@@ -18,7 +18,7 @@
     </MudButton>
 </div>
 
-<EditForm Model="_createDto" OnValidSubmit="HandleSubmit">
+<MudForm @ref="_form" @bind-IsValid="@_isValid">
     <MudCard Elevation="2" Class="mb-4">
         <MudCardHeader>
             <CardHeaderContent>
@@ -28,11 +28,11 @@
         <MudCardContent>
             <MudGrid>
                 <MudItem xs="12" md="6">
-                    <MudTextField T="string"
-                                  @bind-Value="_name"
+                    <MudTextField @bind-Value="_name"
                                   Label="@Localization.GetString("CompanyName")"
                                   Variant="Variant.Outlined"
                                   Required="true"
+                                  RequiredError="@Localization.GetString("PleaseEnterCompanyName")"
                                   Placeholder="@Localization.GetString("EnterCompanyName")"/>
                 </MudItem>
 
@@ -42,6 +42,7 @@
                                Label="@Localization.GetString("Type")"
                                Variant="Variant.Outlined"
                                Required="true"
+                               RequiredError="@Localization.GetString("PleaseEnterCompanyType")"
                                AnchorOrigin="Origin.BottomLeft"
                                Placeholder="@Localization.GetString("ChooseCompanyType")">
                         <MudSelectItem T="CompanyType?" Value="@(CompanyType.Client)">
@@ -137,8 +138,8 @@
             </MudButton>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
-                       ButtonType="ButtonType.Submit"
-                       Disabled="_saving">
+                       OnClick="HandleSubmit"
+                       Disabled="@(!_isValid || _saving)">
                 @if (_saving)
                 {
                     <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
@@ -151,11 +152,13 @@
             </MudButton>
         </div>
     </MudItem>
-</EditForm>
+</MudForm>
 
 @code {
     private bool _saving = false;
     private readonly CreateCompanyDto _createDto = new();
+    private MudForm _form = null!;
+    private bool _isValid;
 
     private string _name = string.Empty;
     private CompanyType? _type;

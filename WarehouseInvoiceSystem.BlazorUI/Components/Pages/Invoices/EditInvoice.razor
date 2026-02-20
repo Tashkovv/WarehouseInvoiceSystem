@@ -33,7 +33,7 @@ else if (_invoice == null)
 }
 else
 {
-    <EditForm Model="_updateDto" OnValidSubmit="HandleSubmit">
+    <MudForm @ref="_form" @bind-IsValid="@_isValid">
         <MudGrid>
             <!-- Invoice Information Card -->
             <MudItem xs="12">
@@ -53,6 +53,7 @@ else
                                            @bind-Value="_selectedCompanyId"
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
+                                           RequiredError="@Localization.GetString("PleaseSelectCompany")"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomLeft">
                                     @foreach (CompanyDto company in _companies)
@@ -67,6 +68,7 @@ else
                                            @bind-Value="_selectedType"
                                            Label="@Localization.GetString("Type")"
                                            Required="true"
+                                           RequiredError="@Localization.GetString("PleaseSelectType")"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomLeft">
                                     <MudSelectItem T="InvoiceType" Value="@(InvoiceType.Receivable)">
@@ -87,6 +89,7 @@ else
                                            @bind-Value="_selectedStatus"
                                            Label="@Localization.GetString("Status")"
                                            Required="true"
+                                           RequiredError="@Localization.GetString("StatusRequired")"
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomLeft">
                                     @foreach (var status in Enum.GetValues<InvoiceStatus>())
@@ -112,6 +115,7 @@ else
                                                @bind-Date:after="OnIssueDateChanged"
                                                Label="@Localization.GetString("IssueDate")"
                                                Required="true"
+                                               RequiredError="@Localization.GetString("IssueDateRequired")"
                                                Variant="Variant.Outlined" />
                             </MudItem>
 
@@ -131,6 +135,7 @@ else
                                                @bind-Date="_dueDate"
                                                Label="@Localization.GetString("DueDate")"
                                                Required="true"
+                                               RequiredError="@Localization.GetString("DueDateRequired")"
                                                Variant="Variant.Outlined" />
                             </MudItem>
 
@@ -222,6 +227,7 @@ else
                                                                  Label="@Localization.GetString("Quantity")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
+                                                                 RequiredError="@Localization.GetString("EnterQuantity")"
                                                                  Min="0"
                                                                  Step="1"/>
                                             </MudItem>
@@ -231,6 +237,7 @@ else
                                                                  HelperText="@item.UnitPrice.ToString("C")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
+                                                                 RequiredError="@Localization.GetString("EnterUnitPrice")"
                                                                  Min="0"
                                                                  Step="1"
                                                                  Format="N2"
@@ -319,8 +326,8 @@ else
                     </MudButton>
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
-                               ButtonType="ButtonType.Submit"
-                               Disabled="_saving">
+                               OnClick="HandleSubmit"
+                               Disabled="@(!_isValid || _saving)">
                         @if (_saving)
                         {
                             <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
@@ -334,7 +341,7 @@ else
                 </div>
             </MudItem>
         </MudGrid>
-    </EditForm>
+    </MudForm>
 }
 
 @code {
@@ -344,6 +351,8 @@ else
     private bool _loading = true;
     private bool _saving = false;
     private string _currentCultureKey = CultureInfo.CurrentCulture.Name;
+    private MudForm _form = null!;
+    private bool _isValid;
     private InvoiceDto? _invoice;
     private List<CompanyDto> _companies = new();
     private List<ProductDto> _products = [];
@@ -544,9 +553,16 @@ else
     private async Task HandleSubmit()
     {
         // Validation
-        if (!_lineItems.Any() || _lineItems.All(i => string.IsNullOrWhiteSpace(i.Description)))
+        if (!_lineItems.Any() || _lineItems.All(i => i.SelectedProduct == null && string.IsNullOrWhiteSpace(i.Description)))
         {
             Snackbar.Add(Localization.GetString("PleaseAddAtLeastOneLineItem"), Severity.Warning);
+            return;
+        }
+
+        LineItemModel? invalidItem = _lineItems.FirstOrDefault(i => i.SelectedProduct == null && string.IsNullOrWhiteSpace(i.Description));
+        if (invalidItem != null)
+        {
+            Snackbar.Add(Localization.GetString("PleaseEnterDescriptionOrSelectProduct"), Severity.Warning);
             return;
         }
 
@@ -566,7 +582,7 @@ else
                 {
                     Id = i.Id,
                     ProductId = i.SelectedProduct?.Id,
-                    Description = i.Description,
+                    Description = i.SelectedProduct?.Name ?? i.Description,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice,
                     TaxRate = i.TaxRate

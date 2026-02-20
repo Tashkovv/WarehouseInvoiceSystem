@@ -27,7 +27,7 @@
 }
 else
 {
-    <EditForm Model="_createDto" OnValidSubmit="HandleSubmit">
+    <MudForm @ref="_form" @bind-IsValid="@_isValid">
         <MudCard Elevation="2" Class="mb-4">
             <MudCardHeader>
                 <CardHeaderContent>
@@ -43,6 +43,7 @@ else
                                    Label="@Localization.GetString("SelectInvoice")"
                                    Variant="Variant.Outlined"
                                    Required="true"
+                                   RequiredError="@Localization.GetString("PleaseSelectInvoice")"
                                    AnchorOrigin="Origin.BottomLeft">
                             @foreach (InvoiceDto invoice in _unpaidInvoices)
                             {
@@ -92,7 +93,8 @@ else
                                        @bind-Date="_paymentDate"
                                        Label="@Localization.GetString("PaymentDate")"
                                        Variant="Variant.Outlined"
-                                       Required="true" />
+                                       Required="true"
+                                       RequiredError="@Localization.GetString("PaymentDateRequired")" />
                     </MudItem>
 
                     <MudItem xs="12" md="6">
@@ -101,6 +103,7 @@ else
                                          Label="@Localization.GetString("Amount")"
                                          Variant="Variant.Outlined"
                                          Required="true"
+                                         RequiredError="@Localization.GetString("PleaseEnterAmount")"
                                          Min="0.01m"
                                          Max="@(_selectedInvoice?.AmountDue ?? 999999999)"
                                          Format="N2"
@@ -115,6 +118,7 @@ else
                                    Label="@Localization.GetString("PaymentMethod")"
                                    Variant="Variant.Outlined"
                                    Required="true"
+                                   RequiredError="@Localization.GetString("PleaseSelectPaymentMethod")"
                                    AnchorOrigin="Origin.BottomLeft">
                             @foreach (var method in Enum.GetValues<PaymentMethod>())
                             {
@@ -164,8 +168,8 @@ else
                 </MudButton>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           ButtonType="ButtonType.Submit"
-                           Disabled="_saving">
+                           OnClick="HandleSubmit"
+                           Disabled="@(!_isValid || _saving)">
                     @if (_saving)
                     {
                         <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
@@ -178,7 +182,7 @@ else
                 </MudButton>
             </div>
         </MudItem>
-    </EditForm>
+    </MudForm>
 }
 
 @code {
@@ -189,6 +193,8 @@ else
     private bool _loadingInvoices = true;
     private bool _saving = false;
     private string _currentCultureKey = CultureInfo.CurrentCulture.Name;
+    private MudForm _form = null!;
+    private bool _isValid;
     private List<InvoiceDto> _unpaidInvoices = new();
     private InvoiceDto? _selectedInvoice;
     private readonly CreatePaymentDto _createDto = new();
