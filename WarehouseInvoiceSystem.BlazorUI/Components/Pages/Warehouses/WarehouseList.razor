@@ -1,0 +1,327 @@
+@page "/warehouses"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@inject IWarehouseService WarehouseService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("Warehouses") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Warehouses")</MudText>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6" md="3">
+                <MudButton StartIcon="@Icons.Material.Filled.Add"
+                           Color="Color.Primary"
+                           Variant="Variant.Filled"
+                           FullWidth="true"
+                           Href="/warehouses/create">
+                    @Localization.GetString("CreateWarehouse")
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="9">
+                <MudTextField T="string"
+                              Value="_searchString"
+                              ValueChanged="OnSearch"
+                              Placeholder="@Localization.GetString("Search")"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Immediate="true"
+                              DebounceInterval="300"
+                              Class="mt-0" />
+            </MudItem>
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent Class="pa-0">
+        @if (_loading)
+        {
+            <div class="pa-6">
+                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_filteredWarehouses == null || !_filteredWarehouses.Any())
+        {
+            <div class="pa-6 text-center">
+                <MudText Color="Color.Secondary">@Localization.GetString("NoWarehousesFound")</MudText>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="_paginatedWarehouses"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      Dense="false"
+                      FixedHeader="true"
+                      Height="600px"
+                      Sort="@((SortDefinition<WarehouseDto> sortDefinition) => HandleSort(sortDefinition))">
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<WarehouseDto, object>(x => x.Name)">@Localization.GetString("WarehouseName")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.GetString("Address")</MudTh>
+                    <MudTh>@Localization.GetString("Default")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<WarehouseDto, object>(x => x.CreatedAt)">@Localization.GetString("CreatedAt")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.GetString("Actions")</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="@Localization.GetString("WarehouseName")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.Name
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Address")">
+                        @context.Address
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Default")">
+                        <MudChip T="string" Size="Size.Small" Color="@(context.IsDefault ? Color.Success : Color.Default)">
+                            @(context.IsDefault ? Localization.GetString("Yes") : Localization.GetString("No"))
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("CreatedAt")">
+                        @context.CreatedAt.ToString("g")
+                    </MudTd>
+                    <MudTd DataLabel="@Localization.GetString("Actions")">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility" OnClick="@(() => ViewWarehouse(context.Id))">
+                                @Localization.GetString("View")
+                            </MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => EditWarehouse(context.Id))">
+                                @Localization.GetString("Edit")
+                            </MudMenuItem>
+                            <MudDivider />
+                            <MudMenuItem Icon="@Icons.Material.Filled.Delete" IconColor="Color.Error" OnClick="@(() => DeleteWarehouse(context.Id))">
+                                @Localization.GetString("Delete")
+                            </MudMenuItem>
+                        </MudMenu>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <!-- Pagination Controls -->
+            <MudDivider />
+            <MudCardContent Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="PreviousPage" Disabled="@(_currentPage == 1)">
+                                @Localization.GetString("Previous")
+                            </MudButton>
+
+                            <MudText Typo="Typo.body2">
+                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
+                            </MudText>
+
+                            <MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="NextPage" Disabled="@(_currentPage == _totalPages)">
+                                @Localization.GetString("Next")
+                            </MudButton>
+                        </MudStack>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
+                            <MudText Typo="Typo.body2">@Localization.GetString("ItemsPerPage")</MudText>
+
+                            <MudSelect T="int" Value="_itemsPerPage" Dense="true" Variant="Variant.Outlined" Style="width: 100px;" ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
+                                <MudSelectItem Value="10">10</MudSelectItem>
+                                <MudSelectItem Value="25">25</MudSelectItem>
+                                <MudSelectItem Value="50">50</MudSelectItem>
+                                <MudSelectItem Value="100">100</MudSelectItem>
+                            </MudSelect>
+
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">(@_totalWarehouses @Localization.GetString("Total"))</MudText>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private bool _loading = true;
+    private List<WarehouseDto> _allWarehouses = [];
+    private List<WarehouseDto> _filteredWarehouses = [];
+    private List<WarehouseDto> _paginatedWarehouses = [];
+    private string _searchString = "";
+
+    private int _currentPage = 1;
+    private int _itemsPerPage = 10;
+    private int _totalWarehouses = 0;
+    private int _totalPages = 1;
+
+    private string _sortBy = "CreatedAt";
+    private bool _sortAscending = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadWarehouses();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadWarehouses()
+    {
+        _loading = true;
+
+        try
+        {
+            IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
+            _allWarehouses = warehouses.ToList();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading warehouses: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingWarehouses"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<WarehouseDto> filtered = _allWarehouses;
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            string search = _searchString.ToLower();
+            filtered = filtered.Where(w =>
+                w.Name.ToLower().Contains(search) ||
+                (w.Address?.ToLower().Contains(search) ?? false));
+        }
+
+        filtered = _sortAscending
+            ? filtered.OrderBy(GetSortProperty)
+            : filtered.OrderByDescending(GetSortProperty);
+
+        _filteredWarehouses = filtered.ToList();
+        _totalWarehouses = _filteredWarehouses.Count;
+
+        UpdatePagination();
+    }
+
+    private void UpdatePagination()
+    {
+        _totalPages = (int)Math.Ceiling((double)_totalWarehouses / _itemsPerPage);
+
+        if (_currentPage > _totalPages && _totalPages > 0)
+        {
+            _currentPage = _totalPages;
+        }
+
+        int skipCount = (_currentPage - 1) * _itemsPerPage;
+        _paginatedWarehouses = _filteredWarehouses
+            .Skip(skipCount)
+            .Take(_itemsPerPage)
+            .ToList();
+    }
+
+    private void ResetPaginationAndApplyFilters()
+    {
+        _currentPage = 1;
+        ApplyFilters();
+    }
+
+    private object GetSortProperty(WarehouseDto w) => _sortBy switch
+    {
+        "Name" => w.Name,
+        _ => w.CreatedAt
+    };
+
+    private void HandleSort(SortDefinition<WarehouseDto> sortDefinition)
+    {
+        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
+            return;
+
+        _sortBy = sortDefinition.SortBy;
+        _sortAscending = !sortDefinition.Descending;
+        ApplyFilters();
+    }
+
+    private async Task OnSearch(string text)
+    {
+        _searchString = text;
+        ResetPaginationAndApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ViewWarehouse(Guid id)
+    {
+        Navigation.NavigateTo($"/warehouses/{id}");
+    }
+
+    private void EditWarehouse(Guid id)
+    {
+        Navigation.NavigateTo($"/warehouses/edit/{id}");
+    }
+
+    private async Task DeleteWarehouse(Guid id)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteWarehouseConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await WarehouseService.DeleteWarehouseAsync(id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("WarehouseDeleted"), Severity.Success);
+                    await LoadWarehouses();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting warehouse: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingWarehouse"), Severity.Error);
+            }
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (_currentPage > 1)
+        {
+            _currentPage--;
+            UpdatePagination();
+        }
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < _totalPages)
+        {
+            _currentPage++;
+            UpdatePagination();
+        }
+    }
+
+    private void OnItemsPerPageChanged(int newItemsPerPage)
+    {
+        _itemsPerPage = newItemsPerPage;
+        _currentPage = 1;
+        UpdatePagination();
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}
