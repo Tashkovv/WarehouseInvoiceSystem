@@ -12,7 +12,7 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260219172853_AddProductInventoryRelationships")]
+    [Migration("20260220125928_AddProductInventoryRelationships")]
     partial class AddProductInventoryRelationships
     {
         /// <inheritdoc />
