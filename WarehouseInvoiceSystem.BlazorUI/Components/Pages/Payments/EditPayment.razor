@@ -71,10 +71,10 @@ else
                                          Required="true"
                                          Min="0.01m"
                                          Max="@_maxAmount"
-                                         HelperText="@_amount.ToString("C")"
                                          Format="N2"
                                          TextUpdateSuppression="false"
-                                         Placeholder="@Localization.GetString("EnterAmount")" />
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="MKD" />
                     </MudItem>
 
                     <MudItem xs="12" md="6">

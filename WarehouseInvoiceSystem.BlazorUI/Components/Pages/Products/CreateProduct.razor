@@ -40,7 +40,7 @@
                                   MaxLength="500" />
                 </MudItem>
 
-                <MudItem xs="12" md="6">
+                <MudItem xs="12" md="4">
                     <MudTextField @bind-Value="_model.Unit"
                                   Label="@Localization.GetString("Unit")"
                                   HelperText="@Localization.GetString("UnitHelper")"
@@ -50,7 +50,7 @@
                                   MaxLength="10" />
                 </MudItem>
 
-                <MudItem xs="12" md="6">
+                <MudItem xs="12" md="4">
                     <MudNumericField @bind-Value="_model.DefaultPrice"
                                      Label="@Localization.GetString("DefaultPrice")"
                                      Min="0m"
@@ -63,7 +63,7 @@
                                      AdornmentText="MKD" />
                 </MudItem>
 
-                <MudItem xs="12">
+                <MudItem xs="12" md="4" Class="d-flex align-center">
                     <MudSwitch @bind-Value="_model.IsActive"
                                Label="@Localization.GetString("ProductActive")"
                                Color="Color.Success" />
@@ -75,6 +75,11 @@
 <!-- Actions -->
 <MudItem xs="12">
     <div class="d-flex justify-end gap-2">
+        <MudButton Variant="Variant.Outlined"
+                   OnClick="Cancel"
+                   Disabled="@_saving">
+            @Localization.GetString("Cancel")
+        </MudButton>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    OnClick="SaveProduct"
@@ -88,11 +93,6 @@
             {
                 @Localization.GetString("Save")
             }
-        </MudButton>
-        <MudButton Variant="Variant.Outlined"
-                   OnClick="Cancel"
-                   Disabled="@_saving">
-            @Localization.GetString("Cancel")
         </MudButton>
     </div>
 </MudItem>

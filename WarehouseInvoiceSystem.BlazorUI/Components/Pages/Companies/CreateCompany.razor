@@ -119,11 +119,11 @@
                                      @bind-Value="_creditLimit"
                                      Label="@Localization.GetString("CreditLimit")"
                                      Variant="Variant.Outlined"
-                                     HelperText="@_creditLimit.ToString("C")"
-                                     Min="0"
+                                     Min="0m"
                                      Format="N2"
                                      TextUpdateSuppression="false"
-                                     Placeholder="@Localization.GetString("EnterCreditLimit")" />
+                                     Adornment="Adornment.Start"
+                                     AdornmentText="MKD" />
                 </MudItem>
             </MudGrid>
         </MudCardContent>

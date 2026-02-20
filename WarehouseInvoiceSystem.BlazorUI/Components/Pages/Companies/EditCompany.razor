@@ -130,11 +130,11 @@ else
                                          Label="@Localization.GetString("CreditLimit")"
                                          @bind-Value="_creditLimit"
                                          Variant="Variant.Outlined"
-                                         HelperText="@_creditLimit.ToString("C")"
-                                         Min="0"
+                                         Min="0m"
                                          Format="N2"
                                          TextUpdateSuppression="false"
-                                         Placeholder="@Localization.GetString("EnterCreditLimit")" />
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="MKD" />
                     </MudItem>
 
                     <MudItem xs="12" md="4" Class="d-flex align-center">

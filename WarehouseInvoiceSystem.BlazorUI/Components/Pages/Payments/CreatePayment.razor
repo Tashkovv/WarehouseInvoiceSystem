@@ -44,7 +44,6 @@ else
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    AnchorOrigin="Origin.BottomLeft">
-                            <MudSelectItem T="Guid?" Value="null">@Localization.GetString("SelectInvoice")</MudSelectItem>
                             @foreach (InvoiceDto invoice in _unpaidInvoices)
                             {
                                 <MudSelectItem T="Guid?" Value="invoice.Id">
@@ -104,10 +103,10 @@ else
                                          Required="true"
                                          Min="0.01m"
                                          Max="@(_selectedInvoice?.AmountDue ?? 999999999)"
-                                         HelperText="@_amount.ToString("C")"
                                          Format="N2"
                                          TextUpdateSuppression="false"
-                                         Placeholder="@Localization.GetString("EnterAmount")" />
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="MKD" />
                     </MudItem>
 
                     <MudItem xs="12" md="6">

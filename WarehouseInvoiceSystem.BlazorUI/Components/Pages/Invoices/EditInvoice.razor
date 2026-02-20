@@ -229,13 +229,14 @@ else
                                                 <MudNumericField @bind-Value="item.UnitPrice"
                                                                  @bind-Value:after="CalculateTotals"
                                                                  HelperText="@item.UnitPrice.ToString("C")"
-                                                                 Label="@Localization.GetString("UnitPrice")"
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  Min="0"
                                                                  Step="1"
                                                                  Format="N2"
-                                                                 TextUpdateSuppression="false" />
+                                                                 TextUpdateSuppression="false"
+                                                                 Adornment="Adornment.Start"
+                                                                 AdornmentText="MKD" />
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
                                                 <MudNumericField Value="item.TaxRate"
