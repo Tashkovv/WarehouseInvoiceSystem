@@ -6,6 +6,7 @@
     public interface IInventoryService
     {
         // Stock Levels
+        Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync();
         Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId);
         Task<IEnumerable<StockLevelDto>> GetStockByProductAsync(Guid productId);
         Task<IEnumerable<StockLevelDto>> GetStockByWarehouseAsync(Guid warehouseId);

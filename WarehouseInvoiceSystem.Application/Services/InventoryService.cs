@@ -14,6 +14,12 @@
         IWarehouseRepository warehouseRepository) : IInventoryService
     {
         // Stock Levels
+        public async Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync()
+        {
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetAllStockLevelAsync();
+            return stockLevels.Select(MapStockLevelToDto);
+        }
+
         public async Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId)
         {
             StockLevel? stockLevel = await stockLevelRepository.GetByProductAndWarehouseAsync(productId, warehouseId);
@@ -100,10 +106,10 @@
                 ProductId = createDto.ProductId,
                 WarehouseId = createDto.WarehouseId,
                 Type = createDto.Type,
-                Quantity = Math.Abs(createDto.Quantity), // Always positive
+                Quantity = createDto.Quantity,
                 SourceDocumentId = createDto.SourceDocumentId,
                 SourceDocumentType = createDto.SourceDocumentType,
-                Note = createDto.Note
+                Note = createDto.Note,
             };
 
             InventoryTransaction created = await transactionRepository.CreateAsync(transaction);
@@ -121,7 +127,7 @@
                 ProductId = productId,
                 WarehouseId = warehouseId,
                 Type = InventoryTransactionType.Adjustment,
-                Quantity = Math.Abs(quantityChange),
+                Quantity = quantityChange,
                 Note = reason
             };
 
@@ -154,7 +160,7 @@
                 InventoryTransactionType.TransferIn => transaction.Quantity,
                 InventoryTransactionType.Outbound => -transaction.Quantity,
                 InventoryTransactionType.TransferOut => -transaction.Quantity,
-                InventoryTransactionType.Adjustment => transaction.Quantity, // Can be + or -
+                InventoryTransactionType.Adjustment => transaction.Quantity,
                 _ => 0
             };
 

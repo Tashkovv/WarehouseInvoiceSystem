@@ -7,6 +7,14 @@
 
     public class StockLevelRepository(ApplicationDbContext context) : IStockLevelRepository
     {
+        public async Task<IEnumerable<StockLevel>> GetAllStockLevelAsync()
+        {
+            return await context.StockLevels
+                .Where(s => s.DeletedOn == null)
+                .Include(s => s.Warehouse)
+                .ToListAsync();
+        }
+
         public async Task<StockLevel?> GetByProductAndWarehouseAsync(Guid productId, Guid warehouseId)
         {
             return await context.StockLevels

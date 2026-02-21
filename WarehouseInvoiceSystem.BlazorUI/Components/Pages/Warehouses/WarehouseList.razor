@@ -67,7 +67,6 @@
                     <MudTh><MudTableSortLabel SortBy="new Func<WarehouseDto, object>(x => x.Name)">@Localization.GetString("WarehouseName")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Address")</MudTh>
                     <MudTh>@Localization.GetString("Default")</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<WarehouseDto, object>(x => x.CreatedAt)">@Localization.GetString("CreatedAt")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Actions")</MudTh>
                 </HeaderContent>
                 <RowTemplate>
@@ -83,9 +82,6 @@
                         <MudChip T="string" Size="Size.Small" Color="@(context.IsDefault ? Color.Success : Color.Default)">
                             @(context.IsDefault ? Localization.GetString("Yes") : Localization.GetString("No"))
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("CreatedAt")">
-                        @context.CreatedAt.ToString("g")
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Actions")">
                         <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
