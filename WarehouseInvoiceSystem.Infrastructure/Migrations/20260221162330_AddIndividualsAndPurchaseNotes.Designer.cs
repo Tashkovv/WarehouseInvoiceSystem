@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260220125928_AddProductInventoryRelationships")]
-    partial class AddProductInventoryRelationships
+    [Migration("20260221162330_AddIndividualsAndPurchaseNotes")]
+    partial class AddIndividualsAndPurchaseNotes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -88,6 +88,61 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("Type");
 
                     b.ToTable("Company", (string)null);
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Individual", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("IdentificationNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("IdentificationNumber");
+
+                    b.HasIndex("LastName");
+
+                    b.ToTable("Individual", (string)null);
                 });
 
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.InventoryTransaction", b =>
@@ -365,6 +420,110 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.ToTable("Product", (string)null);
                 });
 
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.PurchaseNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("IndividualId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("NoteNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("PaidDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("PurchaseDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("WarehouseId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("IndividualId");
+
+                    b.HasIndex("NoteNumber")
+                        .IsUnique();
+
+                    b.HasIndex("PurchaseDate");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("PurchaseNote", (string)null);
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.PurchaseNoteLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeletedOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PurchaseNoteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("PurchaseNoteId");
+
+                    b.ToTable("PurchaseNoteLine", (string)null);
+                });
+
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.StockLevel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -561,6 +720,43 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Navigation("Invoice");
                 });
 
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.PurchaseNote", b =>
+                {
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Individual", "Individual")
+                        .WithMany("PurchaseNotes")
+                        .HasForeignKey("IndividualId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Individual");
+
+                    b.Navigation("Warehouse");
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.PurchaseNoteLine", b =>
+                {
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.PurchaseNote", "PurchaseNote")
+                        .WithMany("LineItems")
+                        .HasForeignKey("PurchaseNoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("PurchaseNote");
+                });
+
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.StockLevel", b =>
                 {
                     b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Product", "Product")
@@ -585,6 +781,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Navigation("Invoices");
                 });
 
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Individual", b =>
+                {
+                    b.Navigation("PurchaseNotes");
+                });
+
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Invoice", b =>
                 {
                     b.Navigation("LineItems");
@@ -599,6 +800,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Navigation("InvoiceLines");
 
                     b.Navigation("StockLevels");
+                });
+
+            modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.PurchaseNote", b =>
+                {
+                    b.Navigation("LineItems");
                 });
 
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.Warehouse", b =>

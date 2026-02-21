@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddProductInventoryRelationships : Migration
+    public partial class AddIndividualsAndPurchaseNotes : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -32,6 +32,26 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Company", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Individual",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    IdentificationNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Individual", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -153,6 +173,40 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PurchaseNote",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    NoteNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    IndividualId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WarehouseId = table.Column<Guid>(type: "uuid", nullable: true),
+                    PurchaseDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    SubTotal = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    PaidDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Notes = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PurchaseNote", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PurchaseNote_Individual_IndividualId",
+                        column: x => x.IndividualId,
+                        principalTable: "Individual",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PurchaseNote_Warehouse_WarehouseId",
+                        column: x => x.WarehouseId,
+                        principalTable: "Warehouse",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StockLevel",
                 columns: table => new
                 {
@@ -241,6 +295,36 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "PurchaseNoteLine",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PurchaseNoteId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProductId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    Quantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PurchaseNoteLine", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PurchaseNoteLine_Product_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "Product",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_PurchaseNoteLine_PurchaseNote_PurchaseNoteId",
+                        column: x => x.PurchaseNoteId,
+                        principalTable: "PurchaseNote",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Company_DeletedOn",
                 table: "Company",
@@ -260,6 +344,21 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_Company_Type",
                 table: "Company",
                 column: "Type");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Individual_DeletedOn",
+                table: "Individual",
+                column: "DeletedOn");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Individual_IdentificationNumber",
+                table: "Individual",
+                column: "IdentificationNumber");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Individual_LastName",
+                table: "Individual",
+                column: "LastName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InventoryTransaction_CreatedAt",
@@ -348,6 +447,52 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "ReferenceNumber");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_DeletedOn",
+                table: "PurchaseNote",
+                column: "DeletedOn");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_IndividualId",
+                table: "PurchaseNote",
+                column: "IndividualId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_NoteNumber",
+                table: "PurchaseNote",
+                column: "NoteNumber",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_PurchaseDate",
+                table: "PurchaseNote",
+                column: "PurchaseDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_Status",
+                table: "PurchaseNote",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_WarehouseId",
+                table: "PurchaseNote",
+                column: "WarehouseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNoteLine_DeletedOn",
+                table: "PurchaseNoteLine",
+                column: "DeletedOn");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNoteLine_ProductId",
+                table: "PurchaseNoteLine",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNoteLine_PurchaseNoteId",
+                table: "PurchaseNoteLine",
+                column: "PurchaseNoteId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_StockLevel_DeletedOn",
                 table: "StockLevel",
                 column: "DeletedOn");
@@ -399,6 +544,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "Payment");
 
             migrationBuilder.DropTable(
+                name: "PurchaseNoteLine");
+
+            migrationBuilder.DropTable(
                 name: "StockLevel");
 
             migrationBuilder.DropTable(
@@ -408,13 +556,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "Invoice");
 
             migrationBuilder.DropTable(
+                name: "PurchaseNote");
+
+            migrationBuilder.DropTable(
                 name: "Product");
 
             migrationBuilder.DropTable(
-                name: "Warehouse");
+                name: "Company");
 
             migrationBuilder.DropTable(
-                name: "Company");
+                name: "Individual");
+
+            migrationBuilder.DropTable(
+                name: "Warehouse");
         }
     }
 }
