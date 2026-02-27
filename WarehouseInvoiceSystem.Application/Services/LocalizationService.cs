@@ -382,6 +382,10 @@
                 ["ErrorUpdatingIndividual"] = "Error updating individual",
                 ["ErrorDeletingIndividual"] = "Error deleting individual",
                 ["IndividualNotFound"] = "Individual not found",
+                ["ActiveIndividuals"] = "Active",
+                ["InactiveIndividuals"] = "Inactive",
+                ["ActiveIndividual"] = "Active",
+                ["InactiveIndividual"] = "Inactive",
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Purchase Notes",
@@ -780,6 +784,10 @@
                 ["ErrorUpdatingIndividual"] = "Грешка при изменување на физичкото лице",
                 ["ErrorDeletingIndividual"] = "Грешка при бришење на физичкото лице",
                 ["IndividualNotFound"] = "Физичкото лице не е пронајдено",
+                ["ActiveIndividuals"] = "Активни",
+                ["InactiveIndividuals"] = "Неактивни",
+                ["ActiveIndividual"] = "Активен",
+                ["InactiveIndividual"] = "Неактивен",
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Откупни Белешки",
