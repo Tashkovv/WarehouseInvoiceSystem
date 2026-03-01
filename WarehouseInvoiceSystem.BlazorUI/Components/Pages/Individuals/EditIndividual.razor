@@ -6,7 +6,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>@Localization.GetString("EditIndividual") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("EditIndividual") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
 @if (_loading)
 {
@@ -119,7 +119,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadIndividual();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadIndividual()

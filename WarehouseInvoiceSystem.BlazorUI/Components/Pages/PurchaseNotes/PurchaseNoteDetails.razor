@@ -1,0 +1,296 @@
+﻿@page "/purchase-notes/{Id:guid}"
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject IPurchaseNoteService PurchaseNoteService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("PurchaseNoteDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_model == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("PurchaseNoteNotFound")</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Class="pa-4 d-flex justify-space-between align-center" Elevation="0">
+                <div>
+                    <MudText Typo="Typo.h4">@_model.NoteNumber</MudText>
+                    <MudChip T="string"
+                             Color="GetStatusColor(_model.Status)"
+                             Size="Size.Small"
+                             Class="mt-2">
+                        @GetStatusText(_model.Status)
+                    </MudChip>
+                </div>
+                <div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="EditNote">
+                        @Localization.GetString("Edit")
+                    </MudButton>
+                    @if (_model.Status != PurchaseNoteStatus.Paid)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   StartIcon="@Icons.Material.Filled.Payment"
+                                   OnClick="MarkAsPaid"
+                                   Class="ml-2">
+                            @Localization.GetString("MarkAsPaid")
+                        </MudButton>
+                    }
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="DeleteNote"
+                               Class="ml-2">
+                        @Localization.GetString("Delete")
+                    </MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Individual & Purchase Info -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("Individual")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body1" Class="font-weight-bold">@_model.IndividualFullName</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @Localization.GetString("IdentificationNumber"): @_model.IndividualIdentificationNumber
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("PurchaseDetails")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="2">
+                        <div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("PurchaseDate")</MudText>
+                            <MudText Typo="Typo.body2">@_model.PurchaseDate.ToString("dd MMMM yyyy")</MudText>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_model.WarehouseName))
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("Warehouse")</MudText>
+                                <MudText Typo="Typo.body2">@_model.WarehouseName</MudText>
+                            </div>
+                        }
+                        @if (_model.PaidDate.HasValue)
+                        {
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("PaidDate")</MudText>
+                                <MudText Typo="Typo.body2">@_model.PaidDate.Value.ToString("dd MMMM yyyy")</MudText>
+                            </div>
+                        }
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Line Items -->
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("Products")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    <MudTable Items="_model.LineItems"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm"
+                              Elevation="0">
+                        <HeaderContent>
+                            <MudTh>@Localization.GetString("Product")</MudTh>
+                            <MudTh>@Localization.GetString("Description")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("UnitPrice")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="@Localization.GetString("Product")">
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ProductName</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Description")">
+                                @context.Description
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                @context.Quantity
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
+                                @context.UnitPrice.ToString("C")
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                    @context.Amount.ToString("C")
+                                </MudText>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+
+                    <MudDivider />
+
+                    <!-- Totals Section -->
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="12" Class="d-flex justify-end">
+                                <MudStack Spacing="3" Style="min-width: 300px;">
+                                    <div class="d-flex justify-space-between">
+                                        <MudText Typo="Typo.h6" Class="font-weight-bold">@Localization.GetString("Total"):</MudText>
+                                        <MudText Typo="Typo.h6" Class="font-weight-bold">@_model.TotalAmount.ToString("C")</MudText>
+                                    </div>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Notes -->
+        @if (!string.IsNullOrWhiteSpace(_model.Notes))
+        {
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("Notes")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2">@_model.Notes</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private PurchaseNoteDto? _model;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadPurchaseNote();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadPurchaseNote()
+    {
+        _loading = true;
+
+        try
+        {
+            _model = await PurchaseNoteService.GetPurchaseNoteByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingPurchaseNote"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private Color GetStatusColor(PurchaseNoteStatus status)
+    {
+        return status switch
+        {
+            PurchaseNoteStatus.Draft => Color.Default,
+            PurchaseNoteStatus.Completed => Color.Info,
+            PurchaseNoteStatus.Paid => Color.Success,
+            _ => Color.Default
+        };
+    }
+
+    private string GetStatusText(PurchaseNoteStatus status)
+    {
+        return status switch
+        {
+            PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
+            PurchaseNoteStatus.Completed => Localization.GetString("Completed"),
+            PurchaseNoteStatus.Paid => Localization.GetString("Paid"),
+            _ => status.ToString()
+        };
+    }
+
+    private void EditNote()
+    {
+        Navigation.NavigateTo($"/purchase-notes/edit/{Id}");
+    }
+
+    private async Task MarkAsPaid()
+    {
+        try
+        {
+            await PurchaseNoteService.MarkAsPaidAsync(Id);
+            Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
+            await LoadPurchaseNote();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking note as paid: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+        }
+    }
+
+    private async Task DeleteNote()
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeletePurchaseNoteConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await PurchaseNoteService.DeletePurchaseNoteAsync(Id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
+                    Navigation.NavigateTo("/purchase-notes");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting purchase note: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingPurchaseNote"), Severity.Error);
+            }
+        }
+    }
+}

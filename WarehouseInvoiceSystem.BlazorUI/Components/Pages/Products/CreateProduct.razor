@@ -6,7 +6,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>@Localization.GetString("CreateProduct") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("CreateProduct") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("CreateProduct")</MudText>
 
@@ -102,6 +102,16 @@
     private bool _isValid;
     private bool _saving;
     private CreateProductDto _model = new() { IsActive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
 
     private async Task SaveProduct()
     {

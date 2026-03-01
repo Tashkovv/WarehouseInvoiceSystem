@@ -185,7 +185,7 @@
                 ["ErrorUpdatingInvoice"] = "Error updating invoice",
                 ["ErrorDeletingInvoice"] = "Error deleting invoice",
                 ["PleaseAddLineItems"] = "Please add at least one line item",
-                ["PleaseEnterDescriptionOrSelectProduct"] = "Please enter a description or select a product for each line item",
+                ["PleaseSelectProduct"] = "Please select a product for each line item",
                 ["IssueDateRequired"] = "Issue date is required",
                 ["DueDateRequired"] = "Due date is required",
                 ["StatusRequired"] = "Status is required",
@@ -413,6 +413,12 @@
                 ["ErrorUpdatingPurchaseNote"] = "Error updating purchase note",
                 ["ErrorDeletingPurchaseNote"] = "Error deleting purchase note",
                 ["PurchaseNoteNotFound"] = "Purchase note not found",
+                ["SaveAndNew"] = "Save & New",
+                ["AddProduct"] = "Add Product",
+                ["IndividualRequired"] = "Individual is required",
+                ["ErrorLoadingData"] = "Error loading data",
+                ["PaidDate"] = "Paid Date",
+                ["PurchaseDetails"] = "Purchase Details",
             },
             #endregion
 
@@ -588,7 +594,7 @@
                 ["ErrorUpdatingInvoice"] = "Грешка при ажурирање на фактура",
                 ["ErrorDeletingInvoice"] = "Грешка при бришење на фактура",
                 ["PleaseAddLineItems"] = "Ве молиме додадете барем една ставка",
-                ["PleaseEnterDescriptionOrSelectProduct"] = "Ве молиме внесете опис или изберете производ за секоја ставка",
+                ["PleaseSelectProduct"] = "Ве молиме изберете производ за секоја ставка",
                 ["Yes"] = "Да",
                 ["No"] = "Не",
                 ["Close"] = "Затвори",
@@ -815,6 +821,12 @@
                 ["ErrorUpdatingPurchaseNote"] = "Грешка при изменување на откупната белешка",
                 ["ErrorDeletingPurchaseNote"] = "Грешка при бришење на откупната белешка",
                 ["PurchaseNoteNotFound"] = "Откупната белешка не е пронајдена",
+                ["SaveAndNew"] = "Зачувај и Нов",
+                ["AddProduct"] = "Додај Производ",
+                ["IndividualRequired"] = "Физичкото лице е задолжително",
+                ["ErrorLoadingData"] = "Грешка при вчитување на податоците",
+                ["PaidDate"] = "Датум на Плаќање",
+                ["PurchaseDetails"] = "Детали за Откуп",
             }
             #endregion
         };

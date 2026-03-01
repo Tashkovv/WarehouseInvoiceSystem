@@ -11,7 +11,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
-<PageTitle>@Localization.GetString("Inventory") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("Inventory") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Inventory")</MudText>
 
@@ -226,19 +226,16 @@
 
         try
         {
-            IEnumerable<StockLevelDto> stock;
+            IEnumerable<StockLevelDto> stock = await InventoryService.GetAllStockLevelAsync();
 
             if (_selectedWarehouseId.HasValue)
             {
-                stock = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouseId.Value);
+                stock = stock.Where(s => s.WarehouseId == _selectedWarehouseId.Value);
             }
-            else if (_selectedProductId.HasValue)
+
+            if (_selectedProductId.HasValue)
             {
-                stock = await InventoryService.GetStockByProductAsync(_selectedProductId.Value);
-            }
-            else
-            {
-                stock = await InventoryService.GetAllStockLevelAsync();
+                stock = stock.Where(s => s.ProductId == _selectedProductId.Value);
             }
 
             _allStock = stock.ToList();

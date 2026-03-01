@@ -1,16 +1,17 @@
-﻿@page "/individuals"
+﻿@page "/purchase-notes"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.Individual
-@inject IIndividualService IndividualService
+@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject IPurchaseNoteService PurchaseNoteService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<PageTitle>@Localization.GetString("Individuals") - @Localization.GetString("InvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Individuals")</MudText>
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("PurchaseNotes")</MudText>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent>
@@ -20,8 +21,8 @@
                            Color="Color.Primary"
                            Variant="Variant.Filled"
                            FullWidth="true"
-                           Href="/individuals/create">
-                    @Localization.GetString("CreateIndividual")
+                           Href="/purchase-notes/create">
+                    @Localization.GetString("CreatePurchaseNote")
                 </MudButton>
             </MudItem>
             <MudItem xs="12" sm="6" md="9">
@@ -43,9 +44,10 @@
                  Class="mt-4"
                  ActivePanelIndex="_activeTabIndex"
                  ActivePanelIndexChanged="OnTabChanged">
-            <MudTabPanel Text="@Localization.GetString("AllIndividuals")" Icon="@Icons.Material.Filled.List" />
-            <MudTabPanel Text="@Localization.GetString("ActiveIndividuals")" Icon="@Icons.Material.Filled.CheckCircle" />
-            <MudTabPanel Text="@Localization.GetString("InactiveIndividuals")" Icon="@Icons.Material.Filled.Block" />
+            <MudTabPanel Text="@Localization.GetString("AllPurchaseNotes")" Icon="@Icons.Material.Filled.List" />
+            <MudTabPanel Text="@Localization.GetString("Draft")" Icon="@Icons.Material.Filled.Edit" />
+            <MudTabPanel Text="@Localization.GetString("Completed")" Icon="@Icons.Material.Filled.CheckCircle" />
+            <MudTabPanel Text="@Localization.GetString("Paid")" Icon="@Icons.Material.Filled.Payment" />
         </MudTabs>
     </MudCardContent>
 </MudCard>
@@ -58,65 +60,77 @@
                 <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
             </div>
         }
-        else if (_filteredIndividuals == null || !_filteredIndividuals.Any())
+        else if (_filteredNotes == null || !_filteredNotes.Any())
         {
             <div class="pa-6 text-center">
-                <MudText Color="Color.Secondary">@Localization.GetString("NoIndividualsFound")</MudText>
+                <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
             </div>
         }
         else
         {
-            <MudTable Items="_paginatedIndividuals"
+            <MudTable Items="_paginatedNotes"
                       Hover="true"
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
                       Height="600px"
-                      Sort="@((SortDefinition<IndividualDto> sortDefinition) => HandleSort(sortDefinition))">
+                      Sort="@((SortDefinition<PurchaseNoteDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<IndividualDto, object>(x => x.LastName)">@Localization.GetString("LastName")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<IndividualDto, object>(x => x.FirstName)">@Localization.GetString("FirstName")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<IndividualDto, object>(x => x.IdentificationNumber)">@Localization.GetString("IdentificationNumber")</MudTableSortLabel></MudTh>
-                    <MudTh>@Localization.GetString("Phone")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.NoteNumber)">@Localization.GetString("NoteNumber")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.IndividualFullName)">@Localization.GetString("Individual")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.PurchaseDate)">@Localization.GetString("PurchaseDate")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.TotalAmount)">@Localization.GetString("Total")</MudTableSortLabel></MudTh>
                     <MudTh>@Localization.GetString("Status")</MudTh>
                     <MudTh>@Localization.GetString("Actions")</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="@Localization.GetString("LastName")">
+                    <MudTd DataLabel="@Localization.GetString("NoteNumber")">
                         <MudText Typo="Typo.body2" Class="font-weight-medium">
-                            @context.LastName
+                            @context.NoteNumber
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("FirstName")">
-                        @context.FirstName
+                    <MudTd DataLabel="@Localization.GetString("Individual")">
+                        <MudText>@context.IndividualFullName</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @context.IndividualIdentificationNumber
+                        </MudText>
                     </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("IdentificationNumber")">
-                        @context.IdentificationNumber
+                    <MudTd DataLabel="@Localization.GetString("PurchaseDate")">
+                        @context.PurchaseDate.ToString("dd MMM yyyy")
                     </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Phone")">
-                        @context.Phone
+                    <MudTd DataLabel="@Localization.GetString("Total")">
+                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                            @context.TotalAmount.ToString("C")
+                        </MudText>
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Status")">
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
-                            @(context.IsActive? Localization.GetString("ActiveIndividual") : Localization.GetString("InactiveIndividual"))
+                                 Color="GetStatusColor(context.Status)">
+                            @GetStatusText(context.Status)
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Actions")">
                         <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
+                                         OnClick="@(() => ViewNote(context.Id))">
+                                @Localization.GetString("View")
+                            </MudMenuItem>
                             <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                         OnClick="@(() => EditIndividual(context.Id))">
+                                         OnClick="@(() => EditNote(context.Id))">
                                 @Localization.GetString("Edit")
                             </MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Receipt"
-                                         OnClick="@(() => ViewPurchaseNotes(context.Id))">
-                                @Localization.GetString("PurchaseNotes")
-                            </MudMenuItem>
+                            @if (context.Status != PurchaseNoteStatus.Paid)
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Filled.Payment"
+                                             OnClick="@(() => MarkAsPaid(context.Id))">
+                                    @Localization.GetString("MarkAsPaid")
+                                </MudMenuItem>
+                            }
                             <MudDivider />
                             <MudMenuItem Icon="@Icons.Material.Filled.Delete"
                                          IconColor="Color.Error"
-                                         OnClick="@(() => DeleteIndividual(context.Id))">
+                                         OnClick="@(() => DeleteNote(context.Id))">
                                 @Localization.GetString("Delete")
                             </MudMenuItem>
                         </MudMenu>
@@ -169,7 +183,7 @@
                             </MudSelect>
 
                             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                (@_totalIndividuals @Localization.GetString("Total"))
+                                (@_totalNotes @Localization.GetString("Total"))
                             </MudText>
                         </MudStack>
                     </MudItem>
@@ -181,24 +195,24 @@
 
 @code {
     private bool _loading = true;
-    private List<IndividualDto> _allIndividuals = [];
-    private List<IndividualDto> _filteredIndividuals = [];
-    private List<IndividualDto> _paginatedIndividuals = [];
+    private List<PurchaseNoteDto> _allNotes = [];
+    private List<PurchaseNoteDto> _filteredNotes = [];
+    private List<PurchaseNoteDto> _paginatedNotes = [];
     private string _searchString = "";
     private int _activeTabIndex = 0;
 
     private int _currentPage = 1;
-    private int _itemsPerPage = 10;
-    private int _totalIndividuals = 0;
+    private int _itemsPerPage = 25;
+    private int _totalNotes = 0;
     private int _totalPages = 1;
 
-    private string _sortBy = "CreatedAt";
+    private string _sortBy = "PurchaseDate";
     private bool _sortAscending = false;
 
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadIndividuals();
+        await LoadNotes();
     }
 
     private async void OnLanguageChanged()
@@ -206,20 +220,20 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadIndividuals()
+    private async Task LoadNotes()
     {
         _loading = true;
 
         try
         {
-            IEnumerable<IndividualDto> individuals = await IndividualService.GetAllIndividualsAsync();
-            _allIndividuals = individuals.ToList();
+            IEnumerable<PurchaseNoteDto> notes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
+            _allNotes = notes.ToList();
             ApplyFilters();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading individuals: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingIndividuals"), Severity.Error);
+            Console.WriteLine($"Error loading purchase notes: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingPurchaseNotes"), Severity.Error);
         }
         finally
         {
@@ -229,38 +243,38 @@
 
     private void ApplyFilters()
     {
-        IEnumerable<IndividualDto> filtered = _allIndividuals;
+        IEnumerable<PurchaseNoteDto> filtered = _allNotes;
 
         filtered = _activeTabIndex switch
         {
-            1 => filtered.Where(i => i.IsActive),
-            2 => filtered.Where(i => !i.IsActive),
+            1 => filtered.Where(n => n.Status == PurchaseNoteStatus.Draft),
+            2 => filtered.Where(n => n.Status == PurchaseNoteStatus.Completed),
+            3 => filtered.Where(n => n.Status == PurchaseNoteStatus.Paid),
             _ => filtered
         };
 
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
             string search = _searchString.ToLower();
-            filtered = filtered.Where(i =>
-                i.FirstName.ToLower().Contains(search) ||
-                i.LastName.ToLower().Contains(search) ||
-                i.IdentificationNumber.Contains(search) ||
-                (i.Phone?.ToLower().Contains(search) ?? false));
+            filtered = filtered.Where(n =>
+                n.NoteNumber.ToLower().Contains(search) ||
+                n.IndividualFullName.ToLower().Contains(search) ||
+                n.IndividualIdentificationNumber.Contains(search));
         }
 
         filtered = _sortAscending
             ? filtered.OrderBy(GetSortProperty)
             : filtered.OrderByDescending(GetSortProperty);
 
-        _filteredIndividuals = filtered.ToList();
-        _totalIndividuals = _filteredIndividuals.Count;
+        _filteredNotes = filtered.ToList();
+        _totalNotes = _filteredNotes.Count;
 
         UpdatePagination();
     }
 
     private void UpdatePagination()
     {
-        _totalPages = (int)Math.Ceiling((double)_totalIndividuals / _itemsPerPage);
+        _totalPages = (int)Math.Ceiling((double)_totalNotes / _itemsPerPage);
 
         if (_currentPage > _totalPages && _totalPages > 0)
         {
@@ -268,7 +282,7 @@
         }
 
         int skipCount = (_currentPage - 1) * _itemsPerPage;
-        _paginatedIndividuals = _filteredIndividuals
+        _paginatedNotes = _filteredNotes
             .Skip(skipCount)
             .Take(_itemsPerPage)
             .ToList();
@@ -280,15 +294,16 @@
         ApplyFilters();
     }
 
-    private object GetSortProperty(IndividualDto individual) => _sortBy switch
+    private object GetSortProperty(PurchaseNoteDto note) => _sortBy switch
     {
-        "FirstName" => individual.FirstName,
-        "LastName" => individual.LastName,
-        "IdentificationNumber" => individual.IdentificationNumber,
-        _ => individual.CreatedAt
+        "NoteNumber" => note.NoteNumber,
+        "IndividualFullName" => note.IndividualFullName,
+        "PurchaseDate" => note.PurchaseDate,
+        "TotalAmount" => note.TotalAmount,
+        _ => note.CreatedAt
     };
 
-    private void HandleSort(SortDefinition<IndividualDto> sortDefinition)
+    private void HandleSort(SortDefinition<PurchaseNoteDto> sortDefinition)
     {
         if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
             return;
@@ -312,21 +327,58 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void EditIndividual(Guid id)
+    private Color GetStatusColor(PurchaseNoteStatus status)
     {
-        Navigation.NavigateTo($"/individuals/edit/{id}");
+        return status switch
+        {
+            PurchaseNoteStatus.Draft => Color.Default,
+            PurchaseNoteStatus.Completed => Color.Info,
+            PurchaseNoteStatus.Paid => Color.Success,
+            _ => Color.Default
+        };
     }
 
-    private void ViewPurchaseNotes(Guid id)
+    private string GetStatusText(PurchaseNoteStatus status)
     {
-        Navigation.NavigateTo($"/purchase-notes?individualId={id}");
+        return status switch
+        {
+            PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
+            PurchaseNoteStatus.Completed => Localization.GetString("Completed"),
+            PurchaseNoteStatus.Paid => Localization.GetString("Paid"),
+            _ => status.ToString()
+        };
     }
 
-    private async Task DeleteIndividual(Guid id)
+    private void ViewNote(Guid id)
+    {
+        Navigation.NavigateTo($"/purchase-notes/{id}");
+    }
+
+    private void EditNote(Guid id)
+    {
+        Navigation.NavigateTo($"/purchase-notes/edit/{id}");
+    }
+
+    private async Task MarkAsPaid(Guid id)
+    {
+        try
+        {
+            await PurchaseNoteService.MarkAsPaidAsync(id);
+            Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
+            await LoadNotes();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking note as paid: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+        }
+    }
+
+    private async Task DeleteNote(Guid id)
     {
         bool? result = await DialogService.ShowMessageBox(
             Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeleteIndividualConfirm"),
+            Localization.GetString("DeletePurchaseNoteConfirm"),
             yesText: Localization.GetString("Yes"),
             cancelText: Localization.GetString("No"));
 
@@ -334,17 +386,17 @@
         {
             try
             {
-                bool deleted = await IndividualService.DeleteIndividualAsync(id);
+                bool deleted = await PurchaseNoteService.DeletePurchaseNoteAsync(id);
                 if (deleted)
                 {
-                    Snackbar.Add(Localization.GetString("IndividualDeleted"), Severity.Success);
-                    await LoadIndividuals();
+                    Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
+                    await LoadNotes();
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting individual: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingIndividual"), Severity.Error);
+                Console.WriteLine($"Error deleting purchase note: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingPurchaseNote"), Severity.Error);
             }
         }
     }

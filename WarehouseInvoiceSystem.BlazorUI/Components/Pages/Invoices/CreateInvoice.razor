@@ -457,7 +457,7 @@ else
         LineItemModel? invalidItem = _lineItems.FirstOrDefault(i => i.SelectedProduct == null && string.IsNullOrWhiteSpace(i.Description));
         if (invalidItem != null)
         {
-            Snackbar.Add(Localization.GetString("PleaseEnterDescriptionOrSelectProduct"), Severity.Warning);
+            Snackbar.Add(Localization.GetString("PleaseSelectProduct"), Severity.Warning);
             return;
         }
 

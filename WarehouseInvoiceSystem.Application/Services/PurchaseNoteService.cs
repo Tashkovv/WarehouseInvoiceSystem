@@ -75,11 +75,26 @@
                 ProductId = li.ProductId,
                 Description = li.Description,
                 Quantity = li.Quantity,
-                UnitPrice = li.UnitPrice
+                UnitPrice = li.UnitPrice,
+                CreatedAt = DateTime.UtcNow,
             }).ToList();
 
             // Calculate totals
             decimal subTotal = lineItems.Sum(li => li.Amount);
+
+            DateTime? itemPaidDate;
+            if (createDto.PurchaseDate > DateTime.UtcNow)
+            {
+                itemPaidDate = createDto.MarkAsPaid
+                             ? createDto.PurchaseDate
+                             : null;
+            }
+            else
+            {
+                itemPaidDate = createDto.MarkAsPaid
+                             ? DateTime.UtcNow
+                             : null;
+            }
 
             // Create purchase note
             PurchaseNote purchaseNote = new()
@@ -91,7 +106,7 @@
                 SubTotal = subTotal,
                 TotalAmount = subTotal,
                 Status = createDto.MarkAsPaid ? PurchaseNoteStatus.Paid : PurchaseNoteStatus.Completed,
-                PaidDate = createDto.MarkAsPaid ? DateTime.UtcNow : null,
+                PaidDate = itemPaidDate,
                 Notes = createDto.Notes,
                 LineItems = lineItems
             };

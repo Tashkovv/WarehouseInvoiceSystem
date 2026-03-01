@@ -228,7 +228,7 @@ else
                                                                  Variant="Variant.Outlined"
                                                                  Required="true"
                                                                  RequiredError="@Localization.GetString("EnterQuantity")"
-                                                                 Min="0"
+                                                                 Min="1"
                                                                  Step="1"/>
                                             </MudItem>
                                             <MudItem xs="12" sm="6" md="3">
@@ -562,7 +562,7 @@ else
         LineItemModel? invalidItem = _lineItems.FirstOrDefault(i => i.SelectedProduct == null && string.IsNullOrWhiteSpace(i.Description));
         if (invalidItem != null)
         {
-            Snackbar.Add(Localization.GetString("PleaseEnterDescriptionOrSelectProduct"), Severity.Warning);
+            Snackbar.Add(Localization.GetString("PleaseSelectProduct"), Severity.Warning);
             return;
         }
 

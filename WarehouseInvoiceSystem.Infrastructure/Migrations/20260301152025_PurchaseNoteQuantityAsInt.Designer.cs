@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260221162330_AddIndividualsAndPurchaseNotes")]
-    partial class AddIndividualsAndPurchaseNotes
+    [Migration("20260301152025_PurchaseNoteQuantityAsInt")]
+    partial class PurchaseNoteQuantityAsInt
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -505,9 +505,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<Guid>("PurchaseNoteId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("Quantity")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(18, 2)

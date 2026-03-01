@@ -16,7 +16,7 @@
             builder.Property(e => e.DeletedOn);
 
             builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
-            builder.Property(e => e.Quantity).HasPrecision(18, 2).IsRequired();
+            builder.Property(e => e.Quantity).IsRequired();
             builder.Property(e => e.UnitPrice).HasPrecision(18, 2).IsRequired();
 
             // Ignore computed property
