@@ -1,0 +1,234 @@
+﻿@page "/partners-dashboard"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@inject ICompanyService CompanyService
+@inject IIndividualService IndividualService
+@inject ILocalizationService Localization
+
+<PageTitle>@Localization.GetString("PartnersDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("BusinessPartners")</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <!-- Summary Cards -->
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalCompanies")"
+                          Value="@_companies.Count.ToString()"
+                          Icon="@Icons.Material.Filled.Business"
+                          IconColor="Color.Primary"
+                          Link="/companies" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("ActiveCompanies")"
+                          Value="@_activeCompanies.Count().ToString()"
+                          Icon="@Icons.Material.Filled.CheckCircle"
+                          IconColor="Color.Success"
+                          Link="/companies" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("CompanyBreakdown")"
+                          Value="@_clientCount.ToString()"
+                          Subtitle="@($"{Localization.GetString("Clients")} | {Localization.GetString("Vendors")}: {_vendorCount}")"
+                          Icon="@Icons.Material.Filled.PieChart"
+                          IconColor="Color.Info"
+                          Link="/companies" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalIndividuals")"
+                          Value="@_individuals.Count.ToString()"
+                          Subtitle="@($"{Localization.GetString("Active")}: {_activeIndividuals.Count()}")"
+                          Icon="@Icons.Material.Filled.Person"
+                          IconColor="Color.Secondary"
+                          Link="/individuals" />
+        </MudItem>
+
+        <!-- Recent Companies -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") - @Localization.GetString("Companies")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (_recentCompanies.Any())
+                    {
+                        <MudList T="CompanyDto" Clickable="true">
+                            @foreach (var company in _recentCompanies)
+                            {
+                                <MudListItem Icon="@Icons.Material.Filled.Business" 
+                                            Href="@($"/companies/{company.Id}")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@company.Name</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @company.CreatedAt.ToString("dd MMM yyyy") - 
+                                        @(company.Type == Domain.Enums.CompanyType.Client ? Localization.GetString("Client") : 
+                                          company.Type == Domain.Enums.CompanyType.Vendor ? Localization.GetString("Vendor") : 
+                                          Localization.GetString("Both"))
+                                    </MudText>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <MudText Color="Color.Secondary">@Localization.GetString("NoCompaniesFound")</MudText>
+                    }
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Href="/companies" 
+                              Color="Color.Primary" 
+                              Variant="Variant.Text"
+                              EndIcon="@Icons.Material.Filled.ArrowForward">
+                        @Localization.GetString("ViewAllCompanies")
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <!-- Recent Individuals -->
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") - @Localization.GetString("Individuals")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (_recentIndividuals.Any())
+                    {
+                        <MudList T="IndividualDto" Clickable="true">
+                            @foreach (var individual in _recentIndividuals)
+                            {
+                                <MudListItem Icon="@Icons.Material.Filled.Person" 
+                                            Href="@($"/individuals/edit/{individual.Id}")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@individual.FullName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @individual.IdentificationNumber - @individual.CreatedAt.ToString("dd MMM yyyy")
+                                    </MudText>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <MudText Color="Color.Secondary">@Localization.GetString("NoIndividualsFound")</MudText>
+                    }
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Href="/individuals" 
+                              Color="Color.Primary" 
+                              Variant="Variant.Text"
+                              EndIcon="@Icons.Material.Filled.ArrowForward">
+                        @Localization.GetString("ViewAllIndividuals")
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+        <!-- Quick Actions -->
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("QuickActions")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Row="true" Spacing="2" Wrap="Wrap.Wrap">
+                        <MudButton Href="/companies/create"
+                                  Color="Color.Primary"
+                                  Variant="Variant.Filled"
+                                  StartIcon="@Icons.Material.Filled.Add">
+                            @Localization.GetString("NewCompany")
+                        </MudButton>
+                        <MudButton Href="/individuals/create"
+                                  Color="Color.Success"
+                                  Variant="Variant.Filled"
+                                  StartIcon="@Icons.Material.Filled.Add">
+                            @Localization.GetString("NewIndividual")
+                        </MudButton>
+                        <MudButton Href="/companies"
+                                  Color="Color.Default"
+                                  Variant="Variant.Outlined"
+                                  StartIcon="@Icons.Material.Filled.List">
+                            @Localization.GetString("ViewAllCompanies")
+                        </MudButton>
+                        <MudButton Href="/individuals"
+                                  Color="Color.Default"
+                                  Variant="Variant.Outlined"
+                                  StartIcon="@Icons.Material.Filled.List">
+                            @Localization.GetString("ViewAllIndividuals")
+                        </MudButton>
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private List<CompanyDto> _companies = [];
+    private List<IndividualDto> _individuals = [];
+    
+    private IEnumerable<CompanyDto> _activeCompanies => _companies.Where(c => c.IsActive);
+    private IEnumerable<IndividualDto> _activeIndividuals => _individuals.Where(i => i.IsActive);
+    private IEnumerable<CompanyDto> _recentCompanies => _companies.OrderByDescending(c => c.CreatedAt).Take(5);
+    private IEnumerable<IndividualDto> _recentIndividuals => _individuals.OrderByDescending(i => i.CreatedAt).Take(5);
+    
+    private int _clientCount = 0;
+    private int _vendorCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadData();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+
+        try
+        {
+            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
+            _companies = companies.ToList();
+            
+            IEnumerable<IndividualDto> individuals = await IndividualService.GetAllIndividualsAsync();
+            _individuals = individuals.ToList();
+
+            // Calculate breakdowns
+            _clientCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Client || c.Type == Domain.Enums.CompanyType.Both);
+            _vendorCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Vendor || c.Type == Domain.Enums.CompanyType.Both);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading partners data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

@@ -1,0 +1,100 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+
+<MudCard Elevation="2" 
+         Class=@($"dashboard-card {(_isHovered ? "dashboard-card-hover" : "")}")
+         @onmouseenter="OnMouseEnter"
+         @onmouseleave="OnMouseLeave"
+         @onclick="NavigateToLink"
+         Style="cursor: pointer; transition: all 0.3s ease;">
+    <MudCardContent>
+        <MudStack Spacing="2">
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <MudIcon Icon="@Icon" Color="@IconColor" Size="Size.Large" />
+            }
+            
+            <MudText Typo="Typo.h4" Class="font-weight-bold">
+                @Value
+            </MudText>
+            
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Title
+            </MudText>
+            
+            @if (!string.IsNullOrEmpty(Subtitle))
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    @Subtitle
+                </MudText>
+            }
+        </MudStack>
+        
+        @if (_isHovered && !string.IsNullOrEmpty(Link))
+        {
+            <div class="dashboard-card-arrow">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium" />
+            </div>
+        }
+    </MudCardContent>
+</MudCard>
+
+<style>
+    .dashboard-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dashboard-card-hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+    
+    .dashboard-card-arrow {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        animation: slideIn 0.3s ease;
+    }
+    
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public Color IconColor { get; set; } = Color.Primary;
+    [Parameter] public string? Link { get; set; }
+
+    private bool _isHovered = false;
+
+    private void OnMouseEnter()
+    {
+        _isHovered = true;
+    }
+
+    private void OnMouseLeave()
+    {
+        _isHovered = false;
+    }
+
+    private void NavigateToLink()
+    {
+        if (!string.IsNullOrEmpty(Link))
+        {
+            Navigation.NavigateTo(Link);
+        }
+    }
+}
