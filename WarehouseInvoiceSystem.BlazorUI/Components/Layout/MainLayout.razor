@@ -18,21 +18,80 @@
             @Localization.GetString("InvoiceSystem")
         </MudText>
         <MudSpacer />
-        <MudButton Href="/partners-dashboard"
-                   StartIcon="@Icons.Material.Filled.Groups"
-                   Color="Color.Inherit">
-            @Localization.GetString("Partners")
-        </MudButton>
-        <MudButton Href="/documents-dashboard"
-                   StartIcon="@Icons.Material.Filled.Description"
-                   Color="Color.Inherit">
-            @Localization.GetString("Documents")
-        </MudButton>
-        <MudButton Href="/inventory-dashboard"
-                   StartIcon="@Icons.Material.Filled.Inventory"
-                   Color="Color.Inherit">
-            @Localization.GetString("Inventory")
-        </MudButton>
+        <MudMenu ActivationEvent="@MouseEvent.MouseOver"
+                 AnchorOrigin="Origin.BottomLeft"
+                 TransformOrigin="Origin.TopLeft"
+                 Dense="true">
+            <ActivatorContent>
+                <MudButton Href="/partners-dashboard"
+                           StartIcon="@Icons.Material.Filled.Groups"
+                           Color="Color.Inherit"
+                           @onmouseenter="@(() => { })"
+                           Style="text-transform: none;">
+                    @Localization.GetString("Partners")
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Href="/companies" Icon="@Icons.Material.Filled.Business">
+                    @Localization.GetString("Companies")
+                </MudMenuItem>
+                <MudMenuItem Href="/individuals" Icon="@Icons.Material.Filled.Person">
+                    @Localization.GetString("Individuals")
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
+
+        <MudMenu ActivationEvent="@MouseEvent.MouseOver"
+                 AnchorOrigin="Origin.BottomLeft"
+                 TransformOrigin="Origin.TopLeft"
+                 Dense="true">
+            <ActivatorContent>
+                <MudButton Href="/documents-dashboard"
+                           StartIcon="@Icons.Material.Filled.Description"
+                           Color="Color.Inherit"
+                           @onmouseenter="@(() => { })"
+                           Style="text-transform: none;">
+                    @Localization.GetString("Documents")
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Href="/invoices" Icon="@Icons.Material.Filled.RequestQuote">
+                    @Localization.GetString("Invoices")
+                </MudMenuItem>
+                <MudMenuItem Href="/purchase-notes" Icon="@Icons.Material.Filled.Receipt">
+                    @Localization.GetString("PurchaseNotes")
+                </MudMenuItem>
+                <MudMenuItem Href="/payments" Icon="@Icons.Material.Filled.Payment">
+                    @Localization.GetString("Payments")
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
+
+        <MudMenu ActivationEvent="@MouseEvent.MouseOver"
+                 AnchorOrigin="Origin.BottomLeft"
+                 TransformOrigin="Origin.TopLeft"
+                 Dense="true">
+            <ActivatorContent>
+                <MudButton Href="/inventory-dashboard"
+                           StartIcon="@Icons.Material.Filled.Inventory"
+                           Color="Color.Inherit"
+                           @onmouseenter="@(() => { })"
+                           Style="text-transform: none;">
+                    @Localization.GetString("Inventory")
+                </MudButton>
+            </ActivatorContent>
+            <ChildContent>
+                <MudMenuItem Href="/products" Icon="@Icons.Material.Filled.Inventory2">
+                    @Localization.GetString("Products")
+                </MudMenuItem>
+                <MudMenuItem Href="/inventory" Icon="@Icons.Material.Filled.Assessment">
+                    @Localization.GetString("Inventory")
+                </MudMenuItem>
+                <MudMenuItem Href="/warehouses" Icon="@Icons.Material.Filled.Warehouse">
+                    @Localization.GetString("Warehouses")
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
         <MudSpacer />
 
         <!-- Language Switcher -->

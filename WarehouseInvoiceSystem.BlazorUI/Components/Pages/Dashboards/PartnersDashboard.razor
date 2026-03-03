@@ -19,32 +19,25 @@ else
 {
     <MudGrid>
         <!-- Summary Cards -->
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalCompanies")"
+                           Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompanies.Count()}")"
                           Value="@_companies.Count.ToString()"
                           Icon="@Icons.Material.Filled.Business"
                           IconColor="Color.Primary"
                           Link="/companies" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("ActiveCompanies")"
-                          Value="@_activeCompanies.Count().ToString()"
-                          Icon="@Icons.Material.Filled.CheckCircle"
-                          IconColor="Color.Success"
-                          Link="/companies" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("CompanyBreakdown")"
                           Value="@_clientCount.ToString()"
-                          Subtitle="@($"{Localization.GetString("Clients")} | {Localization.GetString("Vendors")}: {_vendorCount}")"
+                          Subtitle="@($"{Localization.GetString("Clients")}: {_clientCount} | {Localization.GetString("Vendors")}: {_vendorCount}")"
                           Icon="@Icons.Material.Filled.PieChart"
                           IconColor="Color.Info"
                           Link="/companies" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalIndividuals")"
                           Value="@_individuals.Count.ToString()"
                           Subtitle="@($"{Localization.GetString("Active")}: {_activeIndividuals.Count()}")"
