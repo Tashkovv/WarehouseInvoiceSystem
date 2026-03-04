@@ -108,7 +108,7 @@
                         <MudChip T="string"
                                  Size="Size.Small"
                                  Color="@(context.IsActive ? Color.Success : Color.Default)">
-                            @(context.IsActive? Localization.GetString("Active") : Localization.GetString("Inactive"))
+                            @(context.IsActive? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Actions")">

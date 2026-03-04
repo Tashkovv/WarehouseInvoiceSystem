@@ -64,7 +64,7 @@ else
                                 <MudChip T="string"
                                          Size="Size.Medium"
                                          Color="@(_company.IsActive ? Color.Success : Color.Default)">
-                                    @(_company.IsActive? Localization.GetString("Active") : Localization.GetString("Inactive"))
+                                    @(_company.IsActive? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))
                                 </MudChip>
                             </div>
                         </div>

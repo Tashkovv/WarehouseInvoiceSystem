@@ -13,6 +13,12 @@
             return products.Select(MapToDto);
         }
 
+        public async Task<IEnumerable<ProductDto>> GetProductsByIdsAsync(List<Guid> productIds)
+        {
+            IEnumerable<Product> products = await productRepository.GetByIdsAsync(productIds);
+            return products.Select(MapToDto);
+        }
+
         public async Task<IEnumerable<ProductDto>> GetActiveProductsAsync()
         {
             IEnumerable<Product> products = await productRepository.GetActiveProductsAsync();

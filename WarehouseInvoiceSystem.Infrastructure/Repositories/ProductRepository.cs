@@ -14,6 +14,13 @@
                 .OrderBy(p => p.Name)
                 .ToListAsync();
         }
+        public async Task<IEnumerable<Product>> GetByIdsAsync(List<Guid> ids)
+        {
+            return await context.Products
+                .Where(p => p.DeletedOn == null &&
+                            ids.Contains(p.Id))
+                .ToListAsync();
+        }
 
         public async Task<IEnumerable<Product>> GetActiveProductsAsync()
         {

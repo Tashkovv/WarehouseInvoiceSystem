@@ -11,6 +11,14 @@
 
         public event Action? OnLanguageChanged;
 
+        private const string overdueString = "Overdue";
+
+        private const string activeString = "Active";
+
+        private const string inactiveString = "Inactive";
+
+        private const string aktivniString = "Активни";
+
         private readonly Dictionary<string, Dictionary<string, string>> _translations = new()
         {
             #region English translations
@@ -27,7 +35,7 @@
                 // Dashboard
                 ["TotalDue"] = "Total Due",
                 ["TotalInvoices"] = "Total Invoices",
-                ["Overdue"] = "Overdue",
+                [overdueString] = overdueString,
                 ["TotalPaid"] = "Total Paid",
                 ["InvoicesUnpaid"] = "Invoices unpaid",
                 ["DashboardPaid"] = "Paid",
@@ -35,7 +43,6 @@
                 ["AllTimeCollected"] = "All time collected",
                 ["RecentInvoices"] = "Recent Invoices",
                 ["NewInvoice"] = "New Invoice",
-                ["NoInvoicesFound"] = "No invoices found",
                 ["InvoiceNumber"] = "Invoice #",
                 ["Company"] = "Company",
                 ["Amount"] = "Amount",
@@ -53,15 +60,13 @@
                 ["StockManagement"] = "Stock Management",
                 ["Overview"] = "Overview",
                 ["ViewAll"] = "View All",
-                ["ViewAllCompanies"] = "View All Companies",
-                ["ViewAllIndividuals"] = "View All Individuals",
                 ["ViewAllPurchaseNotes"] = "View All Purchase Notes",
                 ["ViewAllProducts"] = "View All Products",
                 ["ViewAllWarehouses"] = "View All Warehouses",
                 ["TotalCompanies"] = "Total Companies",
                 ["TotalIndividuals"] = "Total Individuals",
-                ["ActiveCompanies"] = "Active Companies",
-                ["DashboardActiveIndividuals"] = "Active Individuals",
+                ["ActiveCompanies"] = activeString,
+                ["DashboardActiveIndividuals"] = activeString,
                 ["RecentActivity"] = "Recent Activity",
                 ["QuickActions"] = "Quick Actions",
                 ["TodaysActivity"] = "Today's Activity",
@@ -106,13 +111,28 @@
                 ["Value"] = "Value",
                 ["HighestValue"] = "Highest Value",
                 ["NoInvoicesFound"] = "No invoices found",
+                ["TotalToPay"] = "Total to pay",
+                ["ViewInventoryForSpecificWarehouse"] = "View inventory statistics for a specific warehouse",
+                ["ProductStatistics"] = "Product Statistics",
+                ["NoPurchaseData"] = "No purchase data available",
+                ["NoSalesData"] = "No sales data available",
+                ["Last5Transactions"] = "Last 5 transactions",
+                ["Date"] = "Date",
+                ["Note"] = "Note",
+                ["Inbound"] = "Inbound",
+                ["Outbound"] = "Outbound",
+                ["Adjustment"] = "Adjustment",
+                ["NoRecentMovements"] = "No recent stock movements",
+                ["ViewAllTransactions"] = "View All Transactions",
+                ["TopProductsByStock"] = "Top Products by Stock",
+                ["NoStockData"] = "No stock data available",
 
                 // Status
                 ["Draft"] = "Draft",
                 ["Sent"] = "Sent",
                 ["PartiallyPaid"] = "Partially Paid",
                 ["PaidStatus"] = "Paid",
-                ["OverdueStatus"] = "Overdue",
+                ["OverdueStatus"] = overdueString,
                 ["CancelledStatus"] = "Cancelled",
 
                 // Common
@@ -171,8 +191,8 @@
                 ["Address"] = "Address",
                 ["TaxID"] = "Tax ID",
                 ["CreditLimit"] = "Credit Limit",
-                ["Active"] = "Active",
-                ["Inactive"] = "Inactive",
+                ["ActiveCompany"] = activeString,
+                ["InactiveCompany"] = inactiveString,
                 ["Client"] = "Client",
                 ["Vendor"] = "Vendor",
                 ["ClientAndVendor"] = "Client & Vendor",
@@ -371,10 +391,10 @@
                 ["CustomDescription"] = "Custom Description",
                 ["OrEnterCustom"] = "Or enter custom description",
                 ["SelectProduct"] = "Select Product",
-                ["ActiveProducts"] = "Active",
-                ["InactiveProducts"] = "Inactive",
-                ["ProductActive"] = "Active",
-                ["ProductInactive"] = "Inactive",
+                ["ActiveProducts"] = activeString,
+                ["InactiveProducts"] = inactiveString,
+                ["ProductActive"] = activeString,
+                ["ProductInactive"] = inactiveString,
 
                 // Inventory
                 ["Inventory"] = "Inventory",
@@ -396,6 +416,7 @@
                 ["LowStock"] = "Low Stock",
                 ["InStock"] = "In Stock",
                 ["OutOfStock"] = "Out of Stock",
+                ["PurchaseFrom"] = "Purchase from",
 
                 // Warehouses
                 ["Warehouses"] = "Warehouses",
@@ -418,6 +439,7 @@
                 ["ErrorUpdatingWarehouse"] = "Error updating warehouse",
                 ["ErrorDeletingWarehouse"] = "Error deleting warehouse",
                 ["WarehouseNotFound"] = "Warehouse not found",
+                ["ActiveWarehouses"] = activeString,
 
                 // Individuals
                 ["Individuals"] = "Individuals",
@@ -444,10 +466,10 @@
                 ["ErrorUpdatingIndividual"] = "Error updating individual",
                 ["ErrorDeletingIndividual"] = "Error deleting individual",
                 ["IndividualNotFound"] = "Individual not found",
-                ["ActiveIndividuals"] = "Active",
-                ["InactiveIndividuals"] = "Inactive",
-                ["ActiveIndividual"] = "Active",
-                ["InactiveIndividual"] = "Inactive",
+                ["ActiveIndividuals"] = activeString,
+                ["InactiveIndividuals"] = inactiveString,
+                ["ActiveIndividual"] = activeString,
+                ["InactiveIndividual"] = inactiveString,
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Purchase Notes",
@@ -498,7 +520,7 @@
                 // Dashboard
                 ["TotalDue"] = "Вкупно должење",
                 ["TotalInvoices"] = "Вкупно фактури",
-                ["Overdue"] = "Задоцнети",
+                [overdueString] = "Задоцнети",
                 ["TotalPaid"] = "Вкупно платено",
                 ["InvoicesUnpaid"] = "Неплатени фактури",
                 ["DashboardPaid"] = "Платени",
@@ -506,7 +528,6 @@
                 ["AllTimeCollected"] = "Вкупно наплатено",
                 ["RecentInvoices"] = "Последни фактури",
                 ["NewInvoice"] = "Нова фактура",
-                ["NoInvoicesFound"] = "Нема пронајдени фактури",
                 ["InvoiceNumber"] = "Фактура #",
                 ["Company"] = "Компанија",
                 ["Amount"] = "Износ",
@@ -524,15 +545,13 @@
                 ["StockManagement"] = "Управување со Залиха",
                 ["Overview"] = "Преглед",
                 ["ViewAll"] = "Прегледај Сè",
-                ["ViewAllCompanies"] = "Прегледај Сите Компании",
-                ["ViewAllIndividuals"] = "Прегледај Сите Физички Лица",
                 ["ViewAllPurchaseNotes"] = "Прегледај Сите Откупни Белешки",
                 ["ViewAllProducts"] = "Прегледај Сите Производи",
                 ["ViewAllWarehouses"] = "Прегледај Сите Магацини",
                 ["TotalCompanies"] = "Вкупно Компании",
                 ["TotalIndividuals"] = "Вкупно Физички Лица",
-                ["ActiveCompanies"] = "Активни Компании",
-                ["DashboardActiveIndividuals"] = "Активни Физички Лица",
+                ["ActiveCompanies"] = aktivniString,
+                ["DashboardActiveIndividuals"] = aktivniString,
                 ["RecentActivity"] = "Скорешна Активност",
                 ["QuickActions"] = "Брзи Акции",
                 ["TodaysActivity"] = "Денешна Активност",
@@ -542,12 +561,12 @@
                 ["FinancialSummary"] = "Финансиски Преглед",
                 ["ThisMonth"] = "Овој Месец",
                 ["TotalPurchases"] = "Вкупни Откупи",
-                ["TotalSales"] = "Вкупни Продажби",
+                ["TotalSales"] = "Вкупно Продажби",
                 ["Profit"] = "Профит",
                 ["Margin"] = "Маржа",
                 ["StatusBreakdown"] = "Статус Преглед",
                 ["AttentionNeeded"] = "Потребно Внимание",
-                ["OverdueInvoices"] = "Доцнети Фактури",
+                ["OverdueInvoices"] = "Задоцнети Фактури",
                 ["UnpaidPurchaseNotes"] = "Неплатени Откупни Белешки",
                 ["PendingPayments"] = "Чекање Плаќања",
                 ["ViewDetails"] = "Прегледај Детали",
@@ -569,7 +588,7 @@
                 ["NewPurchaseNote"] = "Нова Откупна Белешка",
                 ["NewProduct"] = "Нов Производ",
                 ["ViewLowStock"] = "Ниска Залиха",
-                ["CompanyBreakdown"] = "Распределба Компании",
+                ["CompanyBreakdown"] = "Распределба на Компании",
                 ["PurchaseActivity"] = "Откупна Активност",
                 ["TopClientsBySales"] = "Топ Клиенти по Продажба",
                 ["RecentlyAdded"] = "Скоро Додадени",
@@ -577,6 +596,21 @@
                 ["Value"] = "Вредност",
                 ["HighestValue"] = "Највисока Вредност",
                 ["NoInvoicesFound"] = "Нема пронајдено фактури",
+                ["TotalToPay"] = "Вкупно за плаќање",
+                ["ViewInventoryForSpecificWarehouse"] = "Прегледај статистики на залиха за специфичен магацин",
+                ["ProductStatistics"] = "Статистики на Производи",
+                ["NoPurchaseData"] = "Нема податоци за купување",
+                ["NoSalesData"] = "Нема податоци за продажби",
+                ["Last5Transactions"] = "Последни 5 трансакции",
+                ["Date"] = "Датум",
+                ["Note"] = "Забелешка",
+                ["Inbound"] = "Влезни",
+                ["Outbound"] = "Излезни",
+                ["Adjustment"] = "Прилагодување",
+                ["NoRecentMovements"] = "Нема скорешни движења",
+                ["ViewAllTransactions"] = "Прегледај Сите Трансакции",
+                ["TopProductsByStock"] = "Топ Производи по Залиха",
+                ["NoStockData"] = "Нема податоци за залиха",
 
                 // Status
                 ["Draft"] = "Нацрт",
@@ -642,8 +676,8 @@
                 ["Address"] = "Адреса",
                 ["TaxID"] = "Даночен број",
                 ["CreditLimit"] = "Кредитен лимит",
-                ["Active"] = "Активна",
-                ["Inactive"] = "Неактивна",
+                ["ActiveCompany"] = "Активна",
+                ["InactiveCompany"] = "Неактивна",
                 ["Client"] = "Клиент",
                 ["Vendor"] = "Добавувач",
                 ["ClientAndVendor"] = "Клиент и Добавувач",
@@ -842,7 +876,7 @@
                 ["CustomDescription"] = "Сопствен Опис",
                 ["OrEnterCustom"] = "Или внесете сопствен опис",
                 ["SelectProduct"] = "Избери Производ",
-                ["ActiveProducts"] = "Активни",
+                ["ActiveProducts"] = aktivniString,
                 ["InactiveProducts"] = "Неактивни",
                 ["ProductActive"] = "Активен",
                 ["ProductInactive"] = "Неактивен",
@@ -867,6 +901,7 @@
                 ["AdjustmentReason"] = "Причина",
                 ["StockAdjusted"] = "Залихата е успешно прилагодена",
                 ["ErrorAdjustingStock"] = "Грешка при прилагодување на залиха",
+                ["PurchaseFrom"] = "Откуп од",
 
                 // Warehouses
                 ["Warehouses"] = "Магацини",
@@ -889,6 +924,7 @@
                 ["ErrorUpdatingWarehouse"] = "Грешка при изменување на магацинот",
                 ["ErrorDeletingWarehouse"] = "Грешка при бришење на магацинот",
                 ["WarehouseNotFound"] = "Магацинот не е пронајден",
+                ["ActiveWarehouses"] = aktivniString,
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",
@@ -915,7 +951,7 @@
                 ["ErrorUpdatingIndividual"] = "Грешка при изменување на физичкото лице",
                 ["ErrorDeletingIndividual"] = "Грешка при бришење на физичкото лице",
                 ["IndividualNotFound"] = "Физичкото лице не е пронајдено",
-                ["ActiveIndividuals"] = "Активни",
+                ["ActiveIndividuals"] = aktivniString,
                 ["InactiveIndividuals"] = "Неактивни",
                 ["ActiveIndividual"] = "Активен",
                 ["InactiveIndividual"] = "Неактивен",

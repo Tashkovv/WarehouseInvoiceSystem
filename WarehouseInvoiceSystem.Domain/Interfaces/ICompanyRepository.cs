@@ -6,6 +6,7 @@
     public interface ICompanyRepository
     {
         Task<IEnumerable<Company>> GetAllAsync();
+        Task<IEnumerable<Company>> GetActiveCompaniesAsync();
         Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type);
         Task<Company?> GetByIdAsync(Guid id);
         Task<Company> CreateAsync(Company company);

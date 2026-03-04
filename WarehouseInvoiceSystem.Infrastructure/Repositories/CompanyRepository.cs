@@ -11,7 +11,15 @@
         public async Task<IEnumerable<Company>> GetAllAsync()
         {
             return await context.Companies
-                .Where(c => c.IsActive && c.DeletedOn == null)
+                .Where(c => c.DeletedOn == null)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Company>> GetActiveCompaniesAsync()
+        {
+            return await context.Companies
+                .Where(c => c.DeletedOn == null && c.IsActive)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
         }
