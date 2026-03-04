@@ -417,6 +417,7 @@
                 ["InStock"] = "In Stock",
                 ["OutOfStock"] = "Out of Stock",
                 ["PurchaseFrom"] = "Purchase from",
+                ["SaleTo"] = "Sale to",
 
                 // Warehouses
                 ["Warehouses"] = "Warehouses",
@@ -902,6 +903,7 @@
                 ["StockAdjusted"] = "Залихата е успешно прилагодена",
                 ["ErrorAdjustingStock"] = "Грешка при прилагодување на залиха",
                 ["PurchaseFrom"] = "Откуп од",
+                ["SaleTo"] = "Продажба до",
 
                 // Warehouses
                 ["Warehouses"] = "Магацини",

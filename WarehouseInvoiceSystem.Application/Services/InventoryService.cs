@@ -148,6 +148,8 @@
                     ProductId = transaction.ProductId,
                     WarehouseId = transaction.WarehouseId,
                     Quantity = 0,
+                    MinimumQuantity = 0,
+                    ReorderPoint = 0,
                     LastRestockedAt = DateTime.UtcNow
                 };
                 stockLevel = await stockLevelRepository.CreateAsync(stockLevel);

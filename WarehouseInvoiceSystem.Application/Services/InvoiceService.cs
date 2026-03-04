@@ -6,7 +6,12 @@
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
 
-    public class InvoiceService(IInvoiceRepository invoiceRepository, ICompanyRepository companyRepository) : IInvoiceService
+    public class InvoiceService(IInvoiceRepository invoiceRepository,
+                                ICompanyRepository companyRepository,
+                                IWarehouseRepository warehouseRepository,
+                                IProductRepository productRepository,
+                                IInventoryService inventoryService,
+                                ILocalizationService localizationService) : IInvoiceService
     {
         public async Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync()
         {
@@ -56,6 +61,22 @@
             if (!await companyRepository.ExistsAsync(createDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
 
+            // Validate warehouse if needed for receivables, otherwise get default
+            Guid? warehouseId = null;
+            if (createDto.Type == InvoiceType.Receivable)
+            {
+                Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync()
+                    ?? throw new InvalidOperationException("No default warehouse found for stock deduction");
+                warehouseId = defaultWarehouse.Id;
+            }
+
+            // Validate products
+            foreach (Guid? productId in createDto.LineItems.Select(li => li.ProductId))
+            {
+                if (productId.HasValue && !await productRepository.ExistsAsync(productId.Value))
+                    throw new KeyNotFoundException($"Product with ID {productId} not found");
+            }
+
             // Generate invoice number
             string invoiceNumber = await invoiceRepository.GenerateInvoiceNumberAsync(createDto.Type);
 
@@ -91,16 +112,36 @@
             };
 
             Invoice created = await invoiceRepository.CreateAsync(invoice);
+
+            // If invoice has products, create inbound/outbound transactions
+            if (created.Status == InvoiceStatus.Sent && warehouseId.HasValue)
+            {
+                InventoryTransactionType transactionType = created.Type == InvoiceType.Receivable ? InventoryTransactionType.Outbound : InventoryTransactionType.Inbound;
+                await CreateInventoryTransactionsForInvoiceAsync(created, warehouseId.Value, transactionType);
+            }
+
             return MapToDto(created);
         }
 
         public async Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto)
         {
-            Invoice? invoice = await invoiceRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
             // Validate company exists
             if (!await companyRepository.ExistsAsync(updateDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {updateDto.CompanyId} not found");
+
+            // Track status change for inventory transactions
+            InvoiceStatus oldStatus = invoice.Status;
+            InvoiceStatus newStatus = updateDto.Status;
+            bool shouldCreateTransactions = false;
+
+            // Determine if we need to create inventory transactions
+            if (oldStatus == InvoiceStatus.Draft && (newStatus == InvoiceStatus.Sent || newStatus == InvoiceStatus.Paid))
+            {
+                shouldCreateTransactions = true;
+            }
 
             // Update basic properties
             invoice.CompanyId = updateDto.CompanyId;
@@ -110,7 +151,6 @@
             invoice.DueDate = updateDto.DueDate;
             invoice.Notes = updateDto.Notes;
 
-            // Update line items
             // Remove old items
             invoice.LineItems.Clear();
 
@@ -132,6 +172,18 @@
             invoice.TotalAmount = newLineItems.Sum(li => li.TotalAmount);
 
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+
+            // Create inventory transactions if status changed to Sent/Paid
+            if (shouldCreateTransactions)
+            {
+                Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync();
+                if (defaultWarehouse != null)
+                {
+                    InventoryTransactionType transactionType = updated.Type == InvoiceType.Receivable ? InventoryTransactionType.Outbound : InventoryTransactionType.Inbound;
+                    await CreateInventoryTransactionsForInvoiceAsync(updated, defaultWarehouse.Id, transactionType);
+                }
+            }
+
             return MapToDto(updated);
         }
 
@@ -164,6 +216,24 @@
                 TotalPaid = totalPaid,
                 TotalDue = totalDue
             };
+        }
+
+        private async Task CreateInventoryTransactionsForInvoiceAsync(Invoice invoice, Guid warehouseId, InventoryTransactionType transactionType)
+        {
+            // Create outbound transaction for each line item that has a product
+            foreach (InvoiceLine line in invoice.LineItems.Where(li => li.ProductId.HasValue))
+            {
+                await inventoryService.CreateTransactionAsync(new DTOs.InventoryTransaction.CreateInventoryTransactionDto
+                {
+                    ProductId = line.ProductId!.Value,
+                    WarehouseId = warehouseId,
+                    Type = transactionType,
+                    Quantity = line.Quantity,
+                    SourceDocumentId = invoice.Id,
+                    SourceDocumentType = "Invoice",
+                    Note = $"{localizationService.GetString("SaleTo")} {invoice.Company.Name} - {invoice.InvoiceNumber}"
+                });
+            }
         }
 
         private static InvoiceDto MapToDto(Invoice invoice)

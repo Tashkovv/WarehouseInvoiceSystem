@@ -56,9 +56,21 @@
             if (!await individualRepository.ExistsAsync(createDto.IndividualId))
                 throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
 
-            // Validate warehouse if provided
-            if (createDto.WarehouseId.HasValue && !await warehouseRepository.ExistsAsync(createDto.WarehouseId.Value))
-                throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
+            // Validate warehouse if provided, otherwise get default
+            Guid warehouseId;
+            if (createDto.WarehouseId.HasValue)
+            {
+                if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId.Value))
+                    throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
+                warehouseId = createDto.WarehouseId.Value;
+            }
+            else
+            {
+                // Get default warehouse
+                Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync()
+                    ?? throw new InvalidOperationException("No warehouse specified and no default warehouse found");
+                warehouseId = defaultWarehouse.Id;
+            }
 
             // Validate products
             foreach (Guid productId in createDto.LineItems.Select(line => line.ProductId))
@@ -102,7 +114,7 @@
             {
                 NoteNumber = noteNumber,
                 IndividualId = createDto.IndividualId,
-                WarehouseId = createDto.WarehouseId,
+                WarehouseId = warehouseId,
                 PurchaseDate = createDto.PurchaseDate,
                 SubTotal = subTotal,
                 TotalAmount = subTotal,
@@ -136,6 +148,17 @@
             if (updateDto.WarehouseId.HasValue && !await warehouseRepository.ExistsAsync(updateDto.WarehouseId.Value))
                 throw new KeyNotFoundException($"Warehouse with ID {updateDto.WarehouseId} not found");
 
+            // Track status change for inventory transactions
+            PurchaseNoteStatus oldStatus = purchaseNote.Status;
+            PurchaseNoteStatus newStatus = updateDto.Status;
+            bool shouldCreateTransactions = false;
+
+            // Determine if we need to create inventory transactions
+            if (oldStatus == PurchaseNoteStatus.Draft && (newStatus == PurchaseNoteStatus.Completed || newStatus == PurchaseNoteStatus.Paid))
+            {
+                shouldCreateTransactions = true;
+            }
+
             // Update properties
             purchaseNote.IndividualId = updateDto.IndividualId;
             purchaseNote.WarehouseId = updateDto.WarehouseId;
@@ -165,6 +188,13 @@
             purchaseNote.TotalAmount = purchaseNote.SubTotal;
 
             PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(purchaseNote);
+
+            // Create inventory transactions if completed/paid
+            if (shouldCreateTransactions)
+            {
+                await CreateInventoryTransactionsAsync(updated);
+            }
+
             return MapToDto(updated);
         }
 

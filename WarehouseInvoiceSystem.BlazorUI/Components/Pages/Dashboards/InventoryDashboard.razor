@@ -83,7 +83,7 @@ else
         </MudItem>
 
         <!-- Alerts & Warnings -->
-        @if (_lowStockItems.Any() || _outOfStockItems.Any())
+        @* @if (_lowStockItems.Any() || _outOfStockItems.Any())
         {
             <MudItem xs="12" Class="mt-4">
                 <MudCard Elevation="2">
@@ -127,7 +127,7 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-        }
+        } *@
 
         <!-- Current Stock Levels - Top Products -->
         <MudItem xs="12" Class="mt-6">
@@ -185,7 +185,7 @@ else
         </MudItem>
 
         <!-- Product Statistics -->
-        <MudItem xs="12" Class="mt-6">
+        @* <MudItem xs="12" Class="mt-6">
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("ProductStatistics")</MudText>
         </MudItem>
 
@@ -295,7 +295,7 @@ else
                     }
                 </MudCardContent>
             </MudCard>
-        </MudItem>
+        </MudItem> *@
 
         <!-- Recent Stock Movements -->
         <MudItem xs="12" Class="mt-6">
@@ -332,7 +332,7 @@ else
                                     }
                                     else if (context.Type == InventoryTransactionType.Outbound)
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.ArrowUpward">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Icon="@Icons.Material.Filled.ArrowUpward">
                                             @Localization.GetString("Outbound")
                                         </MudChip>
                                     }
@@ -390,13 +390,13 @@ else
 
     private IEnumerable<StockLevelDto> _lowStockItems => _stockLevels.Where(sl => 
         sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0);
-    private IEnumerable<StockLevelDto> _outOfStockItems => _stockLevels.Where(sl => sl.Quantity == 0);
+    // private IEnumerable<StockLevelDto> _outOfStockItems => _stockLevels.Where(sl => sl.Quantity == 0);
 
     private decimal _totalStockValue => _stockLevels.Sum(sl => sl.Quantity * GetProductPrice(sl.ProductId));
 
     private List<ProductStockSummary> _topByStock = [];
-    private List<ProductMovementSummary> _mostPurchased = [];
-    private List<ProductMovementSummary> _mostSold = [];
+    //private List<ProductMovementSummary> _mostPurchased = [];
+    //private List<ProductMovementSummary> _mostSold = [];
 
     private Guid _selectedWarehouseId;
     private string _selectedWarehouseName => _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name ?? "";
@@ -442,7 +442,7 @@ else
             _recentTransactions = transactions.OrderByDescending(t => t.CreatedAt).Take(5).ToList();
 
             CalculateTopProducts();
-            await CalculateProductStatistics();
+            //await CalculateProductStatistics();
         }
         catch (Exception ex)
         {
@@ -474,52 +474,52 @@ else
         _topByStock = productGroups;
     }
 
-    private async Task CalculateProductStatistics()
-    {
-        try
-        {
-            // Get all transactions for this month
-            var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-            var transactions = await InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
-            var monthTransactions = transactions.Where(t => t.CreatedAt >= startOfMonth).ToList();
+    // private async Task CalculateProductStatistics()
+    // {
+    //     try
+    //     {
+    //         // Get all transactions for this month
+    //         var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    //         var transactions = await InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
+    //         var monthTransactions = transactions.Where(t => t.CreatedAt >= startOfMonth).ToList();
 
-            // Most purchased (Inbound transactions)
-            _mostPurchased = monthTransactions
-                .Where(t => t.Type == InventoryTransactionType.Inbound)
-                .GroupBy(t => t.ProductId)
-                .Select(g => new ProductMovementSummary
-                {
-                    ProductId = g.Key,
-                    ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
-                    ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
-                    Unit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
-                    Quantity = g.Sum(t => t.Quantity),
-                    TotalValue = g.Sum(t => t.Quantity * GetProductPrice(g.Key))
-                })
-                .OrderByDescending(p => p.Quantity)
-                .ToList();
+    //         // Most purchased (Inbound transactions)
+    //         _mostPurchased = monthTransactions
+    //             .Where(t => t.Type == InventoryTransactionType.Inbound)
+    //             .GroupBy(t => t.ProductId)
+    //             .Select(g => new ProductMovementSummary
+    //             {
+    //                 ProductId = g.Key,
+    //                 ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
+    //                 ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
+    //                 Unit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
+    //                 Quantity = g.Sum(t => t.Quantity),
+    //                 TotalValue = g.Sum(t => t.Quantity * GetProductPrice(g.Key))
+    //             })
+    //             .OrderByDescending(p => p.Quantity)
+    //             .ToList();
 
-            // Most sold (Outbound transactions)
-            _mostSold = monthTransactions
-                .Where(t => t.Type == InventoryTransactionType.Outbound)
-                .GroupBy(t => t.ProductId)
-                .Select(g => new ProductMovementSummary
-                {
-                    ProductId = g.Key,
-                    ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
-                    ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
-                    Unit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
-                    Quantity = g.Sum(t => t.Quantity),
-                    TotalValue = g.Sum(t => t.Quantity * GetProductPrice(g.Key))
-                })
-                .OrderByDescending(p => p.Quantity)
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error calculating product statistics: {ex.Message}");
-        }
-    }
+    //         // Most sold (Outbound transactions)
+    //         _mostSold = monthTransactions
+    //             .Where(t => t.Type == InventoryTransactionType.Outbound)
+    //             .GroupBy(t => t.ProductId)
+    //             .Select(g => new ProductMovementSummary
+    //             {
+    //                 ProductId = g.Key,
+    //                 ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
+    //                 ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
+    //                 Unit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
+    //                 Quantity = g.Sum(t => t.Quantity),
+    //                 TotalValue = g.Sum(t => t.Quantity * GetProductPrice(g.Key))
+    //             })
+    //             .OrderByDescending(p => p.Quantity)
+    //             .ToList();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         Console.WriteLine($"Error calculating product statistics: {ex.Message}");
+    //     }
+    // }
 
     private string GetQuantityText(InventoryTransactionType type, decimal quantity)
     {
@@ -579,13 +579,13 @@ else
         public decimal TotalValue { get; set; }
     }
 
-    private class ProductMovementSummary
-    {
-        public Guid ProductId { get; set; }
-        public string ProductCode { get; set; } = string.Empty;
-        public string ProductName { get; set; } = string.Empty;
-        public string Unit { get; set; } = string.Empty;
-        public decimal Quantity { get; set; }
-        public decimal TotalValue { get; set; }
-    }
+    // private class ProductMovementSummary
+    // {
+    //     public Guid ProductId { get; set; }
+    //     public string ProductCode { get; set; } = string.Empty;
+    //     public string ProductName { get; set; } = string.Empty;
+    //     public string Unit { get; set; } = string.Empty;
+    //     public decimal Quantity { get; set; }
+    //     public decimal TotalValue { get; set; }
+    // }
 }
