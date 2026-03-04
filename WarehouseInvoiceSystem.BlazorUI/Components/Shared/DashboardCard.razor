@@ -1,0 +1,105 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+
+<MudCard Elevation="2"
+         Class=@($"dashboard-card {(_isHovered ? "dashboard-card-hover" : "")}")
+         @onmouseenter="OnMouseEnter"
+         @onmouseleave="OnMouseLeave"
+         @onclick="NavigateToLink"
+         Style="cursor: pointer; transition: all 0.3s ease; height: 100%;">
+    <MudCardContent Class="pa-4">
+        <div class="d-flex align-center justify-space-between" style="height: 100%;">
+            <!-- Left side: Icon -->
+            <div class="d-flex align-center justify-center" style="min-width: 80px;">
+                @if (!string.IsNullOrEmpty(Icon))
+                {
+                    <MudIcon Icon="@Icon" Color="@IconColor" Size="Size.Large" Style="font-size: 3rem;" />
+                }
+            </div>
+
+            <!-- Right side: Content -->
+            <div class="flex-grow-1 ml-4">
+                <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                    @Value
+                </MudText>
+
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                    @Title
+                </MudText>
+
+                @if (!string.IsNullOrEmpty(Subtitle))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @Subtitle
+                    </MudText>
+                }
+            </div>
+
+            <!-- Arrow indicator on hover -->
+            @if (_isHovered && !string.IsNullOrEmpty(Link))
+            {
+                <div class="dashboard-card-arrow ml-2">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium" />
+                </div>
+            }
+        </div>
+    </MudCardContent>
+</MudCard>
+
+<style>
+    .dashboard-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .dashboard-card-hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+
+    .dashboard-card-arrow {
+        animation: slideIn 0.3s ease;
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public Color IconColor { get; set; } = Color.Primary;
+    [Parameter] public string? Link { get; set; }
+
+    private bool _isHovered = false;
+
+    private void OnMouseEnter()
+    {
+        _isHovered = true;
+    }
+
+    private void OnMouseLeave()
+    {
+        _isHovered = false;
+    }
+
+    private void NavigateToLink()
+    {
+        if (!string.IsNullOrEmpty(Link))
+        {
+            Navigation.NavigateTo(Link);
+        }
+    }
+}

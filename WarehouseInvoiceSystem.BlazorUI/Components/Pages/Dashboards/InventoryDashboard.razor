@@ -1,0 +1,591 @@
+﻿@page "/inventory-dashboard"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject IProductService ProductService
+@inject IWarehouseService WarehouseService
+@inject IInventoryService InventoryService
+@inject ILocalizationService Localization
+
+<PageTitle>@Localization.GetString("InventoryDashboard") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("StockManagement")</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+        <!-- Warehouse Selector -->
+        <MudItem xs="12" Class="mb-4">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.h6" Class="mb-2">@Localization.GetString("SelectWarehouse")</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localization.GetString("ViewInventoryForSpecificWarehouse")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6" Class="d-flex align-center justify-end">
+                            <MudSelect T="Guid"
+                                       Value="_selectedWarehouseId"
+                                       ValueChanged="@(async (Guid v) => await OnWarehouseChanged(v))"
+                                       Label="@Localization.GetString("Warehouse")"
+                                       Variant="Variant.Outlined"
+                                       AnchorOrigin="Origin.BottomLeft"
+                                       Style="min-width: 300px;">
+                                @foreach (WarehouseDto w in _warehouses)
+                                {
+                                    <MudSelectItem Value="@w.Id">
+                                        @w.Name @(w.IsDefault ? $" ({Localization.GetString("Default")})" : "")
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Summary Cards -->
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("TotalProducts")"
+                          Value="@_products.Count.ToString()"
+                           Subtitle="@($"{Localization.GetString("ActiveProducts")}: {_activeProducts.Count()}")"
+                          Icon="@Icons.Material.Filled.Inventory2"
+                          IconColor="Color.Primary"
+                          Link="/products" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("TotalStockValue")"
+                          Value="@_totalStockValue.ToString("C")"
+                          Subtitle="@_selectedWarehouseName"
+                          Icon="@Icons.Material.Filled.AttachMoney"
+                          IconColor="Color.Success"
+                          Link="/inventory-dashboard" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("LowStock")"
+                          Value="@_lowStockItems.Count().ToString()"
+                          Subtitle="@Localization.GetString("ProductsBelowMinimum")"
+                          Icon="@Icons.Material.Filled.Warning"
+                          IconColor="Color.Error"
+                          Link="/inventory?filter=low-stock" />
+        </MudItem>
+
+        <!-- Alerts & Warnings -->
+        @if (_lowStockItems.Any() || _outOfStockItems.Any())
+        {
+            <MudItem xs="12" Class="mt-4">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6" Color="Color.Error">
+                                <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" />
+                                @Localization.GetString("AlertsAndWarnings")
+                            </MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack Spacing="2">
+                            @if (_outOfStockItems.Any())
+                            {
+                                <MudAlert Severity="Severity.Error" Dense="true">
+                                    <strong>@_outOfStockItems.Count()</strong> @Localization.GetString("ProductsOutOfStock")
+                                    <MudButton Size="Size.Small" 
+                                              Variant="Variant.Text" 
+                                              Color="Color.Error"
+                                              Href="/inventory"
+                                              Class="ml-2">
+                                        @Localization.GetString("View")
+                                    </MudButton>
+                                </MudAlert>
+                            }
+                            @if (_lowStockItems.Any())
+                            {
+                                <MudAlert Severity="Severity.Warning" Dense="true">
+                                    <strong>@_lowStockItems.Count()</strong> @Localization.GetString("ProductsBelowMinimum")
+                                    <MudButton Size="Size.Small" 
+                                              Variant="Variant.Text" 
+                                              Color="Color.Warning"
+                                              Href="/inventory"
+                                              Class="ml-2">
+                                        @Localization.GetString("View")
+                                    </MudButton>
+                                </MudAlert>
+                            }
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
+        <!-- Current Stock Levels - Top Products -->
+        <MudItem xs="12" Class="mt-6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("TopProductsByStock")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @_selectedWarehouseName
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    @if (_topByStock.Any())
+                    {
+                        <MudTable Items="_topByStock.Take(10)"
+                                  Hover="true"
+                                  Dense="true"
+                                  Elevation="0">
+                            <HeaderContent>
+                                <MudTh>#</MudTh>
+                                <MudTh>@Localization.GetString("Product")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Value")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate Context="item">
+                                <MudTd DataLabel="#">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @(_topByStock.IndexOf(item) + 1)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Product")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                        @item.TotalQuantity.ToString("N2") @item.ProductUnit
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Value")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2">@item.TotalValue.ToString("C")</MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoStockData")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Product Statistics -->
+        <MudItem xs="12" Class="mt-6">
+            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("ProductStatistics")</MudText>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("MostPurchased")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("ThisMonth")
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0" Style="min-height: 300px;">
+                    @if (_mostPurchased.Any())
+                    {
+                        <MudList T="ProductMovementSummary" Clickable="true">
+                            @foreach (var item in _mostPurchased.Take(5))
+                            {
+                                <MudListItem>
+                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                        <div class="d-flex align-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" 
+                                                    Color="Color.Info" 
+                                                    Class="mr-3" />
+                                            <div>
+                                                <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                                    @item.ProductName
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @item.ProductCode
+                                                </MudText>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <MudText Typo="Typo.body1" Class="font-weight-bold">
+                                                @item.Quantity.ToString("N0") @item.Unit
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @item.TotalValue.ToString("C")
+                                            </MudText>
+                                        </div>
+                                    </div>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseData")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("MostSold")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("ThisMonth")
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0" Style="min-height: 300px;">
+                    @if (_mostSold.Any())
+                    {
+                        <MudList T="ProductMovementSummary" Clickable="true">
+                            @foreach (var item in _mostSold.Take(5))
+                            {
+                                <MudListItem>
+                                    <div class="d-flex justify-space-between align-center" style="width: 100%;">
+                                        <div class="d-flex align-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.PointOfSale" 
+                                                    Color="Color.Success" 
+                                                    Class="mr-3" />
+                                            <div>
+                                                <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                                    @item.ProductName
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                    @item.ProductCode
+                                                </MudText>
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <MudText Typo="Typo.body1" Class="font-weight-bold">
+                                                @item.Quantity.ToString("N0") @item.Unit
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @item.TotalValue.ToString("C")
+                                            </MudText>
+                                        </div>
+                                    </div>
+                                </MudListItem>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoSalesData")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Recent Stock Movements -->
+        <MudItem xs="12" Class="mt-6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentStockMovements")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("Last5Transactions")
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    @if (_recentTransactions.Any())
+                    {
+                        <MudTable Items="_recentTransactions" 
+                                  Hover="true" 
+                                  Dense="true"
+                                  Elevation="0">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Type")</MudTh>
+                                <MudTh>@Localization.GetString("Product")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh>@Localization.GetString("Note")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Type")">
+                                    @if (context.Type == InventoryTransactionType.Inbound)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.ArrowDownward">
+                                            @Localization.GetString("Inbound")
+                                        </MudChip>
+                                    }
+                                    else if (context.Type == InventoryTransactionType.Outbound)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.ArrowUpward">
+                                            @Localization.GetString("Outbound")
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Edit">
+                                            @Localization.GetString("Adjustment")
+                                        </MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Product")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductName</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ProductCode</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" 
+                                            Color="@GetQuantityColor(context.Type, context.Quantity)">
+                                        @GetQuantityText(context.Type, context.Quantity)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    <MudText Typo="Typo.body2">@context.CreatedAt.ToString("dd MMM yyyy")</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CreatedAt.ToString("HH:mm")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Note")">
+                                    <MudText Typo="Typo.caption">@(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)</MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.SwapVert" 
+                                    Size="Size.Large" 
+                                    Color="Color.Secondary" 
+                                    Class="mb-2" />
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoRecentMovements")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    private bool _loading = true;
+    private List<ProductDto> _products = [];
+    private List<WarehouseDto> _warehouses = [];
+    private List<StockLevelDto> _stockLevels = [];
+    private List<InventoryTransactionDto> _recentTransactions = [];
+
+    private IEnumerable<ProductDto> _activeProducts => _products.Where(p => p.IsActive);
+
+    private IEnumerable<StockLevelDto> _lowStockItems => _stockLevels.Where(sl => 
+        sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0);
+    private IEnumerable<StockLevelDto> _outOfStockItems => _stockLevels.Where(sl => sl.Quantity == 0);
+
+    private decimal _totalStockValue => _stockLevels.Sum(sl => sl.Quantity * GetProductPrice(sl.ProductId));
+
+    private List<ProductStockSummary> _topByStock = [];
+    private List<ProductMovementSummary> _mostPurchased = [];
+    private List<ProductMovementSummary> _mostSold = [];
+
+    private Guid _selectedWarehouseId;
+    private string _selectedWarehouseName => _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name ?? "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadData(true);
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadData(bool firstLoad)
+    {
+        _loading = true;
+
+        try
+        {
+            // Load warehouses
+            IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
+            _warehouses = warehouses.ToList();
+
+            if (firstLoad)
+            {
+                _selectedWarehouseId = _warehouses.FirstOrDefault(w => w.IsDefault)?.Id ?? _warehouses.FirstOrDefault()?.Id ?? Guid.Empty;
+            }
+
+            if (_selectedWarehouseId == Guid.Empty) return;
+
+            // Load stock levels for selected warehouse
+            IEnumerable<StockLevelDto> stockLevels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouseId);
+            _stockLevels = stockLevels.ToList();
+
+            // Load all products
+            IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync();
+            _products = products.ToList();
+
+            // Load recent transactions for selected warehouse
+            IEnumerable<InventoryTransactionDto> transactions = await InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
+            _recentTransactions = transactions.OrderByDescending(t => t.CreatedAt).Take(5).ToList();
+
+            CalculateTopProducts();
+            await CalculateProductStatistics();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading inventory data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void CalculateTopProducts()
+    {
+        var productGroups = _stockLevels
+            .Where(sl => sl.Quantity > 0)
+            .GroupBy(sl => sl.ProductId)
+            .Select(g => new ProductStockSummary
+            {
+                ProductId = g.Key,
+                ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
+                ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
+                ProductUnit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
+                TotalQuantity = g.Sum(sl => sl.Quantity),
+                TotalValue = g.Sum(sl => sl.Quantity * GetProductPrice(g.Key))
+            })
+            .OrderByDescending(p => p.TotalQuantity)
+            .ToList();
+
+        _topByStock = productGroups;
+    }
+
+    private async Task CalculateProductStatistics()
+    {
+        try
+        {
+            // Get all transactions for this month
+            var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var transactions = await InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
+            var monthTransactions = transactions.Where(t => t.CreatedAt >= startOfMonth).ToList();
+
+            // Most purchased (Inbound transactions)
+            _mostPurchased = monthTransactions
+                .Where(t => t.Type == InventoryTransactionType.Inbound)
+                .GroupBy(t => t.ProductId)
+                .Select(g => new ProductMovementSummary
+                {
+                    ProductId = g.Key,
+                    ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
+                    ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
+                    Unit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
+                    Quantity = g.Sum(t => t.Quantity),
+                    TotalValue = g.Sum(t => t.Quantity * GetProductPrice(g.Key))
+                })
+                .OrderByDescending(p => p.Quantity)
+                .ToList();
+
+            // Most sold (Outbound transactions)
+            _mostSold = monthTransactions
+                .Where(t => t.Type == InventoryTransactionType.Outbound)
+                .GroupBy(t => t.ProductId)
+                .Select(g => new ProductMovementSummary
+                {
+                    ProductId = g.Key,
+                    ProductCode = _products.FirstOrDefault(p => p.Id == g.Key)?.Code ?? "",
+                    ProductName = _products.FirstOrDefault(p => p.Id == g.Key)?.Name ?? "",
+                    Unit = _products.FirstOrDefault(p => p.Id == g.Key)?.Unit ?? "",
+                    Quantity = g.Sum(t => t.Quantity),
+                    TotalValue = g.Sum(t => t.Quantity * GetProductPrice(g.Key))
+                })
+                .OrderByDescending(p => p.Quantity)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error calculating product statistics: {ex.Message}");
+        }
+    }
+
+    private string GetQuantityText(InventoryTransactionType type, decimal quantity)
+    {
+        if (type == InventoryTransactionType.Inbound)
+        {
+            return $"+{quantity.ToString("N2")}";
+        }
+        else if (type == InventoryTransactionType.Adjustment)
+        {
+            return quantity > 0 ? $"+{quantity.ToString("N2")}" : quantity.ToString("N2");
+        }
+        else
+        {
+            return $"-{quantity.ToString("N2")}";
+        }
+    }
+
+    private Color GetQuantityColor(InventoryTransactionType type, decimal quantity)
+    {
+        if (type == InventoryTransactionType.Inbound)
+        {
+            return Color.Success;
+        }
+        else if (type == InventoryTransactionType.Adjustment)
+        {
+            return quantity > 0 ? Color.Success : Color.Error;
+        }
+        else
+        {
+            return Color.Error;
+        }
+    }
+
+    private decimal GetProductPrice(Guid productId)
+    {
+        return _products.FirstOrDefault(p => p.Id == productId)?.DefaultPrice ?? 0;
+    }
+
+    private async Task OnWarehouseChanged(Guid id)
+    {
+        _selectedWarehouseId = id;
+        await LoadData(false);
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private class ProductStockSummary
+    {
+        public Guid ProductId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
+        public string ProductUnit { get; set; } = string.Empty;
+        public decimal TotalQuantity { get; set; }
+        public decimal TotalValue { get; set; }
+    }
+
+    private class ProductMovementSummary
+    {
+        public Guid ProductId { get; set; }
+        public string ProductCode { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
+        public string Unit { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
+        public decimal TotalValue { get; set; }
+    }
+}

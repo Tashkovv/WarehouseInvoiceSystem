@@ -11,7 +11,8 @@
         IIndividualRepository individualRepository,
         IWarehouseRepository warehouseRepository,
         IProductRepository productRepository,
-        IInventoryService inventoryService) : IPurchaseNoteService
+        IInventoryService inventoryService,
+        ILocalizationService localizationService) : IPurchaseNoteService
     {
         public async Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync()
         {
@@ -193,7 +194,7 @@
             // Create inbound transaction for each line item
             foreach (PurchaseNoteLine line in purchaseNote.LineItems)
             {
-                await inventoryService.CreateTransactionAsync(new Application.DTOs.InventoryTransaction.CreateInventoryTransactionDto
+                await inventoryService.CreateTransactionAsync(new DTOs.InventoryTransaction.CreateInventoryTransactionDto
                 {
                     ProductId = line.ProductId,
                     WarehouseId = warehouseId,
@@ -201,7 +202,7 @@
                     Quantity = line.Quantity,
                     SourceDocumentId = purchaseNote.Id,
                     SourceDocumentType = "PurchaseNote",
-                    Note = $"Purchase from {purchaseNote.Individual.FullName} - {purchaseNote.NoteNumber}"
+                    Note = $"{localizationService.GetString("PurchaseFrom")} {purchaseNote.Individual.FullName} - {purchaseNote.NoteNumber}"
                 });
             }
         }

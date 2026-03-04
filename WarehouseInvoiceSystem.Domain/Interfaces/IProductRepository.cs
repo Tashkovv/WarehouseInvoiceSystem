@@ -5,6 +5,7 @@
     public interface IProductRepository
     {
         Task<IEnumerable<Product>> GetAllAsync();
+        Task<IEnumerable<Product>> GetByIdsAsync(List<Guid> ids);
         Task<IEnumerable<Product>> GetActiveProductsAsync();
         Task<Product?> GetByIdAsync(Guid id);
         Task<Product?> GetByCodeAsync(string code);

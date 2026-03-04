@@ -343,7 +343,7 @@ else
 
         try
         {
-            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
+            IEnumerable<CompanyDto> companies = await CompanyService.GetActiveCompaniesAsync();
             _companies = companies.ToList();
         }
         catch (Exception ex)

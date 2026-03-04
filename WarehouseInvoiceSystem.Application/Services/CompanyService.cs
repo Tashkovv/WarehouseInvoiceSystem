@@ -13,6 +13,12 @@
             return companies.Select(MapToDto);
         }
 
+        public async Task<IEnumerable<CompanyDto>> GetActiveCompaniesAsync()
+        {
+            IEnumerable<Company> companies = await companyRepository.GetActiveCompaniesAsync();
+            return companies.Select(MapToDto);
+        }
+
         public async Task<IEnumerable<CompanyDto>> GetCompaniesByTypeAsync(CompanyType type)
         {
             IEnumerable<Company> companies = await companyRepository.GetByTypeAsync(type);
