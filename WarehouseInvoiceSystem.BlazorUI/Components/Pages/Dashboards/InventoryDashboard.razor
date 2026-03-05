@@ -11,13 +11,38 @@
 @inject IInventoryService InventoryService
 @inject ILocalizationService Localization
 
-<PageTitle>@Localization.GetString("InventoryDashboard") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("InventoryDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
 <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("StockManagement")</MudText>
 
 @if (_loading)
 {
     <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_selectedWarehouseId == Guid.Empty)
+{
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="12">
+            <MudCard Elevation="2" Class="mb-4">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("NoWarehousesCreateOne")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudItem xs="12" md="3">
+                        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   FullWidth="true"
+                                   Href="/warehouses/create">
+                            @Localization.GetString("CreateWarehouse")
+                        </MudButton>
+                    </MudItem>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
 }
 else
 {

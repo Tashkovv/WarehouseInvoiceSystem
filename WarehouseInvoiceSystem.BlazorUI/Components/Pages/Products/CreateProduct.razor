@@ -14,7 +14,7 @@
     <MudCardContent>
         <MudForm @ref="_form" @bind-IsValid="@_isValid">
             <MudGrid>
-                <MudItem xs="12" md="6">
+                <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_model.Code"
                                   Label="@Localization.GetString("ProductCode")"
                                   Required="true"
@@ -23,7 +23,7 @@
                                   MaxLength="50" />
                 </MudItem>
 
-                <MudItem xs="12" md="6">
+                <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_model.Name"
                                   Label="@Localization.GetString("ProductName")"
                                   Required="true"
@@ -32,15 +32,14 @@
                                   MaxLength="100" />
                 </MudItem>
 
-                <MudItem xs="12">
+                <MudItem xs="12" md="6">
                     <MudTextField @bind-Value="_model.Description"
                                   Label="@Localization.GetString("Description")"
-                                  Lines="3"
                                   Variant="Variant.Outlined"
                                   MaxLength="500" />
                 </MudItem>
 
-                <MudItem xs="12" md="4">
+                <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="_model.Unit"
                                   Label="@Localization.GetString("Unit")"
                                   HelperText="@Localization.GetString("UnitHelper")"
@@ -50,7 +49,7 @@
                                   MaxLength="10" />
                 </MudItem>
 
-                <MudItem xs="12" md="4">
+                <MudItem xs="12" md="3">
                     <MudNumericField @bind-Value="_model.DefaultPrice"
                                      Label="@Localization.GetString("DefaultPrice")"
                                      Min="0m"
@@ -63,7 +62,7 @@
                                      AdornmentText="MKD" />
                 </MudItem>
 
-                <MudItem xs="12" md="4" Class="d-flex align-center">
+                <MudItem xs="12" md="3" Class="d-flex align-center">
                     <MudSwitch @bind-Value="_model.IsActive"
                                Label="@Localization.GetString("ProductActive")"
                                Color="Color.Success" />

@@ -5,7 +5,7 @@
     public class UpdatePurchaseNoteDto
     {
         public Guid IndividualId { get; set; }
-        public Guid? WarehouseId { get; set; }
+        public Guid WarehouseId { get; set; }
         public DateTime PurchaseDate { get; set; }
         public PurchaseNoteStatus Status { get; set; }
         public DateTime? PaidDate { get; set; }

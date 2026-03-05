@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260301152025_PurchaseNoteQuantityAsInt")]
-    partial class PurchaseNoteQuantityAsInt
+    [Migration("20260305111034_WarehouseInInvoice")]
+    partial class WarehouseInInvoice
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -262,6 +262,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
@@ -272,6 +275,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("IssueDate");
+
+                    b.HasIndex("WarehouseId");
 
                     b.HasIndex("Status", "DueDate");
 
@@ -461,7 +466,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<Guid?>("WarehouseId")
+                    b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -687,7 +692,15 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Warehouse", "Warehouse")
+                        .WithMany()
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("Company");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("WarehouseInvoiceSystem.Domain.Entities.InvoiceLine", b =>
@@ -730,7 +743,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Warehouse", "Warehouse")
                         .WithMany()
                         .HasForeignKey("WarehouseId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Individual");
 

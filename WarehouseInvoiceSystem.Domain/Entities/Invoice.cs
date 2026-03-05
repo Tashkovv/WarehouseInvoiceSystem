@@ -7,6 +7,7 @@
     {
         public string InvoiceNumber { get; set; } = string.Empty;
         public Guid CompanyId { get; set; }
+        public Guid WarehouseId { get; set; }
         public InvoiceType Type { get; set; }
         public InvoiceStatus Status { get; set; } = InvoiceStatus.Draft;
         public DateTime IssueDate { get; set; } = DateTime.UtcNow;
@@ -24,5 +25,6 @@
         public Company Company { get; set; } = null!;
         public ICollection<InvoiceLine> LineItems { get; set; } = [];
         public ICollection<Payment> Payments { get; set; } = [];
+        public Warehouse Warehouse { get; set; } = null!;
     }
 }

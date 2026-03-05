@@ -40,6 +40,7 @@
             builder.HasOne(e => e.Warehouse)
                    .WithMany()
                    .HasForeignKey(e => e.WarehouseId)
+                   .IsRequired()
                    .OnDelete(DeleteBehavior.Restrict);
         }
     }

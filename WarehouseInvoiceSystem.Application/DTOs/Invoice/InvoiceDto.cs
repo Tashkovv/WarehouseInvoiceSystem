@@ -11,6 +11,8 @@
         public string CompanyEmail { get; set; } = string.Empty;
         public InvoiceType Type { get; set; }
         public InvoiceStatus Status { get; set; }
+        public Guid WarehouseId { get; set; }
+        public string WarehouseName { get; set; } = string.Empty;
         public DateTime IssueDate { get; set; }
         public DateTime DueDate { get; set; }
         public decimal SubTotal { get; set; }

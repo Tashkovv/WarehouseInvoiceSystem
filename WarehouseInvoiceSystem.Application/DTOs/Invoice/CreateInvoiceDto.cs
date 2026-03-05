@@ -5,6 +5,7 @@
     public class CreateInvoiceDto
     {
         public Guid CompanyId { get; set; }
+        public Guid WarehouseId { get; set; }
         public InvoiceType Type { get; set; }
         public DateTime IssueDate { get; set; } = DateTime.UtcNow;
         public DateTime DueDate { get; set; }

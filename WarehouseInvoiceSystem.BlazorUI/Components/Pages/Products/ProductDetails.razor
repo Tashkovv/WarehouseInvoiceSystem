@@ -37,7 +37,7 @@ else
                              Size="Size.Small" 
                              Color="@(_product.IsActive ? Color.Success : Color.Default)"
                              Class="mt-2">
-                        @(_product.IsActive ? Localization.GetString("Active") : Localization.GetString("Inactive"))
+                        @(_product.IsActive ? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))
                     </MudChip>
                 </div>
                 <div>
@@ -367,7 +367,7 @@ else
                                     }
                                     else if (context.Type == "Outbound")
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.ArrowUpward">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Icon="@Icons.Material.Filled.ArrowUpward">
                                             @Localization.GetString("Outbound")
                                         </MudChip>
                                     }

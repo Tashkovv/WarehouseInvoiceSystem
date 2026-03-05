@@ -126,6 +126,7 @@
                 ["ViewAllTransactions"] = "View All Transactions",
                 ["TopProductsByStock"] = "Top Products by Stock",
                 ["NoStockData"] = "No stock data available",
+                ["NoCompaniesFound"] = "No companies found",
 
                 // Status
                 ["Draft"] = "Draft",
@@ -467,6 +468,7 @@
                 ["ErrorDeletingWarehouse"] = "Error deleting warehouse",
                 ["WarehouseNotFound"] = "Warehouse not found",
                 ["ActiveWarehouses"] = activeString,
+                ["NoWarehousesCreateOne"] = "You have no warehouse, create one!",
 
                 // Individuals
                 ["Individuals"] = "Individuals",
@@ -638,6 +640,7 @@
                 ["ViewAllTransactions"] = "Прегледај Сите Трансакции",
                 ["TopProductsByStock"] = "Топ Производи по Залиха",
                 ["NoStockData"] = "Нема податоци за залиха",
+                ["NoCompaniesFound"] = "Нема пронајдено компании",
 
                 // Status
                 ["Draft"] = "Нацрт",
@@ -963,7 +966,7 @@
                 ["CreateWarehouse"] = "Креирај Магацин",
                 ["EditWarehouse"] = "Измени Магацин",
                 ["WarehouseName"] = "Име на Магацин",
-                ["Default"] = "Стандардно",
+                ["Default"] = "Стандарден",
                 ["DefaultWarehouse"] = "Стандарден Магацин",
                 ["AllWarehouses"] = "Сите Магацини",
                 ["NoWarehousesFound"] = "Нема пронајдено магацини",
@@ -979,6 +982,7 @@
                 ["ErrorDeletingWarehouse"] = "Грешка при бришење на магацинот",
                 ["WarehouseNotFound"] = "Магацинот не е пронајден",
                 ["ActiveWarehouses"] = aktivniString,
+                ["NoWarehousesCreateOne"] = "Немате креирано магацин, креирајте!",
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",

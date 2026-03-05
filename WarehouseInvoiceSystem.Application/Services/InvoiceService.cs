@@ -61,14 +61,9 @@
             if (!await companyRepository.ExistsAsync(createDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
 
-            // Validate warehouse if needed for receivables, otherwise get default
-            Guid? warehouseId = null;
-            if (createDto.Type == InvoiceType.Receivable)
-            {
-                Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync()
-                    ?? throw new InvalidOperationException("No default warehouse found for stock deduction");
-                warehouseId = defaultWarehouse.Id;
-            }
+            // Validate provided warehouse (required)
+            if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
+                throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
 
             // Validate products
             foreach (Guid? productId in createDto.LineItems.Select(li => li.ProductId))
@@ -99,6 +94,7 @@
             {
                 InvoiceNumber = invoiceNumber,
                 CompanyId = createDto.CompanyId,
+                WarehouseId = createDto.WarehouseId,
                 Type = createDto.Type,
                 Status = InvoiceStatus.Draft,
                 IssueDate = createDto.IssueDate,
@@ -114,10 +110,10 @@
             Invoice created = await invoiceRepository.CreateAsync(invoice);
 
             // If invoice has products, create inbound/outbound transactions
-            if (created.Status == InvoiceStatus.Sent && warehouseId.HasValue)
+            if (created.Status == InvoiceStatus.Sent)
             {
                 InventoryTransactionType transactionType = created.Type == InvoiceType.Receivable ? InventoryTransactionType.Outbound : InventoryTransactionType.Inbound;
-                await CreateInventoryTransactionsForInvoiceAsync(created, warehouseId.Value, transactionType);
+                await CreateInventoryTransactionsForInvoiceAsync(created, createDto.WarehouseId, transactionType);
             }
 
             return MapToDto(created);
@@ -132,6 +128,10 @@
             if (!await companyRepository.ExistsAsync(updateDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {updateDto.CompanyId} not found");
 
+            // Validate warehouse exists
+            if (!await warehouseRepository.ExistsAsync(updateDto.WarehouseId))
+                throw new KeyNotFoundException($"Warehouse with ID {updateDto.WarehouseId} not found");
+
             // Track status change for inventory transactions
             InvoiceStatus oldStatus = invoice.Status;
             InvoiceStatus newStatus = updateDto.Status;
@@ -145,6 +145,7 @@
 
             // Update basic properties
             invoice.CompanyId = updateDto.CompanyId;
+            invoice.WarehouseId = updateDto.WarehouseId;
             invoice.Type = updateDto.Type;
             invoice.Status = updateDto.Status;
             invoice.IssueDate = updateDto.IssueDate;
@@ -176,12 +177,8 @@
             // Create inventory transactions if status changed to Sent/Paid
             if (shouldCreateTransactions)
             {
-                Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync();
-                if (defaultWarehouse != null)
-                {
-                    InventoryTransactionType transactionType = updated.Type == InvoiceType.Receivable ? InventoryTransactionType.Outbound : InventoryTransactionType.Inbound;
-                    await CreateInventoryTransactionsForInvoiceAsync(updated, defaultWarehouse.Id, transactionType);
-                }
+                InventoryTransactionType transactionType = updated.Type == InvoiceType.Receivable ? InventoryTransactionType.Outbound : InventoryTransactionType.Inbound;
+                await CreateInventoryTransactionsForInvoiceAsync(updated, updateDto.WarehouseId, transactionType);
             }
 
             return MapToDto(updated);
@@ -247,6 +244,8 @@
                 CompanyEmail = invoice.Company?.Email ?? string.Empty,
                 Type = invoice.Type,
                 Status = invoice.Status,
+                WarehouseId = invoice.WarehouseId,
+                WarehouseName = invoice.Warehouse?.Name ?? string.Empty,
                 IssueDate = invoice.IssueDate,
                 DueDate = invoice.DueDate,
                 SubTotal = invoice.SubTotal,

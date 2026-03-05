@@ -36,7 +36,7 @@ else
             </MudCardHeader>
             <MudCardContent>
                 <MudGrid>
-                    <MudItem xs="12">
+                    <MudItem xs="12" md="4">
                         <MudSelect T="Guid?"
                                    @bind-Value="_selectedInvoiceId"
                                    @bind-Value:after="OnInvoiceSelected"
@@ -48,10 +48,25 @@ else
                             @foreach (InvoiceDto invoice in _unpaidInvoices)
                             {
                                 <MudSelectItem T="Guid?" Value="invoice.Id">
-                                    @invoice.InvoiceNumber - @invoice.CompanyName (@invoice.AmountDue.ToString("C") @Localization.GetString("AmountDue"))
+                                    @invoice.InvoiceNumber - @invoice.CompanyName
                                 </MudSelectItem>
                             }
                         </MudSelect>
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudTextField T="string"
+                                      @bind-Value="_recordedBy"
+                                      Label="@Localization.GetString("RecordedBy")"
+                                      Variant="Variant.Outlined" />
+                    </MudItem>
+
+                    <MudItem xs="12" md="4">
+                        <MudTextField T="string"
+                                      @bind-Value="_referenceNumber"
+                                      Label="@Localization.GetString("ReferenceNumber")"
+                                      Variant="Variant.Outlined"
+                                      Placeholder="@Localization.GetString("EnterReferenceNumber")" />
                     </MudItem>
 
                     @if (_selectedInvoice != null)
@@ -88,31 +103,8 @@ else
                         </MudItem>
                     }
 
-                    <MudItem xs="12" md="6">
-                        <MudDatePicker @key="_currentCultureKey"
-                                       @bind-Date="_paymentDate"
-                                       Label="@Localization.GetString("PaymentDate")"
-                                       Variant="Variant.Outlined"
-                                       Required="true"
-                                       RequiredError="@Localization.GetString("PaymentDateRequired")" />
-                    </MudItem>
 
-                    <MudItem xs="12" md="6">
-                        <MudNumericField T="decimal"
-                                         @bind-Value="_amount"
-                                         Label="@Localization.GetString("Amount")"
-                                         Variant="Variant.Outlined"
-                                         Required="true"
-                                         RequiredError="@Localization.GetString("PleaseEnterAmount")"
-                                         Min="0.01m"
-                                         Max="@(_selectedInvoice?.AmountDue ?? 999999999)"
-                                         Format="N2"
-                                         TextUpdateSuppression="false"
-                                         Adornment="Adornment.Start"
-                                         AdornmentText="MKD" />
-                    </MudItem>
-
-                    <MudItem xs="12" md="6">
+                    <MudItem xs="12" md="4">
                         <MudSelect T="PaymentMethod"
                                    @bind-Value="_paymentMethod"
                                    Label="@Localization.GetString("PaymentMethod")"
@@ -133,19 +125,28 @@ else
                         </MudSelect>
                     </MudItem>
 
-                    <MudItem xs="12" md="6">
-                        <MudTextField T="string"
-                                      @bind-Value="_referenceNumber"
-                                      Label="@Localization.GetString("ReferenceNumber")"
-                                      Variant="Variant.Outlined"
-                                      Placeholder="@Localization.GetString("EnterReferenceNumber")" />
+                    <MudItem xs="12" md="4">
+                        <MudNumericField T="decimal"
+                                         @bind-Value="_amount"
+                                         Label="@Localization.GetString("Amount")"
+                                         Variant="Variant.Outlined"
+                                         Required="true"
+                                         RequiredError="@Localization.GetString("PleaseEnterAmount")"
+                                         Min="0.01m"
+                                         Max="@(_selectedInvoice?.AmountDue ?? 999999999)"
+                                         Format="N2"
+                                         TextUpdateSuppression="false"
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="MKD" />
                     </MudItem>
 
-                    <MudItem xs="12" md="6">
-                        <MudTextField T="string"
-                                      @bind-Value="_recordedBy"
-                                      Label="@Localization.GetString("RecordedBy")"
-                                      Variant="Variant.Outlined" />
+                    <MudItem xs="12" md="4">
+                        <MudDatePicker @key="_currentCultureKey"
+                                       @bind-Date="_paymentDate"
+                                       Label="@Localization.GetString("PaymentDate")"
+                                       Variant="Variant.Outlined"
+                                       Required="true"
+                                       RequiredError="@Localization.GetString("PaymentDateRequired")" />
                     </MudItem>
 
                     <MudItem xs="12">

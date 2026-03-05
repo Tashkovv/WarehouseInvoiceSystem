@@ -7,7 +7,7 @@
     {
         public string NoteNumber { get; set; } = string.Empty;
         public Guid IndividualId { get; set; }
-        public Guid? WarehouseId { get; set; }
+        public Guid WarehouseId { get; set; }
 
         public DateTime PurchaseDate { get; set; } = DateTime.UtcNow;
 
@@ -21,7 +21,7 @@
 
         // Navigation properties
         public Individual Individual { get; set; } = null!;
-        public Warehouse? Warehouse { get; set; }
+        public Warehouse Warehouse { get; set; } = null!;
         public ICollection<PurchaseNoteLine> LineItems { get; set; } = [];
     }
 }

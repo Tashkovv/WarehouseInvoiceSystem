@@ -117,6 +117,15 @@ else
                                            Variant="Variant.Outlined" />
                         </MudItem>
                     }
+
+                    <!-- Notes -->
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_notes"
+                                      Label="@Localization.GetString("Notes")"
+                                      Variant="Variant.Outlined"
+                                      Lines="3"
+                                      MaxLength="1000" />
+                    </MudItem>
                 </MudGrid>
 
                 <!-- Line Items -->
@@ -213,15 +222,6 @@ else
                         </MudStack>
                     </MudItem>
                 </MudGrid>
-
-                <!-- Notes -->
-                <MudItem xs="12" Class="mt-4">
-                    <MudTextField @bind-Value="_notes"
-                                  Label="@Localization.GetString("Notes")"
-                                  Variant="Variant.Outlined"
-                                  Lines="3"
-                                  MaxLength="1000" />
-                </MudItem>
             </MudForm>
         </MudCardContent>
     </MudCard>
@@ -410,10 +410,16 @@ else
 
         try
         {
+            if (_selectedWarehouse == null)
+            {
+                Snackbar.Add(Localization.GetString("PleaseSelectWarehouse"), Severity.Warning);
+                return;
+            }
+
             UpdatePurchaseNoteDto dto = new()
             {
                 IndividualId = _selectedIndividual.Id,
-                WarehouseId = _selectedWarehouse?.Id,
+                WarehouseId = _selectedWarehouse.Id,
                 PurchaseDate = _purchaseDate?.Date ?? DateTime.Today,
                 Status = _status,
                 PaidDate = _status == PurchaseNoteStatus.Paid ? (_paidDate ?? DateTime.UtcNow) : null,

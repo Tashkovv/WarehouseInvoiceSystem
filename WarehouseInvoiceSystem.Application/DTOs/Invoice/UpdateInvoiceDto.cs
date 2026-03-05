@@ -5,6 +5,7 @@
     public class UpdateInvoiceDto
     {
         public Guid CompanyId { get; set; }
+        public Guid WarehouseId { get; set; }
         public InvoiceType Type { get; set; }
         public InvoiceStatus Status { get; set; }
         public DateTime IssueDate { get; set; }

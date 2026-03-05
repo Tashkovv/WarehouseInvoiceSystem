@@ -37,6 +37,7 @@
             // Indexes
             builder.HasIndex(e => new { e.Status, e.DueDate });
             builder.HasIndex(e => e.CompanyId);
+            builder.HasIndex(e => e.WarehouseId);
             builder.HasIndex(e => e.IssueDate);
             builder.HasIndex(e => e.InvoiceNumber).IsUnique();
             builder.HasIndex(e => e.DeletedOn);
@@ -45,6 +46,12 @@
             builder.HasOne(e => e.Company)
                    .WithMany(c => c.Invoices)
                    .HasForeignKey(e => e.CompanyId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(e => e.WarehouseId).IsRequired();
+            builder.HasOne(e => e.Warehouse)
+                   .WithMany()
+                   .HasForeignKey(e => e.WarehouseId)
                    .OnDelete(DeleteBehavior.Restrict);
         }
     }

@@ -56,21 +56,10 @@
             if (!await individualRepository.ExistsAsync(createDto.IndividualId))
                 throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
 
-            // Validate warehouse if provided, otherwise get default
-            Guid warehouseId;
-            if (createDto.WarehouseId.HasValue)
-            {
-                if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId.Value))
-                    throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
-                warehouseId = createDto.WarehouseId.Value;
-            }
-            else
-            {
-                // Get default warehouse
-                Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync()
-                    ?? throw new InvalidOperationException("No warehouse specified and no default warehouse found");
-                warehouseId = defaultWarehouse.Id;
-            }
+            // Validate warehouse (required)
+            Guid warehouseId = createDto.WarehouseId;
+            if (!await warehouseRepository.ExistsAsync(warehouseId))
+                throw new KeyNotFoundException($"Warehouse with ID {warehouseId} not found");
 
             // Validate products
             foreach (Guid productId in createDto.LineItems.Select(line => line.ProductId))
@@ -144,8 +133,8 @@
             if (!await individualRepository.ExistsAsync(updateDto.IndividualId))
                 throw new KeyNotFoundException($"Individual with ID {updateDto.IndividualId} not found");
 
-            // Validate warehouse if provided
-            if (updateDto.WarehouseId.HasValue && !await warehouseRepository.ExistsAsync(updateDto.WarehouseId.Value))
+            // Validate warehouse
+            if (!await warehouseRepository.ExistsAsync(updateDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {updateDto.WarehouseId} not found");
 
             // Track status change for inventory transactions
@@ -217,17 +206,13 @@
 
         private async Task CreateInventoryTransactionsAsync(PurchaseNote purchaseNote)
         {
-            // Get default warehouse if not specified
-            Guid warehouseId = purchaseNote.WarehouseId ?? (await warehouseRepository.GetDefaultWarehouseAsync())?.Id
-                ?? throw new InvalidOperationException("No warehouse specified and no default warehouse found");
-
             // Create inbound transaction for each line item
             foreach (PurchaseNoteLine line in purchaseNote.LineItems)
             {
                 await inventoryService.CreateTransactionAsync(new DTOs.InventoryTransaction.CreateInventoryTransactionDto
                 {
                     ProductId = line.ProductId,
-                    WarehouseId = warehouseId,
+                    WarehouseId = purchaseNote.WarehouseId,
                     Type = InventoryTransactionType.Inbound,
                     Quantity = line.Quantity,
                     SourceDocumentId = purchaseNote.Id,
