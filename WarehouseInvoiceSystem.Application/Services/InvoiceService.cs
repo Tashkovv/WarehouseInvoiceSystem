@@ -66,9 +66,9 @@
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
 
             // Validate products
-            foreach (Guid? productId in createDto.LineItems.Select(li => li.ProductId))
+            foreach (Guid productId in createDto.LineItems.Select(li => li.ProductId))
             {
-                if (productId.HasValue && !await productRepository.ExistsAsync(productId.Value))
+                if (!await productRepository.ExistsAsync(productId))
                     throw new KeyNotFoundException($"Product with ID {productId} not found");
             }
 
@@ -110,7 +110,7 @@
             Invoice created = await invoiceRepository.CreateAsync(invoice);
 
             // If invoice has products, create inbound/outbound transactions
-            if (created.Status == InvoiceStatus.Sent)
+            if (created.Status == InvoiceStatus.Sent || created.Status == InvoiceStatus.Paid)
             {
                 InventoryTransactionType transactionType = created.Type == InvoiceType.Receivable ? InventoryTransactionType.Outbound : InventoryTransactionType.Inbound;
                 await CreateInventoryTransactionsForInvoiceAsync(created, createDto.WarehouseId, transactionType);
@@ -218,11 +218,11 @@
         private async Task CreateInventoryTransactionsForInvoiceAsync(Invoice invoice, Guid warehouseId, InventoryTransactionType transactionType)
         {
             // Create outbound transaction for each line item that has a product
-            foreach (InvoiceLine line in invoice.LineItems.Where(li => li.ProductId.HasValue))
+            foreach (InvoiceLine line in invoice.LineItems)
             {
                 await inventoryService.CreateTransactionAsync(new DTOs.InventoryTransaction.CreateInventoryTransactionDto
                 {
-                    ProductId = line.ProductId!.Value,
+                    ProductId = line.ProductId,
                     WarehouseId = warehouseId,
                     Type = transactionType,
                     Quantity = line.Quantity,

@@ -36,7 +36,6 @@ else
         </div>
         <div>
             <MudButton StartIcon="@Icons.Material.Filled.Email"
-                       Style="width:210px" 
                        Color="Color.Success"
                        Variant="Variant.Filled"
                        Class="mr-2"
@@ -207,12 +206,9 @@ else
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="@Localization.GetString("Description")">
-                                @if (context.ProductId.HasValue)
-                                {
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" /> @Localization.GetString("Product")
-                                    </MudText>
-                                }
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" /> @Localization.GetString("Product")
+                                </MudText>
                                 <MudText Typo="Typo.body2">@context.Description</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")">@context.Quantity</MudTd>

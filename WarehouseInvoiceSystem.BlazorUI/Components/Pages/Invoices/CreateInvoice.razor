@@ -512,8 +512,8 @@ else
                 .Where(i => !string.IsNullOrWhiteSpace(i.Description))
                 .Select(i => new CreateInvoiceLineDto
                 {
-                    ProductId = i.SelectedProduct?.Id,
-                    Description = i.SelectedProduct?.Name ?? i.Description,
+                    ProductId = i.SelectedProduct.Id,
+                    Description = i.SelectedProduct.Name ?? i.Description,
                     Quantity = i.Quantity,
                     UnitPrice = i.UnitPrice,
                     TaxRate = i.TaxRate
@@ -542,7 +542,7 @@ else
 
     private sealed class LineItemModel
     {
-        public ProductDto? SelectedProduct { get; set; }
+        public ProductDto SelectedProduct { get; set; } = null!;
         public string Description { get; set; } = string.Empty;
         public int Quantity { get; set; } = 1;
         public decimal UnitPrice { get; set; } = 0m;

@@ -9,6 +9,7 @@
 @inject IPurchaseNoteService PurchaseNoteService
 @inject ILocalizationService Localization
 @inject IPaymentService PaymentService
+@inject NavigationManager Navigation
 
 <PageTitle>@Localization.GetString("DocumentsDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -21,218 +22,347 @@
 else
 {
     <MudGrid>
-        <!-- Today's Activity -->
+
+        <!-- ── Today's Activity ── -->
         <MudItem xs="12">
-            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("TodaysActivity")</MudText>
+            <div class="d-flex align-center flex-wrap gap-2 mb-4">
+                <MudText Typo="Typo.h6">@Localization.GetString("TodaysActivity")</MudText>
+                <div>
+                    <MudDatePicker @bind-Date="_selectedDay"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   DateFormat="dd MMM yyyy"
+                                   Label="@Localization.GetString("SelectDay")"
+                                   MaxDate="DateTime.Today"
+                                   PickerVariant="PickerVariant.Inline"
+                                   Style="min-width: 315px;" />
+                </div>
+            </div>
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
-                          Value="@_purchaseNotesToday.Count().ToString()"
-                           Subtitle="@_amountToPayToday.ToString("C")"
-                          Icon="@Icons.Material.Filled.Receipt"
-                          IconColor="Color.Info"
-                          Link="/purchase-notes" />
+                           Value="@_purchaseNotesDay.Count().ToString()"
+                           Subtitle="@_amountToPayDay.ToString("C")"
+                           Icon="@Icons.Material.Filled.Receipt"
+                           IconColor="Color.Info"
+                           Link="/purchase-notes" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
-                          Value="@_invoicesToday.Count().ToString()"
-                           Subtitle="@_amountToReceiveToday.ToString("C")"
-                          Icon="@Icons.Material.Filled.RequestQuote"
-                          IconColor="Color.Warning"
-                          Link="/invoices" />
+                           Value="@_invoicesDay.Count().ToString()"
+                           Subtitle="@_amountToReceiveDay.ToString("C")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Warning"
+                           Link="/invoices" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("Profit")"
-                          Value="@_profitToday.ToString("C")"
-                          Icon="@Icons.Material.Filled.TrendingUp"
-                          IconColor="Color.Success" />
+                           Value="@_profitDay.ToString("C")"
+                           Icon="@Icons.Material.Filled.TrendingUp"
+                           IconColor="@(_profitDay >= 0 ? Color.Success : Color.Error)" />
         </MudItem>
 
-        <!-- Financial Summary This Month -->
+        <!-- ── Financial Summary ── -->
         <MudItem xs="12" Class="mt-6">
-            <MudText Typo="Typo.h6" Class="mb-4">
-                @Localization.GetString("FinancialSummary") - @Localization.GetString("ThisMonth")
-            </MudText>
+            <div class="d-flex align-center flex-wrap gap-2 mb-4">
+                <MudText Typo="Typo.h6">
+                    @Localization.GetString("FinancialSummary") — @_selectedMonth.ToString("MMMM yyyy")
+                </MudText>                
+                <div>
+                    <MudDatePicker @bind-Date="_selectedMonthDate"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   DateFormat="MMM yyyy"
+                                   OpenTo="OpenTo.Month"
+                                   Label="@Localization.GetString("SelectMonth")"
+                                   MaxDate="DateTime.Today"
+                                   PickerVariant="PickerVariant.Inline"
+                                   Style="min-width: 315px;" />
+                </div>
+            </div>
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalToPay")"
-                          Value="@_totalPurchasesMonth.ToString("C")"
-                          Subtitle="@($"{_purchaseNotesMonth.Count()} {Localization.GetString("PurchaseNotes")} | {_invoicesToPayMonth.Count()} {Localization.GetString("Invoices")}")"
-                          Icon="@Icons.Material.Filled.ShoppingCart"
-                          IconColor="Color.Primary" />
+                           Value="@_totalPurchasesMonth.ToString("C")"
+                           Subtitle="@($"{_purchaseNotesMonth.Count()} {Localization.GetString("PurchaseNotes")} | {_invoicesToPayMonth.Count()} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
+                           IconColor="Color.Primary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalSales")"
-                          Value="@_totalSalesMonth.ToString("C")"
-                          Subtitle="@($"{_invoicesToReceiveMonth.Count()} {Localization.GetString("Invoices")}")"
-                          Icon="@Icons.Material.Filled.PointOfSale"
-                          IconColor="Color.Success" />
+                           Value="@_totalSalesMonth.ToString("C")"
+                           Subtitle="@($"{_invoicesToReceiveMonth.Count()} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.PointOfSale"
+                           IconColor="Color.Success" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("Profit")"
-                          Value="@_profitMonth.ToString("C")"
-                          Subtitle="@_marginMonth.ToString("P1")"
-                          Icon="@Icons.Material.Filled.Savings"
-                          IconColor="Color.Tertiary" />
+                           Value="@_profitMonth.ToString("C")"
+                           Subtitle="@_marginMonth.ToString("P1")"
+                           Icon="@Icons.Material.Filled.Savings"
+                           IconColor="Color.Tertiary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                          Value="@_attentionCount.ToString()"
-                          Icon="@Icons.Material.Filled.Warning"
-                          IconColor="Color.Error"
-                          Link="@($"/invoices?status={@InvoiceStatus.Overdue.ToString()}")" />
+                           Value="@_attentionCount.ToString()"
+                           Icon="@Icons.Material.Filled.Warning"
+                           IconColor="Color.Error"
+                           Link="@($"/invoices?status={InvoiceStatus.Overdue}")" />
         </MudItem>
 
-        <!-- Recent Activity -->
+        <!-- ── Recent Activity (Tabbed) ── -->
         <MudItem xs="12" Class="mt-6">
-            <MudText Typo="Typo.h6">@Localization.GetString("RecentActivity")</MudText>
+            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("RecentActivity")</MudText>
         </MudItem>
 
-        <!-- Purchase notes -->
-        <MudItem xs="12" md="4">
+        <MudItem xs="12">
             <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("PurchaseNotes")</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent Style="height: 380px; overflow-y: auto;">
-                    @if (_recentPurchaseNotes.Any())
-                    {
-                        <MudList T="PurchaseNoteDto" Clickable="true">
-                            @foreach (var note in _recentPurchaseNotes)
-                            {
-                                <MudListItem Icon="@Icons.Material.Filled.Receipt"
-                                             Href="@($"/purchase-notes/{note.Id}")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@note.NoteNumber</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @note.IndividualFullName - @note.TotalAmount.ToString("C") - @note.PurchaseDate.ToString("dd MMM yyyy")
-                                    </MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
-                    }
-                </MudCardContent>
-                <MudCardActions>
-                    <MudButton Href="/purchase-notes"
-                               Color="Color.Default"
-                               Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.List">
-                        @Localization.GetString("AllPurchaseNotes")
-                    </MudButton>
-                    <MudButton Href="/purchase-notes/create"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               Class="ml-3"
-                               StartIcon="@Icons.Material.Filled.Add">
-                        @Localization.GetString("NewPurchaseNote")
-                    </MudButton>
-                </MudCardActions>
-            </MudCard>
-        </MudItem>
+                <MudTabs Elevation="0"
+                         Rounded="false"
+                         ApplyEffectsToContainer="true"
+                         PanelClass="pa-0"
+                         Color="Color.Default">
 
-        <!-- Invoices -->
-        <MudItem xs="12" md="4">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("Invoices")</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent Style="height: 380px; overflow-y: auto;">
-                    @if (_recentInvoices.Any())
-                    {
-                        <MudList T="InvoiceDto" Clickable="true">
-                            @foreach (var invoice in _recentInvoices)
-                            {
-                                <MudListItem Icon="@Icons.Material.Filled.RequestQuote"
-                                             Href="@($"/invoices/{invoice.Id}")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@invoice.InvoiceNumber</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @invoice.CompanyName - @invoice.TotalAmount.ToString("C") - @invoice.IssueDate.ToString("dd MMM yyyy")
-                                    </MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
-                    }
-                </MudCardContent>
-                <MudCardActions>
-                    <MudButton Href="/invoices"
-                               Color="Color.Default"
-                               Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.List">
-                        @Localization.GetString("AllInvoices")
-                    </MudButton>
-                    <MudButton Href="/invoices/create"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               Class="ml-3"
-                               StartIcon="@Icons.Material.Filled.Add">
-                        @Localization.GetString("NewInvoice")
-                    </MudButton>
-                </MudCardActions>
-            </MudCard>
-        </MudItem>
+                    <!-- ── Purchase Notes Tab ── -->
+                    <MudTabPanel Text="@Localization.GetString("PurchaseNotes")"
+                                 Icon="@Icons.Material.Filled.Receipt"
+                                 BadgeData="@_recentPurchaseNotes.Count()"
+                                 BadgeColor="Color.Info"
+                                 Class="mr-5">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @Localization.GetString("RecentPurchaseNotes")
+                                </MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudButton Href="/purchase-notes/create"
+                                           Color="Color.Primary"
+                                           Variant="Variant.Filled"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Add">
+                                    @Localization.GetString("NewPurchaseNote")
+                                </MudButton>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        @if (_recentPurchaseNotes.Any())
+                        {
+                            <MudTable Items="_recentPurchaseNotes"
+                                      Hover="true"
+                                      Dense="true"
+                                      Elevation="0"
+                                      T="PurchaseNoteDto"
+                                      RowClass="table-row-clickable"
+                                      OnRowClick="@((TableRowClickEventArgs<PurchaseNoteDto> args) => Navigation.NavigateTo($"/purchase-notes/{args.Item!.Id}"))">
+                                <HeaderContent>
+                                    <MudTh>@Localization.GetString("NoteNumber")</MudTh>
+                                    <MudTh>@Localization.GetString("Individual")</MudTh>
+                                    <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
+                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh>@Localization.GetString("Status")</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@Localization.GetString("NoteNumber")">
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@context.NoteNumber</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Individual")">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.IndividualFullName</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Date")">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Status")">
+                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status.ToString())">
+                                            @GetPurchaseNoteStatusText(context.Status.ToString())
+                                        </MudChip>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                        else
+                        {
+                            <div class="pa-6 text-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                                <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
+                            </div>
+                        }
+                        <MudCardActions Class="pa-4">
+                            <MudButton Href="/purchase-notes"
+                                       Color="Color.Default"
+                                       Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.List">
+                                @Localization.GetString("AllPurchaseNotes")
+                            </MudButton>
+                        </MudCardActions>
+                    </MudTabPanel>
 
-        <!-- Payments -->
-        <MudItem xs="12" md="4">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("Payments")</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent Style="height: 380px; overflow-y: auto;">
-                    @if (_recentPayments.Any())
-                    {
-                        <MudList T="PaymentDto" Clickable="true">
-                            @foreach (var payment in _recentPayments)
-                            {
-                                <MudListItem Icon="@Icons.Material.Filled.Payment"
-                                             Href="@($"/payments/{payment.Id}")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@payment.ReferenceNumber</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @payment.InvoiceNumber - @payment.Amount.ToString("C") - @payment.PaymentDate.ToString("dd MMM yyyy")
-                                    </MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
-                    }
-                    else
-                    {
-                        <MudText Color="Color.Secondary">@Localization.GetString("NoPaymentsFound")</MudText>
-                    }
-                </MudCardContent>
-                <MudCardActions>
-                    <MudButton Href="/payments"
-                               Color="Color.Default"
-                               Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.List">
-                        @Localization.GetString("AllPayments")
-                    </MudButton>
-                    <MudButton Href="/payments/create"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               Class="ml-3"
-                               StartIcon="@Icons.Material.Filled.Add">
-                        @Localization.GetString("RecordPayment")
-                    </MudButton>
-                </MudCardActions>
+                    <!-- ── Invoices Tab ── -->
+                    <MudTabPanel Text="@Localization.GetString("Invoices")"
+                                 Icon="@Icons.Material.Filled.RequestQuote"
+                                 BadgeData="@_recentInvoices.Count()"
+                                 BadgeColor="Color.Warning"
+                                 Class="mr-5">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @Localization.GetString("RecentInvoices")
+                                </MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudButton Href="/invoices/create"
+                                           Color="Color.Primary"
+                                           Variant="Variant.Filled"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Add">
+                                    @Localization.GetString("NewInvoice")
+                                </MudButton>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        @if (_recentInvoices.Any())
+                        {
+                            <MudTable Items="_recentInvoices"
+                                      Hover="true"
+                                      Dense="true"
+                                      Elevation="0"
+                                      T="InvoiceDto"
+                                      RowClass="table-row-clickable"
+                                      OnRowClick="@((TableRowClickEventArgs<InvoiceDto> args) => Navigation.NavigateTo($"/invoices/{args.Item!.Id}"))">
+                                <HeaderContent>
+                                    <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
+                                    <MudTh>@Localization.GetString("Company")</MudTh>
+                                    <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
+                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh>@Localization.GetString("Status")</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@context.InvoiceNumber</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Company")">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CompanyName</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Date")">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.IssueDate.ToString("dd MMM yyyy")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Status")">
+                                        <MudChip T="string" Size="Size.Small" Color="GetInvoiceStatusColor(context.Status)">
+                                            @GetInvoiceStatusText(context.Status)
+                                        </MudChip>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                        else
+                        {
+                            <div class="pa-6 text-center">
+                                <MudIcon Icon="@Icons.Material.Filled.RequestQuote" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                                <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
+                            </div>
+                        }
+                        <MudCardActions Class="pa-4">
+                            <MudButton Href="/invoices"
+                                       Color="Color.Default"
+                                       Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.List">
+                                @Localization.GetString("AllInvoices")
+                            </MudButton>
+                        </MudCardActions>
+                    </MudTabPanel>
+
+                    <!-- ── Payments Tab ── -->
+                    <MudTabPanel Text="@Localization.GetString("Payments")"
+                                 Icon="@Icons.Material.Filled.Payment"
+                                 BadgeData="@_recentPayments.Count()"
+                                 BadgeColor="Color.Success"
+                                 Class="mr-5">
+                        <MudCardHeader>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @Localization.GetString("RecentPayments")
+                                </MudText>
+                            </CardHeaderContent>
+                            <CardHeaderActions>
+                                <MudButton Href="/payments/create"
+                                           Color="Color.Primary"
+                                           Variant="Variant.Filled"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Add">
+                                    @Localization.GetString("RecordPayment")
+                                </MudButton>
+                            </CardHeaderActions>
+                        </MudCardHeader>
+                        @if (_recentPayments.Any())
+                        {
+                            <MudTable Items="_recentPayments"
+                                      Hover="true"
+                                      Dense="true"
+                                      Elevation="0"
+                                      T="PaymentDto"
+                                      RowClass="table-row-clickable"
+                                      OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => Navigation.NavigateTo($"/payments/{args.Item!.Id}"))">
+                                <HeaderContent>
+                                    <MudTh>@Localization.GetString("ReferenceNumber")</MudTh>
+                                    <MudTh>@Localization.GetString("Invoice")</MudTh>
+                                    <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
+                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh>@Localization.GetString("Method")</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                            @(string.IsNullOrEmpty(context.ReferenceNumber) ? "-" : context.ReferenceNumber)
+                                        </MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Invoice")">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.InvoiceNumber</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
+                                            @context.Amount.ToString("C")
+                                        </MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Date")">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Method")">
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                            @GetPaymentMethodText(context.PaymentMethod)
+                                        </MudChip>
+                                    </MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                        else
+                        {
+                            <div class="pa-6 text-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                                <MudText Color="Color.Secondary">@Localization.GetString("NoPaymentsFound")</MudText>
+                            </div>
+                        }
+                        <MudCardActions Class="pa-4">
+                            <MudButton Href="/payments"
+                                       Color="Color.Default"
+                                       Variant="Variant.Outlined"
+                                       StartIcon="@Icons.Material.Filled.List">
+                                @Localization.GetString("AllPayments")
+                            </MudButton>
+                        </MudCardActions>
+                    </MudTabPanel>
+
+                </MudTabs>
             </MudCard>
         </MudItem>
 
@@ -245,37 +375,72 @@ else
     private List<PurchaseNoteDto> _purchaseNotes = [];
     private List<PaymentDto> _payments = [];
 
-    // Today's activity
-    private IEnumerable<PurchaseNoteDto> _purchaseNotesToday => _purchaseNotes.Where(pn => pn.PurchaseDate.Date == DateTime.Today);
-    private IEnumerable<InvoiceDto> _invoicesToday => _invoices.Where(i => i.IssueDate.Date == DateTime.Today);
-    private IEnumerable<InvoiceDto> _invoicesPayableToday => _invoices.Where(i => i.IssueDate.Date == DateTime.Today && i.Type == InvoiceType.Payable);
-    private IEnumerable<InvoiceDto> _invoicesReceivableToday => _invoices.Where(i => i.IssueDate.Date == DateTime.Today && i.Type == InvoiceType.Receivable);
-    private decimal _amountToPayToday => _purchaseNotesToday.Sum(pn => pn.TotalAmount) + _invoicesPayableToday.Sum(i => i.TotalAmount);
-    private decimal _amountToReceiveToday => _invoicesReceivableToday.Sum(i => i.TotalAmount);
-    private decimal _profitToday => _amountToReceiveToday - _amountToPayToday;
+    // ── Day filter ──
+    private DateTime? _selectedDay = DateTime.Today;
+    private DateTime _selectedDate => _selectedDay ?? DateTime.Today;
 
-    // This month
-    private IEnumerable<PurchaseNoteDto> _purchaseNotesMonth => _purchaseNotes.Where(pn => 
-        pn.PurchaseDate.Year == DateTime.Today.Year && pn.PurchaseDate.Month == DateTime.Today.Month);
-    private IEnumerable<InvoiceDto> _invoicesMonth => _invoices.Where(i => 
-        i.IssueDate.Year == DateTime.Today.Year && i.IssueDate.Month == DateTime.Today.Month);
-    private IEnumerable<InvoiceDto> _invoicesToPayMonth => _invoicesMonth.Where(i => i.Type == InvoiceType.Payable);
-    private IEnumerable<InvoiceDto> _invoicesToReceiveMonth => _invoicesMonth.Where(i => i.Type == InvoiceType.Receivable);
-    private decimal _totalPurchasesMonth => _purchaseNotesMonth.Sum(pn => pn.TotalAmount) + _invoicesToPayMonth.Sum(i => i.TotalAmount);
-    private decimal _totalSalesMonth => _invoicesToReceiveMonth.Sum(i => i.TotalAmount);
+    // ── Month filter ──
+    private DateTime? _selectedMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+    private DateTime _selectedMonth => _selectedMonthDate ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    // ── Day computed ──
+    private IEnumerable<PurchaseNoteDto> _purchaseNotesDay =>
+        _purchaseNotes.Where(pn => pn.PurchaseDate.Date == _selectedDate.Date);
+
+    private IEnumerable<InvoiceDto> _invoicesDay =>
+        _invoices.Where(i => i.IssueDate.Date == _selectedDate.Date);
+
+    private IEnumerable<InvoiceDto> _invoicesPayableDay =>
+        _invoicesDay.Where(i => i.Type == InvoiceType.Payable);
+
+    private IEnumerable<InvoiceDto> _invoicesReceivableDay =>
+        _invoicesDay.Where(i => i.Type == InvoiceType.Receivable);
+
+    private decimal _amountToPayDay =>
+        _purchaseNotesDay.Sum(pn => pn.TotalAmount) + _invoicesPayableDay.Sum(i => i.TotalAmount);
+
+    private decimal _amountToReceiveDay =>
+        _invoicesReceivableDay.Sum(i => i.TotalAmount);
+
+    private decimal _profitDay => _amountToReceiveDay - _amountToPayDay;
+
+    // ── Month computed ──
+    private IEnumerable<PurchaseNoteDto> _purchaseNotesMonth =>
+        _purchaseNotes.Where(pn => pn.PurchaseDate.Year == _selectedMonth.Year && pn.PurchaseDate.Month == _selectedMonth.Month);
+
+    private IEnumerable<InvoiceDto> _invoicesMonth =>
+        _invoices.Where(i => i.IssueDate.Year == _selectedMonth.Year && i.IssueDate.Month == _selectedMonth.Month);
+
+    private IEnumerable<InvoiceDto> _invoicesToPayMonth =>
+        _invoicesMonth.Where(i => i.Type == InvoiceType.Payable);
+
+    private IEnumerable<InvoiceDto> _invoicesToReceiveMonth =>
+        _invoicesMonth.Where(i => i.Type == InvoiceType.Receivable);
+
+    private decimal _totalPurchasesMonth =>
+        _purchaseNotesMonth.Sum(pn => pn.TotalAmount) + _invoicesToPayMonth.Sum(i => i.TotalAmount);
+
+    private decimal _totalSalesMonth =>
+        _invoicesToReceiveMonth.Sum(i => i.TotalAmount);
+
     private decimal _profitMonth => _totalSalesMonth - _totalPurchasesMonth;
-    private decimal _marginMonth => _totalSalesMonth > 0 ? _profitMonth / _totalSalesMonth : 0;
 
-    // Status breakdown
-    private IEnumerable<InvoiceDto> _invoicesOverdue => _invoices.Where(i => i.Status == InvoiceStatus.Overdue);
+    private decimal _marginMonth =>
+        _totalSalesMonth > 0 ? _profitMonth / _totalSalesMonth : 0;
 
-    // Attention needed
-    private int _attentionCount => _invoicesOverdue.Count();
+    // ── Overdue ──
+    private int _attentionCount =>
+        _invoices.Count(i => i.Status == InvoiceStatus.Overdue);
 
-    // Recent activity
-    private IEnumerable<PurchaseNoteDto> _recentPurchaseNotes => _purchaseNotes.OrderByDescending(pn => pn.PurchaseDate).Take(5);
-    private IEnumerable<InvoiceDto> _recentInvoices => _invoices.OrderByDescending(i => i.IssueDate).Take(5);
-    private IEnumerable<PaymentDto> _recentPayments => _payments.OrderByDescending(i => i.PaymentDate).Take(5);
+    // ── Recent activity (always last 5, unfiltered) ──
+    private IEnumerable<PurchaseNoteDto> _recentPurchaseNotes =>
+        _purchaseNotes.OrderByDescending(pn => pn.PurchaseDate).Take(5);
+
+    private IEnumerable<InvoiceDto> _recentInvoices =>
+        _invoices.OrderByDescending(i => i.IssueDate).Take(5);
+
+    private IEnumerable<PaymentDto> _recentPayments =>
+        _payments.OrderByDescending(p => p.PaymentDate).Take(5);
 
     protected override async Task OnInitializedAsync()
     {
@@ -312,6 +477,53 @@ else
             _loading = false;
         }
     }
+
+    private Color GetPurchaseNoteStatusColor(string status)
+    {
+        if (status == PurchaseNoteStatus.Paid.ToString()) return Color.Success;
+        if (status == PurchaseNoteStatus.Completed.ToString()) return Color.Info;
+        return Color.Default;
+    }
+
+    private string GetPurchaseNoteStatusText(string status)
+    {
+        if (status == PurchaseNoteStatus.Paid.ToString()) return Localization.GetString("Paid");
+        if (status == PurchaseNoteStatus.Completed.ToString()) return Localization.GetString("Completed");
+        return Localization.GetString("Draft");
+    }
+
+    private Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
+    {
+        InvoiceStatus.Draft => Color.Default,
+        InvoiceStatus.Sent => Color.Info,
+        InvoiceStatus.PartiallyPaid => Color.Warning,
+        InvoiceStatus.Paid => Color.Success,
+        InvoiceStatus.Overdue => Color.Error,
+        InvoiceStatus.Cancelled => Color.Default,
+        _ => Color.Default
+    };
+
+    private string GetInvoiceStatusText(InvoiceStatus status) => status switch
+    {
+        InvoiceStatus.Draft => Localization.GetString("Draft"),
+        InvoiceStatus.Sent => Localization.GetString("Sent"),
+        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
+        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
+        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
+        InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+        _ => status.ToString()
+    };
+
+    private string GetPaymentMethodText(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => Localization.GetString("Cash"),
+        PaymentMethod.Check => Localization.GetString("Check"),
+        PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
+        PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
+        PaymentMethod.DebitCard => Localization.GetString("DebitCard"),
+        PaymentMethod.Other => Localization.GetString("Other"),
+        _ => method.ToString()
+    };
 
     public void Dispose()
     {

@@ -90,7 +90,6 @@
                 ["TotalStockValue"] = "Total Stock Value",
                 ["AlertsAndWarnings"] = "Alerts & Warnings",
                 ["ProductsBelowMinimum"] = "Products Below Minimum Stock",
-                ["ProductsOutOfStock"] = "Products Out of Stock",
                 ["ProductsNearReorder"] = "Products Near Reorder Point",
                 ["StockByWarehouse"] = "Stock by Warehouse",
                 ["RecentStockMovements"] = "Recent Stock Movements",
@@ -127,6 +126,16 @@
                 ["TopProductsByStock"] = "Top Products by Stock",
                 ["NoStockData"] = "No stock data available",
                 ["NoCompaniesFound"] = "No companies found",
+                ["SelectDay"] = "Select Day",
+                ["SelectMonth"] = "Select Month",
+                ["RecentPayments"] = "Recent Payments",
+                ["ViewInventory"] = "View Inventory",
+                ["ProductsOutOfStock"] = "products are out of stock",
+                ["AndMore"] = "and {0} more",
+                ["Apply"] = "Apply",
+                ["ByTotalSpend"] = "By total spend",
+                ["ByTotalRevenue"] = "By total revenue",
+                ["TotalSpend"] = "Total Spend",
 
                 // Status
                 ["Draft"] = "Draft",
@@ -170,6 +179,8 @@
                 ["Of"] = "of",
                 ["ItemsPerPage"] = "Items per page:",
                 ["BackToDetails"] = "Back to details",
+                ["Name"] = "Name",
+                ["Created"] = "Created",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -623,7 +634,6 @@
                 ["InventorySummary"] = "Преглед на Залиха",
                 ["TotalProducts"] = "Вкупно Производи",
                 ["TotalStockValue"] = "Вкупна Вредност на Залиха",
-                ["AlertsAndWarnings"] = "Аларми и Предупредувања",
                 ["ProductsBelowMinimum"] = "Производи под Минимум",
                 ["ProductsOutOfStock"] = "Производи без Залиха",
                 ["ProductsNearReorder"] = "Производи Блиску до Нарачка",
@@ -662,6 +672,17 @@
                 ["TopProductsByStock"] = "Топ Производи по Залиха",
                 ["NoStockData"] = "Нема податоци за залиха",
                 ["NoCompaniesFound"] = "Нема пронајдено компании",
+                ["SelectDay"] = "Избери ден",
+                ["SelectMonth"] = "Избери месец",
+                ["RecentPayments"] = "Последни Плаќања",
+                ["AlertsAndWarnings"] = "Предупредувања",
+                ["ViewInventory"] = "Види залихи",
+                ["ProductsOutOfStock"] = "производи без залиха",
+                ["AndMore"] = "и уште",
+                ["Apply"] = "Примени",
+                ["ByTotalSpend"] = "По вкупна потрошувачка",
+                ["ByTotalRevenue"] = "По вкупен приход",
+                ["TotalSpend"] = "Вкупна потрошувачка",
 
                 // Status
                 ["Draft"] = "Нацрт",
@@ -705,6 +726,8 @@
                 ["Of"] = "од",
                 ["ItemsPerPage"] = "Предмети по страна:",
                 ["BackToDetails"] = "Назад кон детали",
+                ["Name"] = "Име",
+                ["Created"] = "Креирано",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -1050,7 +1073,7 @@
                 ["PurchaseHistory"] = "Историја на Откупи",
                 ["FirstPurchase"] = "Прв Откуп",
                 ["MostPurchasedProduct"] = "Најкупуван Производ",
-                ["RecentPurchaseNotes"] = "Скорешни Откупни Белешки",
+                ["RecentPurchaseNotes"] = "Последни Откупни Белешки",
                 ["BackToIndividuals"] = "Назад кон физички лица",
                 ["PaymentOverview"] = "Преглед на Плаќања",
                 ["AllPurchasesPaid"] = "Сите откупи платени ✓",

@@ -40,6 +40,7 @@
             builder.HasOne(e => e.Product)
                    .WithMany(p => p.InvoiceLines)
                    .HasForeignKey(e => e.ProductId)
+                   .IsRequired()
                    .OnDelete(DeleteBehavior.Restrict);
         }
     }

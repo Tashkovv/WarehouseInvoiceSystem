@@ -7,27 +7,26 @@
          @onmouseenter="OnMouseEnter"
          @onmouseleave="OnMouseLeave"
          @onclick="NavigateToLink"
-         Style="cursor: pointer; transition: all 0.3s ease; height: 100%;">
-    <MudCardContent Class="pa-4">
-        <div class="d-flex align-center justify-space-between" style="height: 100%;">
-            <!-- Left side: Icon -->
-            <div class="d-flex align-center justify-center" style="min-width: 80px;">
-                @if (!string.IsNullOrEmpty(Icon))
-                {
-                    <MudIcon Icon="@Icon" Color="@IconColor" Size="Size.Large" Style="font-size: 3rem;" />
-                }
-            </div>
+         Style="@($"cursor: {(!string.IsNullOrEmpty(Link) ? "pointer" : "default")}; transition: all 0.2s ease; height: 100%; border-top: 3px solid {GetAccentColor()}; overflow: hidden;")">
+    <MudCardContent Class="pa-5">
+        <div class="d-flex align-center justify-space-between">
+            <!-- Left side: Icon in colored circle -->
+            @if (!string.IsNullOrEmpty(Icon))
+            {
+                <div class="d-flex align-center justify-center rounded-circle"
+                     style="@($"min-width: 56px; height: 56px; background-color: {GetAccentColor()}1a;")">
+                    <MudIcon Icon="@Icon" Color="@IconColor" Size="Size.Large" />
+                </div>
+            }
 
             <!-- Right side: Content -->
-            <div class="flex-grow-1 ml-4">
-                <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-                    @Value
-                </MudText>
-
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+            <div class="flex-grow-1 ml-4 text-right">
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
                     @Title
                 </MudText>
-
+                <MudText Typo="Typo.h4" Class="font-weight-bold my-1" Style="line-height: 1.1;">
+                    @Value
+                </MudText>
                 @if (!string.IsNullOrEmpty(Subtitle))
                 {
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -39,8 +38,8 @@
             <!-- Arrow indicator on hover -->
             @if (_isHovered && !string.IsNullOrEmpty(Link))
             {
-                <div class="dashboard-card-arrow ml-2">
-                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Medium" />
+                <div class="ml-3">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" Color="@IconColor" />
                 </div>
             }
         </div>
@@ -57,21 +56,24 @@
 
     private bool _isHovered = false;
 
-    private void OnMouseEnter()
-    {
-        _isHovered = true;
-    }
-
-    private void OnMouseLeave()
-    {
-        _isHovered = false;
-    }
+    private void OnMouseEnter() => _isHovered = true;
+    private void OnMouseLeave() => _isHovered = false;
 
     private void NavigateToLink()
     {
         if (!string.IsNullOrEmpty(Link))
-        {
             Navigation.NavigateTo(Link);
-        }
     }
+
+    private string GetAccentColor() => IconColor switch
+    {
+        Color.Primary => "var(--mud-palette-primary)",
+        Color.Secondary => "var(--mud-palette-secondary)",
+        Color.Success => "var(--mud-palette-success)",
+        Color.Warning => "var(--mud-palette-warning)",
+        Color.Error => "var(--mud-palette-error)",
+        Color.Info => "var(--mud-palette-info)",
+        Color.Tertiary => "var(--mud-palette-tertiary)",
+        _ => "var(--mud-palette-primary)"
+    };
 }

@@ -36,6 +36,7 @@
             builder.HasOne(e => e.Product)
                    .WithMany()
                    .HasForeignKey(e => e.ProductId)
+                   .IsRequired()
                    .OnDelete(DeleteBehavior.Restrict);
         }
     }

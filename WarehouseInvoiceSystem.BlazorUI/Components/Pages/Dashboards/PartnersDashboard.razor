@@ -6,6 +6,7 @@
 @inject ICompanyService CompanyService
 @inject IIndividualService IndividualService
 @inject ILocalizationService Localization
+@inject NavigationManager Navigation
 
 <PageTitle>@Localization.GetString("PartnersDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -24,14 +25,16 @@ else
                            Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompanies.Count()}")"
                            Value="@_companies.Count.ToString()"
                            Icon="@Icons.Material.Filled.Business"
-                           IconColor="Color.Primary"/>
+                           IconColor="Color.Primary"
+                           Link="/companies" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("CompanyBreakdown")"
-                           Value="@($"{Localization.GetString("Clients")}: {_clientCount} | {Localization.GetString("Vendors")}: {_vendorCount}")"
+                           Value="@($"{_clientCount} / {_vendorCount}")"
+                           Subtitle="@($"{Localization.GetString("Clients")} / {Localization.GetString("Vendors")}")"
                            Icon="@Icons.Material.Filled.PieChart"
-                           IconColor="Color.Info"/>
+                           IconColor="Color.Info" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
@@ -39,7 +42,8 @@ else
                            Value="@_individuals.Count.ToString()"
                            Subtitle="@($"{Localization.GetString("DashboardActiveIndividuals")}: {_activeIndividuals.Count()}")"
                            Icon="@Icons.Material.Filled.Person"
-                           IconColor="Color.Secondary"/>
+                           IconColor="Color.Secondary"
+                           Link="/individuals" />
         </MudItem>
 
         <!-- Recent Companies -->
@@ -47,46 +51,80 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") - @Localization.GetString("Companies")</MudText>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") — @Localization.GetString("Companies")</MudText>
                     </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Href="/companies/create"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Add">
+                            @Localization.GetString("NewCompany")
+                        </MudButton>
+                    </CardHeaderActions>
                 </MudCardHeader>
-                <MudCardContent Style="height: 380px; overflow-y: auto;">
+                <MudCardContent Class="pa-0">
                     @if (_recentCompanies.Any())
                     {
-                        <MudList T="CompanyDto" Clickable="true">
-                            @foreach (var company in _recentCompanies)
-                            {
-                                <MudListItem Icon="@Icons.Material.Filled.Business" 
-                                            Href="@($"/companies/{company.Id}")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@company.Name</MudText>
+                        <MudTable Items="_recentCompanies"
+                                  Hover="true"
+                                  Dense="true"
+                                  Elevation="0"
+                                  T="CompanyDto"
+                                  RowClass="table-row-clickable"
+                                  OnRowClick="@((TableRowClickEventArgs<CompanyDto> args) => NavigateTo($"/companies/{args.Item!.Id}"))">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Name")</MudTh>
+                                <MudTh>@Localization.GetString("Type")</MudTh>
+                                <MudTh>@Localization.GetString("Status")</MudTh>
+                                <MudTh>@Localization.GetString("Created")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Name")">
+                                    <div class="d-flex align-center">
+                                        <MudAvatar Color="Color.Primary" Size="Size.Small" Class="mr-2" Style="font-size: 0.75rem;">
+                                            @context.Name.Substring(0, 1).ToUpper()
+                                        </MudAvatar>
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Name</MudText>
+                                    </div>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Type")">
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@GetTypeColor(context.Type)">
+                                        @GetTypeText(context.Type)
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Status")">
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@(context.IsActive ? Color.Success : Color.Default)">
+                                        @(context.IsActive? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Created")">
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @company.CreatedAt.ToString("dd MMM yyyy") - 
-                                        @(company.Type == Domain.Enums.CompanyType.Client ? Localization.GetString("Client") : 
-                                          company.Type == Domain.Enums.CompanyType.Vendor ? Localization.GetString("Vendor") : 
-                                          Localization.GetString("ClientAndVendor"))
+                                        @context.CreatedAt.ToString("dd MMM yyyy")
                                     </MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
                     }
                     else
                     {
-                        <MudText Color="Color.Secondary">@Localization.GetString("NoCompaniesFound")</MudText>
+                        <div class="pa-6 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Business"
+                                     Size="Size.Large"
+                                     Color="Color.Secondary"
+                                     Class="mb-2" />
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoCompaniesFound")</MudText>
+                        </div>
                     }
                 </MudCardContent>
-                <MudCardActions>
+                <MudCardActions Class="pa-4">
                     <MudButton Href="/companies"
                                Color="Color.Default"
                                Variant="Variant.Outlined"
                                StartIcon="@Icons.Material.Filled.List">
                         @Localization.GetString("AllCompanies")
-                    </MudButton>
-                    <MudButton Href="/companies/create"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               Class="ml-3"
-                               StartIcon="@Icons.Material.Filled.Add">
-                        @Localization.GetString("NewCompany")
                     </MudButton>
                 </MudCardActions>
             </MudCard>
@@ -97,43 +135,79 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") - @Localization.GetString("Individuals")</MudText>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") — @Localization.GetString("Individuals")</MudText>
                     </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Href="/individuals/create"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Add">
+                            @Localization.GetString("NewIndividual")
+                        </MudButton>
+                    </CardHeaderActions>
                 </MudCardHeader>
-                <MudCardContent Style="height: 380px; overflow-y: auto;">
+                <MudCardContent Class="pa-0">
                     @if (_recentIndividuals.Any())
                     {
-                        <MudList T="IndividualDto" Clickable="true">
-                            @foreach (var individual in _recentIndividuals)
-                            {
-                                <MudListItem Icon="@Icons.Material.Filled.Person" 
-                                            Href="@($"/individuals/edit/{individual.Id}")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@individual.FullName</MudText>
+                        <MudTable Items="_recentIndividuals"
+                                  Hover="true"
+                                  Dense="true"
+                                  Elevation="0"
+                                  T="IndividualDto"
+                                  RowClass="table-row-clickable"
+                                  OnRowClick="@((TableRowClickEventArgs<IndividualDto> args) => NavigateTo($"/individuals/{args.Item!.Id}"))">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Name")</MudTh>
+                                <MudTh>@Localization.GetString("IdentificationNumber")</MudTh>
+                                <MudTh>@Localization.GetString("Status")</MudTh>
+                                <MudTh>@Localization.GetString("Created")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Name")">
+                                    <div class="d-flex align-center">
+                                        <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="mr-2" Style="font-size: 0.75rem;">
+                                            @context.FullName.Substring(0, 1).ToUpper()
+                                        </MudAvatar>
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@context.FullName</MudText>
+                                    </div>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("IdentificationNumber")">
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @individual.IdentificationNumber - @individual.CreatedAt.ToString("dd MMM yyyy")
+                                        @context.IdentificationNumber
                                     </MudText>
-                                </MudListItem>
-                            }
-                        </MudList>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Status")">
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@(context.IsActive ? Color.Success : Color.Default)">
+                                        @(context.IsActive? Localization.GetString("ActiveIndividual") : Localization.GetString("InactiveIndividual"))
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Created")">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @context.CreatedAt.ToString("dd MMM yyyy")
+                                    </MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
                     }
                     else
                     {
-                        <MudText Color="Color.Secondary">@Localization.GetString("NoIndividualsFound")</MudText>
+                        <div class="pa-6 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Person"
+                                     Size="Size.Large"
+                                     Color="Color.Secondary"
+                                     Class="mb-2" />
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoIndividualsFound")</MudText>
+                        </div>
                     }
                 </MudCardContent>
-                <MudCardActions>
+                <MudCardActions Class="pa-4">
                     <MudButton Href="/individuals"
                                Color="Color.Default"
                                Variant="Variant.Outlined"
                                StartIcon="@Icons.Material.Filled.List">
                         @Localization.GetString("AllIndividuals")
-                    </MudButton>
-                    <MudButton Href="/individuals/create"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               Class="ml-3"
-                               StartIcon="@Icons.Material.Filled.Add">
-                        @Localization.GetString("NewIndividual")
                     </MudButton>
                 </MudCardActions>
             </MudCard>
@@ -145,12 +219,12 @@ else
     private bool _loading = true;
     private List<CompanyDto> _companies = [];
     private List<IndividualDto> _individuals = [];
-    
+
     private IEnumerable<CompanyDto> _activeCompanies => _companies.Where(c => c.IsActive);
     private IEnumerable<IndividualDto> _activeIndividuals => _individuals.Where(i => i.IsActive);
     private IEnumerable<CompanyDto> _recentCompanies => _companies.OrderByDescending(c => c.CreatedAt).Take(5);
     private IEnumerable<IndividualDto> _recentIndividuals => _individuals.OrderByDescending(i => i.CreatedAt).Take(5);
-    
+
     private int _clientCount = 0;
     private int _vendorCount = 0;
 
@@ -173,11 +247,10 @@ else
         {
             IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
             _companies = companies.ToList();
-            
+
             IEnumerable<IndividualDto> individuals = await IndividualService.GetAllIndividualsAsync();
             _individuals = individuals.ToList();
 
-            // Calculate breakdowns
             _clientCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Client || c.Type == Domain.Enums.CompanyType.Both);
             _vendorCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Vendor || c.Type == Domain.Enums.CompanyType.Both);
         }
@@ -190,6 +263,24 @@ else
             _loading = false;
         }
     }
+
+    private void NavigateTo(string url) => Navigation.NavigateTo(url);
+
+    private Color GetTypeColor(Domain.Enums.CompanyType type) => type switch
+    {
+        Domain.Enums.CompanyType.Client => Color.Success,
+        Domain.Enums.CompanyType.Vendor => Color.Warning,
+        Domain.Enums.CompanyType.Both => Color.Info,
+        _ => Color.Default
+    };
+
+    private string GetTypeText(Domain.Enums.CompanyType type) => type switch
+    {
+        Domain.Enums.CompanyType.Client => Localization.GetString("Client"),
+        Domain.Enums.CompanyType.Vendor => Localization.GetString("Vendor"),
+        Domain.Enums.CompanyType.Both => Localization.GetString("ClientAndVendor"),
+        _ => type.ToString()
+    };
 
     public void Dispose()
     {
