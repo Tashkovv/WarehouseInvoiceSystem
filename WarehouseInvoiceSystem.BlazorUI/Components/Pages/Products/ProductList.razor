@@ -71,6 +71,8 @@
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
+                      RowClass="product-row-clickable"
+                      OnRowClick="@((TableRowClickEventArgs<ProductDto> args) => OnRowClick(args))"
                       Height="600px"
                       Sort="@((SortDefinition<ProductDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
@@ -185,6 +187,12 @@
     </MudCardContent>
 </MudCard>
 
+<style>
+    .product-row-clickable td:not(:last-child) {
+        cursor: pointer;
+    }
+</style>
+
 @code {
     private bool _loading = true;
     private List<ProductDto> _allProducts = [];
@@ -200,6 +208,10 @@
 
     private string _sortBy = "CreatedAt";
     private bool _sortAscending = false;
+
+    private DateTime _lastClickTime = DateTime.MinValue;
+    private Guid _lastClickedId = Guid.Empty;
+    private const int DoubleClickThreshold = 500; // milliseconds
 
     protected override async Task OnInitializedAsync()
     {
@@ -356,6 +368,15 @@
                 Console.WriteLine($"Error deleting product: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
             }
+        }
+    }
+
+    private void OnRowClick(TableRowClickEventArgs<ProductDto> args)
+    {
+        // Check if it's a double-click by checking MouseEventArgs
+        if (args.MouseEventArgs.Detail == 2)
+        {
+            ViewProduct(args.Item!.Id);
         }
     }
 

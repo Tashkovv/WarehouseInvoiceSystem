@@ -347,6 +347,10 @@
 </MudCard>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? StatusParameter { get; set; }
+
     private bool _loading = true;
     private bool _exporting = false;
     private bool _showFilters = false;
@@ -431,6 +435,13 @@
     private void ApplyFilters()
     {
         IEnumerable<InvoiceDto> filtered = _allInvoices;
+
+        // Set status filter from query parameter if available
+        if (!string.IsNullOrWhiteSpace(StatusParameter))
+        {
+            _filterStatus = Enum.TryParse<InvoiceStatus>(StatusParameter, true, out var status) ? status : null;
+            StatusParameter = string.Empty;
+        }
 
         // Apply Status filter
         if (_filterStatus.HasValue)

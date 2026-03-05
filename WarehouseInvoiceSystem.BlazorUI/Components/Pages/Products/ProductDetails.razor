@@ -1,0 +1,525 @@
+﻿@page "/products/{Id:guid}"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@inject IProductService ProductService
+@inject IWarehouseService WarehouseService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("ProductDetails") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_product == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("ProductNotFound")</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4 d-flex justify-space-between align-center" Elevation="0">
+                <div>
+                    <MudText Typo="Typo.h4">@_product.Name</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">
+                        @Localization.GetString("Code"): <strong>@_product.Code</strong> | 
+                        @Localization.GetString("Unit"): <strong>@_product.Unit</strong> | 
+                        @Localization.GetString("Price"): <strong>@_product.DefaultPrice.ToString("C")</strong>
+                    </MudText>
+                    <MudChip T="string" 
+                             Size="Size.Small" 
+                             Color="@(_product.IsActive ? Color.Success : Color.Default)"
+                             Class="mt-2">
+                        @(_product.IsActive ? Localization.GetString("Active") : Localization.GetString("Inactive"))
+                    </MudChip>
+                </div>
+                <div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="EditProduct">
+                        @Localization.GetString("Edit")
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="DeleteProduct"
+                               Class="ml-2">
+                        @Localization.GetString("Delete")
+                    </MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Description -->
+        @if (!string.IsNullOrWhiteSpace(_product.Description))
+        {
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("Description")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudText Typo="Typo.body2">@_product.Description</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
+        <!-- Warehouse Selector -->
+        <MudItem xs="12" Class="mt-4">
+            <MudCard Elevation="2">
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12" md="6">
+                            <MudText Typo="Typo.h6" Class="mb-2">@Localization.GetString("SelectWarehouse")</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                @Localization.GetString("ViewInventoryForSpecificWarehouse")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="6" Class="d-flex align-center justify-end">
+                            <MudSelect T="Guid?"
+                                       Value="_selectedWarehouseId"
+                                       ValueChanged="@(async (Guid? v) => await OnWarehouseChanged(v))"
+                                       Label="@Localization.GetString("Warehouse")"
+                                       Variant="Variant.Outlined"
+                                       AnchorOrigin="Origin.BottomLeft"
+                                       Style="min-width: 300px;">
+                                <MudSelectItem Value="@((Guid?)null)">
+                                    @Localization.GetString("AllWarehouses")
+                                </MudSelectItem>
+                                @foreach (WarehouseDto w in _warehouses)
+                                {
+                                    <MudSelectItem Value="@((Guid?)w.Id)">
+                                        @w.Name @(w.IsDefault ? $" ({Localization.GetString("Default")})" : "")
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Inventory Summary -->
+        <MudItem xs="12" Class="mt-4">
+            <MudText Typo="Typo.h6" Class="mb-4 d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Class="mr-2" />
+                @Localization.GetString("InventorySummary")
+            </MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalStock")"
+                           Value="@($"{_filteredTotalStock.ToString("N2")} {_product.Unit}")"
+                          Subtitle="@_selectedWarehouseName"
+                          Icon="@Icons.Material.Filled.Inventory2"
+                          IconColor="@(_filteredIsOutOfStock ? Color.Error : _filteredHasLowStock ? Color.Warning : Color.Primary)" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("StockValue")"
+                          Value="@_filteredStockValue.ToString("C")"
+                          Subtitle="@_selectedWarehouseName"
+                          Icon="@Icons.Material.Filled.AttachMoney"
+                          IconColor="Color.Success" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalTransactions")"
+                          Value="@_filteredTransactions.Count().ToString()"
+                          Subtitle="@Localization.GetString("StockMovements")"
+                          Icon="@Icons.Material.Filled.SwapVert"
+                          IconColor="Color.Info" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("GrossMargin")"
+                          Value="@($"{_analytics.GrossMarginPercentage.ToString("N1")}%")"
+                          Icon="@Icons.Material.Filled.TrendingUp"
+                          IconColor="@(_analytics.GrossMarginPercentage > 30 ? Color.Success : Color.Warning)" />
+        </MudItem>
+
+        <!-- Stock by Warehouse (only show if "All Warehouses" selected) -->
+        @if (!_selectedWarehouseId.HasValue && _analytics.StockByWarehouse.Any())
+        {
+            <MudItem xs="12" Class="mt-4">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("StockByWarehouse")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent Class="pa-0">
+                        <MudTable Items="_analytics.StockByWarehouse" 
+                                  Hover="true" 
+                                  Dense="true"
+                                  Elevation="0">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Warehouse")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Reserved")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Available")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Minimum")</MudTh>
+                                <MudTh>@Localization.GetString("LastRestocked")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Warehouse")">
+                                    @context.WarehouseName
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold"
+                                            Color="@(context.Quantity <= context.MinimumQuantity ? Color.Error : Color.Default)">
+                                        @context.Quantity.ToString("N2") @_product.Unit
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Reserved")" Style="text-align: right;">
+                                    @context.ReservedQuantity.ToString("N2") @_product.Unit
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Available")" Style="text-align: right;">
+                                    @context.AvailableQuantity.ToString("N2") @_product.Unit
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Minimum")" Style="text-align: right;">
+                                    @(context.MinimumQuantity?.ToString("N2") ?? "0,00") @_product.Unit
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("LastRestocked")">
+                                    @(context.LastRestockedAt?.ToString("dd MMM yyyy") ?? "-")
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
+        <!-- Sales & Purchase Analytics (remains the same, shows global data) -->
+        <MudItem xs="12" Class="mt-6">
+            <MudText Typo="Typo.h6" Class="mb-4 d-flex align-center">
+                <MudIcon Icon="@Icons.Material.Filled.Analytics" Class="mr-2" />
+                @Localization.GetString("SalesAndPurchaseAnalytics")
+            </MudText>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Success" Class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.PointOfSale" Class="mr-2" />
+                            @Localization.GetString("SalesAnalytics")
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="3">
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("TotalUnitsSold"):</MudText>
+                            <MudText Class="font-weight-bold">@_analytics.TotalUnitsSold.ToString("N0") @_product.Unit</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("TotalRevenue"):</MudText>
+                            <MudText Class="font-weight-bold" Color="Color.Success">@_analytics.TotalRevenue.ToString("C")</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("AverageSaleQuantity"):</MudText>
+                            <MudText>@_analytics.AverageSaleQuantity.ToString("N2") @_product.Unit</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("LastSale"):</MudText>
+                            <MudText>@(_analytics.LastSaleDate?.ToString("dd MMM yyyy") ?? Localization.GetString("Never"))</MudText>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_analytics.TopCustomer))
+                        {
+                            <MudDivider />
+                            <div>
+                                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.GetString("TopCustomer")</MudText>
+                                <MudText Class="font-weight-bold">@_analytics.TopCustomer</MudText>
+                                <MudText Typo="Typo.caption">@_analytics.TopCustomerQuantity.ToString("N2") @_product.Unit</MudText>
+                            </div>
+                        }
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Color="Color.Info" Class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="mr-2" />
+                            @Localization.GetString("PurchaseAnalytics")
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="3">
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("TotalUnitsPurchased"):</MudText>
+                            <MudText Class="font-weight-bold">@_analytics.TotalUnitsPurchased.ToString("N0") @_product.Unit</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("TotalCost"):</MudText>
+                            <MudText Class="font-weight-bold" Color="Color.Error">@_analytics.TotalPurchaseCost.ToString("C")</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("AveragePurchaseQuantity"):</MudText>
+                            <MudText>@_analytics.AveragePurchaseQuantity.ToString("N2") @_product.Unit</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText>@Localization.GetString("LastPurchase"):</MudText>
+                            <MudText>@(_analytics.LastPurchaseDate?.ToString("dd MMM yyyy") ?? Localization.GetString("Never"))</MudText>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_analytics.TopSupplier))
+                        {
+                            <MudDivider />
+                            <div>
+                                <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.GetString("TopSupplier")</MudText>
+                                <MudText Class="font-weight-bold">@_analytics.TopSupplier</MudText>
+                                <MudText Typo="Typo.caption">@_analytics.TopSupplierQuantity.ToString("N2") @_product.Unit</MudText>
+                            </div>
+                        }
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Profitability -->
+        <MudItem xs="12" Class="mt-4">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6" Class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Savings" Class="mr-2" />
+                            @Localization.GetString("Profitability")
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("AveragePurchasePrice")</MudText>
+                            <MudText Typo="Typo.h6">@_analytics.AveragePurchasePrice.ToString("C")</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("CurrentSellingPrice")</MudText>
+                            <MudText Typo="Typo.h6">@_analytics.CurrentSellingPrice.ToString("C")</MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("GrossMargin")</MudText>
+                            <MudText Typo="Typo.h6" Color="@(_analytics.GrossMarginPercentage > 30 ? Color.Success : Color.Warning)">
+                                @_analytics.GrossMarginPercentage.ToString("N1")%
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("EstimatedProfit")</MudText>
+                            <MudText Typo="Typo.h6" Color="Color.Success">
+                                @(((_analytics.CurrentSellingPrice - _analytics.AveragePurchasePrice) * _filteredTotalStock).ToString("C"))
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Recent Transactions (filtered by warehouse) -->
+        <MudItem xs="12" Class="mt-6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentStockMovements")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@_selectedWarehouseName</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    @if (_filteredTransactions.Any())
+                    {
+                        <MudTable Items="_filteredTransactions.Take(10)" 
+                                  Hover="true" 
+                                  Dense="true"
+                                  Elevation="0">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh>@Localization.GetString("Type")</MudTh>
+                                <MudTh>@Localization.GetString("Warehouse")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh>@Localization.GetString("Note")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    @context.Date.ToString("dd MMM yyyy HH:mm")
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Type")">
+                                    @if (context.Type == "Inbound")
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.ArrowDownward">
+                                            @Localization.GetString("Inbound")
+                                        </MudChip>
+                                    }
+                                    else if (context.Type == "Outbound")
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.ArrowUpward">
+                                            @Localization.GetString("Outbound")
+                                        </MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                            @Localization.GetString(@context.Type)
+                                        </MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Warehouse")">
+                                    @context.WarehouseName
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                        @context.Quantity.ToString("N2") @_product.Unit
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Note")">
+                                    <MudText Typo="Typo.caption">@(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)</MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoRecentMovements")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private ProductDto? _product;
+    private ProductAnalyticsDto _analytics = new();
+    
+    private List<WarehouseDto> _warehouses = [];
+    private Guid? _selectedWarehouseId = null;
+
+    // Filtered data based on warehouse selection
+    private decimal _filteredTotalStock => _selectedWarehouseId.HasValue 
+        ? _analytics.StockByWarehouse.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
+        : _analytics.TotalStockAcrossWarehouses;
+
+    private decimal _filteredStockValue => _filteredTotalStock * _analytics.CurrentSellingPrice;
+
+    private bool _filteredIsOutOfStock => _filteredTotalStock == 0;
+
+    private bool _filteredHasLowStock => _selectedWarehouseId.HasValue
+        ? _analytics.StockByWarehouse.Any(s => s.WarehouseId == _selectedWarehouseId.Value && s.Quantity <= s.MinimumQuantity && s.Quantity > 0)
+        : _analytics.HasLowStock;
+
+    private IEnumerable<RecentTransactionDto> _filteredTransactions => _selectedWarehouseId.HasValue
+        ? _analytics.RecentTransactions.Where(t => _warehouses.Any(w => w.Id == _selectedWarehouseId.Value && w.Name == t.WarehouseName))
+        : _analytics.RecentTransactions;
+
+    private string _selectedWarehouseName => _selectedWarehouseId.HasValue
+        ? _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId.Value)?.Name ?? ""
+        : Localization.GetString("AllWarehouses");
+
+    private WarehouseStockDto? _filteredStockByWarehouse => _selectedWarehouseId.HasValue
+        ? _analytics.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
+        : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadProduct();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadProduct()
+    {
+        _loading = true;
+
+        try
+        {
+            _product = await ProductService.GetProductByIdAsync(Id);
+            if (_product != null)
+            {
+                _analytics = await ProductService.GetProductAnalyticsAsync(Id);
+                
+                // Load warehouses
+                IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
+                _warehouses = warehouses.ToList();
+                
+                // Default to null (All Warehouses)
+                _selectedWarehouseId = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading product: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingProduct"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task OnWarehouseChanged(Guid? warehouseId)
+    {
+        _selectedWarehouseId = warehouseId;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void EditProduct()
+    {
+        Navigation.NavigateTo($"/products/edit/{Id}");
+    }
+
+    private async Task DeleteProduct()
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteProductConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await ProductService.DeleteProductAsync(Id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("ProductDeleted"), Severity.Success);
+                    Navigation.NavigateTo("/products");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting product: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

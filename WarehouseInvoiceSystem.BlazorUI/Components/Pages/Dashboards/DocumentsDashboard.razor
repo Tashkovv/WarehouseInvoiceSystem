@@ -48,8 +48,7 @@ else
             <DashboardCard Title="@Localization.GetString("Profit")"
                           Value="@_profitToday.ToString("C")"
                           Icon="@Icons.Material.Filled.TrendingUp"
-                          IconColor="Color.Success"
-                          Link="/documents-dashboard" />
+                          IconColor="Color.Success" />
         </MudItem>
 
         <!-- Financial Summary This Month -->
@@ -64,8 +63,7 @@ else
                           Value="@_totalPurchasesMonth.ToString("C")"
                           Subtitle="@($"{_purchaseNotesMonth.Count()} {Localization.GetString("PurchaseNotes")} | {_invoicesToPayMonth.Count()} {Localization.GetString("Invoices")}")"
                           Icon="@Icons.Material.Filled.ShoppingCart"
-                          IconColor="Color.Primary"
-                          Link="/purchase-notes" />
+                          IconColor="Color.Primary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -73,8 +71,7 @@ else
                           Value="@_totalSalesMonth.ToString("C")"
                           Subtitle="@($"{_invoicesToReceiveMonth.Count()} {Localization.GetString("Invoices")}")"
                           Icon="@Icons.Material.Filled.PointOfSale"
-                          IconColor="Color.Success"
-                          Link="/invoices" />
+                          IconColor="Color.Success" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -82,8 +79,7 @@ else
                           Value="@_profitMonth.ToString("C")"
                           Subtitle="@_marginMonth.ToString("P1")"
                           Icon="@Icons.Material.Filled.Savings"
-                          IconColor="Color.Tertiary"
-                          Link="/documents-dashboard" />
+                          IconColor="Color.Tertiary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -91,7 +87,7 @@ else
                           Value="@_attentionCount.ToString()"
                           Icon="@Icons.Material.Filled.Warning"
                           IconColor="Color.Error"
-                          Link="/invoices" />
+                          Link="@($"/invoices?status={@InvoiceStatus.Overdue.ToString()}")" />
         </MudItem>
 
         <!-- Recent Activity -->
