@@ -18,13 +18,20 @@ else if (_model == null)
 }
 else
 {
-    <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("EditProduct")</MudText>
+    <div class="d-flex justify-space-between align-center mb-4">
+        <MudText Typo="Typo.h4">@Localization.GetString("EditProduct")</MudText>
+        <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+                   Variant="Variant.Text"
+                   Href="/products">
+            @Localization.GetString("BackToProducts")
+        </MudButton>
+    </div>
 
     <MudCard Elevation="2" Class="mb-4">
         <MudCardContent>
             <MudForm @ref="_form" @bind-IsValid="@_isValid">
                 <MudGrid>
-                    <MudItem xs="12" md="6">
+                    <MudItem xs="12" md="3">
                         <MudTextField @bind-Value="_model.Code"
                                       Label="@Localization.GetString("ProductCode")"
                                       Required="true"
@@ -33,7 +40,7 @@ else
                                       MaxLength="50" />
                     </MudItem>
 
-                    <MudItem xs="12" md="6">
+                    <MudItem xs="12" md="3">
                         <MudTextField @bind-Value="_model.Name"
                                       Label="@Localization.GetString("ProductName")"
                                       Required="true"
@@ -42,15 +49,14 @@ else
                                       MaxLength="100" />
                     </MudItem>
 
-                    <MudItem xs="12">
+                    <MudItem xs="12" md="6">
                         <MudTextField @bind-Value="_model.Description"
                                       Label="@Localization.GetString("Description")"
-                                      Lines="3"
                                       Variant="Variant.Outlined"
                                       MaxLength="500" />
                     </MudItem>
 
-                    <MudItem xs="12" md="4">
+                    <MudItem xs="12" md="3">
                         <MudTextField @bind-Value="_model.Unit"
                                       Label="@Localization.GetString("Unit")"
                                       HelperText="@Localization.GetString("UnitHelper")"
@@ -60,7 +66,7 @@ else
                                       MaxLength="10" />
                     </MudItem>
 
-                    <MudItem xs="12" md="4">
+                    <MudItem xs="12" md="3">
                         <MudNumericField @bind-Value="_model.DefaultPrice"
                                          Label="@Localization.GetString("DefaultPrice")"
                                          Format="N2"
@@ -73,7 +79,7 @@ else
                                          AdornmentText="MKD" />
                     </MudItem>
 
-                    <MudItem xs="12" md="4" Class="d-flex align-center">
+                    <MudItem xs="12" md="3" Class="d-flex align-center">
                         <MudSwitch @bind-Value="_model.IsActive"
                                    Label="@Localization.GetString("ProductActive")"
                                    Color="Color.Success" />
@@ -190,6 +196,6 @@ else
 
     private void Cancel()
     {
-        Navigation.NavigateTo("/products");
+        Navigation.NavigateTo($"/products/{Id}");
     }
 }

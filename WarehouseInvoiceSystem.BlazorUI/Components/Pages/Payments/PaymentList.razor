@@ -152,6 +152,8 @@
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
+                      RowClass="table-row-clickable"
+                      OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => OnRowClick(args))"
                       Height="710px"
                       Sort="@((SortDefinition<PaymentDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
@@ -470,6 +472,14 @@
         {
             _currentPage++;
             UpdatePagination();
+        }
+    }
+
+    private void OnRowClick(TableRowClickEventArgs<PaymentDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+        {
+            ViewPayment(args.Item!.Id);
         }
     }
 

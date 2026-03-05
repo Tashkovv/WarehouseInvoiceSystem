@@ -20,91 +20,148 @@ else if (_model == null)
 }
 else
 {
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+                       Variant="Variant.Text"
+                       Href="/purchase-notes">
+                @Localization.GetString("BackToPurchaseNotes")
+            </MudButton>
+        </div>
+        <div>
+            @if (_model.Status != PurchaseNoteStatus.Paid)
+            {
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Success"
+                           StartIcon="@Icons.Material.Filled.Payment"
+                           OnClick="MarkAsPaid"
+                           Class="ml-2">
+                    @Localization.GetString("MarkAsPaid")
+                </MudButton>
+            }
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Edit"
+                       OnClick="EditNote">
+                @Localization.GetString("Edit")
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="DeleteNote"
+                       Class="ml-2">
+                @Localization.GetString("Delete")
+            </MudButton>
+        </div>
+    </div>
     <MudGrid>
+        <!-- Purchase Note Header - Single Card -->
         <MudItem xs="12">
-            <MudPaper Class="pa-4 d-flex justify-space-between align-center" Elevation="0">
-                <div>
-                    <MudText Typo="Typo.h4">@_model.NoteNumber</MudText>
-                    <MudChip T="string"
-                             Color="GetStatusColor(_model.Status)"
-                             Size="Size.Small"
-                             Class="mt-2">
-                        @GetStatusText(_model.Status)
-                    </MudChip>
-                </div>
-                <div>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Edit"
-                               OnClick="EditNote">
-                        @Localization.GetString("Edit")
-                    </MudButton>
-                    @if (_model.Status != PurchaseNoteStatus.Paid)
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-6">
+                    <MudGrid Spacing="4">
+                        <!-- Left: Note Number + Status + Individual -->
+                        <MudItem xs="12" md="6">
+                            <MudStack Spacing="2">
+                                <div class="d-flex align-center gap-3">
+                                    <MudText Typo="Typo.h4" Class="mb-0">@_model.NoteNumber</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="GetStatusColor(_model.Status)">
+                                        @GetStatusText(_model.Status)
+                                    </MudChip>
+                                </div>
+
+                                <MudDivider Class="my-2" />
+
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.h6" Class="mb-0">@_model.IndividualFullName</MudText>
+                                </div>
+
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @Localization.GetString("IdentificationNumber"): <strong>@_model.IndividualIdentificationNumber</strong>
+                                    </MudText>
+                                </div>
+                            </MudStack>
+                        </MudItem>
+
+                        <!-- Divider (visible on medium+ screens) -->
+                        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                            <MudItem md="1" Class="d-flex align-center justify-center">
+                                <MudDivider Vertical="true" />
+                            </MudItem>
+                        </MudHidden>
+
+                        <!-- Right: Amount + Dates + Warehouse -->
+                        <MudItem xs="12" md="5">
+                            <MudStack Spacing="3">
+                                <!-- Total Amount -->
+                                <div>
+                                    <MudText Typo="Typo.h3" Color="Color.Primary" Class="mb-0">
+                                        @_model.TotalAmount.ToString("C")
+                                    </MudText>
+                                </div>
+
+                                <MudDivider />
+
+                                <!-- Purchase Date & Warehouse -->
+                                <MudStack Row="true" Spacing="4">
+                                    <div style="flex: 1;">
+                                        <div class="d-flex align-center mb-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("PurchaseDate")</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                            @_model.PurchaseDate.ToString("dd MMM yyyy")
+                                        </MudText>
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(_model.WarehouseName))
+                                    {
+                                        <div style="flex: 1;">
+                                            <div class="d-flex align-center mb-1">
+                                                <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("Warehouse")</MudText>
+                                            </div>
+                                            <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                                @_model.WarehouseName
+                                            </MudText>
+                                        </div>
+                                    }
+                                </MudStack>
+
+                                <!-- Paid Date (if exists) -->
+                                @if (_model.PaidDate.HasValue)
+                                {
+                                    <div>
+                                        <div class="d-flex align-center mb-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Small" Class="mr-1" Color="Color.Success" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("PaidDate")</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.body1" Class="font-weight-medium" Color="Color.Success">
+                                            @_model.PaidDate.Value.ToString("dd MMM yyyy")
+                                        </MudText>
+                                    </div>
+                                }
+                            </MudStack>
+                        </MudItem>
+                    </MudGrid>
+
+                    <!-- Notes Section (Full Width) - if you have notes field -->
+                    @if (!string.IsNullOrWhiteSpace(_model.Notes))
                     {
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Success"
-                                   StartIcon="@Icons.Material.Filled.Payment"
-                                   OnClick="MarkAsPaid"
-                                   Class="ml-2">
-                            @Localization.GetString("MarkAsPaid")
-                        </MudButton>
-                    }
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Error"
-                               StartIcon="@Icons.Material.Filled.Delete"
-                               OnClick="DeleteNote"
-                               Class="ml-2">
-                        @Localization.GetString("Delete")
-                    </MudButton>
-                </div>
-            </MudPaper>
-        </MudItem>
-
-        <!-- Individual & Purchase Info -->
-        <MudItem xs="12" md="6">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("Individual")</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudText Typo="Typo.body1" Class="font-weight-bold">@_model.IndividualFullName</MudText>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        @Localization.GetString("IdentificationNumber"): @_model.IndividualIdentificationNumber
-                    </MudText>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-
-        <MudItem xs="12" md="6">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("PurchaseDetails")</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent>
-                    <MudStack Spacing="2">
-                        <div>
-                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("PurchaseDate")</MudText>
-                            <MudText Typo="Typo.body2">@_model.PurchaseDate.ToString("dd MMMM yyyy")</MudText>
+                        <MudDivider Class="my-4" />
+                        <div class="d-flex align-start">
+                            <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Class="mr-2 mt-1" Color="Color.Secondary" />
+                            <div style="flex: 1;">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">@Localization.GetString("Notes")</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">
+                                    @_model.Notes
+                                </MudText>
+                            </div>
                         </div>
-                        @if (!string.IsNullOrEmpty(_model.WarehouseName))
-                        {
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("Warehouse")</MudText>
-                                <MudText Typo="Typo.body2">@_model.WarehouseName</MudText>
-                            </div>
-                        }
-                        @if (_model.PaidDate.HasValue)
-                        {
-                            <div>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("PaidDate")</MudText>
-                                <MudText Typo="Typo.body2">@_model.PaidDate.Value.ToString("dd MMMM yyyy")</MudText>
-                            </div>
-                        }
-                    </MudStack>
+                    }
                 </MudCardContent>
             </MudCard>
         </MudItem>

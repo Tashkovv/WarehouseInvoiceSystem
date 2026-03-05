@@ -8,7 +8,14 @@
 
 <PageTitle>@Localization.GetString("CreateProduct") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("CreateProduct")</MudText>
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4">@Localization.GetString("CreateProduct")</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+               Variant="Variant.Text"
+               Href="/products">
+        @Localization.GetString("BackToProducts")
+    </MudButton>
+</div>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent>

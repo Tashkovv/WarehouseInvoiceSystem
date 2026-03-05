@@ -15,6 +15,15 @@
 
 <PageTitle>@Localization.GetString("EditPurchaseNote") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
+<div class="d-flex justify-space-between align-center mb-4">
+    <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("EditPurchaseNote")</MudText>
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+               Variant="Variant.Text"
+               Href="/purchase-notes">
+        @Localization.GetString("BackToPurchaseNotes")
+    </MudButton>
+</div>
+
 @if (_loading)
 {
     <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
@@ -25,7 +34,6 @@ else if (_model == null)
 }
 else
 {
-    <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("EditPurchaseNote")</MudText>
 
     <MudCard Elevation="2" Class="mb-4">
         <MudCardContent>
@@ -452,7 +460,7 @@ else
 
     private void Cancel()
     {
-        Navigation.NavigateTo("/purchase-notes");
+        Navigation.NavigateTo($"/purchase-notes/{Id}");
     }
 
     private class LineItemModel

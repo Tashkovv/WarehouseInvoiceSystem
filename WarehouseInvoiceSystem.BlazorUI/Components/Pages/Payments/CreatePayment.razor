@@ -43,6 +43,7 @@ else
                                    Label="@Localization.GetString("SelectInvoice")"
                                    Variant="Variant.Outlined"
                                    Required="true"
+                                   ReadOnly="_invoiceReadonly"
                                    RequiredError="@Localization.GetString("PleaseSelectInvoice")"
                                    AnchorOrigin="Origin.BottomLeft">
                             @foreach (InvoiceDto invoice in _unpaidInvoices)
@@ -192,6 +193,7 @@ else
     public Guid? PreSelectedInvoiceId { get; set; }
 
     private bool _loadingInvoices = true;
+    private bool _invoiceReadonly = false;
     private bool _saving = false;
     private string _currentCultureKey = CultureInfo.CurrentCulture.Name;
     private MudForm _form = null!;
@@ -216,6 +218,7 @@ else
         if (PreSelectedInvoiceId.HasValue)
         {
             _selectedInvoiceId = PreSelectedInvoiceId.Value;
+            _invoiceReadonly = true;
             await OnInvoiceSelected();
         }
     }

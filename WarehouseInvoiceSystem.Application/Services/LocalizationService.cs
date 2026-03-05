@@ -169,6 +169,7 @@
                 ["Page"] = "Page",
                 ["Of"] = "of",
                 ["ItemsPerPage"] = "Items per page:",
+                ["BackToDetails"] = "Back to details",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -225,6 +226,8 @@
                 ["TotalInvoicesCount"] = "Total Invoices",
                 ["Settled"] = "Settled",
                 ["ChooseCompanyType"] = "Choose company type",
+                ["PaymentTerms"] = "Payment Terms",
+                ["BalanceOverview"] = "Balance Overview",
 
                 // Invoices
                 ["Invoice"] = "Invoice",
@@ -307,6 +310,7 @@
                 ["InvalidEmailFormat"] = "Please enter a valid email address",
                 ["InvoiceEmailSentSuccessfully"] = "Invoice email sent successfully!",
                 ["ErrorSendingEmail"] = "Error sending email",
+                ["ViewInvoice"] = "View Invoice",
 
                 // Payments
                 ["Cash"] = "Cash",
@@ -346,6 +350,7 @@
                 ["NoPaymentsFound"] = "No payments found",
                 ["CreatedAt"] = "Created at",
                 ["Payment"] = "Payment",
+                ["RelatedInvoice"] = "Related Invoice",
 
                 // Export
                 ["ExportToExcel"] = "Export to Excel",
@@ -422,6 +427,7 @@
                 ["TotalTransactions"] = "Total Transactions",
                 ["TotalRevenue"] = "Total Revenue",
                 ["Profitability"] = "Profitability",
+                ["BackToProducts"] = "Back to products",
 
                 // Inventory
                 ["Inventory"] = "Inventory",
@@ -469,6 +475,11 @@
                 ["WarehouseNotFound"] = "Warehouse not found",
                 ["ActiveWarehouses"] = activeString,
                 ["NoWarehousesCreateOne"] = "You have no warehouse, create one!",
+                ["PleaseSelectWarehouse"] = "Please select a warehouse",
+                ["BackToWarehouses"] = "Back to warehouses",
+                ["SetAsDefault"] = "Set as default",
+                ["ErrorSettingDefaultWarehouse"] = "Error setting default warehouse",
+                ["WarehouseSetAsDefault"] = "Warehouse set as default",
 
                 // Individuals
                 ["Individuals"] = "Individuals",
@@ -505,6 +516,9 @@
                 ["FirstPurchase"] = "First Purchase",
                 ["MostPurchasedProduct"] = "Most Purchased Product",
                 ["RecentPurchaseNotes"] = "Recent Purchase Notes",
+                ["BackToIndividuals"] = "Back to individuals",
+                ["PaymentOverview"] = "Payment Overview",
+                ["AllPurchasesPaid"] = "All purchases paid ✓",
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Purchase Notes",
@@ -538,6 +552,7 @@
                 ["ErrorLoadingData"] = "Error loading data",
                 ["PaidDate"] = "Paid Date",
                 ["PurchaseDetails"] = "Purchase Details",
+                ["BackToPurchaseNotes"] = "Back to purchase notes",
             },
             #endregion
 
@@ -689,6 +704,7 @@
                 ["Page"] = "Страна",
                 ["Of"] = "од",
                 ["ItemsPerPage"] = "Предмети по страна:",
+                ["BackToDetails"] = "Назад кон детали",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -745,6 +761,8 @@
                 ["TotalInvoicesCount"] = "Вкупно фактури",
                 ["Settled"] = "Намирени",
                 ["ChooseCompanyType"] = "Одбери тип на компанија",
+                ["PaymentTerms"] = "Услови за Плаќање",
+                ["BalanceOverview"] = "Преглед на Салдо",
 
                 // Invoices
                 ["Invoice"] = "Фактура",
@@ -849,7 +867,7 @@
                 ["EnterNotes"] = "Внеси забелешки",
                 ["MaximumAmount"] = "Максимален износ",
                 ["RemainingBalance"] = "Преостанато салдо",
-                ["InvoiceAmount"] = "Износ на фактура",
+                ["InvoiceAmount"] = "Износ на Фактура",
                 ["AlreadyPaid"] = "Веќе платено",
                 ["PaymentExceedsBalance"] = "Износот на плаќање го надминува преостанатото салдо",
                 ["PleaseSelectInvoice"] = "Ве молиме изберете фактура",
@@ -866,6 +884,8 @@
                 ["NoPaymentsFound"] = "Нема пронајдени плаќања",
                 ["CreatedAt"] = "Извршено на",
                 ["Payment"] = "Плаќање",
+                ["RelatedInvoice"] = "Поврзана Фактура",
+                ["ViewInvoice"] = "Прегледај Фактура",
 
                 // Export
                 ["ExportToExcel"] = "Извези во Excel",
@@ -942,6 +962,7 @@
                 ["TotalTransactions"] = "Вкупно Трансакции",
                 ["TotalRevenue"] = "Вкупен Приход",
                 ["Profitability"] = "Профитабилност",
+                ["BackToProducts"] = "Назад кон производи",
 
                 // Inventory
                 ["Inventory"] = "Залиха",
@@ -989,6 +1010,11 @@
                 ["WarehouseNotFound"] = "Магацинот не е пронајден",
                 ["ActiveWarehouses"] = aktivniString,
                 ["NoWarehousesCreateOne"] = "Немате креирано магацин, креирајте!",
+                ["PleaseSelectWarehouse"] = "Ве молиме изберете магацин",
+                ["BackToWarehouses"] = "Назад кон магацини",
+                ["SetAsDefault"] = "Направи стандарден",
+                ["ErrorSettingDefaultWarehouse"] = "Се случи грешка при сетирање на стандарден магацин",
+                ["WarehouseSetAsDefault"] = "Магацинот е поставен како стандарден",
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",
@@ -1025,6 +1051,9 @@
                 ["FirstPurchase"] = "Прв Откуп",
                 ["MostPurchasedProduct"] = "Најкупуван Производ",
                 ["RecentPurchaseNotes"] = "Скорешни Откупни Белешки",
+                ["BackToIndividuals"] = "Назад кон физички лица",
+                ["PaymentOverview"] = "Преглед на Плаќања",
+                ["AllPurchasesPaid"] = "Сите откупи платени ✓",
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Откупни Белешки",
@@ -1058,6 +1087,7 @@
                 ["ErrorLoadingData"] = "Грешка при вчитување на податоците",
                 ["PaidDate"] = "Датум на Плаќање",
                 ["PurchaseDetails"] = "Детали за Откуп",
+                ["BackToPurchaseNotes"] = "Назад кон откупни белешки",
             }
             #endregion
         };

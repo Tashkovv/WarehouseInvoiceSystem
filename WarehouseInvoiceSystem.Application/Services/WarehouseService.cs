@@ -25,6 +25,34 @@
             return warehouse == null ? null : MapToDto(warehouse);
         }
 
+        public async Task<bool> SetDefaultWarehouseAsync(Guid id)
+        {
+            Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync();
+            if (defaultWarehouse == null)
+            {
+                return false;
+            }
+
+            if (defaultWarehouse.Id == id)
+            {
+                return true;
+            }
+
+            defaultWarehouse.IsDefault = false;
+            await warehouseRepository.UpdateAsync(defaultWarehouse);
+
+            Warehouse? newDefaultWarehouse = await warehouseRepository.GetByIdAsync(id);
+            if (newDefaultWarehouse == null)
+            {
+                return false;
+            }
+
+            newDefaultWarehouse.IsDefault = true;
+            Warehouse? warehouse = await warehouseRepository.UpdateAsync(newDefaultWarehouse);
+
+            return warehouse != null;
+        }
+
         public async Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto createDto)
         {
             Warehouse warehouse = new()

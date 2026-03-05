@@ -71,7 +71,8 @@
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
-                      OnRowClick="@((TableRowClickEventArgs<IndividualDto> args) => HandleRowClick(args))"
+                      RowClass="table-row-clickable"
+                      OnRowClick="@((TableRowClickEventArgs<IndividualDto> args) => OnRowClick(args))"
                       Height="600px"
                       Sort="@((SortDefinition<IndividualDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
@@ -323,7 +324,7 @@
         Navigation.NavigateTo($"/purchase-notes?individualId={id}");
     }
 
-    private void HandleRowClick(TableRowClickEventArgs<IndividualDto> args)
+    private void OnRowClick(TableRowClickEventArgs<IndividualDto> args)
     {
         if (args.MouseEventArgs.Detail == 2)
         {

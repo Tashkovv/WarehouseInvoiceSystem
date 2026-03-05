@@ -71,6 +71,8 @@
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
+                      RowClass="table-row-clickable"
+                      OnRowClick="@((TableRowClickEventArgs<CompanyDto> args) => OnRowClick(args))"
                       Height="710px"
                       Sort="@((SortDefinition<CompanyDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
@@ -113,10 +115,6 @@
                     </MudTd>
                     <MudTd DataLabel="@Localization.GetString("Actions")">
                         <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
-                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
-                                         OnClick="@(() => ViewCompany(context.Id))">
-                                @Localization.GetString("View")
-                            </MudMenuItem>
                             <MudMenuItem Icon="@Icons.Material.Filled.Edit"
                                          OnClick="@(() => EditCompany(context.Id))">
                                 @Localization.GetString("Edit")
@@ -424,5 +422,13 @@
     public void Dispose()
     {
         Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private void OnRowClick(TableRowClickEventArgs<CompanyDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+        {
+            ViewCompany(args.Item!.Id);
+        }
     }
 }

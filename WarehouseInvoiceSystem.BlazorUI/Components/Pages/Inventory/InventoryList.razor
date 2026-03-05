@@ -109,12 +109,9 @@
                     <MudTd DataLabel="@Localization.GetString("ReorderPoint")">@(context.ReorderPoint?.ToString() ?? "-")</MudTd>
                     <MudTd DataLabel="@Localization.GetString("LastRestocked")">@context.LastRestockedAt.ToLocalTime().ToString("g")</MudTd>
                     <MudTd DataLabel="@Localization.GetString("Actions")">
-                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
+                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" AnchorOrigin="Origin.CenterCenter">
                             <MudMenuItem Icon="@Icons.Material.Filled.Edit" OnClick="@(() => AdjustStock(context.ProductId, context.WarehouseId))">
                                 @Localization.GetString("AdjustStock")
-                            </MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.History" OnClick="@(() => ViewTransactions(context.ProductId))">
-                                @Localization.GetString("View")
                             </MudMenuItem>
                         </MudMenu>
                     </MudTd>
@@ -309,7 +306,7 @@
 
     private void AdjustStock(Guid productId, Guid warehouseId)
     {
-        Navigation.NavigateTo($"/inventory/adjust?productId={productId}&warehouseId={warehouseId}");
+        Navigation.NavigateTo($"/inventory/adjust/{productId}?warehouseId={warehouseId}");
     }
 
     private void PreviousPage()

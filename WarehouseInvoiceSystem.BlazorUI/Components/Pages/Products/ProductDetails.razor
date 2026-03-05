@@ -10,7 +10,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<PageTitle>@Localization.GetString("ProductDetails") - @Localization.GetString("WarehouseInvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("ProductDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
 @if (_loading)
 {
@@ -22,58 +22,95 @@ else if (_product == null)
 }
 else
 {
-    <MudGrid>
-        <!-- Header -->
-        <MudItem xs="12">
-            <MudPaper Class="pa-4 d-flex justify-space-between align-center" Elevation="0">
-                <div>
-                    <MudText Typo="Typo.h4">@_product.Name</MudText>
-                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">
-                        @Localization.GetString("Code"): <strong>@_product.Code</strong> | 
-                        @Localization.GetString("Unit"): <strong>@_product.Unit</strong> | 
-                        @Localization.GetString("Price"): <strong>@_product.DefaultPrice.ToString("C")</strong>
-                    </MudText>
-                    <MudChip T="string" 
-                             Size="Size.Small" 
-                             Color="@(_product.IsActive ? Color.Success : Color.Default)"
-                             Class="mt-2">
-                        @(_product.IsActive ? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))
-                    </MudChip>
-                </div>
-                <div>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Edit"
-                               OnClick="EditProduct">
-                        @Localization.GetString("Edit")
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Error"
-                               StartIcon="@Icons.Material.Filled.Delete"
-                               OnClick="DeleteProduct"
-                               Class="ml-2">
-                        @Localization.GetString("Delete")
-                    </MudButton>
-                </div>
-            </MudPaper>
-        </MudItem>
 
-        <!-- Description -->
-        @if (!string.IsNullOrWhiteSpace(_product.Description))
-        {
-            <MudItem xs="12">
-                <MudCard Elevation="2">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@Localization.GetString("Description")</MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudText Typo="Typo.body2">@_product.Description</MudText>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-        }
+    <div class="d-flex justify-space-between align-center mb-4">
+        <div>
+            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+                       Variant="Variant.Text"
+                       Href="/products">
+                @Localization.GetString("BackToProducts")
+            </MudButton>
+        </div>
+        <div>
+            <MudButton StartIcon="@Icons.Material.Filled.Inventory2"
+                       Color="Color.Tertiary"
+                       Variant="Variant.Filled"
+                       Href="@CreateAdjustLink()">
+                @Localization.GetString("AdjustStock")
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Edit"
+                       OnClick="EditProduct">
+                @Localization.GetString("Edit")
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="DeleteProduct"
+                       Class="ml-2">
+                @Localization.GetString("Delete")
+            </MudButton>
+        </div>
+    </div>
+    <MudGrid>
+        <!-- Product Header -->
+        <MudItem xs=12">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+                    <div class="d-flex align-center justify-space-between flex-wrap gap-4">
+                        <!-- Product Name + Status -->
+                        <div class="d-flex align-center gap-3" style="min-width: 250px;">
+                            <MudText Typo="Typo.h5" Class="mb-0">@_product.Name</MudText>
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Color="@(_product.IsActive ? Color.Success : Color.Default)">
+                                @(_product.IsActive? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))
+                            </MudChip>
+                        </div>
+
+                        <!-- Product Details -->
+                        <div class="d-flex align-center gap-4 flex-wrap">
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Tag" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2">
+                                    <strong>@_product.Code</strong>
+                                </MudText>
+                            </div>
+
+                            <MudDivider Vertical="true" FlexItem="true" Style="height: 24px;" />
+
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Scale" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2">
+                                    <strong>@_product.Unit</strong>
+                                </MudText>
+                            </div>
+
+                            <MudDivider Vertical="true" FlexItem="true" Style="height: 24px;" />
+
+                            <div class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Small" Class="mr-1" Color="Color.Success" />
+                                <MudText Typo="Typo.body2" Color="Color.Success">
+                                    <strong>@_product.DefaultPrice.ToString("C")</strong>
+                                </MudText>
+                            </div>
+                        </div>
+
+                        <!-- Description (if exists) -->
+                        @if (!string.IsNullOrWhiteSpace(_product.Description))
+                        {
+                            <div class="d-flex align-center" style="max-width: 400px;">
+                                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    @_product.Description
+                                </MudText>
+                            </div>
+                        }
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
 
         <!-- Warehouse Selector -->
         <MudItem xs="12" Class="mt-4">
@@ -410,7 +447,7 @@ else
     private bool _loading = true;
     private ProductDto? _product;
     private ProductAnalyticsDto _analytics = new();
-    
+
     private List<WarehouseDto> _warehouses = [];
     private Guid? _selectedWarehouseId = null;
 
@@ -460,11 +497,11 @@ else
             if (_product != null)
             {
                 _analytics = await ProductService.GetProductAnalyticsAsync(Id);
-                
+
                 // Load warehouses
                 IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
                 _warehouses = warehouses.ToList();
-                
+
                 // Default to null (All Warehouses)
                 _selectedWarehouseId = null;
             }
@@ -489,6 +526,16 @@ else
     private void EditProduct()
     {
         Navigation.NavigateTo($"/products/edit/{Id}");
+    }
+
+    private string CreateAdjustLink()
+    {
+        if (_selectedWarehouseId != null)
+        {
+            return $"/inventory/adjust/{Id}?warehouseId={_selectedWarehouseId}";
+        }
+
+        return $"/inventory/adjust/{Id}";
     }
 
     private async Task DeleteProduct()
