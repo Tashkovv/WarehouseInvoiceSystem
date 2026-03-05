@@ -1,0 +1,344 @@
+﻿@page "/individuals/{Id:guid}"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject IIndividualService IndividualService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("IndividualDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_individual == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("IndividualNotFound")</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <!-- Header -->
+        <MudItem xs="12">
+            <MudPaper Class="pa-4 d-flex justify-space-between align-center" Elevation="0">
+                <div>
+                    <MudText Typo="Typo.h4">@_individual.FullName</MudText>
+                    <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mt-2">
+                        @Localization.GetString("IdentificationNumber"): <strong>@_individual.IdentificationNumber</strong>
+                    </MudText>
+                    <MudChip T="string" 
+                             Size="Size.Small" 
+                             Color="@(_individual.IsActive ? Color.Success : Color.Default)"
+                             Class="mt-2">
+                        @(_individual.IsActive ? Localization.GetString("Active") : Localization.GetString("Inactive"))
+                    </MudChip>
+                </div>
+                <div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="EditIndividual">
+                        @Localization.GetString("Edit")
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="DeleteIndividual"
+                               Class="ml-2">
+                        @Localization.GetString("Delete")
+                    </MudButton>
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- Contact Information -->
+        @if (!string.IsNullOrWhiteSpace(_individual.Phone) || 
+             !string.IsNullOrWhiteSpace(_individual.Email) || 
+             !string.IsNullOrWhiteSpace(_individual.Address))
+        {
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("ContactInformation")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudStack Spacing="2">
+                            @if (!string.IsNullOrWhiteSpace(_individual.Phone))
+                            {
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                                    <MudText>@_individual.Phone</MudText>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_individual.Email))
+                            {
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                                    <MudText>@_individual.Email</MudText>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_individual.Address))
+                            {
+                                <div class="d-flex align-center">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                                    <MudText>@_individual.Address</MudText>
+                                </div>
+                            }
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
+        <!-- Payment Status Summary -->
+        <MudItem xs="12" Class="mt-4">
+            <MudText Typo="Typo.h6" Class="mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.Payment" Class="mr-2" />
+                @Localization.GetString("PaymentStatus")
+            </MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("TotalPurchases")"
+                          Value="@_analytics.TotalAmount.ToString("C")"
+                          Subtitle="@($"{_analytics.TotalPurchaseNotes} {Localization.GetString("PurchaseNotes")}")"
+                          Icon="@Icons.Material.Filled.Receipt"
+                          IconColor="Color.Info"
+                          Link="/purchase-notes" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("Paid")"
+                          Value="@_analytics.PaidAmount.ToString("C")"
+                          Subtitle="@($"{_analytics.PaidCount} {Localization.GetString("Notes")}")"
+                          Icon="@Icons.Material.Filled.CheckCircle"
+                          IconColor="Color.Success"
+                          Link="/purchase-notes" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("Unpaid")"
+                          Value="@_analytics.UnpaidAmount.ToString("C")"
+                          Subtitle="@($"{_analytics.UnpaidCount} {Localization.GetString("Notes")}")"
+                          Icon="@Icons.Material.Filled.Warning"
+                          IconColor="@(_analytics.UnpaidCount > 0 ? Color.Error : Color.Default)"
+                          Link="/purchase-notes" />
+        </MudItem>
+
+        <!-- Purchase History Summary -->
+        <MudItem xs="12" Class="mt-6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("PurchaseHistory")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("FirstPurchase")</MudText>
+                            <MudText Typo="Typo.h6">
+                                @(_analytics.FirstPurchaseDate?.ToString("dd MMM yyyy") ?? "-")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("LastPurchase")</MudText>
+                            <MudText Typo="Typo.h6">
+                                @(_analytics.LastPurchaseDate?.ToString("dd MMM yyyy") ?? "-")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MostPurchasedProduct")</MudText>
+                            <MudText Typo="Typo.h6">
+                                @if (!string.IsNullOrEmpty(_analytics.MostPurchasedProduct))
+                                {
+                                    <span>@_analytics.MostPurchasedProduct</span>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Inline="true">
+                                        (@_analytics.MostPurchasedProductQuantity.ToString("N2") @_analytics.MostPurchasedProductUnit)
+                                    </MudText>
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Recent Purchase Notes -->
+        <MudItem xs="12" Class="mt-6">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentPurchaseNotes")</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudButton Href="@($"/purchase-notes?individualId={Id}")" 
+                                  Color="Color.Primary" 
+                                  Variant="Variant.Text"
+                                  EndIcon="@Icons.Material.Filled.ArrowForward">
+                            @Localization.GetString("ViewAllPurchaseNotes")
+                        </MudButton>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    @if (_analytics.RecentPurchaseNotes.Any())
+                    {
+                        <MudTable Items="_analytics.RecentPurchaseNotes" 
+                                  Hover="true" 
+                                  Dense="true"
+                                  Elevation="0"
+                                  T="RecentPurchaseNoteDto"
+                                  OnRowClick="@((TableRowClickEventArgs<RecentPurchaseNoteDto> args) => ViewPurchaseNote(args))">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("NoteNumber")</MudTh>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
+                                <MudTh>@Localization.GetString("Status")</MudTh>
+                                <MudTh>@Localization.GetString("Actions")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("NoteNumber")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.NoteNumber</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    @context.PurchaseDate.ToString("dd MMM yyyy")
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                        @context.TotalAmount.ToString("C")
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Status")">
+                                    @if (context.Status == PurchaseNoteStatus.Paid.ToString())
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Success">@Localization.GetString("Paid")</MudChip>
+                                    }
+                                    else if (context.Status == PurchaseNoteStatus.Completed.ToString())
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Info">@Localization.GetString("Completed")</MudChip>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Default">@Localization.GetString("Draft")</MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Actions")" @onclick:stopPropagation="true">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/{context.Id}"))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Receipt" 
+                                    Size="Size.Large" 
+                                    Color="Color.Secondary" 
+                                    Class="mb-2" />
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private IndividualDto? _individual;
+    private IndividualAnalyticsDto _analytics = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadIndividual();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadIndividual()
+    {
+        _loading = true;
+
+        try
+        {
+            _individual = await IndividualService.GetIndividualByIdAsync(Id);
+            if (_individual != null)
+            {
+                _analytics = await IndividualService.GetIndividualAnalyticsAsync(Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading individual: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingIndividual"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ViewPurchaseNote(TableRowClickEventArgs<RecentPurchaseNoteDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+        {
+            Navigation.NavigateTo($"/purchase-notes/{args.Item!.Id}");
+        }
+    }
+
+    private void EditIndividual()
+    {
+        Navigation.NavigateTo($"/individuals/edit/{Id}");
+    }
+
+    private async Task DeleteIndividual()
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteIndividualConfirm"),
+            yesText: Localization.GetString("Yes"),
+            cancelText: Localization.GetString("No"));
+
+        if (result == true)
+        {
+            try
+            {
+                bool deleted = await IndividualService.DeleteIndividualAsync(Id);
+                if (deleted)
+                {
+                    Snackbar.Add(Localization.GetString("IndividualDeleted"), Severity.Success);
+                    Navigation.NavigateTo("/individuals");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting individual: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorDeletingIndividual"), Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

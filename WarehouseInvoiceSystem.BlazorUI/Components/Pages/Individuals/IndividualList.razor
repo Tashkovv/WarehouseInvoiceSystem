@@ -71,6 +71,7 @@
                       Breakpoint="Breakpoint.Sm"
                       Dense="false"
                       FixedHeader="true"
+                      OnRowClick="@((TableRowClickEventArgs<IndividualDto> args) => HandleRowClick(args))"
                       Height="600px"
                       Sort="@((SortDefinition<IndividualDto> sortDefinition) => HandleSort(sortDefinition))">
                 <HeaderContent>
@@ -320,6 +321,19 @@
     private void ViewPurchaseNotes(Guid id)
     {
         Navigation.NavigateTo($"/purchase-notes?individualId={id}");
+    }
+
+    private void HandleRowClick(TableRowClickEventArgs<IndividualDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+        {
+            ViewIndividual(args.Item!.Id);
+        }
+    }
+
+    private void ViewIndividual(Guid id)
+    {
+        Navigation.NavigateTo($"/individuals/{id}");
     }
 
     private async Task DeleteIndividual(Guid id)

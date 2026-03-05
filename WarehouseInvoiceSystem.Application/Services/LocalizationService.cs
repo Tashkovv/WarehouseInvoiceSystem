@@ -499,6 +499,12 @@
                 ["InactiveIndividuals"] = inactiveString,
                 ["ActiveIndividual"] = activeString,
                 ["InactiveIndividual"] = inactiveString,
+                ["ContactInformation"] = "Contact Information",
+                ["PaymentStatus"] = "Payment Status",
+                ["PurchaseHistory"] = "Purchase History",
+                ["FirstPurchase"] = "First Purchase",
+                ["MostPurchasedProduct"] = "Most Purchased Product",
+                ["RecentPurchaseNotes"] = "Recent Purchase Notes",
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Purchase Notes",
@@ -1013,6 +1019,12 @@
                 ["InactiveIndividuals"] = "Неактивни",
                 ["ActiveIndividual"] = "Активен",
                 ["InactiveIndividual"] = "Неактивен",
+                ["ContactInformation"] = "Контакт Информации",
+                ["PaymentStatus"] = "Статус на Плаќање",
+                ["PurchaseHistory"] = "Историја на Откупи",
+                ["FirstPurchase"] = "Прв Откуп",
+                ["MostPurchasedProduct"] = "Најкупуван Производ",
+                ["RecentPurchaseNotes"] = "Скорешни Откупни Белешки",
 
                 // Purchase Notes
                 ["PurchaseNotes"] = "Откупни Белешки",

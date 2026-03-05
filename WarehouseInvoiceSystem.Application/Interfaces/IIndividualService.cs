@@ -8,6 +8,7 @@
         Task<IEnumerable<IndividualDto>> GetActiveIndividualsAsync();
         Task<IndividualDto?> GetIndividualByIdAsync(Guid id);
         Task<IndividualDto?> GetIndividualByIdentificationNumberAsync(string identificationNumber);
+        Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId);
         Task<IndividualDto> CreateIndividualAsync(CreateIndividualDto createDto);
         Task<IndividualDto> UpdateIndividualAsync(Guid id, UpdateIndividualDto updateDto);
         Task<bool> DeleteIndividualAsync(Guid id);
