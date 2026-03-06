@@ -13,6 +13,8 @@
                                 IInvoiceRepository invoiceRepository,
                                 IPurchaseNoteRepository purchaseNoteRepository) : IProductService
     {
+        private const string reversalString = "_Reversal";
+
         public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
         {
             IEnumerable<Product> products = await productRepository.GetAllAsync();
@@ -75,27 +77,45 @@
         {
             var result = new ProductTransactionHistoryDto();
 
+            // Only show documents that have live (non-reversed) inventory transactions
+            IEnumerable<InventoryTransactionDto> allTransactions = await inventoryService.GetTransactionsByProductAsync(productId);
+
+            var reversalSourceIds = allTransactions
+                .Where(t => t.SourceDocumentType != null && t.SourceDocumentType.EndsWith(reversalString))
+                .Select(t => t.SourceDocumentId)
+                .ToHashSet();
+
+            var liveDocumentIds = allTransactions
+                .Where(t => t.SourceDocumentType != null
+                         && !t.SourceDocumentType.EndsWith(reversalString)
+                         && !reversalSourceIds.Contains(t.SourceDocumentId))
+                .Select(t => t.SourceDocumentId)
+                .ToHashSet();
+
             IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository
                 .GetLineItemsByProductIdAsync(productId);
 
-            result.Purchased = purchaseLines.Select(li => new ProductTransactionRowDto
-            {
-                Date = li.PurchaseNote.PurchaseDate,
-                DocumentNumber = li.PurchaseNote.NoteNumber,
-                DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
-                PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
-                WarehouseId = li.PurchaseNote.WarehouseId,
-                WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
-                Quantity = li.Quantity,
-                UnitPrice = li.UnitPrice,
-                TotalPrice = li.Amount
-            }).ToList();
+            result.Purchased = purchaseLines
+                .Where(li => liveDocumentIds.Contains(li.PurchaseNoteId))
+                .Select(li => new ProductTransactionRowDto
+                {
+                    Date = li.PurchaseNote.PurchaseDate,
+                    DocumentNumber = li.PurchaseNote.NoteNumber,
+                    DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
+                    PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
+                    WarehouseId = li.PurchaseNote.WarehouseId,
+                    WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
+                    Quantity = li.Quantity,
+                    UnitPrice = li.UnitPrice,
+                    TotalPrice = li.Amount
+                }).ToList();
 
             IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository
                 .GetLineItemsByProductIdAsync(productId);
 
             result.Purchased.AddRange(invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Payable)
+                .Where(li => li.Invoice.Type == InvoiceType.Payable
+                          && liveDocumentIds.Contains(li.InvoiceId))
                 .Select(li => new ProductTransactionRowDto
                 {
                     Date = li.Invoice.IssueDate,
@@ -110,7 +130,8 @@
                 }));
 
             result.Sold = invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Receivable)
+                .Where(li => li.Invoice.Type == InvoiceType.Receivable
+                          && liveDocumentIds.Contains(li.InvoiceId))
                 .Select(li => new ProductTransactionRowDto
                 {
                     Date = li.Invoice.IssueDate,
@@ -288,9 +309,21 @@
             try
             {
                 IEnumerable<InventoryTransactionDto> transactions = await inventoryService.GetTransactionsByProductAsync(productId);
-                analytics.TotalTransactions = transactions.Count();
 
-                analytics.RecentTransactions = transactions
+                var reversalSourceIds = transactions
+                    .Where(t => t.SourceDocumentType != null && t.SourceDocumentType.EndsWith(reversalString))
+                    .Select(t => t.SourceDocumentId)
+                    .ToHashSet();
+
+                var meaningfulTransactions = transactions
+                    .Where(t => t.SourceDocumentType == null
+                             || (!t.SourceDocumentType.EndsWith(reversalString)
+                                 && !reversalSourceIds.Contains(t.SourceDocumentId)))
+                    .ToList();
+
+                analytics.TotalTransactions = meaningfulTransactions.Count;
+
+                analytics.RecentTransactions = meaningfulTransactions
                     .OrderByDescending(t => t.CreatedAt)
                     .Take(10)
                     .Select(t => new RecentTransactionDto

@@ -55,6 +55,14 @@
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
 
+        public async Task<bool> HasTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType)
+        {
+            return await context.InventoryTransactions
+                .AnyAsync(t => t.SourceDocumentId == sourceDocumentId &&
+                               t.SourceDocumentType == sourceDocumentType &&
+                               t.DeletedOn == null);
+        }
+
         public async Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction)
         {
             transaction.CreatedAt = DateTime.UtcNow;

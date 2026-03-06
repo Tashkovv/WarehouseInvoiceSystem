@@ -136,6 +136,7 @@
                 ["ByTotalSpend"] = "By total spend",
                 ["ByTotalRevenue"] = "By total revenue",
                 ["TotalSpend"] = "Total Spend",
+                ["PayableInvoicesToday"] = "Payable invoices today",
 
                 // Status
                 ["Draft"] = "Draft",
@@ -181,6 +182,7 @@
                 ["BackToDetails"] = "Back to details",
                 ["Name"] = "Name",
                 ["Created"] = "Created",
+                ["Deleted"] = "Deleted",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -322,6 +324,8 @@
                 ["InvoiceEmailSentSuccessfully"] = "Invoice email sent successfully!",
                 ["ErrorSendingEmail"] = "Error sending email",
                 ["ViewInvoice"] = "View Invoice",
+                ["InvoiceCancelled"] = "Cancelled invoice",
+                ["InvoiceIsDeleted"] = "Deleted invoice",
 
                 // Payments
                 ["Cash"] = "Cash",
@@ -362,6 +366,8 @@
                 ["CreatedAt"] = "Created at",
                 ["Payment"] = "Payment",
                 ["RelatedInvoice"] = "Related Invoice",
+                ["PaymentsRemovedFromInvoice"] = "All payments removed from invoice",
+                ["RevertToDraft"] = "reverting to Draft",
 
                 // Export
                 ["ExportToExcel"] = "Export to Excel",
@@ -572,6 +578,7 @@
                 ["BackToPurchaseNotes"] = "Back to purchase notes",
                 ["Items"] = "items",
                 ["UnitsTotal"] = "units total",
+                ["PurchaseNoteIsDeleted"] = "Deleted purchase note",
             },
             #endregion
 
@@ -691,6 +698,7 @@
                 ["ByTotalSpend"] = "По вкупна потрошувачка",
                 ["ByTotalRevenue"] = "По вкупен приход",
                 ["TotalSpend"] = "Вкупна потрошувачка",
+                ["PayableInvoicesToday"] = "Фактури за плаќање денес",
 
                 // Status
                 ["Draft"] = "Нацрт",
@@ -736,6 +744,7 @@
                 ["BackToDetails"] = "Назад кон детали",
                 ["Name"] = "Име",
                 ["Created"] = "Креирано",
+                ["Deleted"] = "Избришено",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -876,6 +885,8 @@
                 ["InvalidEmailFormat"] = "Внесете важечка е-пошта",
                 ["InvoiceEmailSentSuccessfully"] = "Фактурата е успешно испратена по е-пошта!",
                 ["ErrorSendingEmail"] = "Се случи грешка при испраќањето е-пошта",
+                ["InvoiceCancelled"] = "Откажана фактура",
+                ["InvoiceIsDeleted"] = "Избришена фактура",
 
                 // Payments
                 ["Cash"] = "Готовина",
@@ -917,6 +928,8 @@
                 ["Payment"] = "Плаќање",
                 ["RelatedInvoice"] = "Поврзана Фактура",
                 ["ViewInvoice"] = "Прегледај Фактура",
+                ["PaymentsRemovedFromInvoice"] = "Сите плаќања се избришани за фактурата",
+                ["RevertToDraft"] = "враќање на Нацрт",
 
                 // Export
                 ["ExportToExcel"] = "Извези во Excel",
@@ -1127,6 +1140,7 @@
                 ["BackToPurchaseNotes"] = "Назад кон откупни белешки",
                 ["Items"] = "ставки",
                 ["UnitsTotal"] = "единици вкупно",
+                ["PurchaseNoteIsDeleted"] = "Избришана откупна белешка",
             }
             #endregion
         };

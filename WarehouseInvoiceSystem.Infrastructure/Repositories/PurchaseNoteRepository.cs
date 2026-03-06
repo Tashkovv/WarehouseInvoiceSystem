@@ -15,6 +15,7 @@
                 .Include(pn => pn.Individual)
                 .Include(pn => pn.Warehouse)
                 .Include(pn => pn.LineItems)
+                    .ThenInclude(li => li.Product)
                 .OrderByDescending(pn => pn.PurchaseDate)
                 .ToListAsync();
         }
@@ -46,6 +47,8 @@
             return await context.PurchaseNotes
                 .Where(pn => pn.DeletedOn == null && pn.IndividualId == individualId)
                 .Include(pn => pn.Individual)
+                .Include(pn => pn.LineItems)
+                    .ThenInclude(li => li.Product)
                 .OrderByDescending(pn => pn.PurchaseDate)
                 .ToListAsync();
         }
@@ -67,6 +70,8 @@
             return await context.PurchaseNotes
                 .Where(pn => pn.DeletedOn == null && pn.Status == status)
                 .Include(pn => pn.Individual)
+                .Include(pn => pn.LineItems)
+                    .ThenInclude(li => li.Product)
                 .OrderByDescending(pn => pn.PurchaseDate)
                 .ToListAsync();
         }
@@ -74,7 +79,9 @@
         public async Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId)
         {
             return await context.PurchaseNoteLines
-                .Where(li => li.ProductId == productId && li.DeletedOn == null)
+                .Where(li => li.ProductId == productId &&
+                             li.DeletedOn == null &&
+                             li.PurchaseNote.DeletedOn == null)
                 .Include(li => li.PurchaseNote)
                     .ThenInclude(pn => pn.Individual)
                 .Include(li => li.PurchaseNote)

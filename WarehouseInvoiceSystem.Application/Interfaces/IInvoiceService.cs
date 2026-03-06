@@ -1,6 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Interfaces
 {
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
+    using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
 
     public interface IInvoiceService
@@ -15,7 +16,9 @@
         Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createDto);
         Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
         Task<bool> DeleteInvoiceAsync(Guid id);
-        Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus status);
+        Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus newStatus);
         Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync();
+        Task CreateInventoryTransactionsIfNeededAsync(Invoice invoice);
+        Task CreateReverseTransactionsIfNeeded(Invoice invoice, string? reason = null);
     }
 }

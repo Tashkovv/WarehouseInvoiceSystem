@@ -405,7 +405,7 @@ else
                                     <MudIcon Icon="@Icons.Material.Filled.Savings" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("EstimatedProfit")</MudText>
                                 </div>
-                                <MudText Typo="Typo.h6" Color="Color.Success">
+                                <MudText Typo="Typo.h6" Color="@(_scopedEstimatedProfit > 0 ? Color.Success : Color.Error)">
                                     @_scopedEstimatedProfit.ToString("C")
                                 </MudText>
                             </div>
@@ -427,7 +427,7 @@ else
                 <MudCardContent Class="pa-0">
                     @if (_filteredTransactions.Any())
                     {
-                        <MudTable Items="_filteredTransactions.Take(10)"
+                        <MudTable Items="_filteredTransactions.Take(5)"
                                   Hover="true"
                                   Breakpoint="Breakpoint.Sm"
                                   Dense="true"

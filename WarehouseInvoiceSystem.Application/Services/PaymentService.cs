@@ -7,7 +7,11 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
 
     public class PaymentService(IPaymentRepository paymentRepository,
-                                IInvoiceRepository invoiceRepository) : IPaymentService
+                                IInvoiceRepository invoiceRepository,
+                                IInvoiceService invoiceService,
+                                IInventoryService inventoryService,
+                                IInventoryTransactionRepository transactionRepository,
+                                ILocalizationService localizationService) : IPaymentService
     {
         public async Task<IEnumerable<PaymentDto>> GetAllPaymentsAsync()
         {
@@ -59,6 +63,8 @@
             // Update invoice paid amount and status
             invoice.AmountPaid += created.Amount;
 
+            InvoiceStatus oldStatus = invoice.Status;
+
             // Update status based on payment
             if (invoice.AmountPaid >= invoice.TotalAmount)
             {
@@ -70,6 +76,11 @@
             }
 
             await invoiceRepository.UpdateAsync(invoice);
+
+            if (oldStatus == InvoiceStatus.Draft)
+            {
+                await invoiceService.CreateInventoryTransactionsIfNeededAsync(invoice);
+            }
 
             PaymentDto paymentDto = MapToDto(created);
             return paymentDto;
@@ -130,19 +141,71 @@
             if (payment == null)
                 return false;
 
-            // payment.Invoice is already loaded via include in GetByIdAsync
+            // payment.Invoice is loaded via include in GetByIdAsync
             Invoice? invoice = payment.Invoice;
             if (invoice != null)
             {
                 invoice.AmountPaid -= payment.Amount;
-                invoice.Status = invoice.AmountPaid <= 0
-                    ? InvoiceStatus.Sent
-                    : InvoiceStatus.PartiallyPaid;
+
+                if (invoice.AmountPaid <= 0)
+                {
+                    invoice.AmountPaid = 0;
+
+                    // Check whether transactions exist for this invoice.
+                    bool hasTransactions = await transactionRepository
+                        .HasTransactionsForDocumentAsync(invoice.Id, "Invoice");
+
+                    if (hasTransactions)
+                    {
+                        bool invoiceWasNeverSent = invoice.Status is InvoiceStatus.Paid
+                                                                  or InvoiceStatus.PartiallyPaid
+                            && !await InvoiceHadSentStatusAsync(invoice);
+
+                        if (invoiceWasNeverSent)
+                        {
+                            // Reverse the stock movements — invoice never formally left Draft
+                            string reason = $"{localizationService.GetString("PaymentsRemovedFromInvoice")} {invoice.InvoiceNumber} — {localizationService.GetString("RevertToDraft")}";
+                            await invoiceService.CreateReverseTransactionsIfNeeded(invoice, reason);
+
+                            invoice.Status = InvoiceStatus.Draft;
+                        }
+                        else
+                        {
+                            // Invoice was formally Sent before payments; stock correctly moved.
+                            // Revert to Sent (awaiting payment again).
+                            invoice.Status = InvoiceStatus.Sent;
+                        }
+                    }
+                    else
+                    {
+                        // No transactions at all — invoice was Draft and had only a payment.
+                        // Edge case: payment was deleted before transactions were somehow created.
+                        invoice.Status = InvoiceStatus.Draft;
+                    }
+                }
+                else
+                {
+                    // Still has remaining paid amount — keep as PartiallyPaid.
+                    invoice.Status = InvoiceStatus.PartiallyPaid;
+                }
 
                 await invoiceRepository.UpdateAsync(invoice);
             }
 
             return await paymentRepository.DeleteAsync(id);
+        }
+
+        private async Task<bool> InvoiceHadSentStatusAsync(Invoice invoice)
+        {
+            IEnumerable<Payment> remainingPayments =
+                await paymentRepository.GetByInvoiceIdAsync(invoice.Id);
+
+            // remainingPayments at this point already excludes the soft-deleted one
+            // because GetByInvoiceIdAsync filters DeletedOn == null.
+            if (remainingPayments.Any())
+                return true; // still has payments — treat as "was properly sent"
+
+            return false;
         }
 
         private static PaymentDto MapToDto(Payment payment)

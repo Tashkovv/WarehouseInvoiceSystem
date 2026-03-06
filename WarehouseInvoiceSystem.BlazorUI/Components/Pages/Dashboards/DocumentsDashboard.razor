@@ -40,25 +40,34 @@ else
             </div>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
                            Value="@_purchaseNotesDay.Count().ToString()"
-                           Subtitle="@_amountToPayDay.ToString("C")"
+                           Subtitle="@_purchaseNotesDay.Sum(pn => pn.TotalAmount).ToString("C")"
                            Icon="@Icons.Material.Filled.Receipt"
                            IconColor="Color.Info"
                            Link="/purchase-notes" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
-            <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
-                           Value="@_invoicesDay.Count().ToString()"
-                           Subtitle="@_amountToReceiveDay.ToString("C")"
-                           Icon="@Icons.Material.Filled.RequestQuote"
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("PayableInvoicesToday")"
+                           Value="@_invoicesPayableDay.Count().ToString()"
+                           Subtitle="@_amountPayableInvoicesDay.ToString("C")"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Warning"
                            Link="/invoices" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
+                           Value="@_invoicesReceivableDay.Count().ToString()"
+                           Subtitle="@_amountToReceiveDay.ToString("C")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Success"
+                           Link="/invoices" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("Profit")"
                            Value="@_profitDay.ToString("C")"
                            Icon="@Icons.Material.Filled.TrendingUp"
@@ -113,7 +122,7 @@ else
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
                            Value="@_attentionCount.ToString()"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="Color.Error"
+                           IconColor="@(_attentionCount > 0 ? Color.Error : Color.Default)"
                            Link="@($"/invoices?status={InvoiceStatus.Overdue}")" />
         </MudItem>
 
@@ -191,8 +200,8 @@ else
                         }
                         else
                         {
-                            <div class="pa-6 text-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                            <div class="pa-6 text-center d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Large" Color="Color.Secondary" Class="mb-2 mr-2" />
                                 <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
                             </div>
                         }
@@ -240,6 +249,7 @@ else
                                 <HeaderContent>
                                     <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
                                     <MudTh>@Localization.GetString("Company")</MudTh>
+                                    <MudTh>@Localization.GetString("Type")</MudTh>
                                     <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
                                     <MudTh>@Localization.GetString("Date")</MudTh>
                                     <MudTh>@Localization.GetString("Status")</MudTh>
@@ -250,6 +260,13 @@ else
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Company")">
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CompanyName</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Type")">
+                                        <MudChip T="string"
+                                                 Size="Size.Small"
+                                                 Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
+                                            @(Localization.GetString(context.Type.ToString()))
+                                        </MudChip>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
                                         <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
@@ -267,8 +284,8 @@ else
                         }
                         else
                         {
-                            <div class="pa-6 text-center">
-                                <MudIcon Icon="@Icons.Material.Filled.RequestQuote" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                            <div class="pa-6 text-center d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.RequestQuote" Size="Size.Large" Color="Color.Secondary" Class="mb-2 mr-2" />
                                 <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
                             </div>
                         }
@@ -347,8 +364,8 @@ else
                         }
                         else
                         {
-                            <div class="pa-6 text-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                            <div class="pa-6 text-center d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Large" Color="Color.Secondary" Class="mb-2 mr-2" />
                                 <MudText Color="Color.Secondary">@Localization.GetString("NoPaymentsFound")</MudText>
                             </div>
                         }
@@ -396,13 +413,16 @@ else
     private IEnumerable<InvoiceDto> _invoicesReceivableDay =>
         _invoicesDay.Where(i => i.Type == InvoiceType.Receivable);
 
-    private decimal _amountToPayDay =>
-        _purchaseNotesDay.Sum(pn => pn.TotalAmount) + _invoicesPayableDay.Sum(i => i.TotalAmount);
+    private decimal _amountPurchaseNotesDay =>
+        _purchaseNotesDay.Sum(pn => pn.TotalAmount);
 
     private decimal _amountToReceiveDay =>
         _invoicesReceivableDay.Sum(i => i.TotalAmount);
 
-    private decimal _profitDay => _amountToReceiveDay - _amountToPayDay;
+    private decimal _amountPayableInvoicesDay =>
+        _invoicesPayableDay.Sum(i => i.TotalAmount);
+
+    private decimal _profitDay => _amountToReceiveDay - _amountPurchaseNotesDay - _amountPayableInvoicesDay;
 
     // ── Month computed ──
     private IEnumerable<PurchaseNoteDto> _purchaseNotesMonth =>

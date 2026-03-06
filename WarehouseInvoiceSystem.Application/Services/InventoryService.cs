@@ -177,6 +177,39 @@
             await stockLevelRepository.UpdateAsync(stockLevel);
         }
 
+        public async Task ReverseTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, string reason)
+        {
+            IEnumerable<InventoryTransaction> existing = await transactionRepository
+                .GetBySourceDocumentAsync(sourceDocumentId, sourceDocumentType);
+
+            foreach (InventoryTransaction original in existing)
+            {
+                // Create the mirror-image transaction
+                InventoryTransactionType reversalType = original.Type switch
+                {
+                    InventoryTransactionType.Outbound => InventoryTransactionType.Inbound,
+                    InventoryTransactionType.Inbound => InventoryTransactionType.Outbound,
+                    InventoryTransactionType.TransferIn => InventoryTransactionType.TransferOut,
+                    InventoryTransactionType.TransferOut => InventoryTransactionType.TransferIn,
+                    _ => InventoryTransactionType.Adjustment
+                };
+
+                InventoryTransaction reversal = new()
+                {
+                    ProductId = original.ProductId,
+                    WarehouseId = original.WarehouseId,
+                    Type = reversalType,
+                    Quantity = original.Quantity,
+                    SourceDocumentId = sourceDocumentId,
+                    SourceDocumentType = $"{sourceDocumentType}_Reversal",
+                    Note = reason
+                };
+
+                InventoryTransaction created = await transactionRepository.CreateAsync(reversal);
+                await UpdateStockFromTransactionAsync(created);
+            }
+        }
+
         private static StockLevelDto MapStockLevelToDto(StockLevel stockLevel)
         {
             return new StockLevelDto

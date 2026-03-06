@@ -12,8 +12,11 @@
         IWarehouseRepository warehouseRepository,
         IProductRepository productRepository,
         IInventoryService inventoryService,
-        ILocalizationService localizationService) : IPurchaseNoteService
+        ILocalizationService localizationService,
+        IInventoryTransactionRepository transactionRepository) : IPurchaseNoteService
     {
+        private const string purchaseNoteString = "PurchaseNote";
+
         public async Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync()
         {
             IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetAllAsync();
@@ -113,11 +116,8 @@
 
             PurchaseNote created = await purchaseNoteRepository.CreateAsync(purchaseNote);
 
-            // Create inventory transactions if completed/paid
-            if (created.Status == PurchaseNoteStatus.Completed || created.Status == PurchaseNoteStatus.Paid)
-            {
-                await CreateInventoryTransactionsAsync(created);
-            }
+            // Goods are received at creation time — always create inbound transactions.
+            await CreateInventoryTransactionsAsync(created);
 
             return MapToDto(created);
         }
@@ -143,13 +143,6 @@
             // Track status change for inventory transactions
             PurchaseNoteStatus oldStatus = purchaseNote.Status;
             PurchaseNoteStatus newStatus = updateDto.Status;
-            bool shouldCreateTransactions = false;
-
-            // Determine if we need to create inventory transactions
-            if (oldStatus == PurchaseNoteStatus.Draft && (newStatus == PurchaseNoteStatus.Completed || newStatus == PurchaseNoteStatus.Paid))
-            {
-                shouldCreateTransactions = true;
-            }
 
             // Update properties
             purchaseNote.IndividualId = updateDto.IndividualId;
@@ -181,10 +174,21 @@
 
             PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(purchaseNote);
 
-            // Create inventory transactions if completed/paid
-            if (shouldCreateTransactions)
+            // ── Inventory logic ──────────────────────────────────────────────────────
+            //
+            // Only create transactions if moving out of Draft for the first time.
+            // HasTransactionsForDocumentAsync guards against duplicates.
+            //
+            // Completed → Paid: purely financial, no stock movement.
+            // Completed → Completed or Paid → Paid: no change needed.
+            if (oldStatus == PurchaseNoteStatus.Draft &&
+               (newStatus == PurchaseNoteStatus.Completed || newStatus == PurchaseNoteStatus.Paid))
             {
-                await CreateInventoryTransactionsAsync(updated);
+                bool alreadyCreated = await transactionRepository
+                    .HasTransactionsForDocumentAsync(updated.Id, purchaseNoteString);
+
+                if (!alreadyCreated)
+                    await CreateInventoryTransactionsAsync(updated);
             }
 
             return MapToDto(updated);
@@ -192,18 +196,55 @@
 
         public async Task<bool> DeletePurchaseNoteAsync(Guid id)
         {
+            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id);
+            if (note == null)
+                return false;
+
+            bool hasTransactions = await transactionRepository
+                .HasTransactionsForDocumentAsync(id, purchaseNoteString);
+
+            if (hasTransactions)
+            {
+                // Reverse the inbound stock movements — goods are being "un-received"
+                await inventoryService.ReverseTransactionsForDocumentAsync(
+                    id,
+                    purchaseNoteString,
+                    $"{localizationService.GetString("PurchaseNoteDeleted")}: {note.NoteNumber}");
+            }
+
             return await purchaseNoteRepository.DeleteAsync(id);
         }
+
+        // ── MarkAsPaid ────────────────────────────────────────────────────────────────
+        //
+        // Marks a Completed purchase note as Paid. This is a purely financial status
+        // change — the goods were already received and accounted for in stock when the
+        // note was first created (Completed). No new inventory transaction is needed.
 
         public async Task<PurchaseNoteDto> MarkAsPaidAsync(Guid id)
         {
             PurchaseNote? purchaseNote = await purchaseNoteRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
 
+            // Guard: only Completed notes can be marked as paid this way.
+            // Draft notes should go through the full update flow.
+            if (purchaseNote.Status == PurchaseNoteStatus.Draft)
+                throw new InvalidOperationException(
+                    $"Purchase note {purchaseNote.NoteNumber} is still a Draft. " +
+                    "Complete it before marking as paid.");
+
+            if (purchaseNote.Status == PurchaseNoteStatus.Paid)
+                throw new InvalidOperationException(
+                    $"Purchase note {purchaseNote.NoteNumber} is already paid.");
+
             purchaseNote.Status = PurchaseNoteStatus.Paid;
             purchaseNote.PaidDate = DateTime.UtcNow;
 
             PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(purchaseNote);
+
+            // No inventory transaction — this is financial settlement only.
+            // Stock was adjusted when the note was created as Completed.
+
             return MapToDto(updated);
         }
 
@@ -219,7 +260,7 @@
                     Type = InventoryTransactionType.Inbound,
                     Quantity = line.Quantity,
                     SourceDocumentId = purchaseNote.Id,
-                    SourceDocumentType = "PurchaseNote",
+                    SourceDocumentType = purchaseNoteString,
                     Note = $"{localizationService.GetString("PurchaseFrom")} {purchaseNote.Individual.FullName} - {purchaseNote.NoteNumber}"
                 });
             }
