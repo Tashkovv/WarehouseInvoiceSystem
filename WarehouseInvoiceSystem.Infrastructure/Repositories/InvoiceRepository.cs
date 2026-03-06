@@ -15,6 +15,7 @@
                 .Where(i => i.DeletedOn == null)
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
+                  .ThenInclude(li => li.Product)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -24,6 +25,7 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
+                  .ThenInclude(li => li.Product)
                 .Where(i => i.CompanyId == companyId && i.DeletedOn == null)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
@@ -34,6 +36,7 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
+                  .ThenInclude(li => li.Product)
                 .Where(i => i.Type == type)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
@@ -44,6 +47,7 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
+                  .ThenInclude(li => li.Product)
                 .Where(i => i.DeletedOn == null && i.Status == status)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
@@ -55,6 +59,7 @@
             return await context.Invoices
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
+                  .ThenInclude(li => li.Product)
                 .Where(i => i.DeletedOn == null &&
                             i.DueDate < today &&
                             i.Status != InvoiceStatus.Paid &&
@@ -69,6 +74,7 @@
                 .Where(i => i.DeletedOn == null)
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
+                  .ThenInclude(li => li.Product)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.Id == id);
         }

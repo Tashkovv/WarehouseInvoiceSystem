@@ -245,9 +245,10 @@
                     Id = li.Id,
                     PurchaseNoteId = li.PurchaseNoteId,
                     ProductId = li.ProductId,
-                    ProductCode = li.Product?.Code ?? string.Empty,
-                    ProductName = li.Product?.Name ?? string.Empty,
-                    Description = li.Description,
+                    ProductCode = li.Product.Code,
+                    ProductName = li.Product.Name,
+                    ProductUnit = li.Product.Unit,
+                    Description = li.Product.Description ?? string.Empty,
                     Quantity = li.Quantity,
                     UnitPrice = li.UnitPrice,
                     Amount = li.Amount

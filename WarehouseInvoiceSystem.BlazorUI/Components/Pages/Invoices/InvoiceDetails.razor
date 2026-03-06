@@ -40,7 +40,7 @@ else
                        Variant="Variant.Filled"
                        Class="mr-2"
                        Disabled="@(_sendingEmail)"
-                       hidden="@(_hideEmailButton)"
+                       hidden="@(!_showEmailButton)"
                        OnClick="OpenSendEmailDialog">
                 @if (_sendingEmail)
                 {
@@ -130,13 +130,33 @@ else
                                     <MudText Typo="Typo.h3" Color="Color.Primary" Class="mb-0">
                                         @_invoice.TotalAmount.ToString("C")
                                     </MudText>
-                                    @if (_invoice.AmountDue > 0)
-                                    {
-                                        <MudText Typo="Typo.body2" Color="Color.Error">
-                                            @Localization.GetString("AmountDue"): @_invoice.AmountDue.ToString("C")
-                                        </MudText>
-                                    }
                                 </div>
+
+                                <MudDivider />
+
+                                <!-- Paid + Due -->
+                                <MudStack Row="true" Spacing="3">
+                                    <div style="flex: 1;">
+                                        <div class="d-flex align-center mb-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" Color="Color.Success" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("AmountPaid")</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-medium">
+                                            @_invoice.AmountPaid.ToString("C")
+                                        </MudText>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div class="d-flex align-center mb-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.PendingActions" Size="Size.Small" Class="mr-1"
+                                                     Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("AmountDue")</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.h6" Class="font-weight-medium"
+                                                 Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)">
+                                            @_invoice.AmountDue.ToString("C")
+                                        </MudText>
+                                    </div>
+                                </MudStack>
 
                                 <MudDivider />
 
@@ -153,7 +173,7 @@ else
                                     </div>
 
                                     <div style="flex: 1;">
-                                        <div class="d-flex align-center mb-1">
+                                        <div class="d-flex align-start mb-1">
                                             <MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" Class="mr-1"
                                                      Color="@(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? Color.Error : Color.Secondary)" />
                                             <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("DueDate")</MudText>
@@ -176,7 +196,7 @@ else
                         <div class="d-flex align-start">
                             <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Class="mr-2 mt-1" Color="Color.Secondary" />
                             <div style="flex: 1;">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">@Localization.GetString("Notes")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Dark" Class="mb-1">@Localization.GetString("Notes")</MudText>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">
                                     @_invoice.Notes
                                 </MudText>
@@ -192,93 +212,90 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("LineItems")</MudText>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.h6">@Localization.GetString("LineItems")</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default">
+                                @($"{_invoice.LineItems.Count} {Localization.GetString("Items")}")
+                            </MudChip>
+                        </div>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
-                    <MudTable Items="_invoice.LineItems" Hover="true" Breakpoint="Breakpoint.Sm" Dense="false">
+                    <MudTable Items="_invoice.LineItems"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm"
+                              Elevation="0"
+                              Dense="false">
                         <HeaderContent>
+                            <MudTh>@Localization.GetString("Product")</MudTh>
                             <MudTh>@Localization.GetString("Description")</MudTh>
-                            <MudTh>@Localization.GetString("Quantity")</MudTh>
-                            <MudTh>@Localization.GetString("UnitPrice")</MudTh>
-                            <MudTh>@Localization.GetString("TaxRate")</MudTh>
-                            <MudTh Class="text-right">@Localization.GetString("Total")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("UnitPrice")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("TaxRate")</MudTh>
+                            <MudTh Style="text-align: right;">@Localization.GetString("Total")</MudTh>
                         </HeaderContent>
                         <RowTemplate>
-                            <MudTd DataLabel="@Localization.GetString("Description")">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" /> @Localization.GetString("Product")
-                                </MudText>
-                                <MudText Typo="Typo.body2">@context.Description</MudText>
+                            <MudTd DataLabel="@Localization.GetString("Product")">
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Dark">@context.ProductName</MudText>
                             </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("Quantity")">@context.Quantity</MudTd>
-                            <MudTd DataLabel="@Localization.GetString("UnitPrice")">@context.UnitPrice.ToString("C")</MudTd>
-                            <MudTd DataLabel="@Localization.GetString("TaxRate")">@context.TaxRate.ToString("0.00", _currentCultureKey)%</MudTd>
-                            <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
+                            <MudTd DataLabel="@Localization.GetString("Description")">
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Description</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
                                 <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                    @context.Quantity.ToString("N2")
+                                    <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">
+                                        @context.ProductUnit
+                                    </MudText>
+                                </MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
+                                <MudText Typo="Typo.body2" Color="Color.Dark">
+                                    @context.UnitPrice.ToString("C")
+                                </MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("TaxRate")" Style="text-align: right;">
+                                <MudText Typo="Typo.body2" Color="Color.Dark">
+                                    @context.TaxRate.ToString("0.00", _currentCultureKey)%
+                                </MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Total")" Style="text-align: right;">
+                                <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
                                     @context.TotalAmount.ToString("C")
                                 </MudText>
                             </MudTd>
                         </RowTemplate>
                     </MudTable>
-                    
-                    <!-- Totals -->
+
                     <MudDivider />
-                    <div class="pa-4">
-                        <div class="d-flex justify-end mb-2">
-                            <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
-                                @Localization.GetString("Subtotal"):
-                            </MudText>
-                            <MudText Typo="Typo.body1"
-                                     Class="font-weight-medium text-right tabular-numbers"
-                                     Style="min-width: 160px;">
-                                @_invoice.SubTotal.ToString("C")
-                            </MudText>
-                        </div>
-                        <div class="d-flex justify-end mb-2">
-                            <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
-                                @Localization.GetString("Tax"):
-                            </MudText>
-                            <MudText Typo="Typo.body1"
-                                     Class="font-weight-medium text-right tabular-numbers"
-                                     Style="min-width: 160px;">
-                                @_invoice.TaxAmount.ToString("C")
-                            </MudText>
-                        </div>
-                        <MudDivider Class="my-2" />
-                        <div class="d-flex justify-end mb-2">
-                            <MudText Typo="Typo.h6" Class="mr-4" Style="min-width: 120px;">
-                                @Localization.GetString("Total"):
-                            </MudText>
-                            <MudText Typo="Typo.h6"
-                                     Color="Color.Primary"
-                                     Class="text-right tabular-numbers"
-                                     Style="min-width: 160px;">
-                                @_invoice.TotalAmount.ToString("C")
-                            </MudText>
-                        </div>
-                        <div class="d-flex justify-end mb-2">
-                            <MudText Typo="Typo.body1" Class="mr-4" Style="min-width: 120px;">
-                                @Localization.GetString("AmountPaid"):
-                            </MudText>
-                            <MudText Typo="Typo.body1"
-                                     Color="Color.Success"
-                                     Class="font-weight-medium text-right tabular-numbers"
-                                     Style="min-width: 160px;">
-                                @_invoice.AmountPaid.ToString("C")
-                            </MudText>
-                        </div>
-                        <div class="d-flex justify-end">
-                            <MudText Typo="Typo.h6" Class="mr-4" Style="min-width: 120px;">
-                                @Localization.GetString("AmountDue"):
-                            </MudText>
-                            <MudText Typo="Typo.h6"
-                                     Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)"
-                                     Class="text-right tabular-numbers"
-                                     Style="min-width: 160px;">
-                                @_invoice.AmountDue.ToString("C")
-                            </MudText>
-                        </div>
+
+                    <!-- Totals footer -->
+                    <div class="d-flex justify-end pa-4">
+                        <MudStack Spacing="1" Style="min-width: 300px;">
+                            <!-- Subtotal -->
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.body2" Color="Color.Dark">@Localization.GetString("Subtotal")</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Dark" Class="font-weight-medium">
+                                    @_invoice.SubTotal.ToString("C")
+                                </MudText>
+                            </div>
+                            <!-- Tax -->
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.body2" Color="Color.Dark">@Localization.GetString("Tax")</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Dark" Class="font-weight-medium">
+                                    @_invoice.TaxAmount.ToString("C")
+                                </MudText>
+                            </div>
+                            <MudDivider Class="my-1" />
+                            <!-- Total -->
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.h6" Class="font-weight-bold">@Localization.GetString("Total")</MudText>
+                                <MudText Typo="Typo.h5" Class="font-weight-bold" Color="Color.Primary">
+                                    @_invoice.TotalAmount.ToString("C")
+                                </MudText>
+                            </div>
+                        </MudStack>
                     </div>
                 </MudCardContent>
             </MudCard>
@@ -296,6 +313,7 @@ else
                             <MudButton StartIcon="@Icons.Material.Filled.Payment"
                                        Color="Color.Primary"
                                        Variant="Variant.Filled"
+                                       Size="Size.Small"
                                        OnClick="OpenPaymentDialog">
                                 @Localization.GetString("RecordPayment")
                             </MudButton>
@@ -305,37 +323,56 @@ else
                 <MudCardContent Class="pa-0">
                     @if (_payments == null || !_payments.Any())
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Payment"
+                                     Size="Size.Large"
+                                     Color="Color.Secondary"
+                                     Class="mb-2 mr-2" />
                             <MudText Color="Color.Secondary">@Localization.GetString("NoPaymentsRecorded")</MudText>
                         </div>
                     }
                     else
                     {
-                        <MudTable Items="_payments" Hover="true" Breakpoint="Breakpoint.Sm" Dense="false">
+                        <MudTable Items="_payments"
+                                  Hover="true"
+                                  Breakpoint="Breakpoint.Sm"
+                                  Elevation="0"
+                                  Dense="true"
+                                  T="PaymentDto"
+                                  RowClass="table-row-clickable"
+                                  OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => Navigation.NavigateTo($"/payments/{args.Item!.Id}"))">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("PaymentDate")</MudTh>
-                                <MudTh>@Localization.GetString("Amount")</MudTh>
-                                <MudTh>@Localization.GetString("PaymentMethod")</MudTh>
                                 <MudTh>@Localization.GetString("ReferenceNumber")</MudTh>
+                                <MudTh>@Localization.GetString("PaymentMethod")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
                                 <MudTh>@Localization.GetString("RecordedBy")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("PaymentDate")">
-                                    @context.PaymentDate.ToString("MMM dd, yyyy")
+                                    <MudText Typo="Typo.body2">
+                                        @context.PaymentDate.ToString("dd MMM yyyy")
+                                    </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Amount")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium" Color="Color.Success">
-                                        @context.Amount.ToString("C")
+                                <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
+                                    <MudText Typo="Typo.body2">
+                                        @(string.IsNullOrEmpty(context.ReferenceNumber) ? "-" : context.ReferenceNumber)
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
-                                    @GetPaymentMethodText(context.PaymentMethod)
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                        @GetPaymentMethodText(context.PaymentMethod)
+                                    </MudChip>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
-                                    @context.ReferenceNumber
+                                <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
+                                        @context.Amount.ToString("C")
+                                    </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("RecordedBy")">
-                                    @context.RecordedBy
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @(string.IsNullOrEmpty(context.RecordedBy) ? "-" : context.RecordedBy)
+                                    </MudText>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -353,7 +390,7 @@ else
     private readonly IFormatProvider _currentCultureKey = CultureInfo.CurrentCulture;
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = new();
-    private bool _hideEmailButton = true;
+    private bool _showEmailButton = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -380,7 +417,12 @@ else
         try
         {
             _invoice = await InvoiceService.GetInvoiceByIdAsync(Id);
-            _hideEmailButton = _invoice?.Status != InvoiceStatus.Draft || _invoice.Type == InvoiceType.Payable;
+            if (_invoice?.Type == InvoiceType.Receivable)
+            {
+                _showEmailButton = _invoice?.Status == InvoiceStatus.Draft ||
+                                   _invoice?.Status == InvoiceStatus.PartiallyPaid ||
+                                   _invoice?.Status == InvoiceStatus.Overdue;
+            }
         }
         catch (Exception ex)
         {

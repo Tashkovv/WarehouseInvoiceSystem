@@ -1,4 +1,4 @@
-@page "/inventory/adjust/{ProductId:guid}"
+@page "/inventory/adjust"
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.Interfaces
@@ -28,9 +28,14 @@
                 <MudItem xs="12" md="6">
                     <MudAutocomplete T="ProductDto"
                                      Label="@Localization.GetString("SelectProduct")"
+                                     SearchFunc="SearchProducts"
+                                     ValueChanged="@(p => _selectedProduct = p)"
                                      ToStringFunc="@(p => p?.Name ?? string.Empty)"
                                      Value="_selectedProduct"
-                                     ReadOnly="true"
+                                     Required="true"
+                                     ResetValueOnEmptyText="true"
+                                     Clearable="true"
+                                     RequiredError="@Localization.GetString("SelectProduct")"
                                      Variant="Variant.Outlined" />
                 </MudItem>
 
@@ -39,7 +44,7 @@
                                @bind-Value="_selectedWarehouseId"
                                Label="@Localization.GetString("SelectWarehouse")"
                                Required="true"
-                               RequiredError="@Localization.GetString("SelectWarehouse")"
+                               RequiredError="@Localization.GetString("PleaseSelectWarehouse")"
                                Variant="Variant.Outlined">
                         @foreach (var w in _warehouses)
                         {
@@ -101,7 +106,8 @@
 
 @code {
     [Parameter]
-    public Guid ProductId { get; set; }
+    [SupplyParameterFromQuery(Name = "productId")]
+    public string? ProductId { get; set; }
     [Parameter]
     [SupplyParameterFromQuery(Name = "warehouseId")]
     public string? WarehouseId { get; set; }
@@ -132,13 +138,17 @@
     {
         try
         {
-            _selectedProduct = await ProductService.GetProductByIdAsync(ProductId);
+            if (Guid.TryParse(ProductId, out Guid productId))
+            {
+                _selectedProduct = await ProductService.GetProductByIdAsync(productId);
+                ProductId = null;
+            }
 
             _warehouses = (await WarehouseService.GetAllWarehousesAsync()).ToList();
 
-            if (!string.IsNullOrWhiteSpace(WarehouseId))
+            if (Guid.TryParse(WarehouseId, out Guid warehouseId))
             {
-                _selectedWarehouseId = Guid.TryParse(WarehouseId, out var parsedId) ? parsedId : null;
+                _selectedWarehouseId = warehouseId;
                 WarehouseId = null;
             }
         }
@@ -149,23 +159,26 @@
         }
     }
 
+    private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(value))
+            return await ProductService.GetActiveProductsAsync();
+
+        return (await ProductService.GetActiveProductsAsync())
+            .Where(p => p.Code.Contains(value, StringComparison.OrdinalIgnoreCase) || p.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
+    }
+
     private async Task SaveAdjustment()
     {
         await _form.Validate();
         if (!_isValid) return;
-
-        if (!_selectedWarehouseId.HasValue)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectWarehouse"), Severity.Warning);
-            return;
-        }
 
         _saving = true;
 
         try
         {
             decimal change = _adjustmentType == AdjustmentType.Add.ToString() ? _quantity : -_quantity;
-            await InventoryService.AdjustStockAsync(_selectedProduct!.Id, _selectedWarehouseId.Value, change, _reason ?? string.Empty);
+            await InventoryService.AdjustStockAsync(_selectedProduct!.Id, _selectedWarehouseId!.Value, change, _reason ?? string.Empty);
             Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
             Navigation.NavigateTo($"/products/{ProductId}");
         }

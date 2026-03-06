@@ -97,8 +97,8 @@
             {
                 row++;
                 worksheet.Cell(row, 1).Value = itemNumber++;
-                worksheet.Cell(row, 2).Value = item.Description;
-                worksheet.Cell(row, 3).Value = item.Quantity;
+                worksheet.Cell(row, 2).Value = item.ProductName;
+                worksheet.Cell(row, 3).Value = $"{item.Quantity} {item.ProductUnit}";
                 worksheet.Cell(row, 4).Value = item.UnitPrice.ToString("C");
                 worksheet.Cell(row, 5).Value = $"{item.TaxRate}%";
                 worksheet.Cell(row, 6).Value = item.Amount.ToString("C");

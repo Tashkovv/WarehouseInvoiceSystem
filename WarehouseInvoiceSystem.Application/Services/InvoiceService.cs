@@ -228,8 +228,24 @@
                     Quantity = line.Quantity,
                     SourceDocumentId = invoice.Id,
                     SourceDocumentType = "Invoice",
-                    Note = $"{localizationService.GetString("SaleTo")} {invoice.Company.Name} - {invoice.InvoiceNumber}"
+                    Note = GenerateNote(invoice, transactionType)
                 });
+            }
+        }
+
+        private string GenerateNote(Invoice invoice, InventoryTransactionType transactionType)
+        {
+            if (transactionType == InventoryTransactionType.Inbound)
+            {
+                return $"{localizationService.GetString("PurchaseFrom")} {invoice.Company.Name} - {invoice.InvoiceNumber}";
+            }
+            else if(transactionType == InventoryTransactionType.Outbound)
+            {
+                return $"{localizationService.GetString("SaleTo")} {invoice.Company.Name} - {invoice.InvoiceNumber}";
+            }
+            else
+            {
+                return $"{localizationService.GetString("InventoryTransactionForInvoice")}: {invoice.InvoiceNumber}";
             }
         }
 
@@ -259,7 +275,10 @@
                 {
                     Id = li.Id,
                     ProductId = li.ProductId,
-                    Description = li.Description,
+                    Description = li.Product.Description ?? string.Empty,
+                    ProductCode = li.Product.Code,
+                    ProductName = li.Product.Name,
+                    ProductUnit = li.Product.Unit,
                     Quantity = li.Quantity,
                     UnitPrice = li.UnitPrice,
                     TaxRate = li.TaxRate,

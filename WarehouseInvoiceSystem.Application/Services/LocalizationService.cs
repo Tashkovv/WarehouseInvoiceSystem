@@ -439,6 +439,11 @@
                 ["TotalRevenue"] = "Total Revenue",
                 ["Profitability"] = "Profitability",
                 ["BackToProducts"] = "Back to products",
+                ["TransactionHistory"] = "Transaction history",
+                ["DocumentNumber"] = "Document number",
+                ["Transactions"] = "transactions",
+                ["Purchased"] = "Purchased",
+                ["Sold"] = "Sold",
 
                 // Inventory
                 ["Inventory"] = "Inventory",
@@ -462,6 +467,7 @@
                 ["OutOfStock"] = "Out of Stock",
                 ["PurchaseFrom"] = "Purchase from",
                 ["SaleTo"] = "Sale to",
+                ["InventoryTransactionForInvoice"] = "Inventory transaction for invoice",
 
                 // Warehouses
                 ["Warehouses"] = "Warehouses",
@@ -541,7 +547,7 @@
                 ["PurchaseDate"] = "Purchase Date",
                 ["AllPurchaseNotes"] = "All Purchase Notes",
                 ["NoPurchaseNotesFound"] = "No purchase notes found",
-                ["MarkAsPaid"] = "Mark as Paid",
+                ["MarkAsPaid"] = "Pay",
                 ["MarkAsPaidQuestion"] = "Mark as Paid?",
                 ["Completed"] = "Completed",
                 ["Paid"] = "Paid",
@@ -564,6 +570,8 @@
                 ["PaidDate"] = "Paid Date",
                 ["PurchaseDetails"] = "Purchase Details",
                 ["BackToPurchaseNotes"] = "Back to purchase notes",
+                ["Items"] = "items",
+                ["UnitsTotal"] = "units total",
             },
             #endregion
 
@@ -986,6 +994,11 @@
                 ["TotalRevenue"] = "Вкупен Приход",
                 ["Profitability"] = "Профитабилност",
                 ["BackToProducts"] = "Назад кон производи",
+                ["TransactionHistory"] = "Историја на трансакции",
+                ["DocumentNumber"] = "Број на документ",
+                ["Transactions"] = "трансакции",
+                ["Purchased"] = "Откупено",
+                ["Sold"] = "Продадено",
 
                 // Inventory
                 ["Inventory"] = "Залиха",
@@ -1009,6 +1022,7 @@
                 ["ErrorAdjustingStock"] = "Грешка при прилагодување на залиха",
                 ["PurchaseFrom"] = "Откуп од",
                 ["SaleTo"] = "Продажба до",
+                ["InventoryTransactionForInvoice"] = "Трансакција во залиха за фактура",
 
                 // Warehouses
                 ["Warehouses"] = "Магацини",
@@ -1088,7 +1102,7 @@
                 ["PurchaseDate"] = "Датум на Откуп",
                 ["AllPurchaseNotes"] = "Сите Откупни Белешки",
                 ["NoPurchaseNotesFound"] = "Нема пронајдено откупни белешки",
-                ["MarkAsPaid"] = "Означи како Платено",
+                ["MarkAsPaid"] = "Плати",
                 ["MarkAsPaidQuestion"] = "Означи како Платено?",
                 ["Completed"] = "Завршено",
                 ["Paid"] = "Платено",
@@ -1111,6 +1125,8 @@
                 ["PaidDate"] = "Датум на Плаќање",
                 ["PurchaseDetails"] = "Детали за Откуп",
                 ["BackToPurchaseNotes"] = "Назад кон откупни белешки",
+                ["Items"] = "ставки",
+                ["UnitsTotal"] = "единици вкупно",
             }
             #endregion
         };

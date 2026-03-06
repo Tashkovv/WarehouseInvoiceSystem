@@ -318,7 +318,7 @@ else
                                     <MudTh>@Localization.GetString("Invoice")</MudTh>
                                     <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
                                     <MudTh>@Localization.GetString("Date")</MudTh>
-                                    <MudTh>@Localization.GetString("Method")</MudTh>
+                                    <MudTh>@Localization.GetString("PaymentMethod")</MudTh>
                                 </HeaderContent>
                                 <RowTemplate>
                                     <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
@@ -337,7 +337,7 @@ else
                                     <MudTd DataLabel="@Localization.GetString("Date")">
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Method")">
+                                    <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
                                         <MudChip T="string" Size="Size.Small" Color="Color.Info">
                                             @GetPaymentMethodText(context.PaymentMethod)
                                         </MudChip>

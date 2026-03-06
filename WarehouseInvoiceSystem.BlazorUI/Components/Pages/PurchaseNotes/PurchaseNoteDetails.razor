@@ -34,15 +34,15 @@ else
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Success"
                            StartIcon="@Icons.Material.Filled.Payment"
-                           OnClick="MarkAsPaid"
-                           Class="ml-2">
+                           OnClick="MarkAsPaid">
                     @Localization.GetString("MarkAsPaid")
                 </MudButton>
             }
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Edit"
-                       OnClick="EditNote">
+                       OnClick="EditNote"
+                       Class="ml-2">
                 @Localization.GetString("Edit")
             </MudButton>
             <MudButton Variant="Variant.Outlined"
@@ -155,7 +155,7 @@ else
                         <div class="d-flex align-start">
                             <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Class="mr-2 mt-1" Color="Color.Secondary" />
                             <div style="flex: 1;">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">@Localization.GetString("Notes")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Dark" Class="mb-1">@Localization.GetString("Notes")</MudText>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">
                                     @_model.Notes
                                 </MudText>
@@ -171,7 +171,9 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("Products")</MudText>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.h6">@Localization.GetString("Products")</MudText>
+                        </div>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -189,19 +191,28 @@ else
                         <RowTemplate>
                             <MudTd DataLabel="@Localization.GetString("Product")">
                                 <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ProductName</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Dark">@context.ProductName</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Description")">
-                                @context.Description
+                                <MudText Typo="Typo.body2" Color="Color.Dark">
+                                    @(string.IsNullOrEmpty(context.Description) ? "-" : context.Description)
+                                </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
-                                @context.Quantity
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                    @context.Quantity.ToString("N2")
+                                    <MudText Typo="Typo.body2" Color="Color.Dark" Inline="true">
+                                        @context.ProductUnit
+                                    </MudText>
+                                </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
-                                @context.UnitPrice.ToString("C")
+                                <MudText Typo="Typo.body2" Color="Color.Dark">
+                                    @context.UnitPrice.ToString("C")
+                                </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
-                                <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
                                     @context.Amount.ToString("C")
                                 </MudText>
                             </MudTd>
@@ -211,38 +222,25 @@ else
                     <MudDivider />
 
                     <!-- Totals Section -->
-                    <MudCardContent>
-                        <MudGrid>
-                            <MudItem xs="12" Class="d-flex justify-end">
-                                <MudStack Spacing="3" Style="min-width: 300px;">
-                                    <div class="d-flex justify-space-between">
-                                        <MudText Typo="Typo.h6" Class="font-weight-bold">@Localization.GetString("Total"):</MudText>
-                                        <MudText Typo="Typo.h6" Class="font-weight-bold">@_model.TotalAmount.ToString("C")</MudText>
-                                    </div>
-                                </MudStack>
-                            </MudItem>
-                        </MudGrid>
-                    </MudCardContent>
+                    <div class="d-flex justify-end pa-4">
+                        <MudStack Spacing="1" Style="min-width: 300px;">
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @_model.LineItems.Count @Localization.GetString("Items")
+                                </MudText>
+                            </div>
+                            <MudDivider Class="my-1" />
+                            <div class="d-flex justify-space-between align-center">
+                                <MudText Typo="Typo.h6" Class="font-weight-bold">@Localization.GetString("Total")</MudText>
+                                <MudText Typo="Typo.h5" Class="font-weight-bold" Color="Color.Primary">
+                                    @_model.TotalAmount.ToString("C")
+                                </MudText>
+                            </div>
+                        </MudStack>
+                    </div>
                 </MudCardContent>
             </MudCard>
         </MudItem>
-
-        <!-- Notes -->
-        @if (!string.IsNullOrWhiteSpace(_model.Notes))
-        {
-            <MudItem xs="12">
-                <MudCard Elevation="2">
-                    <MudCardHeader>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@Localization.GetString("Notes")</MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudCardContent>
-                        <MudText Typo="Typo.body2">@_model.Notes</MudText>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-        }
     </MudGrid>
 }
 

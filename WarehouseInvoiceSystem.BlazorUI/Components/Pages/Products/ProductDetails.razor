@@ -3,8 +3,13 @@
 @using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Domain.Enums
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
+@inject IInvoiceService InvoiceService
+@inject IPurchaseNoteService PurchaseNoteService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
@@ -112,16 +117,28 @@ else
                         <!-- Right: Pricing + Inventory Summary -->
                         <MudItem xs="12" md="5">
                             <MudStack Spacing="3">
-                                <!-- Default Price -->
-                                <div>
-                                    <div class="d-flex align-center mb-1">
-                                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("DefaultPrice")</MudText>
+                                <!-- Default Price + Gross Margin -->
+                                <MudStack Row="true" Spacing="4">
+                                    <div style="flex: 1;">
+                                        <div class="d-flex align-center mb-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("DefaultPrice")</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.h5" Color="Color.Success" Class="font-weight-bold">
+                                            @_product.DefaultPrice.ToString("C")
+                                        </MudText>
                                     </div>
-                                    <MudText Typo="Typo.h5" Color="Color.Success" Class="font-weight-bold">
-                                        @_product.DefaultPrice.ToString("C")
-                                    </MudText>
-                                </div>
+                                    <div style="flex: 1;">
+                                        <div class="d-flex align-center mb-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("GrossMargin")</MudText>
+                                        </div>
+                                        <MudText Typo="Typo.h5" Class="font-weight-bold"
+                                                 Color="@(_analytics.GrossMarginPercentage > 30 ? Color.Success : Color.Warning)">
+                                            @_analytics.GrossMarginPercentage.ToString("N1")%
+                                        </MudText>
+                                    </div>
+                                </MudStack>
 
                                 <MudDivider />
 
@@ -203,38 +220,6 @@ else
                     </MudGrid>
                 </MudCardContent>
             </MudCard>
-        </MudItem>
-
-        <!-- Inventory Summary Cards -->
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalStock")"
-                           Value="@($"{_filteredTotalStock.ToString("N2")} {_product.Unit}")"
-                           Subtitle="@_selectedWarehouseName"
-                           Icon="@Icons.Material.Filled.Inventory2"
-                           IconColor="@(_filteredIsOutOfStock ? Color.Error : _filteredHasLowStock ? Color.Warning : Color.Primary)" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("StockValue")"
-                           Value="@_filteredStockValue.ToString("C")"
-                           Subtitle="@_selectedWarehouseName"
-                           Icon="@Icons.Material.Filled.AttachMoney"
-                           IconColor="Color.Success" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalTransactions")"
-                           Value="@_filteredTransactions.Count().ToString()"
-                           Subtitle="@Localization.GetString("StockMovements")"
-                           Icon="@Icons.Material.Filled.SwapVert"
-                           IconColor="Color.Info" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("GrossMargin")"
-                           Value="@($"{_analytics.GrossMarginPercentage.ToString("N1")}%")"
-                           Icon="@Icons.Material.Filled.TrendingUp"
-                           IconColor="@(_analytics.GrossMarginPercentage > 30 ? Color.Success : Color.Warning)" />
         </MudItem>
 
         <!-- Stock by Warehouse (only show if "All Warehouses" selected) -->
@@ -507,6 +492,175 @@ else
                 </MudCardContent>
             </MudCard>
         </MudItem>
+        <!-- ── Transaction History ── -->
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <div class="d-flex align-center gap-3">
+                            <MudText Typo="Typo.h6">@Localization.GetString("TransactionHistory")</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default">
+                                @_totalTransactionCount @Localization.GetString("Transactions")
+                            </MudChip>
+                        </div>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <!-- Purchased / Sold toggle -->
+                        <MudButtonGroup Variant="Variant.Outlined" Size="Size.Small" Class="mr-4">
+                            <MudButton Color="@(_historyMode == HistoryMode.Purchased ? Color.Primary : Color.Default)"
+                                       Variant="@(_historyMode == HistoryMode.Purchased ? Variant.Filled : Variant.Outlined)"
+                                       OnClick="@(() => SetHistoryMode(HistoryMode.Purchased))">
+                                @Localization.GetString("Purchased")
+                            </MudButton>
+                            <MudButton Color="@(_historyMode == HistoryMode.Sold ? Color.Success : Color.Default)"
+                                       Variant="@(_historyMode == HistoryMode.Sold ? Variant.Filled : Variant.Outlined)"
+                                       OnClick="@(() => SetHistoryMode(HistoryMode.Sold))">
+                                @Localization.GetString("Sold")
+                            </MudButton>
+                        </MudButtonGroup>
+                    </CardHeaderActions>
+                </MudCardHeader>
+
+                <!-- Filters row -->
+                <MudCardContent Class="pa-4" Style="border-bottom: 1px solid var(--mud-palette-divider);">
+                    <div class="d-flex align-center flex-wrap gap-3">
+                        <!-- Party selector -->
+                        <MudSelect T="string"
+                                   Value="_historyPartyFilter"
+                                   ValueChanged="@((string v) => { _historyPartyFilter = v; })"
+                                   Label="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Clearable="true"
+                                   Style="min-width: 220px;">
+                            @foreach (string party in _historyParties)
+                            {
+                                <MudSelectItem Value="@((string)party)">@party</MudSelectItem>
+                            }
+                        </MudSelect>
+
+                        <!-- From date -->
+                        <div>
+                            <MudDatePicker @bind-Date="_historyFrom"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           DateFormat="dd MMM yyyy"
+                                           Label="@Localization.GetString("From")"
+                                           PickerVariant="PickerVariant.Inline"
+                                           Style="width: 315px;" />
+                        </div>
+
+                        <!-- To date -->
+                        <div>
+                            <MudDatePicker @bind-Date="_historyTo"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           DateFormat="dd MMM yyyy"
+                                           Label="@Localization.GetString("To")"
+                                           MaxDate="DateTime.Today"
+                                           PickerVariant="PickerVariant.Inline"
+                                           Style="width: 315px;" />
+                        </div>
+
+                        @if (_historyPartyFilter != null || _historyFrom != null || _historyTo != null)
+                        {
+                            <MudButton Variant="Variant.Text"
+                                       Color="Color.Default"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Clear"
+                                       OnClick="ClearHistoryFilter">
+                                @Localization.GetString("ClearFilters")
+                            </MudButton>
+                        }
+
+                        <MudSpacer />
+
+                        <!-- Summary chips -->
+                        @if (_filteredHistory.Any())
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default" Icon="@Icons.Material.Filled.Numbers">
+                                @_filteredHistory.Count() @Localization.GetString("Transactions")
+                            </MudChip>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@(_historyMode == HistoryMode.Purchased ? Color.Info : Color.Success)"
+                                     Icon="@Icons.Material.Filled.AttachMoney">
+                                @_filteredHistory.Sum(h => h.TotalPrice).ToString("C")
+                            </MudChip>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default" Icon="@Icons.Material.Filled.Scale">
+                                @_filteredHistory.Sum(h => h.Quantity).ToString("N2") @_product!.Unit
+                            </MudChip>
+                        }
+                    </div>
+                </MudCardContent>
+
+                <MudCardContent Class="pa-0">
+                    @if (_loadingHistory)
+                    {
+                        <div class="pa-6">
+                            <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                        </div>
+                    }
+                    else if (_filteredHistory.Any())
+                    {
+                        <MudTable Items="_filteredHistory"
+                                  Hover="true"
+                                  Dense="true"
+                                  Elevation="0"
+                                  Breakpoint="Breakpoint.Sm"
+                                  T="ProductTransactionRow"
+                                  RowClass="table-row-clickable"
+                                  OnRowClick="@((TableRowClickEventArgs<ProductTransactionRow> args) => Navigation.NavigateTo(args.Item!.DocumentUrl))">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh>@Localization.GetString("DocumentNumber")</MudTh>
+                                <MudTh>@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("UnitPrice")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Total")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    <MudText Typo="Typo.body2">@context.Date.ToString("dd MMM yyyy")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("DocumentNumber")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.DocumentNumber</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PartyName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2">@context.Quantity.ToString("N2") @_product!.Unit</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Total")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold"
+                                             Color="@(_historyMode == HistoryMode.Purchased ? Color.Info : Color.Success)">
+                                        @context.TotalPrice.ToString("C")
+                                    </MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center">
+                            <MudIcon Icon="@(_historyMode == HistoryMode.Purchased ? Icons.Material.Filled.ShoppingCart : Icons.Material.Filled.PointOfSale)"
+                                     Size="Size.Large"
+                                     Color="Color.Secondary"
+                                     Class="mb-2" />
+                            <MudText Color="Color.Secondary">
+                                @(_historyMode == HistoryMode.Purchased
+                                                        ? Localization.GetString("NoPurchaseData")
+                                                        : Localization.GetString("NoSalesData"))
+                            </MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
     </MudGrid>
 }
 
@@ -570,6 +724,8 @@ else
                 _warehouses = warehouses.ToList();
 
                 _selectedWarehouseId = null;
+
+                await LoadHistory();
             }
         }
         catch (Exception ex)
@@ -597,9 +753,9 @@ else
     private string CreateAdjustLink()
     {
         if (_selectedWarehouseId != null)
-            return $"/inventory/adjust/{Id}?warehouseId={_selectedWarehouseId}";
+            return $"/inventory/adjust/?productId={Id}&warehouseId={_selectedWarehouseId}";
 
-        return $"/inventory/adjust/{Id}";
+        return $"/inventory/adjust?productId={Id}";
     }
 
     private async Task DeleteProduct()
@@ -628,6 +784,135 @@ else
             }
         }
     }
+
+    // ── Transaction History ──
+    private enum HistoryMode { Purchased, Sold }
+
+    private bool _loadingHistory = false;
+    private HistoryMode _historyMode = HistoryMode.Purchased;
+    private string? _historyPartyFilter = null;
+    private DateTime? _historyFrom = null;
+    private DateTime? _historyTo = null;
+
+    private List<ProductTransactionRow> _allHistoryPurchased = [];
+    private List<ProductTransactionRow> _allHistorySold = [];
+    private List<ProductTransactionRow> _allHistory => _historyMode == HistoryMode.Purchased ? _allHistoryPurchased : _allHistorySold;
+
+    private int _totalTransactionCount => _allHistoryPurchased.Count + _allHistorySold.Count;
+
+    private IEnumerable<ProductTransactionRow> _filteredHistory => _allHistory
+        .Where(h => _historyPartyFilter == null || h.PartyName == _historyPartyFilter)
+        .Where(h => _historyFrom == null || h.Date.Date >= _historyFrom.Value.Date)
+        .Where(h => _historyTo == null || h.Date.Date <= _historyTo.Value.Date)
+        .OrderByDescending(h => h.Date);
+
+    private IEnumerable<string> _historyParties => _allHistory
+        .Select(h => h.PartyName)
+        .Distinct()
+        .OrderBy(p => p);
+
+    private async Task SetHistoryMode(HistoryMode mode)
+    {
+        _historyMode = mode;
+        _historyPartyFilter = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadHistory()
+    {
+        _loadingHistory = true;
+        _allHistoryPurchased = [];
+        _allHistorySold = [];
+
+        try
+        {
+            // ── Purchased: PurchaseNotes + Payable Invoices ──
+            IEnumerable<PurchaseNoteDto> notes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
+            foreach (PurchaseNoteDto note in notes)
+            {
+                if (note.LineItems == null) continue;
+                foreach (var item in note.LineItems.Where(i => i.ProductId == Id))
+                {
+                    _allHistoryPurchased.Add(new ProductTransactionRow
+                    {
+                        Date = note.PurchaseDate,
+                        DocumentNumber = note.NoteNumber,
+                        DocumentUrl = $"/purchase-notes/{note.Id}",
+                        PartyName = note.IndividualFullName ?? "-",
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        TotalPrice = item.UnitPrice * item.Quantity
+                    });
+                }
+            }
+
+            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
+            foreach (InvoiceDto invoice in invoices.Where(i => i.Type == InvoiceType.Payable))
+            {
+                if (invoice.LineItems == null) continue;
+                foreach (var item in invoice.LineItems.Where(i => i.ProductId == Id))
+                {
+                    _allHistoryPurchased.Add(new ProductTransactionRow
+                    {
+                        Date = invoice.IssueDate,
+                        DocumentNumber = invoice.InvoiceNumber,
+                        DocumentUrl = $"/invoices/{invoice.Id}",
+                        PartyName = invoice.CompanyName ?? "-",
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        TotalPrice = item.TotalAmount
+                    });
+                }
+            }
+
+            // ── Sold: Receivable Invoices ──
+            foreach (InvoiceDto invoice in invoices.Where(i => i.Type == InvoiceType.Receivable))
+            {
+                if (invoice.LineItems == null) continue;
+                foreach (var item in invoice.LineItems.Where(i => i.ProductId == Id))
+                {
+                    _allHistorySold.Add(new ProductTransactionRow
+                    {
+                        Date = invoice.IssueDate,
+                        DocumentNumber = invoice.InvoiceNumber,
+                        DocumentUrl = $"/invoices/{invoice.Id}",
+                        PartyName = invoice.CompanyName ?? "-",
+                        Quantity = item.Quantity,
+                        UnitPrice = item.UnitPrice,
+                        TotalPrice = item.TotalAmount
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transaction history: {ex.Message}");
+        }
+        finally
+        {
+            _loadingHistory = false;
+        }
+    }
+
+    private async Task ClearHistoryFilter()
+    {
+        _historyPartyFilter = null;
+        _historyFrom = null;
+        _historyTo = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private class ProductTransactionRow
+    {
+        public DateTime Date { get; set; }
+        public string DocumentNumber { get; set; } = string.Empty;
+        public string DocumentUrl { get; set; } = string.Empty;
+        public string PartyName { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalPrice { get; set; }
+    }
+
 
     public void Dispose()
     {
