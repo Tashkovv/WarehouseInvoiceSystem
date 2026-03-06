@@ -4,6 +4,8 @@
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class WarehouseService(IWarehouseRepository warehouseRepository) : IWarehouseService
     {
@@ -11,6 +13,18 @@
         {
             IEnumerable<Warehouse> warehouses = await warehouseRepository.GetAllAsync();
             return warehouses.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<WarehouseDto>> GetPagedAsync(GetWarehousesQuery query)
+        {
+            PagedResult<Warehouse> result = await warehouseRepository.GetPagedAsync(query);
+            return new PagedResult<WarehouseDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id)

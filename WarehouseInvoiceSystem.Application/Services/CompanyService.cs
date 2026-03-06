@@ -5,12 +5,27 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
+
     public class CompanyService(ICompanyRepository companyRepository) : ICompanyService
     {
         public async Task<IEnumerable<CompanyDto>> GetAllCompaniesAsync()
         {
             IEnumerable<Company> companies = await companyRepository.GetAllAsync();
             return companies.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<CompanyDto>> GetPagedAsync(GetCompaniesQuery query)
+        {
+            PagedResult<Company> result = await companyRepository.GetPagedAsync(query);
+            return new PagedResult<CompanyDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<IEnumerable<CompanyDto>> GetActiveCompaniesAsync()

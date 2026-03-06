@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class InvoiceService(IInvoiceRepository invoiceRepository,
                                 ICompanyRepository companyRepository,
@@ -20,6 +22,41 @@
         {
             IEnumerable<Invoice> invoices = await invoiceRepository.GetAllAsync();
             return invoices.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<InvoiceDto>> GetPagedAsync(GetInvoicesQuery query)
+        {
+            PagedResult<Invoice> result = await invoiceRepository.GetPagedAsync(query);
+            return new PagedResult<InvoiceDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
+        }
+
+        public async Task<IEnumerable<InvoiceDto>> GetAllFilteredAsync(GetInvoicesQuery query)
+        {
+            GetInvoicesQuery exportQuery = new()
+            {
+                Page = 1,
+                PageSize = int.MaxValue,
+                SortBy = query.SortBy,
+                SortAscending = query.SortAscending,
+                Search = query.Search,
+                Status = query.Status,
+                Type = query.Type,
+                CompanyName = query.CompanyName,
+                AmountMin = query.AmountMin,
+                AmountMax = query.AmountMax,
+                IssueDateFrom = query.IssueDateFrom,
+                IssueDateTo = query.IssueDateTo,
+                DueDateFrom = query.DueDateFrom,
+                DueDateTo = query.DueDateTo
+            };
+            PagedResult<Invoice> result = await invoiceRepository.GetPagedAsync(exportQuery);
+            return result.Items.Select(MapToDto);
         }
 
         public async Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId)

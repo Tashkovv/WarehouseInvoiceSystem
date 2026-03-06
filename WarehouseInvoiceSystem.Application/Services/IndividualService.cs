@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class IndividualService(IIndividualRepository individualRepository,
                                    IPurchaseNoteService purchaseNoteService) : IIndividualService
@@ -13,6 +15,18 @@
         {
             IEnumerable<Individual> individuals = await individualRepository.GetAllAsync();
             return individuals.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<IndividualDto>> GetPagedAsync(GetIndividualsQuery query)
+        {
+            PagedResult<Individual> result = await individualRepository.GetPagedAsync(query);
+            return new PagedResult<IndividualDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<IEnumerable<IndividualDto>> GetActiveIndividualsAsync()

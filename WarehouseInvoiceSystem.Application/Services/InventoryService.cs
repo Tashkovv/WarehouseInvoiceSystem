@@ -6,6 +6,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class InventoryService(
         IStockLevelRepository stockLevelRepository,
@@ -18,6 +20,18 @@
         {
             IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetAllStockLevelAsync();
             return stockLevels.Select(MapStockLevelToDto);
+        }
+
+        public async Task<PagedResult<StockLevelDto>> GetPagedStockAsync(GetStockQuery query)
+        {
+            PagedResult<StockLevel> result = await stockLevelRepository.GetPagedAsync(query);
+            return new PagedResult<StockLevelDto>
+            {
+                Items = [.. result.Items.Select(MapStockLevelToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId)

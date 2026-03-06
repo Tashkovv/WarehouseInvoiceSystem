@@ -2,11 +2,14 @@
 {
     using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IInventoryService
     {
         // Stock Levels
         Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync();
+        Task<PagedResult<StockLevelDto>> GetPagedStockAsync(GetStockQuery query);
         Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId);
         Task<IEnumerable<StockLevelDto>> GetStockByProductAsync(Guid productId);
         Task<IEnumerable<StockLevelDto>> GetStockByWarehouseAsync(Guid warehouseId);

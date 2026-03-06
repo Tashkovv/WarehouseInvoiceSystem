@@ -7,6 +7,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class ProductService(IProductRepository productRepository,
                                 IInventoryService inventoryService,
@@ -19,6 +21,18 @@
         {
             IEnumerable<Product> products = await productRepository.GetAllAsync();
             return products.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<ProductDto>> GetPagedAsync(GetProductsQuery query)
+        {
+            PagedResult<Product> result = await productRepository.GetPagedAsync(query);
+            return new PagedResult<ProductDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<IEnumerable<ProductDto>> GetProductsByIdsAsync(List<Guid> productIds)

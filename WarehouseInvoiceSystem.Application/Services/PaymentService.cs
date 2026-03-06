@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class PaymentService(IPaymentRepository paymentRepository,
                                 IInvoiceRepository invoiceRepository,
@@ -17,6 +19,18 @@
             IEnumerable<Payment> payments = await paymentRepository.GetAllAsync();
             IEnumerable<PaymentDto> paymentDtos = payments.Select(MapToDto);
             return paymentDtos;
+        }
+
+        public async Task<PagedResult<PaymentDto>> GetPagedAsync(GetPaymentsQuery query)
+        {
+            PagedResult<Payment> result = await paymentRepository.GetPagedAsync(query);
+            return new PagedResult<PaymentDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(Guid invoiceId)
