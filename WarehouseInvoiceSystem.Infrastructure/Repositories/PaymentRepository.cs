@@ -3,6 +3,8 @@
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class PaymentRepository(ApplicationDbContext context) : IPaymentRepository
@@ -17,6 +19,48 @@
                 .ToListAsync();
 
             return payments;
+        }
+
+        public async Task<PagedResult<Payment>> GetPagedAsync(GetPaymentsQuery query)
+        {
+            IQueryable<Payment> q = context.Payments
+                .Where(p => p.DeletedOn == null)
+                .Include(p => p.Invoice)
+                    .ThenInclude(i => i.Company);
+
+            if (query.InvoiceId.HasValue)
+                q = q.Where(p => p.InvoiceId == query.InvoiceId.Value);
+
+            if (query.PaymentMethod.HasValue)
+                q = q.Where(p => p.PaymentMethod == query.PaymentMethod.Value);
+
+            if (query.DateFrom.HasValue)
+                q = q.Where(p => p.PaymentDate >= query.DateFrom.Value);
+
+            if (query.DateTo.HasValue)
+                q = q.Where(p => p.PaymentDate <= query.DateTo.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+                q = q.Where(p => (p.ReferenceNumber != null && p.ReferenceNumber.Contains(query.Search)) ||
+                                 p.Invoice.InvoiceNumber.Contains(query.Search) ||
+                                 p.Invoice.Company.Name.Contains(query.Search));
+
+            q = ApplySort(q, query.SortBy, query.SortAscending);
+
+            int totalCount = await q.CountAsync();
+
+            List<Payment> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<Payment>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId)
@@ -79,5 +123,16 @@
 
             return total;
         }
+
+        private static IQueryable<Payment> ApplySort(IQueryable<Payment> q, string? sortBy, bool ascending)
+            => sortBy switch
+            {
+                "PaymentDate" => ascending ? q.OrderBy(p => p.PaymentDate) : q.OrderByDescending(p => p.PaymentDate),
+                "InvoiceNumber" => ascending ? q.OrderBy(p => p.Invoice.InvoiceNumber) : q.OrderByDescending(p => p.Invoice.InvoiceNumber),
+                "Amount" => ascending ? q.OrderBy(p => p.Amount) : q.OrderByDescending(p => p.Amount),
+                "ReferenceNumber" => ascending ? q.OrderBy(p => p.ReferenceNumber) : q.OrderByDescending(p => p.ReferenceNumber),
+                "CompanyName" => ascending ? q.OrderBy(p => p.Invoice.Company.Name) : q.OrderByDescending(p => p.Invoice.Company.Name),
+                _ => q.OrderByDescending(p => p.PaymentDate)
+            };
     }
 }

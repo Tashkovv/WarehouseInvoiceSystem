@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Application.DTOs.Common
+﻿namespace WarehouseInvoiceSystem.Domain.Queries.Common
 {
     public abstract class PagedQuery
     {

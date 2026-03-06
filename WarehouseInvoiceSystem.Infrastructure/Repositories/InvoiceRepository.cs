@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class InvoiceRepository(ApplicationDbContext context) : IInvoiceRepository
@@ -18,6 +20,63 @@
                   .ThenInclude(li => li.Product)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<Invoice>> GetPagedAsync(GetInvoicesQuery query)
+        {
+            IQueryable<Invoice> q = context.Invoices
+                .Where(i => i.DeletedOn == null)
+                .Include(i => i.Company)
+                .Include(i => i.LineItems)
+                    .ThenInclude(li => li.Product);
+
+            if (query.Status.HasValue)
+                q = q.Where(i => i.Status == query.Status.Value);
+
+            if (query.Type.HasValue)
+                q = q.Where(i => i.Type == query.Type.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.CompanyName))
+                q = q.Where(i => i.Company.Name == query.CompanyName);
+
+            if (query.AmountMin.HasValue)
+                q = q.Where(i => i.TotalAmount >= query.AmountMin.Value);
+
+            if (query.AmountMax.HasValue)
+                q = q.Where(i => i.TotalAmount <= query.AmountMax.Value);
+
+            if (query.IssueDateFrom.HasValue)
+                q = q.Where(i => i.IssueDate >= query.IssueDateFrom.Value);
+
+            if (query.IssueDateTo.HasValue)
+                q = q.Where(i => i.IssueDate <= query.IssueDateTo.Value);
+
+            if (query.DueDateFrom.HasValue)
+                q = q.Where(i => i.DueDate >= query.DueDateFrom.Value);
+
+            if (query.DueDateTo.HasValue)
+                q = q.Where(i => i.DueDate <= query.DueDateTo.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+                q = q.Where(i => i.InvoiceNumber.Contains(query.Search) ||
+                                 i.Company.Name.Contains(query.Search));
+
+            q = ApplySort(q, query.SortBy, query.SortAscending);
+
+            int totalCount = await q.CountAsync();
+
+            List<Invoice> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<Invoice>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId)
@@ -193,5 +252,16 @@
 
             return (totalAmount, totalPaid, totalDue);
         }
+
+        private static IQueryable<Invoice> ApplySort(IQueryable<Invoice> q, string? sortBy, bool ascending)
+            => sortBy switch
+            {
+                "InvoiceNumber" => ascending ? q.OrderBy(i => i.InvoiceNumber) : q.OrderByDescending(i => i.InvoiceNumber),
+                "CompanyName" => ascending ? q.OrderBy(i => i.Company.Name) : q.OrderByDescending(i => i.Company.Name),
+                "IssueDate" => ascending ? q.OrderBy(i => i.IssueDate) : q.OrderByDescending(i => i.IssueDate),
+                "DueDate" => ascending ? q.OrderBy(i => i.DueDate) : q.OrderByDescending(i => i.DueDate),
+                "TotalAmount" => ascending ? q.OrderBy(i => i.TotalAmount) : q.OrderByDescending(i => i.TotalAmount),
+                _ => q.OrderByDescending(i => i.CreatedAt)
+            };
     }
 }

@@ -1,10 +1,13 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.Interfaces
 {
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IStockLevelRepository
     {
         Task<IEnumerable<StockLevel>> GetAllStockLevelAsync();
+        Task<PagedResult<StockLevel>> GetPagedAsync(GetStockQuery query);
         Task<StockLevel?> GetByProductAndWarehouseAsync(Guid productId, Guid warehouseId);
         Task<IEnumerable<StockLevel>> GetByProductIdAsync(Guid productId);
         Task<IEnumerable<StockLevel>> GetByWarehouseIdAsync(Guid warehouseId);

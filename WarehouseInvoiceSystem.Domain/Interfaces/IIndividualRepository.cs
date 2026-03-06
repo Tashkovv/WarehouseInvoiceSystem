@@ -1,10 +1,13 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.Interfaces
 {
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IIndividualRepository
     {
         Task<IEnumerable<Individual>> GetAllAsync();
+        Task<PagedResult<Individual>> GetPagedAsync(GetIndividualsQuery query);
         Task<IEnumerable<Individual>> GetActiveIndividualsAsync();
         Task<Individual?> GetByIdAsync(Guid id);
         Task<Individual?> GetByIdentificationNumberAsync(string identificationNumber);

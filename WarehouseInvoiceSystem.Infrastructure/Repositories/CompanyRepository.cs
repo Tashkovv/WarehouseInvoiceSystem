@@ -4,6 +4,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class CompanyRepository(ApplicationDbContext context) : ICompanyRepository
@@ -14,6 +16,46 @@
                 .Where(c => c.DeletedOn == null)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query)
+        {
+            IQueryable<Company> q = context.Companies
+                .Where(c => c.DeletedOn == null);
+
+            if (query.Type.HasValue)
+                q = q.Where(c => c.Type == query.Type.Value || c.Type == CompanyType.Both);
+
+            if (query.IsActive.HasValue)
+                q = q.Where(c => c.IsActive == query.IsActive.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+                q = q.Where(c => c.Name.Contains(query.Search) ||
+                                 (c.ContactPerson != null && c.ContactPerson.Contains(query.Search)) ||
+                                 (c.Email != null && c.Email.Contains(query.Search)));
+
+            q = query.SortBy switch
+            {
+                "Name" => query.SortAscending ? q.OrderBy(c => c.Name) : q.OrderByDescending(c => c.Name),
+                "ContactPerson" => query.SortAscending ? q.OrderBy(c => c.ContactPerson) : q.OrderByDescending(c => c.ContactPerson),
+                "Email" => query.SortAscending ? q.OrderBy(c => c.Email) : q.OrderByDescending(c => c.Email),
+                _ => q.OrderBy(c => c.Name)
+            };
+
+            int totalCount = await q.CountAsync();
+
+            List<Company> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<Company>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<IEnumerable<Company>> GetActiveCompaniesAsync()

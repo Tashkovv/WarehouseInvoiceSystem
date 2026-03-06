@@ -2,10 +2,13 @@
 {
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface ICompanyRepository
     {
         Task<IEnumerable<Company>> GetAllAsync();
+        Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query);
         Task<IEnumerable<Company>> GetActiveCompaniesAsync();
         Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type);
         Task<Company?> GetByIdAsync(Guid id);

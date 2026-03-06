@@ -1,6 +1,6 @@
-﻿namespace WarehouseInvoiceSystem.Application.Queries
+﻿namespace WarehouseInvoiceSystem.Domain.Queries
 {
-    using WarehouseInvoiceSystem.Application.DTOs.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Domain.Enums;
 
     public class GetInvoicesQuery : PagedQuery
