@@ -130,27 +130,19 @@
             if (payment == null)
                 return false;
 
-            Invoice? invoice = await invoiceRepository.GetByIdAsync(payment.InvoiceId);
+            // payment.Invoice is already loaded via include in GetByIdAsync
+            Invoice? invoice = payment.Invoice;
             if (invoice != null)
             {
-                // Subtract payment from invoice
                 invoice.AmountPaid -= payment.Amount;
-
-                // Update status
-                if (invoice.AmountPaid <= 0)
-                {
-                    invoice.Status = InvoiceStatus.Sent;
-                }
-                else if (invoice.AmountPaid < invoice.TotalAmount)
-                {
-                    invoice.Status = InvoiceStatus.PartiallyPaid;
-                }
+                invoice.Status = invoice.AmountPaid <= 0
+                    ? InvoiceStatus.Sent
+                    : InvoiceStatus.PartiallyPaid;
 
                 await invoiceRepository.UpdateAsync(invoice);
             }
 
-            bool deleted = await paymentRepository.DeleteAsync(id);
-            return deleted;
+            return await paymentRepository.DeleteAsync(id);
         }
 
         private static PaymentDto MapToDto(Payment payment)

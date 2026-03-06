@@ -35,7 +35,6 @@
         public async Task<Company?> GetByIdAsync(Guid id)
         {
             return await context.Companies
-                .Include(c => c.Invoices)
                 .FirstOrDefaultAsync(c => c.Id == id && c.DeletedOn == null);
         }
 

@@ -40,7 +40,9 @@
             builder.HasIndex(e => e.WarehouseId);
             builder.HasIndex(e => e.IssueDate);
             builder.HasIndex(e => e.InvoiceNumber).IsUnique();
-            builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => e.DeletedOn); 
+            builder.HasIndex(e => e.Type);
+            builder.HasIndex(e => new { e.Type, e.Status, e.DeletedOn });
 
             // Relationships
             builder.HasOne(e => e.Company)

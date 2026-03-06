@@ -85,7 +85,7 @@ else
         <!-- ── Summary Cards ── -->
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalProducts")"
-                           Value="@_products.Count.ToString()"
+                           Value="@_warehouseProducts.Count().ToString()"
                            Subtitle="@($"{Localization.GetString("ActiveProducts")}: {_activeProducts.Count()}")"
                            Icon="@Icons.Material.Filled.Inventory2"
                            IconColor="Color.Primary"
@@ -237,7 +237,7 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
                             <MudText Color="Color.Secondary">@Localization.GetString("NoStockData")</MudText>
                         </div>
@@ -473,7 +473,7 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.SwapVert" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
                             <MudText Color="Color.Secondary">@Localization.GetString("NoRecentMovements")</MudText>
                         </div>
@@ -500,10 +500,7 @@ else
     private string _selectedWarehouseName =>
         _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name ?? "";
 
-    // ── Stock filters ──
-    private IEnumerable<ProductDto> _activeProducts =>
-        _products.Where(p => p.IsActive);
-
+    // ── Stock filters — all already warehouse-scoped via _stockLevels ──
     private IEnumerable<StockLevelDto> _lowStockItems =>
         _stockLevels.Where(sl => sl.Quantity > 0 && sl.MinimumQuantity.HasValue && sl.Quantity <= sl.MinimumQuantity);
 
@@ -512,6 +509,13 @@ else
 
     private decimal _totalStockValue =>
         _stockLevels.Sum(sl => sl.Quantity * GetProductPrice(sl.ProductId));
+
+    // Only count products that have a stock level entry in this warehouse
+    private IEnumerable<ProductDto> _warehouseProducts =>
+        _products.Where(p => _stockLevels.Any(sl => sl.ProductId == p.Id));
+
+    private IEnumerable<ProductDto> _activeProducts =>
+        _warehouseProducts.Where(p => p.IsActive);
 
     // ── Top by stock ──
     private List<ProductStockSummary> _topByStock = [];
@@ -555,24 +559,12 @@ else
 
             if (_selectedWarehouseId == Guid.Empty) return;
 
-            // Stock levels for selected warehouse
-            IEnumerable<StockLevelDto> stockLevels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouseId);
-            _stockLevels = stockLevels.ToList();
+            await LoadWarehouseData();
 
-            // All products
-            IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync();
-            _products = products.ToList();
-
-            // Recent transactions for selected warehouse
-            IEnumerable<InventoryTransactionDto> transactions = await InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
-            _recentTransactions = transactions.OrderByDescending(t => t.CreatedAt).Take(5).ToList();
-
-            // All invoices and purchase notes for statistics
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
-            _invoices = invoices.ToList();
-
-            IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
-            _purchaseNotes = purchaseNotes.ToList();
+            if (firstLoad)
+            {
+                await LoadStaticData();
+            }
 
             CalculateTopProducts();
             CalculateProductStatistics();
@@ -587,13 +579,45 @@ else
         }
     }
 
+    private async Task LoadWarehouseData()
+    {
+        IEnumerable<StockLevelDto> stockLevels = await InventoryService
+            .GetStockByWarehouseAsync(_selectedWarehouseId);
+        _stockLevels = stockLevels.ToList();
+
+        IEnumerable<InventoryTransactionDto> transactions = await InventoryService
+            .GetTransactionsByWarehouseAsync(_selectedWarehouseId);
+        _recentTransactions = transactions
+            .OrderByDescending(t => t.CreatedAt)
+            .Take(5)
+            .ToList();
+    }
+
+    private async Task LoadStaticData()
+    {
+        IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync();
+        _products = products.ToList();
+
+        IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
+        _invoices = invoices.ToList();
+
+        IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
+        _purchaseNotes = purchaseNotes.ToList();
+    }
+
+    private async Task OnWarehouseChanged(Guid id)
+    {
+        _selectedWarehouseId = id;
+        await LoadData(false);
+    }
+
     private void CalculateTopProducts()
     {
         _topByStock = _stockLevels
             .GroupBy(sl => sl.ProductId)
             .Select(g =>
             {
-                StockLevelDto? first = _stockLevels.FirstOrDefault(sl => sl.ProductId == g.Key);
+                StockLevelDto? first = g.FirstOrDefault();
                 ProductDto? product = _products.FirstOrDefault(p => p.Id == g.Key);
                 decimal qty = g.Sum(sl => sl.Quantity);
                 decimal min = first?.MinimumQuantity ?? 0;
@@ -616,14 +640,10 @@ else
 
     private void CalculateProductStatistics()
     {
-        // ── Most Purchased ──
-        // Sources: PurchaseNotes line items + Payable Invoice line items
-        // within the selected date range, grouped by ProductId, ranked by total spend
-
         var purchasedByProduct = new Dictionary<Guid, (decimal qty, decimal value)>();
 
-        // From PurchaseNotes
         foreach (PurchaseNoteDto note in _purchaseNotes.Where(pn =>
+            pn.WarehouseId == _selectedWarehouseId &&
             pn.PurchaseDate.Date >= _statsFromDate.Date &&
             pn.PurchaseDate.Date <= _statsToDate.Date))
         {
@@ -640,8 +660,8 @@ else
             }
         }
 
-        // From Payable Invoices
         foreach (InvoiceDto invoice in _invoices.Where(i =>
+            i.WarehouseId == _selectedWarehouseId &&
             i.Type == InvoiceType.Payable &&
             i.IssueDate.Date >= _statsFromDate.Date &&
             i.IssueDate.Date <= _statsToDate.Date))
@@ -676,13 +696,10 @@ else
             .OrderByDescending(p => p.TotalValue)
             .ToList();
 
-        // ── Most Sold ──
-        // Source: Receivable Invoice line items within the selected date range
-        // grouped by ProductId, ranked by total revenue
-
         var soldByProduct = new Dictionary<Guid, (decimal qty, decimal value)>();
 
         foreach (InvoiceDto invoice in _invoices.Where(i =>
+            i.WarehouseId == _selectedWarehouseId &&
             i.Type == InvoiceType.Receivable &&
             i.IssueDate.Date >= _statsFromDate.Date &&
             i.IssueDate.Date <= _statsToDate.Date))
@@ -695,7 +712,7 @@ else
                 var existing = soldByProduct[item.ProductId];
                 soldByProduct[item.ProductId] = (
                     existing.qty + item.Quantity,
-                    existing.value + (item.TotalAmount)
+                    existing.value + item.TotalAmount
                 );
             }
         }
@@ -723,36 +740,24 @@ else
         CalculateProductStatistics();
     }
 
-    private string GetQuantityText(InventoryTransactionType type, decimal quantity)
+    private string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
     {
-        return type switch
-        {
-            InventoryTransactionType.Inbound => $"+{quantity:N2}",
-            InventoryTransactionType.Outbound => $"-{quantity:N2}",
-            InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-            _ => quantity.ToString("N2")
-        };
-    }
+        InventoryTransactionType.Inbound => $"+{quantity:N2}",
+        InventoryTransactionType.Outbound => $"-{quantity:N2}",
+        InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
+        _ => quantity.ToString("N2")
+    };
 
-    private Color GetQuantityColor(InventoryTransactionType type, decimal quantity)
+    private Color GetQuantityColor(InventoryTransactionType type, decimal quantity) => type switch
     {
-        return type switch
-        {
-            InventoryTransactionType.Inbound => Color.Success,
-            InventoryTransactionType.Outbound => Color.Error,
-            InventoryTransactionType.Adjustment => quantity > 0 ? Color.Success : Color.Error,
-            _ => Color.Default
-        };
-    }
+        InventoryTransactionType.Inbound => Color.Success,
+        InventoryTransactionType.Outbound => Color.Error,
+        InventoryTransactionType.Adjustment => quantity > 0 ? Color.Success : Color.Error,
+        _ => Color.Default
+    };
 
     private decimal GetProductPrice(Guid productId) =>
         _products.FirstOrDefault(p => p.Id == productId)?.DefaultPrice ?? 0;
-
-    private async Task OnWarehouseChanged(Guid id)
-    {
-        _selectedWarehouseId = id;
-        await LoadData(false);
-    }
 
     public void Dispose()
     {

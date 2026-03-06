@@ -62,11 +62,9 @@
                 throw new KeyNotFoundException($"Warehouse with ID {warehouseId} not found");
 
             // Validate products
-            foreach (Guid productId in createDto.LineItems.Select(line => line.ProductId))
-            {
-                if (!await productRepository.ExistsAsync(productId))
-                    throw new KeyNotFoundException($"Product with ID {productId} not found");
-            }
+            var productIds = createDto.LineItems.Select(li => li.ProductId).ToList();
+            if (!await productRepository.AllExistAsync(productIds))
+                throw new KeyNotFoundException("One or more products in the line items were not found");
 
             // Generate note number
             string noteNumber = await purchaseNoteRepository.GenerateNoteNumberAsync();
@@ -136,6 +134,11 @@
             // Validate warehouse
             if (!await warehouseRepository.ExistsAsync(updateDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {updateDto.WarehouseId} not found");
+
+            // Validate products
+            var productIds = updateDto.LineItems.Select(li => li.ProductId).ToList();
+            if (!await productRepository.AllExistAsync(productIds))
+                throw new KeyNotFoundException("One or more products in the line items were not found");
 
             // Track status change for inventory transactions
             PurchaseNoteStatus oldStatus = purchaseNote.Status;

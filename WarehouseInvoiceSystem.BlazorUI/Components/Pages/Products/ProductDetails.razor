@@ -8,8 +8,6 @@
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
-@inject IInvoiceService InvoiceService
-@inject IPurchaseNoteService PurchaseNoteService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
@@ -134,8 +132,8 @@ else
                                             <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("GrossMargin")</MudText>
                                         </div>
                                         <MudText Typo="Typo.h5" Class="font-weight-bold"
-                                                 Color="@(_analytics.GrossMarginPercentage > 30 ? Color.Success : Color.Warning)">
-                                            @_analytics.GrossMarginPercentage.ToString("N1")%
+                                                 Color="@(_scopedGrossMarginPct > 30 ? Color.Success : Color.Warning)">
+                                            @_scopedGrossMarginPct.ToString("N1")%
                                         </MudText>
                                     </div>
                                 </MudStack>
@@ -289,27 +287,27 @@ else
                     <MudStack Spacing="3">
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("TotalUnitsSold"):</MudText>
-                            <MudText Class="font-weight-bold">@_analytics.TotalUnitsSold.ToString("N0") @_product.Unit</MudText>
+                            <MudText Class="font-weight-bold">@_scopedTotalUnitsSold.ToString("N0") @_product.Unit</MudText>
                         </div>
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("TotalRevenue"):</MudText>
-                            <MudText Class="font-weight-bold" Color="Color.Success">@_analytics.TotalRevenue.ToString("C")</MudText>
+                            <MudText Class="font-weight-bold" Color="Color.Success">@_scopedTotalRevenue.ToString("C")</MudText>
                         </div>
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("AverageSaleQuantity"):</MudText>
-                            <MudText>@_analytics.AverageSaleQuantity.ToString("N2") @_product.Unit</MudText>
+                            <MudText>@_scopedAvgSaleQty.ToString("N2") @_product.Unit</MudText>
                         </div>
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("LastSale"):</MudText>
-                            <MudText>@(_analytics.LastSaleDate?.ToString("dd MMM yyyy") ?? Localization.GetString("Never"))</MudText>
+                            <MudText>@(_scopedLastSaleDate?.ToString("dd MMM yyyy") ?? Localization.GetString("Never"))</MudText>
                         </div>
-                        @if (!string.IsNullOrEmpty(_analytics.TopCustomer))
+                        @if (!string.IsNullOrEmpty(_scopedTopCustomer.name))
                         {
                             <MudDivider />
                             <div>
                                 <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.GetString("TopCustomer")</MudText>
-                                <MudText Class="font-weight-bold">@_analytics.TopCustomer</MudText>
-                                <MudText Typo="Typo.caption">@_analytics.TopCustomerQuantity.ToString("N2") @_product.Unit</MudText>
+                                <MudText Class="font-weight-bold">@_scopedTopCustomer.name</MudText>
+                                <MudText Typo="Typo.caption">@_scopedTopCustomer.qty.ToString("N2") @_product.Unit</MudText>
                             </div>
                         }
                     </MudStack>
@@ -331,27 +329,27 @@ else
                     <MudStack Spacing="3">
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("TotalUnitsPurchased"):</MudText>
-                            <MudText Class="font-weight-bold">@_analytics.TotalUnitsPurchased.ToString("N0") @_product.Unit</MudText>
+                            <MudText Class="font-weight-bold">@_scopedTotalUnitsPurchased.ToString("N0") @_product.Unit</MudText>
                         </div>
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("TotalCost"):</MudText>
-                            <MudText Class="font-weight-bold" Color="Color.Error">@_analytics.TotalPurchaseCost.ToString("C")</MudText>
+                            <MudText Class="font-weight-bold" Color="Color.Error">@_scopedTotalPurchaseCost.ToString("C")</MudText>
                         </div>
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("AveragePurchaseQuantity"):</MudText>
-                            <MudText>@_analytics.AveragePurchaseQuantity.ToString("N2") @_product.Unit</MudText>
+                            <MudText>@_scopedAvgPurchaseQty.ToString("N2") @_product.Unit</MudText>
                         </div>
                         <div class="d-flex justify-space-between">
                             <MudText>@Localization.GetString("LastPurchase"):</MudText>
-                            <MudText>@(_analytics.LastPurchaseDate?.ToString("dd MMM yyyy") ?? Localization.GetString("Never"))</MudText>
+                            <MudText>@(_scopedLastPurchaseDate?.ToString("dd MMM yyyy") ?? Localization.GetString("Never"))</MudText>
                         </div>
-                        @if (!string.IsNullOrEmpty(_analytics.TopSupplier))
+                        @if (!string.IsNullOrEmpty(_scopedTopSupplier.name))
                         {
                             <MudDivider />
                             <div>
                                 <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.GetString("TopSupplier")</MudText>
-                                <MudText Class="font-weight-bold">@_analytics.TopSupplier</MudText>
-                                <MudText Typo="Typo.caption">@_analytics.TopSupplierQuantity.ToString("N2") @_product.Unit</MudText>
+                                <MudText Class="font-weight-bold">@_scopedTopSupplier.name</MudText>
+                                <MudText Typo="Typo.caption">@_scopedTopSupplier.qty.ToString("N2") @_product.Unit</MudText>
                             </div>
                         }
                     </MudStack>
@@ -378,7 +376,7 @@ else
                                     <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("AveragePurchasePrice")</MudText>
                                 </div>
-                                <MudText Typo="Typo.h6" Class="font-weight-medium">@_analytics.AveragePurchasePrice.ToString("C")</MudText>
+                                <MudText Typo="Typo.h6" Class="font-weight-medium">@_scopedAvgPurchasePrice.ToString("C")</MudText>
                             </div>
                         </MudItem>
                         <MudItem xs="12" sm="6" md="3">
@@ -396,8 +394,8 @@ else
                                     <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("GrossMargin")</MudText>
                                 </div>
-                                <MudText Typo="Typo.h6" Color="@(_analytics.GrossMarginPercentage > 30 ? Color.Success : Color.Warning)">
-                                    @_analytics.GrossMarginPercentage.ToString("N1")%
+                                <MudText Typo="Typo.h6" Color="@(_scopedGrossMarginPct > 30 ? Color.Success : Color.Warning)">
+                                    @_scopedGrossMarginPct.ToString("N1")%
                                 </MudText>
                             </div>
                         </MudItem>
@@ -408,7 +406,7 @@ else
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("EstimatedProfit")</MudText>
                                 </div>
                                 <MudText Typo="Typo.h6" Color="Color.Success">
-                                    @(((_analytics.CurrentSellingPrice - _analytics.AveragePurchasePrice) * _filteredTotalStock).ToString("C"))
+                                    @_scopedEstimatedProfit.ToString("C")
                                 </MudText>
                             </div>
                         </MudItem>
@@ -481,11 +479,11 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.SwapVert"
                                      Size="Size.Large"
                                      Color="Color.Secondary"
-                                     Class="mb-2" />
+                                     Class="mb-2 mr-2" />
                             <MudText Color="Color.Secondary">@Localization.GetString("NoRecentMovements")</MudText>
                         </div>
                     }
@@ -645,11 +643,11 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@(_historyMode == HistoryMode.Purchased ? Icons.Material.Filled.ShoppingCart : Icons.Material.Filled.PointOfSale)"
                                      Size="Size.Large"
                                      Color="Color.Secondary"
-                                     Class="mb-2" />
+                                     Class="mb-2 mr-2" />
                             <MudText Color="Color.Secondary">
                                 @(_historyMode == HistoryMode.Purchased
                                                         ? Localization.GetString("NoPurchaseData")
@@ -683,20 +681,67 @@ else
     private bool _filteredIsOutOfStock => _filteredTotalStock == 0;
 
     private bool _filteredHasLowStock => _selectedWarehouseId.HasValue
-        ? _analytics.StockByWarehouse.Any(s => s.WarehouseId == _selectedWarehouseId.Value && s.Quantity <= s.MinimumQuantity && s.Quantity > 0)
+        ? _analytics.StockByWarehouse.Any(s => s.WarehouseId == _selectedWarehouseId.Value
+                                            && s.Quantity <= s.MinimumQuantity
+                                            && s.Quantity > 0)
         : _analytics.HasLowStock;
 
     private IEnumerable<RecentTransactionDto> _filteredTransactions => _selectedWarehouseId.HasValue
-        ? _analytics.RecentTransactions.Where(t => _warehouses.Any(w => w.Id == _selectedWarehouseId.Value && w.Name == t.WarehouseName))
+        ? _analytics.RecentTransactions.Where(t => t.WarehouseName ==
+              _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId.Value)?.Name)
         : _analytics.RecentTransactions;
 
     private string _selectedWarehouseName => _selectedWarehouseId.HasValue
         ? _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId.Value)?.Name ?? ""
         : Localization.GetString("AllWarehouses");
 
-    private WarehouseStockDto? _filteredStockByWarehouse => _selectedWarehouseId.HasValue
-        ? _analytics.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
-        : null;
+    private IEnumerable<ProductTransactionRow> _scopedPurchased =>
+        _selectedWarehouseId.HasValue
+            ? _allHistoryPurchased.Where(r => r.WarehouseId == _selectedWarehouseId.Value)
+            : _allHistoryPurchased;
+
+    private IEnumerable<ProductTransactionRow> _scopedSold =>
+        _selectedWarehouseId.HasValue
+            ? _allHistorySold.Where(r => r.WarehouseId == _selectedWarehouseId.Value)
+            : _allHistorySold;
+
+    // Sales Analytics — scoped
+    private decimal _scopedTotalUnitsSold => _scopedSold.Sum(r => r.Quantity);
+    private decimal _scopedTotalRevenue => _scopedSold.Sum(r => r.TotalPrice);
+    private decimal _scopedAvgSaleQty => _scopedSold.Any() ? _scopedSold.Average(r => r.Quantity) : 0;
+    private DateTime? _scopedLastSaleDate => _scopedSold.Any() ? _scopedSold.Max(r => r.Date) : null;
+
+    private (string name, decimal qty) _scopedTopCustomer =>
+        _scopedSold
+            .GroupBy(r => r.PartyName)
+            .Select(g => (g.Key, g.Sum(r => r.Quantity)))
+            .OrderByDescending(x => x.Item2)
+            .FirstOrDefault();
+
+    // Purchase Analytics — scoped
+    private decimal _scopedTotalUnitsPurchased => _scopedPurchased.Sum(r => r.Quantity);
+    private decimal _scopedTotalPurchaseCost => _scopedPurchased.Sum(r => r.TotalPrice);
+    private decimal _scopedAvgPurchaseQty => _scopedPurchased.Any() ? _scopedPurchased.Average(r => r.Quantity) : 0;
+    private DateTime? _scopedLastPurchaseDate => _scopedPurchased.Any() ? _scopedPurchased.Max(r => r.Date) : null;
+
+    private decimal _scopedAvgPurchasePrice =>
+        _scopedPurchased.Any() ? _scopedPurchased.Average(r => r.UnitPrice) : 0;
+
+    private (string name, decimal qty) _scopedTopSupplier =>
+        _scopedPurchased
+            .GroupBy(r => r.PartyName)
+            .Select(g => (g.Key, g.Sum(r => r.Quantity)))
+            .OrderByDescending(x => x.Item2)
+            .FirstOrDefault();
+
+    // Profitability — scoped
+    private decimal _scopedGrossMarginPct =>
+        _analytics.CurrentSellingPrice > 0 && _scopedAvgPurchasePrice > 0
+            ? (_analytics.CurrentSellingPrice - _scopedAvgPurchasePrice) / _analytics.CurrentSellingPrice * 100
+            : _analytics.GrossMarginPercentage;
+
+    private decimal _scopedEstimatedProfit =>
+        (_analytics.CurrentSellingPrice - _scopedAvgPurchasePrice) * _filteredTotalStock;
 
     protected override async Task OnInitializedAsync()
     {
@@ -742,21 +787,17 @@ else
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
         _selectedWarehouseId = warehouseId;
+        _historyPartyFilter = null;
         await InvokeAsync(StateHasChanged);
     }
 
-    private void EditProduct()
-    {
+    private void EditProduct() =>
         Navigation.NavigateTo($"/products/edit/{Id}");
-    }
 
-    private string CreateAdjustLink()
-    {
-        if (_selectedWarehouseId != null)
-            return $"/inventory/adjust/?productId={Id}&warehouseId={_selectedWarehouseId}";
-
-        return $"/inventory/adjust?productId={Id}";
-    }
+    private string CreateAdjustLink() =>
+        _selectedWarehouseId.HasValue
+            ? $"/inventory/adjust/?productId={Id}&warehouseId={_selectedWarehouseId}"
+            : $"/inventory/adjust?productId={Id}";
 
     private async Task DeleteProduct()
     {
@@ -796,17 +837,22 @@ else
 
     private List<ProductTransactionRow> _allHistoryPurchased = [];
     private List<ProductTransactionRow> _allHistorySold = [];
-    private List<ProductTransactionRow> _allHistory => _historyMode == HistoryMode.Purchased ? _allHistoryPurchased : _allHistorySold;
 
-    private int _totalTransactionCount => _allHistoryPurchased.Count + _allHistorySold.Count;
+    // Active list for history mode — scoped to selected warehouse
+    private IEnumerable<ProductTransactionRow> _activeHistory =>
+        _historyMode == HistoryMode.Purchased ? _scopedPurchased : _scopedSold;
 
-    private IEnumerable<ProductTransactionRow> _filteredHistory => _allHistory
+    private int _totalTransactionCount =>
+        _scopedPurchased.Count() + _scopedSold.Count();
+
+    private IEnumerable<ProductTransactionRow> _filteredHistory => _activeHistory
         .Where(h => _historyPartyFilter == null || h.PartyName == _historyPartyFilter)
         .Where(h => _historyFrom == null || h.Date.Date >= _historyFrom.Value.Date)
         .Where(h => _historyTo == null || h.Date.Date <= _historyTo.Value.Date)
         .OrderByDescending(h => h.Date);
 
-    private IEnumerable<string> _historyParties => _allHistory
+    // Party list also scoped to selected warehouse
+    private IEnumerable<string> _historyParties => _activeHistory
         .Select(h => h.PartyName)
         .Distinct()
         .OrderBy(p => p);
@@ -826,63 +872,36 @@ else
 
         try
         {
-            // ── Purchased: PurchaseNotes + Payable Invoices ──
-            IEnumerable<PurchaseNoteDto> notes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
-            foreach (PurchaseNoteDto note in notes)
-            {
-                if (note.LineItems == null) continue;
-                foreach (var item in note.LineItems.Where(i => i.ProductId == Id))
-                {
-                    _allHistoryPurchased.Add(new ProductTransactionRow
-                    {
-                        Date = note.PurchaseDate,
-                        DocumentNumber = note.NoteNumber,
-                        DocumentUrl = $"/purchase-notes/{note.Id}",
-                        PartyName = note.IndividualFullName ?? "-",
-                        Quantity = item.Quantity,
-                        UnitPrice = item.UnitPrice,
-                        TotalPrice = item.UnitPrice * item.Quantity
-                    });
-                }
-            }
+            ProductTransactionHistoryDto history = await ProductService
+                .GetProductTransactionHistoryAsync(Id);
 
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
-            foreach (InvoiceDto invoice in invoices.Where(i => i.Type == InvoiceType.Payable))
-            {
-                if (invoice.LineItems == null) continue;
-                foreach (var item in invoice.LineItems.Where(i => i.ProductId == Id))
+            _allHistoryPurchased = history.Purchased
+                .Select(r => new ProductTransactionRow
                 {
-                    _allHistoryPurchased.Add(new ProductTransactionRow
-                    {
-                        Date = invoice.IssueDate,
-                        DocumentNumber = invoice.InvoiceNumber,
-                        DocumentUrl = $"/invoices/{invoice.Id}",
-                        PartyName = invoice.CompanyName ?? "-",
-                        Quantity = item.Quantity,
-                        UnitPrice = item.UnitPrice,
-                        TotalPrice = item.TotalAmount
-                    });
-                }
-            }
+                    Date = r.Date,
+                    DocumentNumber = r.DocumentNumber,
+                    DocumentUrl = r.DocumentUrl,
+                    PartyName = r.PartyName,
+                    WarehouseId = r.WarehouseId,
+                    WarehouseName = r.WarehouseName,
+                    Quantity = r.Quantity,
+                    UnitPrice = r.UnitPrice,
+                    TotalPrice = r.TotalPrice
+                }).ToList();
 
-            // ── Sold: Receivable Invoices ──
-            foreach (InvoiceDto invoice in invoices.Where(i => i.Type == InvoiceType.Receivable))
-            {
-                if (invoice.LineItems == null) continue;
-                foreach (var item in invoice.LineItems.Where(i => i.ProductId == Id))
+            _allHistorySold = history.Sold
+                .Select(r => new ProductTransactionRow
                 {
-                    _allHistorySold.Add(new ProductTransactionRow
-                    {
-                        Date = invoice.IssueDate,
-                        DocumentNumber = invoice.InvoiceNumber,
-                        DocumentUrl = $"/invoices/{invoice.Id}",
-                        PartyName = invoice.CompanyName ?? "-",
-                        Quantity = item.Quantity,
-                        UnitPrice = item.UnitPrice,
-                        TotalPrice = item.TotalAmount
-                    });
-                }
-            }
+                    Date = r.Date,
+                    DocumentNumber = r.DocumentNumber,
+                    DocumentUrl = r.DocumentUrl,
+                    PartyName = r.PartyName,
+                    WarehouseId = r.WarehouseId,
+                    WarehouseName = r.WarehouseName,
+                    Quantity = r.Quantity,
+                    UnitPrice = r.UnitPrice,
+                    TotalPrice = r.TotalPrice
+                }).ToList();
         }
         catch (Exception ex)
         {
@@ -908,11 +927,12 @@ else
         public string DocumentNumber { get; set; } = string.Empty;
         public string DocumentUrl { get; set; } = string.Empty;
         public string PartyName { get; set; } = string.Empty;
+        public Guid WarehouseId { get; set; }
+        public string WarehouseName { get; set; } = string.Empty;
         public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
     }
-
 
     public void Dispose()
     {

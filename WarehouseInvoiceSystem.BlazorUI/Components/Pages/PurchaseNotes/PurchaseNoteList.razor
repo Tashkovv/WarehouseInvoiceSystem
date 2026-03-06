@@ -224,7 +224,15 @@
 
         try
         {
-            IEnumerable<PurchaseNoteDto> notes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
+            // Use status-scoped call when a specific tab is selected
+            IEnumerable<PurchaseNoteDto> notes = _activeTabIndex switch
+            {
+                1 => await PurchaseNoteService.GetPurchaseNotesByStatusAsync(PurchaseNoteStatus.Draft),
+                2 => await PurchaseNoteService.GetPurchaseNotesByStatusAsync(PurchaseNoteStatus.Completed),
+                3 => await PurchaseNoteService.GetPurchaseNotesByStatusAsync(PurchaseNoteStatus.Paid),
+                _ => await PurchaseNoteService.GetAllPurchaseNotesAsync()
+            };
+
             _allNotes = notes.ToList();
             ApplyFilters();
         }
@@ -361,13 +369,19 @@
     {
         try
         {
-            await PurchaseNoteService.MarkAsPaidAsync(id);
+            PurchaseNoteDto updated = await PurchaseNoteService.MarkAsPaidAsync(id);
             Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
-            await LoadNotes();
+
+            // Update local state instead of full reload
+            int index = _allNotes.FindIndex(n => n.Id == id);
+            if (index >= 0)
+                _allNotes[index] = updated;
+
+            ApplyFilters();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error marking note as paid: {ex.Message}");
+            Console.WriteLine($"Error marking as paid: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
         }
     }
@@ -388,7 +402,10 @@
                 if (deleted)
                 {
                     Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
-                    await LoadNotes();
+
+                    // Remove from local list instead of full reload
+                    _allNotes.RemoveAll(n => n.Id == id);
+                    ApplyFilters();
                 }
             }
             catch (Exception ex)

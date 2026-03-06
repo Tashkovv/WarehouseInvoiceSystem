@@ -25,9 +25,9 @@
 
             // Indexes
             builder.HasIndex(e => e.PaymentDate);
-            builder.HasIndex(e => e.InvoiceId);
             builder.HasIndex(e => e.ReferenceNumber);
             builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => new { e.InvoiceId, e.DeletedOn });
 
             // Relationships
             builder.HasOne(e => e.Invoice)

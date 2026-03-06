@@ -32,12 +32,10 @@
 
         public async Task<Payment?> GetByIdAsync(Guid id)
         {
-            Payment? payment = await context.Payments
+            return await context.Payments
                 .Include(p => p.Invoice)
                     .ThenInclude(i => i.Company)
                 .FirstOrDefaultAsync(p => p.Id == id && p.DeletedOn == null);
-
-            return payment;
         }
 
         public async Task<Payment> CreateAsync(Payment payment)

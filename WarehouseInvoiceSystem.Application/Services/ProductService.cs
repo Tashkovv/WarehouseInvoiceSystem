@@ -1,18 +1,17 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
     using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
-    using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.DTOs.Product;
-    using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
 
     public class ProductService(IProductRepository productRepository,
                                 IInventoryService inventoryService,
-                                IInvoiceService invoiceService,
-                                IPurchaseNoteService purchaseNoteService) : IProductService
+                                IInvoiceRepository invoiceRepository,
+                                IPurchaseNoteRepository purchaseNoteRepository) : IProductService
     {
         public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
         {
@@ -70,6 +69,62 @@
             await PopulateRecentTransactions(productId, analytics);
 
             return analytics;
+        }
+
+        public async Task<ProductTransactionHistoryDto> GetProductTransactionHistoryAsync(Guid productId)
+        {
+            var result = new ProductTransactionHistoryDto();
+
+            IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository
+                .GetLineItemsByProductIdAsync(productId);
+
+            result.Purchased = purchaseLines.Select(li => new ProductTransactionRowDto
+            {
+                Date = li.PurchaseNote.PurchaseDate,
+                DocumentNumber = li.PurchaseNote.NoteNumber,
+                DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
+                PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
+                WarehouseId = li.PurchaseNote.WarehouseId,
+                WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
+                Quantity = li.Quantity,
+                UnitPrice = li.UnitPrice,
+                TotalPrice = li.Amount
+            }).ToList();
+
+            IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository
+                .GetLineItemsByProductIdAsync(productId);
+
+            result.Purchased.AddRange(invoiceLines
+                .Where(li => li.Invoice.Type == InvoiceType.Payable)
+                .Select(li => new ProductTransactionRowDto
+                {
+                    Date = li.Invoice.IssueDate,
+                    DocumentNumber = li.Invoice.InvoiceNumber,
+                    DocumentUrl = $"/invoices/{li.Invoice.Id}",
+                    PartyName = li.Invoice.Company?.Name ?? "-",
+                    WarehouseId = li.Invoice.WarehouseId,
+                    WarehouseName = li.Invoice.Warehouse?.Name ?? "-",
+                    Quantity = li.Quantity,
+                    UnitPrice = li.UnitPrice,
+                    TotalPrice = li.TotalAmount
+                }));
+
+            result.Sold = invoiceLines
+                .Where(li => li.Invoice.Type == InvoiceType.Receivable)
+                .Select(li => new ProductTransactionRowDto
+                {
+                    Date = li.Invoice.IssueDate,
+                    DocumentNumber = li.Invoice.InvoiceNumber,
+                    DocumentUrl = $"/invoices/{li.Invoice.Id}",
+                    PartyName = li.Invoice.Company?.Name ?? "-",
+                    WarehouseId = li.Invoice.WarehouseId,
+                    WarehouseName = li.Invoice.Warehouse?.Name ?? "-",
+                    Quantity = li.Quantity,
+                    UnitPrice = li.UnitPrice,
+                    TotalPrice = li.TotalAmount
+                }).ToList();
+
+            return result;
         }
 
         public async Task<ProductDto> CreateProductAsync(CreateProductDto createDto)
@@ -151,48 +206,30 @@
         {
             try
             {
-                // Get all invoices (receivable = sales)
-                IEnumerable<InvoiceDto> allInvoices = await invoiceService.GetAllInvoicesAsync();
-                var salesInvoices = allInvoices
-                    .Where(i => i.Type == Domain.Enums.InvoiceType.Receivable)
+                IEnumerable<InvoiceLine> lines = await invoiceRepository
+                    .GetLineItemsByProductIdAsync(productId);
+
+                var salesLines = lines
+                    .Where(li => li.Invoice.Type == InvoiceType.Receivable)
                     .ToList();
 
-                // Get all line items for this product
-                var productLines = salesInvoices
-                    .SelectMany(i => i.LineItems.Where(li => li.ProductId == productId))
-                    .ToList();
+                if (salesLines.Count == 0) return;
 
-                if (productLines.Count > 0)
+                analytics.TotalUnitsSold = salesLines.Sum(li => li.Quantity);
+                analytics.TotalRevenue = salesLines.Sum(li => li.TotalAmount);
+                analytics.AverageSaleQuantity = (decimal)salesLines.Average(li => li.Quantity);
+                analytics.LastSaleDate = salesLines.Max(li => li.Invoice.IssueDate);
+
+                var topCustomer = salesLines
+                    .GroupBy(li => li.Invoice.Company?.Name ?? "")
+                    .Select(g => new { Name = g.Key, Qty = g.Sum(li => li.Quantity) })
+                    .OrderByDescending(x => x.Qty)
+                    .FirstOrDefault();
+
+                if (topCustomer != null)
                 {
-                    analytics.TotalUnitsSold = productLines.Sum(li => li.Quantity);
-                    analytics.TotalRevenue = productLines.Sum(li => li.TotalAmount);
-                    analytics.AverageSaleQuantity = (decimal)productLines.Average(li => li.Quantity);
-
-                    // Last sale date
-                    var lastSale = salesInvoices
-                        .Where(i => i.LineItems.Any(li => li.ProductId == productId))
-                        .OrderByDescending(i => i.IssueDate)
-                        .FirstOrDefault();
-                    analytics.LastSaleDate = lastSale?.IssueDate;
-
-                    // Top customer
-                    var customerSales = salesInvoices
-                        .Where(i => i.LineItems.Any(li => li.ProductId == productId))
-                        .GroupBy(i => i.CompanyName)
-                        .Select(g => new
-                        {
-                            CustomerName = g.Key,
-                            TotalQuantity = g.SelectMany(i => i.LineItems.Where(li => li.ProductId == productId))
-                                            .Sum(li => li.Quantity)
-                        })
-                        .OrderByDescending(x => x.TotalQuantity)
-                        .FirstOrDefault();
-
-                    if (customerSales != null)
-                    {
-                        analytics.TopCustomer = customerSales.CustomerName;
-                        analytics.TopCustomerQuantity = customerSales.TotalQuantity;
-                    }
+                    analytics.TopCustomer = topCustomer.Name;
+                    analytics.TopCustomerQuantity = topCustomer.Qty;
                 }
             }
             catch (Exception ex)
@@ -205,47 +242,29 @@
         {
             try
             {
-                // Get all purchase notes
-                IEnumerable<PurchaseNoteDto> allPurchaseNotes = await purchaseNoteService.GetAllPurchaseNotesAsync();
-                var purchaseNotesList = allPurchaseNotes.ToList();
+                IEnumerable<PurchaseNoteLine> lines = await purchaseNoteRepository
+                    .GetLineItemsByProductIdAsync(productId);
 
-                // Get all line items for this product
-                var productLines = purchaseNotesList
-                    .SelectMany(pn => pn.LineItems.Where(li => li.ProductId == productId))
-                    .ToList();
+                var purchaseLines = lines.ToList();
 
-                if (productLines.Count > 0)
+                if (purchaseLines.Count == 0) return;
+
+                analytics.TotalUnitsPurchased = purchaseLines.Sum(li => li.Quantity);
+                analytics.TotalPurchaseCost = purchaseLines.Sum(li => li.Amount);
+                analytics.AveragePurchaseQuantity = (decimal)purchaseLines.Average(li => li.Quantity);
+                analytics.AveragePurchasePrice = purchaseLines.Average(li => li.UnitPrice);
+                analytics.LastPurchaseDate = purchaseLines.Max(li => li.PurchaseNote.PurchaseDate);
+
+                var topSupplier = purchaseLines
+                    .GroupBy(li => li.PurchaseNote.Individual?.FullName ?? "")
+                    .Select(g => new { Name = g.Key, Qty = g.Sum(li => li.Quantity) })
+                    .OrderByDescending(x => x.Qty)
+                    .FirstOrDefault();
+
+                if (topSupplier != null)
                 {
-                    analytics.TotalUnitsPurchased = productLines.Sum(li => li.Quantity);
-                    analytics.TotalPurchaseCost = productLines.Sum(li => li.Amount);
-                    analytics.AveragePurchaseQuantity = (decimal)productLines.Average(li => li.Quantity);
-                    analytics.AveragePurchasePrice = productLines.Average(li => li.UnitPrice);
-
-                    // Last purchase date
-                    var lastPurchase = purchaseNotesList
-                        .Where(pn => pn.LineItems.Any(li => li.ProductId == productId))
-                        .OrderByDescending(pn => pn.PurchaseDate)
-                        .FirstOrDefault();
-                    analytics.LastPurchaseDate = lastPurchase?.PurchaseDate;
-
-                    // Top supplier (individual)
-                    var supplierPurchases = purchaseNotesList
-                        .Where(pn => pn.LineItems.Any(li => li.ProductId == productId))
-                        .GroupBy(pn => pn.IndividualFullName)
-                        .Select(g => new
-                        {
-                            SupplierName = g.Key,
-                            TotalQuantity = g.SelectMany(pn => pn.LineItems.Where(li => li.ProductId == productId))
-                                            .Sum(li => li.Quantity)
-                        })
-                        .OrderByDescending(x => x.TotalQuantity)
-                        .FirstOrDefault();
-
-                    if (supplierPurchases != null)
-                    {
-                        analytics.TopSupplier = supplierPurchases.SupplierName;
-                        analytics.TopSupplierQuantity = supplierPurchases.TotalQuantity;
-                    }
+                    analytics.TopSupplier = topSupplier.Name;
+                    analytics.TopSupplierQuantity = topSupplier.Qty;
                 }
             }
             catch (Exception ex)

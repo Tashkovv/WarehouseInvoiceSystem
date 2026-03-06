@@ -336,9 +336,7 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadCompany();
-        await LoadBalance();
-        await LoadInvoices();
+        await Task.WhenAll(LoadCompany(), LoadBalance(), LoadInvoices());
     }
 
     private async void OnLanguageChanged()

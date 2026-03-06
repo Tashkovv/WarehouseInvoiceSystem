@@ -22,6 +22,12 @@
             builder.Property(e => e.Unit).IsRequired().HasMaxLength(10);
             builder.Property(e => e.DefaultPrice).HasPrecision(18, 2).IsRequired();
             builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            // Indexes
+            builder.HasIndex(e => e.Code).IsUnique();
+            builder.HasIndex(e => e.IsActive);
+            builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => e.Name);
         }
     }
 }

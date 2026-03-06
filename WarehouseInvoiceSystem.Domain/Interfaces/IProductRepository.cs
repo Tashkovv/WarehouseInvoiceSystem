@@ -10,6 +10,7 @@
         Task<Product?> GetByIdAsync(Guid id);
         Task<Product?> GetByCodeAsync(string code);
         Task<bool> ExistsAsync(Guid id);
+        Task<bool> AllExistAsync(IEnumerable<Guid> ids);
         Task<bool> CodeExistsAsync(string code, Guid? excludeId = null);
         Task<Product> CreateAsync(Product product);
         Task<Product> UpdateAsync(Product product);

@@ -361,13 +361,11 @@
     private string _searchString = "";
     private int _activeTabIndex = 0;
 
-    // Pagination variables
     private int _currentPage = 1;
     private int _itemsPerPage = 10;
     private int _totalInvoices = 0;
     private int _totalPages = 1;
 
-    // Filter variables
     private InvoiceStatus? _filterStatus;
     private InvoiceType? _filterType;
     private string? _filterCompany;
@@ -378,7 +376,6 @@
     private DateTime? _filterDueDateFrom;
     private DateTime? _filterDueDateTo;
 
-    // Sort variables
     private string _sortBy = "CreatedAt";
     private bool _sortAscending = false;
 
@@ -418,8 +415,31 @@
 
         try
         {
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
+            IEnumerable<InvoiceDto> invoices;
+
+            if (!string.IsNullOrWhiteSpace(StatusParameter) &&
+                Enum.TryParse<InvoiceStatus>(StatusParameter, true, out InvoiceStatus paramStatus))
+            {
+                invoices = await InvoiceService.GetInvoicesByStatusAsync(paramStatus);
+
+                _filterStatus = paramStatus;
+                StatusParameter = string.Empty;
+            }
+            else if (!string.IsNullOrWhiteSpace(CompanyIdParameter) &&
+                     Guid.TryParse(CompanyIdParameter, out Guid companyId))
+            {
+                invoices = await InvoiceService.GetInvoicesByCompanyAsync(companyId);
+
+                _filterCompany = invoices.FirstOrDefault()?.CompanyName;
+                CompanyIdParameter = null;
+            }
+            else
+            {
+                invoices = await InvoiceService.GetAllInvoicesAsync();
+            }
+
             _allInvoices = invoices.ToList();
+
             ApplyFilters();
         }
         catch (Exception ex)
@@ -437,73 +457,33 @@
     {
         IEnumerable<InvoiceDto> filtered = _allInvoices;
 
-        // Set status filter from query parameter if available
-        if (!string.IsNullOrWhiteSpace(StatusParameter))
-        {
-            _filterStatus = Enum.TryParse<InvoiceStatus>(StatusParameter, true, out var status) ? status : null;
-            StatusParameter = string.Empty;
-        }
-
-        if (!string.IsNullOrWhiteSpace(CompanyIdParameter))
-        {
-            _filterCompany = _allInvoices.Where(c => c.CompanyId.ToString().Equals(CompanyIdParameter))
-                                         .Select(i => i.CompanyName)
-                                         .FirstOrDefault();
-            CompanyIdParameter = null;
-        }
-
-        // Apply Status filter
         if (_filterStatus.HasValue)
-        {
             filtered = filtered.Where(i => i.Status == _filterStatus.Value);
-        }
 
-        // Apply Type filter
         if (_filterType.HasValue)
-        {
             filtered = filtered.Where(i => i.Type == _filterType.Value);
-        }
 
-        // Apply Company filter
         if (!string.IsNullOrWhiteSpace(_filterCompany))
-        {
             filtered = filtered.Where(i => i.CompanyName.Equals(_filterCompany, StringComparison.OrdinalIgnoreCase));
-        }
 
-        // Apply Amount Range filter
         if (_filterAmountMin.HasValue)
-        {
             filtered = filtered.Where(i => i.TotalAmount >= _filterAmountMin.Value);
-        }
 
         if (_filterAmountMax.HasValue)
-        {
             filtered = filtered.Where(i => i.TotalAmount <= _filterAmountMax.Value);
-        }
 
-        // Apply Issue Date Range filter
         if (_filterIssueDateFrom.HasValue)
-        {
             filtered = filtered.Where(i => i.IssueDate.Date >= _filterIssueDateFrom.Value.Date);
-        }
 
         if (_filterIssueDateTo.HasValue)
-        {
             filtered = filtered.Where(i => i.IssueDate.Date <= _filterIssueDateTo.Value.Date);
-        }
 
-        // Apply Due Date Range filter
         if (_filterDueDateFrom.HasValue)
-        {
             filtered = filtered.Where(i => i.DueDate.Date >= _filterDueDateFrom.Value.Date);
-        }
 
         if (_filterDueDateTo.HasValue)
-        {
             filtered = filtered.Where(i => i.DueDate.Date <= _filterDueDateTo.Value.Date);
-        }
 
-        // Apply Search filter
         if (!string.IsNullOrWhiteSpace(_searchString))
         {
             string search = _searchString.ToLower();
@@ -513,7 +493,6 @@
                 i.TotalAmount.ToString().Contains(search));
         }
 
-        // Apply sorting
         filtered = _sortAscending
             ? filtered.OrderBy(GetSortProperty)
             : filtered.OrderByDescending(GetSortProperty);
@@ -521,23 +500,17 @@
         _filteredInvoices = filtered.ToList();
         _totalInvoices = _filteredInvoices.Count;
 
-        // Calculate pagination
         UpdatePagination();
     }
 
     private void UpdatePagination()
     {
         _currentPage = 1;
-        // Calculate total pages
         _totalPages = (int)Math.Ceiling((double)_totalInvoices / _itemsPerPage);
 
-        // Ensure current page is valid
         if (_currentPage > _totalPages && _totalPages > 0)
-        {
             _currentPage = _totalPages;
-        }
 
-        // Get paginated items
         int skipCount = (_currentPage - 1) * _itemsPerPage;
         _paginatedInvoices = _filteredInvoices
             .Skip(skipCount)
@@ -592,7 +565,6 @@
         ResetPaginationAndApplyFilters();
     }
 
-    // Pagination methods
     private void PreviousPage()
     {
         if (_currentPage > 1)
@@ -614,45 +586,37 @@
     private void OnRowClick(TableRowClickEventArgs<InvoiceDto> args)
     {
         if (args.MouseEventArgs.Detail == 2)
-        {
             ViewInvoice(args.Item!.Id);
-        }
     }
 
-    private Color GetStatusColor(InvoiceStatus? status)
+    private Color GetStatusColor(InvoiceStatus? status) => status switch
     {
-        return status switch
-        {
-            InvoiceStatus.Draft => Color.Default,
-            InvoiceStatus.Sent => Color.Info,
-            InvoiceStatus.PartiallyPaid => Color.Warning,
-            InvoiceStatus.Paid => Color.Success,
-            InvoiceStatus.Overdue => Color.Error,
-            InvoiceStatus.Cancelled => Color.Default,
-            _ => Color.Default
-        };
-    }
+        InvoiceStatus.Draft => Color.Default,
+        InvoiceStatus.Sent => Color.Info,
+        InvoiceStatus.PartiallyPaid => Color.Warning,
+        InvoiceStatus.Paid => Color.Success,
+        InvoiceStatus.Overdue => Color.Error,
+        InvoiceStatus.Cancelled => Color.Default,
+        _ => Color.Default
+    };
 
-    private string GetStatusText(InvoiceStatus? status)
+    private string GetStatusText(InvoiceStatus? status) => status switch
     {
-        return status switch
-        {
-            InvoiceStatus.Draft => Localization.GetString("Draft"),
-            InvoiceStatus.Sent => Localization.GetString("Sent"),
-            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-            InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-            InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-            InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
-            _ => status?.ToString() ?? string.Empty
-        };
-    }
+        InvoiceStatus.Draft => Localization.GetString("Draft"),
+        InvoiceStatus.Sent => Localization.GetString("Sent"),
+        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
+        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
+        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
+        InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+        _ => status?.ToString() ?? string.Empty
+    };
 
     private async Task<IEnumerable<string>> SearchCompanies(string value, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(value))
             return _allInvoices.Select(i => i.CompanyName).Distinct().OrderBy(c => c);
 
-        var search = value.ToLower();
+        string search = value.ToLower();
         return _allInvoices
             .Select(i => i.CompanyName)
             .Distinct()
@@ -660,20 +624,14 @@
             .OrderBy(c => c);
     }
 
-    private void ViewInvoice(Guid id)
-    {
+    private void ViewInvoice(Guid id) =>
         Navigation.NavigateTo($"/invoices/{id}");
-    }
 
-    private void EditInvoice(Guid id)
-    {
+    private void EditInvoice(Guid id) =>
         Navigation.NavigateTo($"/invoices/edit/{id}");
-    }
 
-    private void RecordPayment(Guid id)
-    {
+    private void RecordPayment(Guid id) =>
         Navigation.NavigateTo($"/payments/create?invoiceId={id}");
-    }
 
     private async Task DeleteInvoice(Guid id)
     {
@@ -691,7 +649,9 @@
                 if (deleted)
                 {
                     Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
-                    await LoadInvoices();
+
+                    _allInvoices.RemoveAll(i => i.Id == id);
+                    ApplyFilters();
                 }
             }
             catch (Exception ex)
@@ -716,7 +676,6 @@
         try
         {
             byte[] fileBytes = await ExcelExportService.ExportInvoicesToExcelAsync(_filteredInvoices);
-
             string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
             await JSRuntime.InvokeVoidAsync(

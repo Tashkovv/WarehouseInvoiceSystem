@@ -30,6 +30,7 @@
             builder.HasIndex(e => e.IdentificationNumber);
             builder.HasIndex(e => e.LastName);
             builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => e.IsActive);
         }
     }
 }

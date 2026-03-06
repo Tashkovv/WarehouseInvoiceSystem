@@ -20,9 +20,10 @@
             builder.Property(e => e.SourceDocumentType).HasMaxLength(50);
             builder.Property(e => e.Note).HasMaxLength(500);
 
+            // Indexes
             builder.HasIndex(e => e.ProductId);
             builder.HasIndex(e => e.WarehouseId);
-            builder.HasIndex(e => e.SourceDocumentId);
+            builder.HasIndex(e => new { e.SourceDocumentId, e.SourceDocumentType });
             builder.HasIndex(e => e.CreatedAt);
             builder.HasIndex(e => e.DeletedOn);
 

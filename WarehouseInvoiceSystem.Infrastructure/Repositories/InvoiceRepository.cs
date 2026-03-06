@@ -15,7 +15,6 @@
                 .Where(i => i.DeletedOn == null)
                 .Include(i => i.Company)
                 .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -23,10 +22,8 @@
         public async Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId)
         {
             return await context.Invoices
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
                 .Where(i => i.CompanyId == companyId && i.DeletedOn == null)
+                .Include(i => i.Company)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -34,10 +31,8 @@
         public async Task<IEnumerable<Invoice>> GetByTypeAsync(InvoiceType type)
         {
             return await context.Invoices
+                .Where(i => i.Type == type && i.DeletedOn == null)
                 .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
-                .Where(i => i.Type == type)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -45,10 +40,8 @@
         public async Task<IEnumerable<Invoice>> GetByStatusAsync(InvoiceStatus status)
         {
             return await context.Invoices
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
                 .Where(i => i.DeletedOn == null && i.Status == status)
+                .Include(i => i.Company)
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
         }
@@ -57,13 +50,11 @@
         {
             DateTime today = DateTime.UtcNow.Date;
             return await context.Invoices
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
                 .Where(i => i.DeletedOn == null &&
                             i.DueDate < today &&
                             i.Status != InvoiceStatus.Paid &&
                             i.Status != InvoiceStatus.Cancelled)
+                .Include(i => i.Company)
                 .OrderBy(i => i.DueDate)
                 .ToListAsync();
         }
@@ -86,6 +77,18 @@
                 .Include(i => i.LineItems)
                 .Include(i => i.Payments)
                 .FirstOrDefaultAsync(i => i.DeletedOn == null && i.InvoiceNumber == invoiceNumber);
+        }
+
+        public async Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId)
+        {
+            return await context.InvoiceLines
+                .Where(li => li.ProductId == productId && li.DeletedOn == null)
+                .Include(li => li.Invoice)
+                    .ThenInclude(i => i.Company)
+                .Include(li => li.Invoice)
+                    .ThenInclude(i => i.Warehouse)
+                .OrderByDescending(li => li.Invoice.IssueDate)
+                .ToListAsync();
         }
 
         public async Task<Invoice> CreateAsync(Invoice invoice)
@@ -154,31 +157,30 @@
         public async Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync()
         {
             DateTime today = DateTime.UtcNow.Date;
-            IEnumerable<Invoice> invoices = context.Invoices.Where(i => i.DeletedOn == null);
+            IQueryable<Invoice> invoices = context.Invoices.Where(i => i.DeletedOn == null);
 
-            int total = invoices.Count();
-            int paid = invoices.Count(i => i.Status.Equals(InvoiceStatus.Paid));
-            int unpaid = invoices.Count(i => i.Type.Equals(InvoiceType.Payable) &&
-                                             i.Status != InvoiceStatus.Paid &&
-                                             i.Status != InvoiceStatus.Cancelled);
-            int overdue = invoices.Count(i => i.DueDate < today &&
-                                              i.Status != InvoiceStatus.Paid &&
-                                              i.Status != InvoiceStatus.Cancelled);
+            int total = await invoices.CountAsync();
+            int paid = await invoices.CountAsync(i => i.Status == InvoiceStatus.Paid);
+            int unpaid = await invoices.CountAsync(i => i.Type == InvoiceType.Payable &&
+                                                          i.Status != InvoiceStatus.Paid &&
+                                                          i.Status != InvoiceStatus.Cancelled);
+            int overdue = await invoices.CountAsync(i => i.DueDate < today &&
+                                                          i.Status != InvoiceStatus.Paid &&
+                                                          i.Status != InvoiceStatus.Cancelled);
 
             return (total, paid, unpaid, overdue);
         }
 
         public async Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync()
         {
-            IEnumerable<Invoice> invoices = context.Invoices
-                                                   .Where(i => i.Status != InvoiceStatus.Cancelled &&
-                                                               i.Type.Equals(InvoiceType.Payable) &&
-                                                               i.DeletedOn == null);
+            IQueryable<Invoice> invoices = context.Invoices
+                .Where(i => i.Status != InvoiceStatus.Cancelled &&
+                            i.Type == InvoiceType.Payable &&
+                            i.DeletedOn == null);
 
-
-            decimal totalAmount = invoices.Sum(i => i.TotalAmount);
-            decimal totalPaid = invoices.Sum(i => i.AmountPaid);
-            decimal totalDue = invoices.Sum(i => i.TotalAmount - i.AmountPaid);
+            decimal totalAmount = await invoices.SumAsync(i => i.TotalAmount);
+            decimal totalPaid = await invoices.SumAsync(i => i.AmountPaid);
+            decimal totalDue = await invoices.SumAsync(i => i.TotalAmount - i.AmountPaid);
 
             return (totalAmount, totalPaid, totalDue);
         }

@@ -12,6 +12,7 @@
         Task<IEnumerable<Invoice>> GetOverdueInvoicesAsync();
         Task<Invoice?> GetByIdAsync(Guid id);
         Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber);
+        Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId);
         Task<Invoice> CreateAsync(Invoice invoice);
         Task<Invoice> UpdateAsync(Invoice invoice);
         Task<bool> DeleteAsync(Guid id);

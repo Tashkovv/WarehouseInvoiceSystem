@@ -51,6 +51,15 @@
                 .AnyAsync(p => p.Id == id && p.DeletedOn == null);
         }
 
+        public async Task<bool> AllExistAsync(IEnumerable<Guid> ids)
+        {
+            var idList = ids.Distinct().ToList();
+            int found = await context.Products
+                .Where(p => p.DeletedOn == null && idList.Contains(p.Id))
+                .CountAsync();
+            return found == idList.Count;
+        }
+
         public async Task<bool> CodeExistsAsync(string code, Guid? excludeId = null)
         {
             IQueryable<Product> query = context.Products
