@@ -136,62 +136,77 @@
 
         public async Task<bool> DeletePaymentAsync(Guid id)
         {
-            Payment? payment = await paymentRepository.GetByIdAsync(id);
+            // Load payment and invoice
+            var (payment, invoice) = await LoadPaymentAndInvoiceAsync(id);
             if (payment == null)
                 return false;
 
-            // payment.Invoice is loaded via include in GetByIdAsync
-            Invoice? invoice = payment.Invoice;
             if (invoice != null)
             {
-                invoice.AmountPaid -= payment.Amount;
+                await UpdateInvoiceAfterPaymentRemovalAsync(invoice, payment);
+            }
 
-                if (invoice.AmountPaid <= 0)
+            return await paymentRepository.DeleteAsync(id);
+        }
+
+        private async Task<(Payment? Payment, Invoice? Invoice)> LoadPaymentAndInvoiceAsync(Guid id)
+        {
+            Payment? payment = await paymentRepository.GetByIdAsync(id);
+            if (payment == null)
+                return (null, null);
+
+            Invoice? invoice = payment.Invoice;
+            invoice ??= await invoiceRepository.GetByIdAsync(payment.InvoiceId);
+
+            return (payment, invoice);
+        }
+
+        private async Task UpdateInvoiceAfterPaymentRemovalAsync(Invoice invoice, Payment payment)
+        {
+            // Adjust the paid amount
+            invoice.AmountPaid -= payment.Amount;
+
+            if (invoice.AmountPaid <= 0)
+            {
+                invoice.AmountPaid = 0;
+
+                // Check whether transactions exist for this invoice.
+                bool hasTransactions = await transactionRepository
+                    .HasTransactionsForDocumentAsync(invoice.Id, "Invoice");
+
+                if (hasTransactions)
                 {
-                    invoice.AmountPaid = 0;
+                    bool invoiceWasNeverSent = (invoice.Status is InvoiceStatus.Paid or InvoiceStatus.PartiallyPaid)
+                                                && !await InvoiceHadSentStatusAsync(invoice);
 
-                    // Check whether transactions exist for this invoice.
-                    bool hasTransactions = await transactionRepository
-                        .HasTransactionsForDocumentAsync(invoice.Id, "Invoice");
-
-                    if (hasTransactions)
+                    if (invoiceWasNeverSent)
                     {
-                        bool invoiceWasNeverSent = invoice.Status is InvoiceStatus.Paid
-                                                                  or InvoiceStatus.PartiallyPaid
-                            && !await InvoiceHadSentStatusAsync(invoice);
+                        // Reverse the stock movements — invoice never formally left Draft
+                        string reason = $"{localizationService.GetString("PaymentsRemovedFromInvoice")} {invoice.InvoiceNumber} — {localizationService.GetString("RevertToDraft")}";
+                        await invoiceService.CreateReverseTransactionsIfNeeded(invoice, reason);
 
-                        if (invoiceWasNeverSent)
-                        {
-                            // Reverse the stock movements — invoice never formally left Draft
-                            string reason = $"{localizationService.GetString("PaymentsRemovedFromInvoice")} {invoice.InvoiceNumber} — {localizationService.GetString("RevertToDraft")}";
-                            await invoiceService.CreateReverseTransactionsIfNeeded(invoice, reason);
-
-                            invoice.Status = InvoiceStatus.Draft;
-                        }
-                        else
-                        {
-                            // Invoice was formally Sent before payments; stock correctly moved.
-                            // Revert to Sent (awaiting payment again).
-                            invoice.Status = InvoiceStatus.Sent;
-                        }
+                        invoice.Status = InvoiceStatus.Draft;
                     }
                     else
                     {
-                        // No transactions at all — invoice was Draft and had only a payment.
-                        // Edge case: payment was deleted before transactions were somehow created.
-                        invoice.Status = InvoiceStatus.Draft;
+                        // Invoice was formally Sent before payments; stock correctly moved.
+                        // Revert to Sent (awaiting payment again).
+                        invoice.Status = InvoiceStatus.Sent;
                     }
                 }
                 else
                 {
-                    // Still has remaining paid amount — keep as PartiallyPaid.
-                    invoice.Status = InvoiceStatus.PartiallyPaid;
+                    // No transactions at all — invoice was Draft and had only a payment.
+                    invoice.Status = InvoiceStatus.Draft;
                 }
-
-                await invoiceRepository.UpdateAsync(invoice);
+            }
+            else
+            {
+                // Still has remaining paid amount — keep as PartiallyPaid.
+                invoice.Status = InvoiceStatus.PartiallyPaid;
             }
 
-            return await paymentRepository.DeleteAsync(id);
+            await invoiceRepository.UpdateAsync(invoice);
         }
 
         private async Task<bool> InvoiceHadSentStatusAsync(Invoice invoice)
