@@ -273,7 +273,7 @@
                             </MudMenuItem>
                             <MudMenuItem Icon="@Icons.Material.Filled.Payment"
                                          OnClick="@(() => RecordPayment(context.Id))"
-                                         Disabled="@(context.Status == InvoiceStatus.Paid)">
+                                         Disabled="@(context.Status == InvoiceStatus.Paid || context.Status == InvoiceStatus.Cancelled)">
                                 @Localization.GetString("RecordPayment")
                             </MudMenuItem>
                             <MudDivider />

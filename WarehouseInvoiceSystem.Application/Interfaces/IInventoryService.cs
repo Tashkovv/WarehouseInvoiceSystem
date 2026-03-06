@@ -22,5 +22,6 @@
         // Stock Adjustments
         Task AdjustStockAsync(Guid productId, Guid warehouseId, decimal quantityChange, string reason);
         Task ReverseTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, string reason);
+        Task SoftDeleteReversalForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType);
     }
 }

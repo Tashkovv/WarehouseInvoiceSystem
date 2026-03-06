@@ -210,6 +210,35 @@
             }
         }
 
+        public async Task SoftDeleteReversalForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType)
+        {
+            // Soft-delete the reversal transactions and undo their stock effect
+            IEnumerable<InventoryTransaction> reversals = await transactionRepository
+                .SoftDeleteReversalAsync(sourceDocumentId, sourceDocumentType);
+
+            foreach (InventoryTransaction reversal in reversals)
+            {
+                // The reversal cancelled the original stock movement — undoing the reversal
+                // means re-applying the original direction, which is the opposite of the reversal type
+                InventoryTransactionType restoreType = reversal.Type switch
+                {
+                    InventoryTransactionType.Outbound => InventoryTransactionType.Inbound,
+                    InventoryTransactionType.Inbound => InventoryTransactionType.Outbound,
+                    InventoryTransactionType.TransferIn => InventoryTransactionType.TransferOut,
+                    InventoryTransactionType.TransferOut => InventoryTransactionType.TransferIn,
+                    _ => InventoryTransactionType.Adjustment
+                };
+
+                await UpdateStockFromTransactionAsync(new InventoryTransaction
+                {
+                    ProductId = reversal.ProductId,
+                    WarehouseId = reversal.WarehouseId,
+                    Type = restoreType,
+                    Quantity = reversal.Quantity
+                });
+            }
+        }
+
         private static StockLevelDto MapStockLevelToDto(StockLevel stockLevel)
         {
             return new StockLevelDto

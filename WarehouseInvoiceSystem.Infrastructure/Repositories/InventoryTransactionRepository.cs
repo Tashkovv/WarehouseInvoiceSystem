@@ -63,6 +63,23 @@
                                t.DeletedOn == null);
         }
 
+        public async Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType)
+        {
+            string reversalType = $"{sourceDocumentType}_Reversal";
+
+            List<InventoryTransaction> reversals = await context.InventoryTransactions
+                .Where(t => t.DeletedOn == null &&
+                            t.SourceDocumentId == sourceDocumentId &&
+                            t.SourceDocumentType == reversalType)
+                .ToListAsync();
+
+            foreach (InventoryTransaction reversal in reversals)
+                reversal.DeletedOn = DateTime.UtcNow;
+
+            await context.SaveChangesAsync();
+            return reversals;
+        }
+
         public async Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction)
         {
             transaction.CreatedAt = DateTime.UtcNow;

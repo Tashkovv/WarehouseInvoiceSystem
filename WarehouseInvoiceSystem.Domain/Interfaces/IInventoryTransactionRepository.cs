@@ -10,6 +10,7 @@
         Task<IEnumerable<InventoryTransaction>> GetBySourceDocumentAsync(Guid sourceDocumentId, string sourceDocumentType);
         Task<InventoryTransaction?> GetByIdAsync(Guid id);
         Task<bool> HasTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType);
+        Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType);
         Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction);
     }
 }

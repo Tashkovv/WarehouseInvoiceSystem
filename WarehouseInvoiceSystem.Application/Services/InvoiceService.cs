@@ -170,6 +170,13 @@
             {
                 await CreateReverseTransactionsIfNeeded(updated);
             }
+            else if (oldStatus == InvoiceStatus.Cancelled &&
+                     newStatus != InvoiceStatus.Cancelled &&
+                     newStatus != InvoiceStatus.Draft)
+            {
+                // Restore stock by soft-deleting the reversal — original transaction becomes live again
+                await inventoryService.SoftDeleteReversalForDocumentAsync(updated.Id, invoiceString);
+            }
             else if (oldStatus == InvoiceStatus.Draft &&
                      newStatus != InvoiceStatus.Draft &&
                      newStatus != InvoiceStatus.Cancelled)
@@ -206,6 +213,13 @@
             if (newStatus == InvoiceStatus.Cancelled && oldStatus != InvoiceStatus.Cancelled)
             {
                 await CreateReverseTransactionsIfNeeded(updated);
+            }
+            else if (oldStatus == InvoiceStatus.Cancelled &&
+                     newStatus != InvoiceStatus.Cancelled &&
+                     newStatus != InvoiceStatus.Draft)
+            {
+                // Restore stock by soft-deleting the reversal — original transaction becomes live again
+                await inventoryService.SoftDeleteReversalForDocumentAsync(updated.Id, invoiceString);
             }
             else if (oldStatus == InvoiceStatus.Draft &&
                      newStatus != InvoiceStatus.Draft &&
@@ -282,7 +296,7 @@
             {
                 return $"{localizationService.GetString("PurchaseFrom")} {invoice.Company.Name} - {invoice.InvoiceNumber}";
             }
-            else if(transactionType == InventoryTransactionType.Outbound)
+            else if (transactionType == InventoryTransactionType.Outbound)
             {
                 return $"{localizationService.GetString("SaleTo")} {invoice.Company.Name} - {invoice.InvoiceNumber}";
             }

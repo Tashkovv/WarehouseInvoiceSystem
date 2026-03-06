@@ -308,7 +308,7 @@ else
                         <MudText Typo="Typo.h6">@Localization.GetString("PaymentHistory")</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        @if (_invoice.Status != InvoiceStatus.Paid)
+                        @if (_invoice.Status != InvoiceStatus.Paid && _invoice.Status != InvoiceStatus.Cancelled)
                         {
                             <MudButton StartIcon="@Icons.Material.Filled.Payment"
                                        Color="Color.Primary"
