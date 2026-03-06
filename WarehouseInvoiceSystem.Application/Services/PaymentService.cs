@@ -9,7 +9,6 @@
     public class PaymentService(IPaymentRepository paymentRepository,
                                 IInvoiceRepository invoiceRepository,
                                 IInvoiceService invoiceService,
-                                IInventoryService inventoryService,
                                 IInventoryTransactionRepository transactionRepository,
                                 ILocalizationService localizationService) : IPaymentService
     {
