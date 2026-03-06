@@ -20,6 +20,7 @@
         public async Task<PagedResult<StockLevel>> GetPagedAsync(GetStockQuery query)
         {
             IQueryable<StockLevel> q = context.StockLevels
+                .Where(s => s.DeletedOn == null)
                 .Include(s => s.Product)
                 .Include(s => s.Warehouse);
 
