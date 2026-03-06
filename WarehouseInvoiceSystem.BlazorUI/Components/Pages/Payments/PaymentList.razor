@@ -509,11 +509,14 @@
 
     private async Task DeletePayment(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBox(
-            Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeletePaymentConfirm"),
-            yesText: Localization.GetString("Yes"),
-            cancelText: Localization.GetString("No"));
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            new MessageBoxOptions
+            {
+                Title = Localization.GetString("ConfirmDelete"),
+                Message = Localization.GetString("DeletePaymentConfirm"),
+                YesText = Localization.GetString("Yes"),
+                CancelText = Localization.GetString("No")
+            });
 
         if (result == true)
         {

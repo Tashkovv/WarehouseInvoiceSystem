@@ -171,9 +171,7 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <div class="d-flex align-center gap-3">
-                            <MudText Typo="Typo.h6">@Localization.GetString("Products")</MudText>
-                        </div>
+                        <MudText Typo="Typo.h6">@Localization.GetString("Products")</MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -224,12 +222,6 @@ else
                     <!-- Totals Section -->
                     <div class="d-flex justify-end pa-4">
                         <MudStack Spacing="1" Style="min-width: 300px;">
-                            <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                    @_model.LineItems.Count @Localization.GetString("Items")
-                                </MudText>
-                            </div>
-                            <MudDivider Class="my-1" />
                             <div class="d-flex justify-space-between align-center">
                                 <MudText Typo="Typo.h6" Class="font-weight-bold">@Localization.GetString("Total")</MudText>
                                 <MudText Typo="Typo.h5" Class="font-weight-bold" Color="Color.Primary">
@@ -324,11 +316,22 @@ else
 
     private async Task DeleteNote()
     {
-        bool? result = await DialogService.ShowMessageBox(
-            Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeletePurchaseNoteConfirm"),
-            yesText: Localization.GetString("Yes"),
-            cancelText: Localization.GetString("No"));
+        var parameters = new DialogParameters
+        {
+            { "Title", Localization.GetString("ConfirmDelete") },
+            { "Message", Localization.GetString("DeletePurchaseNoteConfirm") },
+            { "YesText", Localization.GetString("Yes") },
+            { "NoText", Localization.GetString("No") }
+        };
+
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            new MessageBoxOptions
+            {
+                Title = Localization.GetString("ConfirmDelete"),
+                Message = Localization.GetString("DeletePurchaseNoteConfirm"),
+                YesText = Localization.GetString("Yes"),
+                CancelText = Localization.GetString("No")
+            });
 
         if (result == true)
         {

@@ -411,7 +411,7 @@ else
 
     private async Task SaveNote()
     {
-        await _form.Validate();
+        await _form.ValidateAsync();
         if (!_isValid || _selectedIndividual == null || _model == null) return;
 
         _saving = true;
@@ -445,7 +445,7 @@ else
 
             await PurchaseNoteService.UpdatePurchaseNoteAsync(Id, dto);
             Snackbar.Add(Localization.GetString("PurchaseNoteUpdated"), Severity.Success);
-            Navigation.NavigateTo("/purchase-notes");
+            Navigation.NavigateTo($"/purchase-notes/{Id}");
         }
         catch (Exception ex)
         {

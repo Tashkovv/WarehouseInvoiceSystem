@@ -276,11 +276,22 @@
 
     private async Task DeleteWarehouse(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBox(
-            Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeleteWarehouseConfirm"),
-            yesText: Localization.GetString("Yes"),
-            cancelText: Localization.GetString("No"));
+        var parameters = new DialogParameters
+        {
+            { "Title", Localization.GetString("ConfirmDelete") },
+            { "Message", Localization.GetString("DeleteWarehouseConfirm") },
+            { "YesText", Localization.GetString("Yes") },
+            { "NoText", Localization.GetString("No") }
+        };
+
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            new MessageBoxOptions
+            {
+                Title = Localization.GetString("ConfirmDelete"),
+                Message = Localization.GetString("DeleteWarehouseConfirm"),
+                YesText = Localization.GetString("Yes"),
+                CancelText = Localization.GetString("No")
+            });
 
         if (result == true)
         {

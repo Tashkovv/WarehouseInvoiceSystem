@@ -335,7 +335,7 @@
             return;
         }
 
-        await _form.Validate();
+        await _form.ValidateAsync();
         if (!_isValid || _selectedIndividual == null) return;
 
         _saving = true;

@@ -212,12 +212,7 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <div class="d-flex align-center gap-3">
-                            <MudText Typo="Typo.h6">@Localization.GetString("LineItems")</MudText>
-                            <MudChip T="string" Size="Size.Small" Color="Color.Default">
-                                @($"{_invoice.LineItems.Count} {Localization.GetString("Items")}")
-                            </MudChip>
-                        </div>
+                        <MudText Typo="Typo.h6">@Localization.GetString("LineItems")</MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -498,11 +493,14 @@ else
 
     private async Task DeleteInvoice()
     {
-        bool? result = await DialogService.ShowMessageBox(
-            Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeleteInvoiceConfirm"),
-            yesText: Localization.GetString("Yes"),
-            cancelText: Localization.GetString("No"));
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            new MessageBoxOptions
+            {
+                Title = Localization.GetString("ConfirmDelete"),
+                Message = Localization.GetString("DeleteInvoiceConfirm"),
+                YesText = Localization.GetString("Yes"),
+                CancelText = Localization.GetString("No")
+            });
 
         if (result == true)
         {

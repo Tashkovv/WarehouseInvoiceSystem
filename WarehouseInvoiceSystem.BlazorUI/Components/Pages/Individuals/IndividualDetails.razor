@@ -353,11 +353,14 @@ else
 
     private async Task DeleteIndividual()
     {
-        bool? result = await DialogService.ShowMessageBox(
-            Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeleteIndividualConfirm"),
-            yesText: Localization.GetString("Yes"),
-            cancelText: Localization.GetString("No"));
+        bool? result = await DialogService.ShowMessageBoxAsync(
+            new MessageBoxOptions
+            {
+                Title = Localization.GetString("ConfirmDelete"),
+                Message = Localization.GetString("DeleteIndividualConfirm"),
+                YesText = Localization.GetString("Yes"),
+                CancelText = Localization.GetString("No")
+            });
 
         if (result == true)
         {
