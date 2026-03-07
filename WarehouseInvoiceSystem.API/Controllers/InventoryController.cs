@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Application.Models;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -84,6 +86,24 @@
             {
                 logger.LogError(ex, "Error getting low stock items");
                 return StatusCode(500, "An error occurred while retrieving low stock items");
+            }
+        }
+
+        /// <summary>
+        /// Get stock levels paged with filtering and sorting
+        /// </summary>
+        [HttpGet("stock/paged")]
+        public async Task<ActionResult<PagedResult<StockLevelDto>>> GetStockPaged([FromQuery] GetStockQuery query)
+        {
+            try
+            {
+                PagedResult<StockLevelDto> result = await inventoryService.GetPagedStockAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged stock levels");
+                return StatusCode(500, "An error occurred while retrieving stock levels");
             }
         }
 

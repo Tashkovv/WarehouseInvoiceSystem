@@ -3,6 +3,8 @@
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Individual;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -40,6 +42,24 @@
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting active individuals");
+                return StatusCode(500, "An error occurred while retrieving individuals");
+            }
+        }
+
+        /// <summary>
+        /// Get individuals paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<IndividualDto>>> GetPaged([FromQuery] GetIndividualsQuery query)
+        {
+            try
+            {
+                PagedResult<IndividualDto> result = await individualService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged individuals");
                 return StatusCode(500, "An error occurred while retrieving individuals");
             }
         }

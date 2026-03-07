@@ -3,6 +3,8 @@
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Payment;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -63,6 +65,24 @@
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting payments for invoice {InvoiceId}", invoiceId);
+                return StatusCode(500, "An error occurred while retrieving payments");
+            }
+        }
+
+        /// <summary>
+        /// Get payments paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<PaymentDto>>> GetPaged([FromQuery] GetPaymentsQuery query)
+        {
+            try
+            {
+                PagedResult<PaymentDto> result = await paymentService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged payments");
                 return StatusCode(500, "An error occurred while retrieving payments");
             }
         }

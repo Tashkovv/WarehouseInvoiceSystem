@@ -4,6 +4,8 @@
     using WarehouseInvoiceSystem.Application.DTOs.Company;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -41,6 +43,24 @@
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting companies by type {Type}", type);
+                return StatusCode(500, "An error occurred while retrieving companies");
+            }
+        }
+
+        /// <summary>
+        /// Get companies paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<CompanyDto>>> GetPaged([FromQuery] GetCompaniesQuery query)
+        {
+            try
+            {
+                PagedResult<CompanyDto> result = await companyService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged companies");
                 return StatusCode(500, "An error occurred while retrieving companies");
             }
         }

@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Application.Models;
     using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -159,6 +161,42 @@
             {
                 logger.LogError(ex, "Error getting invoice summary");
                 return StatusCode(500, "An error occurred while retrieving invoice summary");
+            }
+        }
+
+        /// <summary>
+        /// Get invoices paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<InvoiceDto>>> GetPaged([FromQuery] GetInvoicesQuery query)
+        {
+            try
+            {
+                PagedResult<InvoiceDto> result = await invoiceService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged invoices");
+                return StatusCode(500, "An error occurred while retrieving invoices");
+            }
+        }
+
+        /// <summary>
+        /// Get all invoices matching filters for export (no pagination)
+        /// </summary>
+        [HttpGet("export")]
+        public async Task<ActionResult<IEnumerable<InvoiceDto>>> GetAllFiltered([FromQuery] GetInvoicesQuery query)
+        {
+            try
+            {
+                IEnumerable<InvoiceDto> result = await invoiceService.GetAllFilteredAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting filtered invoices for export");
+                return StatusCode(500, "An error occurred while retrieving invoices");
             }
         }
 

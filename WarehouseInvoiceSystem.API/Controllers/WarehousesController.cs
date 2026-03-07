@@ -3,6 +3,8 @@
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Warehouse;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -65,6 +67,24 @@
             {
                 logger.LogError(ex, "Error getting default warehouse");
                 return StatusCode(500, "An error occurred while retrieving the default warehouse");
+            }
+        }
+
+        /// <summary>
+        /// Get warehouses paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<WarehouseDto>>> GetPaged([FromQuery] GetWarehousesQuery query)
+        {
+            try
+            {
+                PagedResult<WarehouseDto> result = await warehouseService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged warehouses");
+                return StatusCode(500, "An error occurred while retrieving warehouses");
             }
         }
 

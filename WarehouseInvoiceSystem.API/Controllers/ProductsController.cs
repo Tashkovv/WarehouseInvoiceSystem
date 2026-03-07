@@ -3,6 +3,8 @@
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Product;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -83,6 +85,24 @@
             {
                 logger.LogError(ex, "Error getting product by code {Code}", code);
                 return StatusCode(500, "An error occurred while retrieving the product");
+            }
+        }
+
+        /// <summary>
+        /// Get products paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<ProductDto>>> GetPaged([FromQuery] GetProductsQuery query)
+        {
+            try
+            {
+                PagedResult<ProductDto> result = await productService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged products");
+                return StatusCode(500, "An error occurred while retrieving products");
             }
         }
 

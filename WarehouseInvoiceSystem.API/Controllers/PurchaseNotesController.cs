@@ -4,6 +4,8 @@
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     [ApiController]
     [Route("api/[controller]")]
@@ -121,6 +123,42 @@
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error getting purchase notes by status {Status}", status);
+                return StatusCode(500, "An error occurred while retrieving purchase notes");
+            }
+        }
+
+        /// <summary>
+        /// Get purchase notes paged with filtering and sorting
+        /// </summary>
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResult<PurchaseNoteDto>>> GetPaged([FromQuery] GetPurchaseNotesQuery query)
+        {
+            try
+            {
+                PagedResult<PurchaseNoteDto> result = await purchaseNoteService.GetPagedAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting paged purchase notes");
+                return StatusCode(500, "An error occurred while retrieving purchase notes");
+            }
+        }
+
+        /// <summary>
+        /// Get all purchase notes matching filters for export (no pagination)
+        /// </summary>
+        [HttpGet("export")]
+        public async Task<ActionResult<IEnumerable<PurchaseNoteDto>>> GetAllFiltered([FromQuery] GetPurchaseNotesQuery query)
+        {
+            try
+            {
+                IEnumerable<PurchaseNoteDto> result = await purchaseNoteService.GetAllFilteredAsync(query);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting filtered purchase notes for export");
                 return StatusCode(500, "An error occurred while retrieving purchase notes");
             }
         }
