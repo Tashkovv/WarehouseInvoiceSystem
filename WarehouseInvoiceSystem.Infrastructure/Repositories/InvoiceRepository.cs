@@ -30,7 +30,9 @@
                 .Include(i => i.LineItems)
                     .ThenInclude(li => li.Product);
 
-            if (query.Status.HasValue)
+            if (query.Statuses is { Count: > 0 })
+                q = q.Where(i => query.Statuses.Contains(i.Status));
+            else if (query.Status.HasValue)
                 q = q.Where(i => i.Status == query.Status.Value);
 
             if (query.Type.HasValue)

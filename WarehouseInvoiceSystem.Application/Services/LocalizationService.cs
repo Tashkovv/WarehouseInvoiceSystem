@@ -718,7 +718,7 @@
                 ["PartiallyPaid"] = "Делумно платена",
                 ["PaidStatus"] = "Платена",
                 ["OverdueStatus"] = "Задоцнета",
-                ["Cancelled"] = "Откажана",
+                ["CancelledStatus"] = "Откажана",
 
                 // Common
                 ["Loading"] = "Вчитување...",

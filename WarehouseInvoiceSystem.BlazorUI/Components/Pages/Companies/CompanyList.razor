@@ -22,7 +22,9 @@
 <WisGridToolbar CreateAction="OpenCreateDialog"
                 CreateLabel="@Localization.GetString("CreateCompany")"
                 SearchValue="@_searchString"
-                SearchValueChanged="OnSearch">
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterType.HasValue || _filterIsActive.HasValue)"
+                OnClearAll="ClearAllFilters">
     <Filters>
         <FilterPopoverList TValue="CompanyType?"
                            Title="@Localization.GetString("FilterByCompanyType")"
@@ -181,7 +183,7 @@
     {
         _typeFilterItems =
         [
-            new() { Label = Localization.GetString("All"),             Value = null,               Color = Color.Info  },
+            new() { Label = Localization.GetString("All"),             Value = null,               Color = Color.Transparent  },
             new() { Label = Localization.GetString("Client"),          Value = CompanyType.Client, Color = Color.Success  },
             new() { Label = Localization.GetString("Vendor"),          Value = CompanyType.Vendor, Color = Color.Warning  },
             new() { Label = Localization.GetString("ClientAndVendor"), Value = CompanyType.Both,   Color = Color.Primary  },
@@ -189,7 +191,7 @@
 
         _statusFilterItems =
         [
-            new() { Label = Localization.GetString("All"),             Value = null,  Color = Color.Info },
+            new() { Label = Localization.GetString("All"),             Value = null,  Color = Color.Transparent },
             new() { Label = Localization.GetString("ActiveCompany"),   Value = true,  Color = Color.Success },
             new() { Label = Localization.GetString("InactiveCompany"), Value = false, Color = Color.Default },
         ];
@@ -400,6 +402,13 @@
                 Snackbar.Add(Localization.GetString("ErrorDeletingCompany"), Severity.Error);
             }
         }
+    }
+
+    private async Task ClearAllFilters()
+    {
+        _filterType = null;
+        _filterIsActive = null;
+        await _grid.ReloadServerData();
     }
 
     public void Dispose()

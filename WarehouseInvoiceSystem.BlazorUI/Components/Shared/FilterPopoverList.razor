@@ -54,11 +54,13 @@
                         @foreach (FilterPopoverItem<TValue> item in Items)
                         {
                             <div class="d-flex align-center py-1 px-1 rounded"
-                                 style="gap: 8px; cursor: pointer;">
+                                 style="gap: 8px; cursor: pointer;"
+                                 @onclick="@(() => OnSingleValueChanged(item.Value))">
                                 <MudRadio T="TValue"
                                           Value="item.Value"
                                           Dense="true"
-                                          Class="ma-0 pa-0" />
+                                          Class="ma-0 pa-0"
+                                          @onclick:stopPropagation />
                                 <MudChip T="string"
                                          Size="Size.Small"
                                          Color="item.Color"
@@ -76,17 +78,18 @@
                     {
                         bool isChecked = _multiValues.Contains(item.Value!);
                         <div class="d-flex align-center py-1 px-1 rounded"
-                             style="gap: 8px; cursor: pointer;"
-                             @onclick="@(() => OnMultiValueChanged(item.Value, !isChecked))">
+                             style="gap: 8px; cursor: pointer;">
                             <MudCheckBox T="bool"
                                          Value="isChecked"
+                                         ValueChanged="@((v) => OnMultiValueChanged(item.Value, v))"
                                          Dense="true"
                                          Class="ma-0 pa-0" />
                             <MudChip T="string"
                                      Size="Size.Small"
                                      Color="item.Color"
                                      Variant="Variant.Filled"
-                                     Class="ma-0">
+                                     Class="ma-0"
+                                     OnClick="@(() => OnMultiValueChanged(item.Value, !isChecked))">
                                 @item.Label
                             </MudChip>
                         </div>

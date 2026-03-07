@@ -21,7 +21,9 @@
 <WisGridToolbar CreateAction="OpenCreateDialog"
                 CreateLabel="@Localization.GetString("CreateProduct")"
                 SearchValue="@_searchString"
-                SearchValueChanged="OnSearch">
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterIsActive.HasValue)"
+                OnClearAll="ClearAllFilters">
     <Filters>
         <FilterPopoverList TValue="bool?"
                            Title="@Localization.GetString("FilterByStatus")"
@@ -165,8 +167,8 @@
     {
         _statusFilterItems =
         [
-            new() { Label = Localization.GetString("All"),    Value = null,  Color = Color.Info },
-            new() { Label = Localization.GetString("ActiveProducts"), Value = true,  Color = Color.Success },
+            new() { Label = Localization.GetString("All"),              Value = null,  Color = Color.Transparent },
+            new() { Label = Localization.GetString("ActiveProducts"),   Value = true,  Color = Color.Success },
             new() { Label = Localization.GetString("InactiveProducts"), Value = false, Color = Color.Default }
         ];
     }
@@ -341,6 +343,12 @@
                 Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
             }
         }
+    }
+
+    private async Task ClearAllFilters()
+    {
+        _filterIsActive = null;
+        await _grid.ReloadServerData();
     }
 
     public void Dispose()

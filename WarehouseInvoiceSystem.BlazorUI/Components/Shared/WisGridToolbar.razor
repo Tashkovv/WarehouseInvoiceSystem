@@ -4,17 +4,16 @@
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pb-3">
 
-        @* Row 1: Create button + Search + AdditionalActions *@
-        <MudGrid AlignItems="AlignItems.Center">
+        @* Row 1: Create + AdditionalActions + Search — all inline *@
+        <MudGrid AlignItems="AlignItems.Center" Spacing="2" Style="flex-wrap: nowrap; align-items: center;">
             @if (CreateHref is not null || CreateAction.HasDelegate)
             {
-                <MudItem xs="12" sm="3" md="2">
+                <MudItem xs="12" Style="flex: 0 0 auto; width: auto;">
                     @if (CreateHref is not null)
                     {
                         <MudButton StartIcon="@Icons.Material.Filled.Add"
                                    Color="Color.Primary"
                                    Variant="Variant.Filled"
-                                   FullWidth="true"
                                    Href="@CreateHref">
                             @CreateLabel
                         </MudButton>
@@ -24,16 +23,19 @@
                         <MudButton StartIcon="@Icons.Material.Filled.Add"
                                    Color="Color.Primary"
                                    Variant="Variant.Filled"
-                                   FullWidth="true"
                                    OnClick="CreateAction">
                             @CreateLabel
                         </MudButton>
                     }
                 </MudItem>
             }
-            <MudItem xs="12"
-                     sm="@(CreateHref is not null || CreateAction.HasDelegate ? 9 : 12)"
-                     md="@(CreateHref is not null || CreateAction.HasDelegate ? 10 : 12)">
+            @if (AdditionalActions is not null)
+            {
+                <MudItem xs="12" Style="flex: 0 0 auto; width: auto;">
+                    @AdditionalActions
+                </MudItem>
+            }
+            <MudItem xs="12" Style="flex: 1 1 auto; min-width: 0;">
                 <MudTextField T="string"
                               Value="SearchValue"
                               ValueChanged="SearchValueChanged"
@@ -45,20 +47,25 @@
                               DebounceInterval="300"
                               Class="mt-0" />
             </MudItem>
-            @if (AdditionalActions is not null)
-            {
-                <MudItem xs="12" Style="width: auto; flex: 0 0 auto;">
-                    @AdditionalActions
-                </MudItem>
-            }
         </MudGrid>
 
-        @* Row 2: Quick enum filters (always visible when provided) *@
+        @* Row 2: Quick filters + Clear All button *@
         @if (Filters is not null)
         {
             <MudDivider Class="mt-3 mb-2" />
             <div class="wis-toolbar-filters">
                 @Filters
+                @if (HasAnyActiveFilter)
+                {
+                    <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
+                               Variant="Variant.Text"
+                               Color="Color.Default"
+                               Size="Size.Small"
+                               Class="wis-toolbar-clearall-btn"
+                               OnClick="OnClearAll">
+                        @Localization.GetString("ClearFilters")
+                    </MudButton>
+                }
             </div>
         }
 
@@ -100,47 +107,44 @@
 </MudCard>
 
 @code {
-    [Parameter]
-    public string? CreateHref { get; set; }
-
-    [Parameter]
-    public EventCallback CreateAction { get; set; }
-
-    [Parameter]
-    public string CreateLabel { get; set; } = string.Empty;
-
-    [Parameter]
-    public string SearchValue { get; set; } = string.Empty;
-
-    [Parameter]
-    public EventCallback<string> SearchValueChanged { get; set; }
+    [Parameter] public string? CreateHref { get; set; }
+    [Parameter] public EventCallback CreateAction { get; set; }
+    [Parameter] public string CreateLabel { get; set; } = string.Empty;
+    [Parameter] public string SearchValue { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
 
     /// <summary>
-    /// Extra action buttons (e.g. Export) rendered inline next to the search bar.
+    /// Extra action buttons (e.g. Export) rendered inline on Row 1 between Create and Search.
     /// </summary>
-    [Parameter]
-    public RenderFragment? AdditionalActions { get; set; }
+    [Parameter] public RenderFragment? AdditionalActions { get; set; }
 
     /// <summary>
-    /// Quick enum/boolean filters — always visible as labeled pill buttons below the search row.
+    /// Quick enum/boolean filters — Row 2, always visible.
     /// Use FilterPopoverList with Label set.
     /// </summary>
-    [Parameter]
-    public RenderFragment? Filters { get; set; }
+    [Parameter] public RenderFragment? Filters { get; set; }
 
     /// <summary>
-    /// Complex filters (date ranges, amounts, autocomplete) — rendered in a collapsible panel.
-    /// Use a MudGrid inside this slot.
+    /// True when any quick filter is active. The toolbar shows "Clear All" when true.
+    /// Pass: _filterFoo != null || _filterBar != null etc.
     /// </summary>
-    [Parameter]
-    public RenderFragment? AdvancedFilters { get; set; }
+    [Parameter] public bool HasAnyActiveFilter { get; set; }
 
     /// <summary>
-    /// Number of currently active advanced filters. Drives the badge on the toggle button.
-    /// Compute this in the page component the same way _activeFilterCount was computed before.
+    /// Fires when the "Clear All" button is clicked.
+    /// The page component should reset all filter state and reload.
     /// </summary>
-    [Parameter]
-    public int ActiveAdvancedFilterCount { get; set; }
+    [Parameter] public EventCallback OnClearAll { get; set; }
+
+    /// <summary>
+    /// Complex filters — Row 3, collapsible.
+    /// </summary>
+    [Parameter] public RenderFragment? AdvancedFilters { get; set; }
+
+    /// <summary>
+    /// Count of active advanced filters for the badge.
+    /// </summary>
+    [Parameter] public int ActiveAdvancedFilterCount { get; set; }
 
     private bool _showAdvancedFilters = false;
 }

@@ -46,6 +46,7 @@
                 SortAscending = query.SortAscending,
                 Search = query.Search,
                 Status = query.Status,
+                Statuses = query.Statuses,
                 Type = query.Type,
                 CompanyName = query.CompanyName,
                 AmountMin = query.AmountMin,
