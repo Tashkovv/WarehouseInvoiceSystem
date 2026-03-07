@@ -40,13 +40,6 @@
         </MudButton>
     </AdditionalActions>
     <Filters>
-        <FilterPopoverList TValue="InvoiceStatus"
-                           Title="@Localization.GetString("FilterByStatus")"
-                           Label="@Localization.GetString("Status")"
-                           Items="_statusFilterItems"
-                           Mode="FilterSelectionMode.Multiple"
-                           SelectedValues="_filterStatuses"
-                           SelectedValuesChanged="OnStatusFilterChanged" />
         <FilterPopoverList TValue="InvoiceType?"
                            Title="@Localization.GetString("Type")"
                            Label="@Localization.GetString("Type")"
@@ -54,6 +47,13 @@
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterType"
                            SelectedValueChanged="OnTypeFilterChanged" />
+        <FilterPopoverList TValue="InvoiceStatus"
+                           Title="@Localization.GetString("FilterByStatus")"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Multiple"
+                           SelectedValues="_filterStatuses"
+                           SelectedValuesChanged="OnStatusFilterChanged" />
     </Filters>
     <AdvancedFilters>
         <MudGrid Spacing="2" AlignItems="AlignItems.Start">
@@ -359,6 +359,13 @@
 
     private void BuildFilterItems()
     {
+        _typeFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),        Value = null,                   Color = Color.Transparent },
+            new() { Label = Localization.GetString("Receivable"), Value = InvoiceType.Receivable, Color = Color.Success },
+            new() { Label = Localization.GetString("Payable"),    Value = InvoiceType.Payable,    Color = Color.Warning },
+        ];
+
         _statusFilterItems =
         [
             new() { Label = Localization.GetString("Draft"),           Value = InvoiceStatus.Draft,         Color = Color.Transparent },
@@ -367,13 +374,6 @@
             new() { Label = Localization.GetString("PaidStatus"),      Value = InvoiceStatus.Paid,          Color = Color.Success },
             new() { Label = Localization.GetString("OverdueStatus"),   Value = InvoiceStatus.Overdue,       Color = Color.Error   },
             new() { Label = Localization.GetString("CancelledStatus"), Value = InvoiceStatus.Cancelled,     Color = Color.Default },
-        ];
-
-        _typeFilterItems =
-        [
-            new() { Label = Localization.GetString("All"),        Value = null,                   Color = Color.Transparent },
-            new() { Label = Localization.GetString("Receivable"), Value = InvoiceType.Receivable, Color = Color.Success },
-            new() { Label = Localization.GetString("Payable"),    Value = InvoiceType.Payable,    Color = Color.Warning },
         ];
     }
 

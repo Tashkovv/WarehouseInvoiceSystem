@@ -1,0 +1,126 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.FirstName"
+                              Label="@Localization.GetString("FirstName")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("FirstNameRequired")"
+                              FullWidth="true"
+                              MaxLength="100" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.LastName"
+                              Label="@Localization.GetString("LastName")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("LastNameRequired")"
+                              FullWidth="true"
+                              MaxLength="100" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.IdentificationNumber"
+                              Label="@Localization.GetString("IdentificationNumber")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("IdentificationNumberRequired")"
+                              FullWidth="true"
+                              MaxLength="50" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.Phone"
+                              Label="@Localization.GetString("Phone")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              MaxLength="50" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.Email"
+                              Label="@Localization.GetString("Email")"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Email"
+                              FullWidth="true"
+                              MaxLength="100" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.Address"
+                              Label="@Localization.GetString("Address")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              MaxLength="500" />
+            </MudItem>
+            @if (IsEditMode)
+            {
+                <MudItem xs="12" sm="2">
+                    <MudSwitch T="bool"
+                               @bind-Value="_model.IsActive"
+                               Color="Color.Success"
+                               Label="@(_model.IsActive ? Localization.GetString("ActiveIndividual")
+                                                        : Localization.GetString("InactiveIndividual"))" />
+            </MudItem>
+                        }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid)">
+            @Localization.GetString("Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Pass an existing IndividualDto to edit, or null to create a new individual.
+    /// </summary>
+    [Parameter]
+    public IndividualDto? Individual { get; set; }
+
+    private IndividualDto _model = new();
+    private bool IsEditMode => Individual is not null;
+
+    private bool IsValid =>
+        !string.IsNullOrWhiteSpace(_model.FirstName) &&
+        !string.IsNullOrWhiteSpace(_model.LastName) &&
+        !string.IsNullOrWhiteSpace(_model.IdentificationNumber);
+
+    protected override void OnParametersSet()
+    {
+        if (Individual is not null)
+        {
+            _model = new IndividualDto
+            {
+                Id = Individual.Id,
+                FirstName = Individual.FirstName,
+                LastName = Individual.LastName,
+                FullName = Individual.FullName,
+                IdentificationNumber = Individual.IdentificationNumber,
+                Address = Individual.Address,
+                Phone = Individual.Phone,
+                Email = Individual.Email,
+                IsActive = Individual.IsActive,
+                CreatedAt = Individual.CreatedAt,
+            };
+        }
+        else
+        {
+            _model = new IndividualDto { IsActive = true };
+        }
+    }
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(_model));
+    private void Cancel() => MudDialog.Cancel();
+}
