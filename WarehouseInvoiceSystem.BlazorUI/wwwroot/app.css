@@ -202,17 +202,113 @@ html {
         border-right: none;
     }
 
-/* Header borders — bolder, with resizer clipped inside */
+/* Header borders */
 .wis-data-grid .mud-table-head .mud-table-cell {
     border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
     border-bottom: 2px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
     font-weight: 600;
+    position: relative;
     overflow: hidden;
 }
 
-    .wis-data-grid .mud-table-head .mud-table-cell:last-child {
-        border-right: none;
+.wis-data-grid .mud-table-head .mud-table-cell:last-child {
+    border-right: none;
+}
+
+/* Toolbar filter strip — quick enum filters */
+.wis-toolbar-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Labeled filter pill button */
+.wis-filter-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    height: 32px;
+    padding: 0 10px 0 12px;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
+    border-radius: 16px;
+    background: transparent;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    color: var(--mud-palette-text-secondary);
+    white-space: nowrap;
+    user-select: none;
+}
+
+    .wis-filter-btn:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+        background: rgba(var(--mud-palette-primary-rgb), 0.04);
     }
+
+.wis-filter-btn--active {
+    border-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary);
+    background: rgba(var(--mud-palette-primary-rgb), 0.08);
+    font-weight: 600;
+}
+
+.wis-filter-btn__label {
+    line-height: 1;
+}
+
+.wis-filter-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.7;
+}
+
+/* Active indicator dot */
+.wis-filter-btn__dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--mud-palette-primary);
+}
+
+/* Advanced filter toggle row */
+.wis-toolbar-advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.wis-toolbar-advanced-btn {
+    text-transform: none !important;
+    font-size: 0.8125rem !important;
+    padding: 0 6px !important;
+    min-width: 0 !important;
+    height: 28px !important;
+    color: var(--mud-palette-text-secondary) !important;
+}
+
+    .wis-toolbar-advanced-btn:hover {
+        color: var(--mud-palette-primary) !important;
+    }
+
+.wis-toolbar-advanced-badge {
+    height: 20px !important;
+    font-size: 0.7rem !important;
+    padding: 0 6px !important;
+}
+
+/* Advanced filter panel */
+.wis-toolbar-advanced-panel {
+    margin-top: 12px;
+    padding-top: 4px;
+}
 
 /* Body cursor — prevent col-resize cursor leaking from header resizer */
 .wis-data-grid .mud-table-body .mud-table-cell {

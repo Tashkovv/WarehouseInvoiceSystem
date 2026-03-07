@@ -249,11 +249,11 @@ else
                     }
                     else if (_invoices == null || !_invoices.Any())
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.Receipt"
                                      Size="Size.Large"
                                      Color="Color.Secondary"
-                                     Class="mb-2" />
+                                     Class="mb-2 mr-2" />
                             <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
                         </div>
                     }

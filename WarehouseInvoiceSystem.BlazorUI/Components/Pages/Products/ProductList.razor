@@ -21,7 +21,17 @@
 <WisGridToolbar CreateAction="OpenCreateDialog"
                 CreateLabel="@Localization.GetString("CreateProduct")"
                 SearchValue="@_searchString"
-                SearchValueChanged="OnSearch" />
+                SearchValueChanged="OnSearch">
+    <Filters>
+        <FilterPopoverList TValue="bool?"
+                           Title="@Localization.GetString("FilterByStatus")"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterIsActive"
+                           SelectedValueChanged="OnStatusFilterChanged" />
+    </Filters>
+</WisGridToolbar>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
@@ -74,31 +84,19 @@
                     </CellTemplate>
                 </PropertyColumn>
 
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
+                <PropertyColumn Property="x => x.IsActive"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="false"
                                 IsEditable="false">
-                    <HeaderTemplate>
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">
-                                @Localization.GetString("Status")
-                            </MudText>
-                            <FilterPopoverList TValue="bool?"
-                                               Title="@Localization.GetString("FilterByStatus")"
-                                               Items="_statusFilterItems"
-                                               Mode="FilterSelectionMode.Single"
-                                               SelectedValue="_filterIsActive"
-                                               SelectedValueChanged="OnStatusFilterChanged" />
-                        </MudStack>
-                    </HeaderTemplate>
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ProductActive")
-                                                    : Localization.GetString("ProductInactive"))
+                                                        : Localization.GetString("ProductInactive"))
                         </MudChip>
                     </CellTemplate>
-                </TemplateColumn>
+                </PropertyColumn>
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
@@ -167,7 +165,7 @@
     {
         _statusFilterItems =
         [
-            new() { Label = Localization.GetString("All"),    Value = null,  Color = Color.Primary },
+            new() { Label = Localization.GetString("All"),    Value = null,  Color = Color.Info },
             new() { Label = Localization.GetString("ActiveProducts"), Value = true,  Color = Color.Success },
             new() { Label = Localization.GetString("InactiveProducts"), Value = false, Color = Color.Default }
         ];

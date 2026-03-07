@@ -2,7 +2,9 @@
 @inject ILocalizationService Localization
 
 <MudCard Elevation="2" Class="mb-4">
-    <MudCardContent>
+    <MudCardContent Class="pb-3">
+
+        @* Row 1: Create button + Search + AdditionalActions *@
         <MudGrid AlignItems="AlignItems.Center">
             @if (CreateHref is not null || CreateAction.HasDelegate)
             {
@@ -29,7 +31,8 @@
                     }
                 </MudItem>
             }
-            <MudItem xs="12" sm="@(CreateHref is not null || CreateAction.HasDelegate ? 9 : 12)"
+            <MudItem xs="12"
+                     sm="@(CreateHref is not null || CreateAction.HasDelegate ? 9 : 12)"
                      md="@(CreateHref is not null || CreateAction.HasDelegate ? 10 : 12)">
                 <MudTextField T="string"
                               Value="SearchValue"
@@ -44,11 +47,55 @@
             </MudItem>
             @if (AdditionalActions is not null)
             {
-                <MudItem xs="12">
+                <MudItem xs="12" Style="width: auto; flex: 0 0 auto;">
                     @AdditionalActions
                 </MudItem>
             }
         </MudGrid>
+
+        @* Row 2: Quick enum filters (always visible when provided) *@
+        @if (Filters is not null)
+        {
+            <MudDivider Class="mt-3 mb-2" />
+            <div class="wis-toolbar-filters">
+                @Filters
+            </div>
+        }
+
+        @* Row 3: Advanced filter toggle + collapsible panel *@
+        @if (AdvancedFilters is not null)
+        {
+            <MudDivider Class="mt-3 mb-1" />
+            <div class="wis-toolbar-advanced-toggle">
+                <MudButton StartIcon="@(_showAdvancedFilters ? Icons.Material.Filled.ExpandLess
+                                                             : Icons.Material.Filled.ExpandMore)"
+                       Variant="Variant.Text"
+                       Color="Color.Default"
+                       Size="Size.Small"
+                       Class="wis-toolbar-advanced-btn"
+                       OnClick="@(() => _showAdvancedFilters = !_showAdvancedFilters)">
+                @Localization.GetString("AdvancedFilters")
+            </MudButton>
+            @if (ActiveAdvancedFilterCount > 0)
+                {
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Color="Color.Primary"
+                             Variant="Variant.Filled"
+                             Class="wis-toolbar-advanced-badge">
+                        @ActiveAdvancedFilterCount
+                    </MudChip>
+                }
+            </div>
+
+            @if (_showAdvancedFilters)
+            {
+                <div class="wis-toolbar-advanced-panel">
+                    @AdvancedFilters
+                </div>
+            }
+        }
+
     </MudCardContent>
 </MudCard>
 
@@ -68,6 +115,32 @@
     [Parameter]
     public EventCallback<string> SearchValueChanged { get; set; }
 
+    /// <summary>
+    /// Extra action buttons (e.g. Export) rendered inline next to the search bar.
+    /// </summary>
     [Parameter]
     public RenderFragment? AdditionalActions { get; set; }
+
+    /// <summary>
+    /// Quick enum/boolean filters — always visible as labeled pill buttons below the search row.
+    /// Use FilterPopoverList with Label set.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? Filters { get; set; }
+
+    /// <summary>
+    /// Complex filters (date ranges, amounts, autocomplete) — rendered in a collapsible panel.
+    /// Use a MudGrid inside this slot.
+    /// </summary>
+    [Parameter]
+    public RenderFragment? AdvancedFilters { get; set; }
+
+    /// <summary>
+    /// Number of currently active advanced filters. Drives the badge on the toggle button.
+    /// Compute this in the page component the same way _activeFilterCount was computed before.
+    /// </summary>
+    [Parameter]
+    public int ActiveAdvancedFilterCount { get; set; }
+
+    private bool _showAdvancedFilters = false;
 }

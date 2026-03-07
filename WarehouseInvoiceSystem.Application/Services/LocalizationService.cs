@@ -197,6 +197,9 @@
 
                 // Companies
                 ["AllCompanies"] = "All Companies",
+                ["TaxId"] = "Tax ID",
+                ["FilterByCompanyType"] = "Filter by Type",
+                ["CompanyNameRequired"] = "Company name is required",
                 ["Clients"] = "Clients",
                 ["Vendors"] = "Vendors",
                 ["CreateCompany"] = "Create Company",
@@ -768,6 +771,9 @@
 
                 // Companies
                 ["AllCompanies"] = "Сите компании",
+                ["TaxId"] = "Даночен број",
+                ["FilterByCompanyType"] = "Филтрирај по Тип",
+                ["CompanyNameRequired"] = "Името на компанијата е задолжително",
                 ["Clients"] = "Клиенти",
                 ["Vendors"] = "Добавувачи",
                 ["CreateCompany"] = "Креирај компанија",

@@ -1,11 +1,32 @@
 ﻿@typeparam TValue
 
 <div style="position: relative; display: inline-flex; align-items: center;">
-    <MudIconButton Icon="@Icons.Material.Filled.FilterList"
-                   Size="Size.Small"
-                   Color="@(_isFilterActive ? Color.Primary : Color.Default)"
-                   Title="@Title"
-                   OnClick="TogglePopover" />
+
+    @* Labeled trigger (toolbar mode) vs icon-only trigger (legacy/header mode) *@
+    @if (Label is not null)
+    {
+        <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "")"
+                @onclick="TogglePopover"
+                type="button">
+            <span class="wis-filter-btn__label">@Label</span>
+            <span class="wis-filter-btn__icon">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowDropDown"
+                         Size="Size.Small" />
+            </span>
+            @if (_isFilterActive)
+            {
+                <span class="wis-filter-btn__dot"></span>
+            }
+        </button>
+    }
+    else
+    {
+        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
+                       Size="Size.Small"
+                       Color="@(_isFilterActive ? Color.Primary : Color.Default)"
+                       Title="@Title"
+                       OnClick="TogglePopover" />
+    }
 
     @if (_open)
     {
@@ -77,8 +98,19 @@
 </div>
 
 @code {
+    /// <summary>
+    /// Popover header text (always shown inside the popover).
+    /// Also used as tooltip when Label is null.
+    /// </summary>
     [Parameter, EditorRequired]
     public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// When set, renders a labeled pill button instead of a bare icon.
+    /// Use this in the WisGridToolbar Filters slot.
+    /// </summary>
+    [Parameter]
+    public string? Label { get; set; }
 
     [Parameter, EditorRequired]
     public IEnumerable<FilterPopoverItem<TValue>> Items { get; set; } = [];
