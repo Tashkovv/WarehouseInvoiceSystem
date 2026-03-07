@@ -183,6 +183,9 @@
                 ["Name"] = "Name",
                 ["Created"] = "Created",
                 ["Deleted"] = "Deleted",
+                ["Ascending"] = "Ascending",
+                ["Descending"] = "Descending",
+                ["All"] = "All",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -450,6 +453,12 @@
                 ["Transactions"] = "transactions",
                 ["Purchased"] = "Purchased",
                 ["Sold"] = "Sold",
+                ["SearchProducts"] = "Search by name, code, or description...",
+                ["FilterByStatus"] = "Filter by Status",
+                ["SortBy"] = "Sort by",
+                ["SortByName"] = "Name",
+                ["SortByCode"] = "Code",
+                ["SortByPrice"] = "Price",
 
                 // Inventory
                 ["Inventory"] = "Inventory",
@@ -745,6 +754,9 @@
                 ["Name"] = "Име",
                 ["Created"] = "Креирано",
                 ["Deleted"] = "Избришено",
+                ["Ascending"] = "Растечки",
+                ["Descending"] = "Опаѓачки",
+                ["All"] = "Сите",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -1012,6 +1024,12 @@
                 ["Transactions"] = "трансакции",
                 ["Purchased"] = "Откупено",
                 ["Sold"] = "Продадено",
+                ["SearchProducts"] = "Пребарај по име, шифра или опис...",
+                ["FilterByStatus"] = "Филтрирај по Статус",
+                ["SortBy"] = "Сортирај по",
+                ["SortByName"] = "Име",
+                ["SortByCode"] = "Шифра",
+                ["SortByPrice"] = "Цена",
 
                 // Inventory
                 ["Inventory"] = "Залиха",

@@ -31,6 +31,7 @@ builder.Services.AddOptions<EmailSettings>()
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
+builder.Services.AddScoped<MudBlazor.MudLocalizer, WarehouseInvoiceSystem.BlazorUI.Localization.CustomMudLocalizer>();
 
 // Add Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

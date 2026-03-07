@@ -1,3 +1,44 @@
+/* =============================================
+   WIS Page Title — animated gradient underline
+   ============================================= */
+.wis-page-title {
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    display: inline-block;
+    position: relative;
+    padding-bottom: 6px;
+}
+
+    .wis-page-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        width: 100%;
+        border-radius: 2px;
+        background: linear-gradient(90deg, var(--mud-palette-primary), var(--mud-palette-secondary), var(--mud-palette-primary));
+        background-size: 200% 100%;
+        animation: wis-title-sweep 3s ease-in-out infinite;
+    }
+
+@keyframes wis-title-sweep {
+    0% {
+        background-position: 100% 0;
+    }
+
+    50% {
+        background-position: 0% 0;
+    }
+
+    100% {
+        background-position: 100% 0;
+    }
+}
+
+/* =============================================
+   General utilities
+   ============================================= */
 .mud-select .mud-select-input.mud-input-slot {
     display: flex !important;
     align-items: center;
@@ -22,7 +63,10 @@ html {
 .table-row-clickable td:not(:last-child) {
     cursor: pointer;
 }
-/* DashboardCard CSS */
+
+/* =============================================
+   Dashboard card
+   ============================================= */
 .dashboard-card {
     position: relative;
     overflow: hidden;
@@ -42,9 +86,178 @@ html {
         opacity: 0;
         transform: translateX(-10px);
     }
-    
+
     to {
         opacity: 1;
         transform: translateX(0);
     }
+}
+
+/* =============================================
+   FilterPopoverList — vertical radio group
+   ============================================= */
+.filter-radio-group,
+.filter-radio-group > div,
+.filter-radio-group .mud-radio-group {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: start !important;
+}
+
+/* =============================================
+   WIS Data Grid — shared styles for all lists
+   ============================================= */
+
+/* Pillar — smooth right edge shared by all status variants */
+.row-status-active td:first-child,
+.row-status-inactive td:first-child,
+.row-status-warning td:first-child,
+.row-status-error td:first-child,
+.row-status-info td:first-child,
+.row-status-primary td:first-child,
+.row-status-secondary td:first-child,
+.row-status-default td:first-child {
+    border-radius: 0 2px 2px 0;
+}
+
+/* Pillar colors */
+.row-status-active td:first-child {
+    border-left: 5px solid var(--mud-palette-success) !important;
+}
+
+.row-status-inactive td:first-child {
+    border-left: 5px solid var(--mud-palette-action-disabled) !important;
+}
+
+.row-status-warning td:first-child {
+    border-left: 5px solid var(--mud-palette-warning) !important;
+}
+
+.row-status-error td:first-child {
+    border-left: 5px solid var(--mud-palette-error) !important;
+}
+
+.row-status-info td:first-child {
+    border-left: 5px solid var(--mud-palette-info) !important;
+}
+
+.row-status-primary td:first-child {
+    border-left: 5px solid var(--mud-palette-primary) !important;
+}
+
+.row-status-secondary td:first-child {
+    border-left: 5px solid var(--mud-palette-secondary) !important;
+}
+
+.row-status-default td:first-child {
+    border-left: 5px solid var(--mud-palette-action-disabled) !important;
+}
+
+/* Subtle background tints per status */
+.row-status-active {
+    background-color: rgba(76, 175, 80, 0.04) !important;
+    cursor: pointer;
+}
+
+.row-status-inactive {
+    cursor: pointer;
+}
+
+.row-status-warning {
+    background-color: rgba(255, 152, 0, 0.04) !important;
+    cursor: pointer;
+}
+
+.row-status-error {
+    background-color: rgba(244, 67, 54, 0.04) !important;
+    cursor: pointer;
+}
+
+.row-status-info {
+    background-color: rgba(33, 150, 243, 0.04) !important;
+    cursor: pointer;
+}
+
+.row-status-primary {
+    background-color: rgba(94, 53, 177, 0.04) !important;
+    cursor: pointer;
+}
+
+.row-status-secondary {
+    background-color: rgba(156, 39, 176, 0.04) !important;
+    cursor: pointer;
+}
+
+.row-status-default {
+    cursor: pointer;
+}
+
+/* Column and row borders */
+.wis-data-grid .mud-table-cell {
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.07);
+    border-bottom: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.07);
+}
+
+    .wis-data-grid .mud-table-cell:last-child {
+        border-right: none;
+    }
+
+/* Header borders — bolder, with resizer clipped inside */
+.wis-data-grid .mud-table-head .mud-table-cell {
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
+    border-bottom: 2px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
+    font-weight: 600;
+    overflow: hidden;
+}
+
+    .wis-data-grid .mud-table-head .mud-table-cell:last-child {
+        border-right: none;
+    }
+
+/* Body cursor — prevent col-resize cursor leaking from header resizer */
+.wis-data-grid .mud-table-body .mud-table-cell {
+    cursor: pointer !important;
+}
+
+/* Row hover — lift effect */
+.wis-data-grid .mud-table-body tr {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wis-data-grid .mud-table-body tr:hover td {
+    background-color: rgba(var(--mud-palette-text-primary-rgb), 0.04);
+    box-shadow: inset 0 -1px 0 rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+/* Re-assert pillar borders on hover — hover background-color would otherwise override them */
+.wis-data-grid .mud-table-body tr.row-status-active:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-success) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-inactive:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-action-disabled) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-warning:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-warning) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-error:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-error) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-info:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-info) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-primary:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-primary) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-secondary:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-secondary) !important;
+}
+
+.wis-data-grid .mud-table-body tr.row-status-default:hover td:first-child {
+    border-left: 5px solid var(--mud-palette-action-disabled) !important;
 }

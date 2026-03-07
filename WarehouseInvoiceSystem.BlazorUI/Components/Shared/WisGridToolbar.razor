@@ -1,0 +1,73 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ILocalizationService Localization
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent>
+        <MudGrid AlignItems="AlignItems.Center">
+            @if (CreateHref is not null || CreateAction.HasDelegate)
+            {
+                <MudItem xs="12" sm="3" md="2">
+                    @if (CreateHref is not null)
+                    {
+                        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   FullWidth="true"
+                                   Href="@CreateHref">
+                            @CreateLabel
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   FullWidth="true"
+                                   OnClick="CreateAction">
+                            @CreateLabel
+                        </MudButton>
+                    }
+                </MudItem>
+            }
+            <MudItem xs="12" sm="@(CreateHref is not null || CreateAction.HasDelegate ? 9 : 12)"
+                     md="@(CreateHref is not null || CreateAction.HasDelegate ? 10 : 12)">
+                <MudTextField T="string"
+                              Value="SearchValue"
+                              ValueChanged="SearchValueChanged"
+                              Placeholder="@Localization.GetString("Search")"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              IconSize="Size.Medium"
+                              Immediate="true"
+                              DebounceInterval="300"
+                              Class="mt-0" />
+            </MudItem>
+            @if (AdditionalActions is not null)
+            {
+                <MudItem xs="12">
+                    @AdditionalActions
+                </MudItem>
+            }
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter]
+    public string? CreateHref { get; set; }
+
+    [Parameter]
+    public EventCallback CreateAction { get; set; }
+
+    [Parameter]
+    public string CreateLabel { get; set; } = string.Empty;
+
+    [Parameter]
+    public string SearchValue { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> SearchValueChanged { get; set; }
+
+    [Parameter]
+    public RenderFragment? AdditionalActions { get; set; }
+}

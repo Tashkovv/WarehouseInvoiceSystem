@@ -1,0 +1,136 @@
+﻿@typeparam TValue
+
+<div style="position: relative; display: inline-flex; align-items: center;">
+    <MudIconButton Icon="@Icons.Material.Filled.FilterList"
+                   Size="Size.Small"
+                   Color="@(_isFilterActive ? Color.Primary : Color.Default)"
+                   Title="@Title"
+                   OnClick="TogglePopover" />
+
+    @if (_open)
+    {
+        <MudOverlay Visible="true"
+                    OnClick="Close"
+                    ZIndex="1399"
+                    AutoClose="false" />
+    }
+
+    <MudPopover Open="_open"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="true"
+                Class="pa-3"
+                Style="z-index: 1400; min-width: 180px;">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
+            <div style="max-height: 260px; overflow-y: auto;">
+                @if (Mode == FilterSelectionMode.Single)
+                {
+                    <MudRadioGroup T="TValue"
+                                   Value="_singleValue"
+                                   ValueChanged="OnSingleValueChanged"
+                                   Class="filter-radio-group">
+                        @foreach (FilterPopoverItem<TValue> item in Items)
+                        {
+                            <div class="d-flex align-center py-1 px-1 rounded"
+                                 style="gap: 8px; cursor: pointer;">
+                                <MudRadio T="TValue"
+                                          Value="item.Value"
+                                          Dense="true"
+                                          Class="ma-0 pa-0" />
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="item.Color"
+                                         Variant="Variant.Filled"
+                                         Class="ma-0">
+                                    @item.Label
+                                </MudChip>
+                            </div>
+                        }
+                    </MudRadioGroup>
+                }
+                else
+                {
+                    @foreach (FilterPopoverItem<TValue> item in Items)
+                    {
+                        bool isChecked = _multiValues.Contains(item.Value!);
+                        <div class="d-flex align-center py-1 px-1 rounded"
+                             style="gap: 8px; cursor: pointer;"
+                             @onclick="@(() => OnMultiValueChanged(item.Value, !isChecked))">
+                            <MudCheckBox T="bool"
+                                         Value="isChecked"
+                                         Dense="true"
+                                         Class="ma-0 pa-0" />
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Color="item.Color"
+                                     Variant="Variant.Filled"
+                                     Class="ma-0">
+                                @item.Label
+                            </MudChip>
+                        </div>
+                    }
+                }
+            </div>
+        </MudStack>
+    </MudPopover>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public IEnumerable<FilterPopoverItem<TValue>> Items { get; set; } = [];
+
+    [Parameter]
+    public FilterSelectionMode Mode { get; set; } = FilterSelectionMode.Single;
+
+    // Single select
+    [Parameter]
+    public TValue? SelectedValue { get; set; }
+
+    [Parameter]
+    public EventCallback<TValue?> SelectedValueChanged { get; set; }
+
+    // Multi select
+    [Parameter]
+    public IReadOnlyCollection<TValue> SelectedValues { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<IReadOnlyCollection<TValue>> SelectedValuesChanged { get; set; }
+
+    private bool _open = false;
+    private TValue? _singleValue;
+    private HashSet<TValue> _multiValues = [];
+
+    private bool _isFilterActive => Mode == FilterSelectionMode.Single
+        ? _singleValue != null && !_singleValue.Equals(default(TValue))
+        : _multiValues.Count > 0;
+
+    protected override void OnParametersSet()
+    {
+        _singleValue = SelectedValue;
+        _multiValues = SelectedValues?.ToHashSet() ?? [];
+    }
+
+    private void TogglePopover() => _open = !_open;
+    private void Close() => _open = false;
+
+    private async Task OnSingleValueChanged(TValue value)
+    {
+        _singleValue = value;
+        _open = false;
+        await SelectedValueChanged.InvokeAsync(value);
+    }
+
+    private async Task OnMultiValueChanged(TValue value, bool isChecked)
+    {
+        if (isChecked)
+            _multiValues.Add(value);
+        else
+            _multiValues.Remove(value);
+
+        await SelectedValuesChanged.InvokeAsync(_multiValues.ToList().AsReadOnly());
+    }
+}

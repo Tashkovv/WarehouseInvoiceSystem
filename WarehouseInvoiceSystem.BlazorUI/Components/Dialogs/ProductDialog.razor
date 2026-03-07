@@ -1,0 +1,127 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            @if (IsEditMode)
+            {
+                <MudItem xs="12">
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @Localization.GetString("Code"): <strong>@_product.Code</strong>
+                    </MudText>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_product.Code"
+                                  Label="@Localization.GetString("Code")"
+                                  Variant="Variant.Outlined"
+                                  RequiredError="@Localization.GetString("CodeRequired")"
+                                  Required="true"
+                                  FullWidth="true" />
+                </MudItem>
+            }
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_product.Name"
+                              Label="@Localization.GetString("ProductName")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("NameRequired")"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_product.Description"
+                              Label="@Localization.GetString("Description")"
+                              Variant="Variant.Outlined"
+                              Lines="3"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_product.Unit"
+                              Label="@Localization.GetString("Unit")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("UnitRequired")"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="decimal"
+                                 @bind-Value="_product.DefaultPrice"
+                                 Label="@Localization.GetString("Price")"
+                                 Variant="Variant.Outlined"
+                                 HideSpinButtons="true"
+                                 Format="N2"
+                                 Min="1m"
+                                 FullWidth="true"
+                                 Adornment="Adornment.Start"
+                                 AdornmentText="MKD" />
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudSwitch T="bool"
+                           @bind-Value="_product.IsActive"
+                           Color="Color.Success"
+                           Label="@(_product.IsActive ? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid)">
+            @Localization.GetString("Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Pass an existing ProductDto to edit, or null to create a new product.
+    /// </summary>
+    [Parameter]
+    public ProductDto? Product { get; set; }
+
+    private ProductDto _product = new();
+    private bool IsEditMode => Product is not null;
+
+    private bool IsValid =>
+        !string.IsNullOrWhiteSpace(_product.Code) &&
+        !string.IsNullOrWhiteSpace(_product.Name) &&
+        !string.IsNullOrWhiteSpace(_product.Unit);
+
+    protected override void OnParametersSet()
+    {
+        if (Product is not null)
+        {
+            // Edit mode — work on a clone so cancel discards changes
+            _product = new ProductDto
+            {
+                Id = Product.Id,
+                Code = Product.Code,
+                Name = Product.Name,
+                Description = Product.Description,
+                Unit = Product.Unit,
+                DefaultPrice = Product.DefaultPrice,
+                IsActive = Product.IsActive,
+                CreatedAt = Product.CreatedAt
+            };
+        }
+        else
+        {
+            // Create mode — fresh product, active by default
+            _product = new ProductDto { IsActive = true };
+        }
+    }
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(_product));
+    private void Cancel() => MudDialog.Cancel();
+}

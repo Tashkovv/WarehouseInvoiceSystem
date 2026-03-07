@@ -1,0 +1,13 @@
+﻿@typeparam T
+@using WarehouseInvoiceSystem.Application.Interfaces
+@inject ILocalizationService Localization
+
+<MudDataGridPager T="T"
+                  PageSizeOptions="PageSizeOptions"
+                  RowsPerPageString="@Localization.GetString("ItemsPerPage")"
+                  InfoFormat="@($"{{first_item}}-{{last_item}} {Localization.GetString("Of")} {{all_items}}")" />
+
+@code {
+    [Parameter]
+    public int[] PageSizeOptions { get; set; } = [10, 25, 50, 100];
+}
