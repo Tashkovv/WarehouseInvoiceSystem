@@ -361,14 +361,14 @@
     {
         _typeFilterItems =
         [
-            new() { Label = Localization.GetString("All"),        Value = null,                   Color = Color.Transparent },
+            new() { Label = Localization.GetString("All"),        Value = null,                   Color = Color.Info },
             new() { Label = Localization.GetString("Receivable"), Value = InvoiceType.Receivable, Color = Color.Success },
             new() { Label = Localization.GetString("Payable"),    Value = InvoiceType.Payable,    Color = Color.Warning },
         ];
 
         _statusFilterItems =
         [
-            new() { Label = Localization.GetString("Draft"),           Value = InvoiceStatus.Draft,         Color = Color.Transparent },
+            new() { Label = Localization.GetString("Draft"),           Value = InvoiceStatus.Draft,         Color = Color.Default },
             new() { Label = Localization.GetString("Sent"),            Value = InvoiceStatus.Sent,          Color = Color.Info    },
             new() { Label = Localization.GetString("PartiallyPaid"),   Value = InvoiceStatus.PartiallyPaid, Color = Color.Warning },
             new() { Label = Localization.GetString("PaidStatus"),      Value = InvoiceStatus.Paid,          Color = Color.Success },

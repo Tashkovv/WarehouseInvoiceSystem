@@ -167,7 +167,7 @@
     {
         _statusFilterItems =
         [
-            new() { Label = Localization.GetString("All"),              Value = null,  Color = Color.Transparent },
+            new() { Label = Localization.GetString("All"),              Value = null,  Color = Color.Info },
             new() { Label = Localization.GetString("ActiveProducts"),   Value = true,  Color = Color.Success },
             new() { Label = Localization.GetString("InactiveProducts"), Value = false, Color = Color.Default }
         ];
@@ -221,11 +221,8 @@
     private async void OnRowClick(DataGridRowClickEventArgs<ProductDto> args)
     {
         if (args.MouseEventArgs.Detail == 2)
-            ViewProduct(args.Item.Id);
+            Navigation.NavigateTo($"/products/{args.Item.Id}");
     }
-
-    private void ViewProduct(Guid id) =>
-        Navigation.NavigateTo($"/products/{id}");
 
     private async Task OpenCreateDialog()
     {

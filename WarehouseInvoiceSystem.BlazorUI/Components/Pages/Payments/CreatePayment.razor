@@ -118,7 +118,7 @@ else
                                 <MudSelectItem T="PaymentMethod" Value="@(method)">
                                     <MudChip T="InvoiceStatus"
                                              Size="Size.Small"
-                                             Color="Color.Info">
+                                             Color="@GetMethodColor(method)">
                                         @Localization.GetString(method.ToString())
                                     </MudChip>
                                 </MudSelectItem>
@@ -320,6 +320,15 @@ else
             _saving = false;
         }
     }
+
+    private Color GetMethodColor(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => Color.Success,
+        PaymentMethod.BankTransfer => Color.Primary,
+        PaymentMethod.CreditCard => Color.Secondary,
+        PaymentMethod.Other => Color.Default,
+        _ => Color.Default
+    };
 
     public void Dispose()
     {

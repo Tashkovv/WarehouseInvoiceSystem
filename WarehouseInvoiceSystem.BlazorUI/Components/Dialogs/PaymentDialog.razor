@@ -1,0 +1,322 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Payment
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject ILocalizationService Localization
+@inject IInvoiceService InvoiceService
+
+<MudDialog>
+    <DialogContent>
+        @if (_loadingInvoices)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            <MudGrid>
+                @* Invoice selector — shown in create mode, read-only info in edit mode *@
+                @if (IsEditMode)
+                {
+                    <MudItem xs="12">
+                        <MudTextField Value="@Payment!.InvoiceNumber"
+                                      Label="@Localization.GetString("InvoiceNumber")"
+                                      Variant="Variant.Outlined"
+                                      ReadOnly="true"
+                                      FullWidth="true" />
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12">
+                        <MudSelect T="Guid?"
+                                   Value="_selectedInvoiceId"
+                                   ValueChanged="OnInvoiceSelected"
+                                   Label="@Localization.GetString("SelectInvoice")"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   ReadOnly="_invoiceReadonly"
+                                   FullWidth="true"
+                                   AnchorOrigin="Origin.BottomLeft">
+                            @foreach (InvoiceDto invoice in _unpaidInvoices)
+                            {
+                                <MudSelectItem T="Guid?" Value="invoice.Id">
+                                    @invoice.InvoiceNumber — @invoice.CompanyName
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                }
+
+                @if (_selectedInvoice is not null)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info"
+                                  Variant="Variant.Outlined"
+                                  Class="py-2 wis-alert-fullwidth">
+                            <MudGrid Spacing="0">
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("InvoiceAmount")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">@_selectedInvoice.TotalAmount.ToString("C")</MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("AlreadyPaid")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Success">@_selectedInvoice.AmountPaid.ToString("C")</MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("RemainingBalance")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Warning">@_selectedInvoice.AmountDue.ToString("C")</MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudAlert>
+                    </MudItem>
+                }
+
+                @* Payment method *@
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="PaymentMethod"
+                               @bind-Value="_method"
+                               Label="@Localization.GetString("PaymentMethod")"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               FullWidth="true"
+                               AnchorOrigin="Origin.BottomLeft">
+                        <MudSelectItem Value="PaymentMethod.Cash">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.Money" Size="Size.Small" Color="Color.Success" />
+                                <MudText>@Localization.GetString("Cash")</MudText>
+                            </MudStack>
+                        </MudSelectItem>
+                        <MudSelectItem Value="PaymentMethod.BankTransfer">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Size="Size.Small" Color="Color.Primary" />
+                                <MudText>@Localization.GetString("BankTransfer")</MudText>
+                            </MudStack>
+                        </MudSelectItem>
+                        <MudSelectItem Value="PaymentMethod.CreditCard">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.CreditCard" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText>@Localization.GetString("CreditCard")</MudText>
+                            </MudStack>
+                        </MudSelectItem>
+                        <MudSelectItem Value="PaymentMethod.Other">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Size="Size.Small" Color="Color.Default" />
+                                <MudText>@Localization.GetString("Other")</MudText>
+                            </MudStack>
+                        </MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                @* Amount *@
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal"
+                                     @bind-Value="_amount"
+                                     Label="@Localization.GetString("Amount")"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     Min="0.01m"
+                                     Max="@(_selectedInvoice?.AmountDue ?? 999999999m)"
+                                     Format="N2"
+                                     HideSpinButtons="true"
+                                     FullWidth="true"
+                                     Adornment="Adornment.Start"
+                                     AdornmentText="MKD" />
+                </MudItem>
+
+                @* Payment date *@
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_paymentDate"
+                                   Label="@Localization.GetString("PaymentDate")"
+                                   Variant="Variant.Outlined"
+                                   Required="true" />
+                </MudItem>
+
+                @* Reference number *@
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_referenceNumber"
+                                  Label="@Localization.GetString("ReferenceNumber")"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true"
+                                  MaxLength="100" />
+                </MudItem>
+
+                @* Recorded by — create mode only *@
+                @if (!IsEditMode)
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_recordedBy"
+                                      Label="@Localization.GetString("RecordedBy")"
+                                      Variant="Variant.Outlined"
+                                      FullWidth="true"
+                                      MaxLength="100" />
+                    </MudItem>
+                }
+
+                @* Notes *@
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_notes"
+                                  Label="@Localization.GetString("Notes")"
+                                  Variant="Variant.Outlined"
+                                  Lines="2"
+                                  FullWidth="true"
+                                  MaxLength="500" />
+                </MudItem>
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || _loadingInvoices)">
+            @Localization.GetString("Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>Pass an existing PaymentDto to edit, or null to create.</summary>
+    [Parameter]
+    public PaymentDto? Payment { get; set; }
+
+    /// <summary>
+    /// Pre-select and lock an invoice when opening from the invoice list's Payment button.
+    /// Ignored in edit mode.
+    /// </summary>
+    [Parameter]
+    public Guid? PreSelectedInvoiceId { get; set; }
+
+    private bool IsEditMode => Payment is not null;
+
+    // State
+    private bool _loadingInvoices = true;
+    private bool _invoiceReadonly = false;
+    private List<InvoiceDto> _unpaidInvoices = [];
+    private InvoiceDto? _selectedInvoice;
+
+    private Guid? _selectedInvoiceId;
+    private PaymentMethod _method = PaymentMethod.BankTransfer;
+    private decimal _amount;
+    private DateTime? _paymentDate = DateTime.UtcNow;
+    private string? _referenceNumber;
+    private string? _notes;
+    private string? _recordedBy;
+
+    private bool IsValid =>
+        _amount > 0 &&
+        _paymentDate.HasValue &&
+        (IsEditMode || _selectedInvoiceId.HasValue);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode)
+        {
+            // Edit: populate fields from existing payment
+            _method = Payment!.PaymentMethod;
+            _amount = Payment.Amount;
+            _paymentDate = Payment.PaymentDate;
+            _referenceNumber = Payment.ReferenceNumber;
+            _notes = Payment.Notes;
+
+            // Load the invoice for the summary panel
+            try
+            {
+                _selectedInvoice = await InvoiceService.GetInvoiceByIdAsync(Payment.InvoiceId);
+            }
+            catch { /* summary panel just won't show */ }
+
+            _loadingInvoices = false;
+        }
+        else
+        {
+            // Create: load unpaid invoices
+            await LoadUnpaidInvoices();
+
+            if (PreSelectedInvoiceId.HasValue)
+            {
+                _selectedInvoiceId = PreSelectedInvoiceId.Value;
+                _invoiceReadonly = true;
+                ApplySelectedInvoice();
+            }
+        }
+    }
+
+    private async Task LoadUnpaidInvoices()
+    {
+        _loadingInvoices = true;
+        try
+        {
+            IEnumerable<InvoiceDto> all = await InvoiceService.GetAllInvoicesAsync();
+            _unpaidInvoices = all
+                .Where(i => i.Status != InvoiceStatus.Paid &&
+                            i.Status != InvoiceStatus.Cancelled &&
+                            i.AmountDue > 0)
+                .OrderByDescending(i => i.DueDate)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading invoices: {ex.Message}");
+        }
+        finally
+        {
+            _loadingInvoices = false;
+        }
+    }
+
+    private void OnInvoiceSelected(Guid? id)
+    {
+        _selectedInvoiceId = id;
+        ApplySelectedInvoice();
+    }
+
+    private void ApplySelectedInvoice()
+    {
+        _selectedInvoice = _selectedInvoiceId.HasValue
+            ? _unpaidInvoices.FirstOrDefault(i => i.Id == _selectedInvoiceId.Value)
+            : null;
+
+        if (_selectedInvoice is not null)
+            _amount = _selectedInvoice.AmountDue;
+        else
+            _amount = 0;
+    }
+
+    private void Save()
+    {
+        if (IsEditMode)
+        {
+            UpdatePaymentDto dto = new()
+            {
+                PaymentDate = _paymentDate!.Value,
+                Amount = _amount,
+                PaymentMethod = _method,
+                ReferenceNumber = _referenceNumber,
+                Notes = _notes,
+            };
+            MudDialog.Close(DialogResult.Ok(dto));
+        }
+        else
+        {
+            CreatePaymentDto dto = new()
+            {
+                InvoiceId = _selectedInvoiceId!.Value,
+                PaymentDate = _paymentDate!.Value,
+                Amount = _amount,
+                PaymentMethod = _method,
+                ReferenceNumber = _referenceNumber,
+                Notes = _notes,
+                RecordedBy = _recordedBy,
+            };
+            MudDialog.Close(DialogResult.Ok(dto));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

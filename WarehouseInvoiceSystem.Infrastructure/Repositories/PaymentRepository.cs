@@ -40,10 +40,16 @@
             if (query.DateTo.HasValue)
                 q = q.Where(p => p.PaymentDate <= query.DateTo.Value);
 
+            if (query.AmountMin.HasValue)
+                q = q.Where(p => p.Amount >= query.AmountMin.Value);
+
+            if (query.AmountMax.HasValue)
+                q = q.Where(p => p.Amount <= query.AmountMax.Value);
+
             if (!string.IsNullOrWhiteSpace(query.Search))
                 q = q.Where(p => (p.ReferenceNumber != null && p.ReferenceNumber.Contains(query.Search)) ||
-                                 p.Invoice.InvoiceNumber.Contains(query.Search) ||
-                                 p.Invoice.Company.Name.Contains(query.Search));
+                                  p.Invoice.InvoiceNumber.Contains(query.Search) ||
+                                  p.Invoice.Company.Name.Contains(query.Search));
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
 

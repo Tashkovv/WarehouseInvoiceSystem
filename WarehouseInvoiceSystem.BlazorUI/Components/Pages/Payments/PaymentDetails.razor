@@ -65,7 +65,7 @@ else
 
                                 <div class="d-flex align-center">
                                     <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Small" Class="mr-2" Color="Color.Info" />
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                    <MudChip T="string" Size="Size.Small" Color="@GetMethodColor(_payment.PaymentMethod)">
                                         @GetPaymentMethodText(_payment.PaymentMethod)
                                     </MudChip>
                                 </div>
@@ -324,10 +324,8 @@ else
         return method switch
         {
             PaymentMethod.Cash => Localization.GetString("Cash"),
-            PaymentMethod.Check => Localization.GetString("Check"),
             PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
             PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
-            PaymentMethod.DebitCard => Localization.GetString("DebitCard"),
             PaymentMethod.Other => Localization.GetString("Other"),
             _ => method.ToString()
         };
@@ -390,6 +388,15 @@ else
             }
         }
     }
+
+    private Color GetMethodColor(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => Color.Success,
+        PaymentMethod.BankTransfer => Color.Primary,
+        PaymentMethod.CreditCard => Color.Secondary,
+        PaymentMethod.Other => Color.Default,
+        _ => Color.Default
+    };
 
     public void Dispose()
     {

@@ -335,10 +335,8 @@
 
                 // Payments
                 ["Cash"] = "Cash",
-                ["Check"] = "Check",
                 ["BankTransfer"] = "Bank Transfer",
                 ["CreditCard"] = "Credit Card",
-                ["DebitCard"] = "Debit Card",
                 ["Other"] = "Other",
                 ["AllPayments"] = "All Payments",
                 ["CreatePayment"] = "Create Payment",
@@ -908,10 +906,8 @@
 
                 // Payments
                 ["Cash"] = "Готовина",
-                ["Check"] = "Чек",
                 ["BankTransfer"] = "Банкарски трансфер",
                 ["CreditCard"] = "Кредитна картичка",
-                ["DebitCard"] = "Дебитна картичка",
                 ["Other"] = "Друго",
                 ["AllPayments"] = "Сите плаќања",
                 ["CreatePayment"] = "Креирај плаќање",

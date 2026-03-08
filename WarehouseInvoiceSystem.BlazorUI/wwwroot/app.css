@@ -155,7 +155,7 @@ html {
 
 /* Subtle background tints per status */
 .row-status-active {
-    background-color: rgba(76, 175, 80, 0.07) !important;
+    background-color: rgba(76, 175, 80, 0.09) !important;
     cursor: pointer;
 }
 
@@ -164,27 +164,27 @@ html {
 }
 
 .row-status-warning {
-    background-color: rgba(255, 152, 0, 0.07) !important;
+    background-color: rgba(255, 152, 0, 0.09) !important;
     cursor: pointer;
 }
 
 .row-status-error {
-    background-color: rgba(244, 67, 54, 0.07) !important;
+    background-color: rgba(244, 67, 54, 0.09) !important;
     cursor: pointer;
 }
 
 .row-status-info {
-    background-color: rgba(33, 150, 243, 0.07) !important;
+    background-color: rgba(33, 150, 243, 0.09) !important;
     cursor: pointer;
 }
 
 .row-status-primary {
-    background-color: rgba(94, 53, 177, 0.07) !important;
+    background-color: rgba(94, 53, 177, 0.09) !important;
     cursor: pointer;
 }
 
 .row-status-secondary {
-    background-color: rgba(156, 39, 176, 0.07) !important;
+    background-color: rgba(128, 128, 128, 0.09) !important;
     cursor: pointer;
 }
 
@@ -211,9 +211,9 @@ html {
     overflow: hidden;
 }
 
-.wis-data-grid .mud-table-head .mud-table-cell:last-child {
-    border-right: none;
-}
+    .wis-data-grid .mud-table-head .mud-table-cell:last-child {
+        border-right: none;
+    }
 
 /* Toolbar filter strip — quick enum filters */
 .wis-toolbar-filters {
@@ -234,9 +234,9 @@ html {
     margin-left: 4px;
 }
 
-.wis-toolbar-clearall-btn:hover {
-    color: var(--mud-palette-error) !important;
-}
+    .wis-toolbar-clearall-btn:hover {
+        color: var(--mud-palette-error) !important;
+    }
 
 /* Labeled filter pill button */
 .wis-filter-btn {
@@ -258,11 +258,11 @@ html {
     user-select: none;
 }
 
-.wis-filter-btn:hover {
-    border-color: var(--mud-palette-primary);
-    color: var(--mud-palette-primary);
-    background: rgba(var(--mud-palette-primary-rgb), 0.07);
-}
+    .wis-filter-btn:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+        background: rgba(var(--mud-palette-primary-rgb), 0.07);
+    }
 
 .wis-filter-btn--active {
     border-color: var(--mud-palette-primary);
@@ -335,40 +335,46 @@ html {
     transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.wis-data-grid .mud-table-body tr:hover td {
-    background-color: rgba(var(--mud-palette-text-primary-rgb), 0.07);
-    box-shadow: inset 0 -1px 0 rgba(var(--mud-palette-text-primary-rgb), 0.08);
-}
+    .wis-data-grid .mud-table-body tr:hover td {
+        background-color: rgba(var(--mud-palette-text-primary-rgb), 0.07);
+        box-shadow: inset 0 -1px 0 rgba(var(--mud-palette-text-primary-rgb), 0.08);
+    }
 
-/* Re-assert pillar borders on hover — hover background-color would otherwise override them */
-.wis-data-grid .mud-table-body tr.row-status-active:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-success) !important;
-}
+    /* Re-assert pillar borders on hover — hover background-color would otherwise override them */
+    .wis-data-grid .mud-table-body tr.row-status-active:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-success) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-inactive:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-action-disabled) !important;
-}
+    .wis-data-grid .mud-table-body tr.row-status-inactive:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-action-disabled) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-warning:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-warning) !important;
-}
+    .wis-data-grid .mud-table-body tr.row-status-warning:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-warning) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-error:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-error) !important;
-}
+    .wis-data-grid .mud-table-body tr.row-status-error:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-error) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-info:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-info) !important;
-}
+    .wis-data-grid .mud-table-body tr.row-status-info:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-info) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-primary:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-primary) !important;
-}
+    .wis-data-grid .mud-table-body tr.row-status-primary:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-primary) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-secondary:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-secondary) !important;
-}
+    .wis-data-grid .mud-table-body tr.row-status-secondary:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-secondary) !important;
+    }
 
-.wis-data-grid .mud-table-body tr.row-status-default:hover td:first-child {
-    border-left: 5px solid var(--mud-palette-action-disabled) !important;
+    .wis-data-grid .mud-table-body tr.row-status-default:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-action-disabled) !important;
+    }
+
+/* Force MudAlert inner content wrapper to stretch full width */
+.wis-alert-fullwidth .mud-alert-message {
+    width: 100%;
+    flex: 1 1 auto;
 }
