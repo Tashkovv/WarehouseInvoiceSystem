@@ -186,6 +186,7 @@
                 ["Ascending"] = "Ascending",
                 ["Descending"] = "Descending",
                 ["All"] = "All",
+                ["Number"] = "Number",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -758,6 +759,7 @@
                 ["Ascending"] = "Растечки",
                 ["Descending"] = "Опаѓачки",
                 ["All"] = "Сите",
+                ["Number"] = "Број",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",

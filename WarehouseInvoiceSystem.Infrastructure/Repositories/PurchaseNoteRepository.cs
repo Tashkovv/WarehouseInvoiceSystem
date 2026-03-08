@@ -27,6 +27,7 @@
             IQueryable<PurchaseNote> q = context.PurchaseNotes
                 .Where(p => p.DeletedOn == null)
                 .Include(p => p.Individual)
+                .Include(p => p.Warehouse)
                 .Include(p => p.LineItems)
                     .ThenInclude(li => li.Product);
 
@@ -34,8 +35,8 @@
                 q = q.Where(p => p.Status == query.Status.Value);
 
             if (!string.IsNullOrWhiteSpace(query.IndividualName))
-                q = q.Where(p => p.Individual.FirstName.Contains(query.IndividualName) ||
-                                 p.Individual.LastName.Contains(query.IndividualName));
+                q = q.Where(p => query.IndividualName.Contains(p.Individual.FirstName) ||
+                                 query.IndividualName.Contains(p.Individual.LastName));
 
             if (query.AmountMin.HasValue)
                 q = q.Where(p => p.TotalAmount >= query.AmountMin.Value);
@@ -50,9 +51,13 @@
                 q = q.Where(p => p.PurchaseDate <= query.DateTo.Value);
 
             if (!string.IsNullOrWhiteSpace(query.Search))
+            {
                 q = q.Where(p => p.NoteNumber.Contains(query.Search) ||
                                  p.Individual.FirstName.Contains(query.Search) ||
-                                 p.Individual.LastName.Contains(query.Search));
+                                 p.Individual.LastName.Contains(query.Search) ||
+                                 (query.Search.Contains(p.Individual.FirstName) ||
+                                 query.Search.Contains(p.Individual.LastName)));
+            }
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
 
