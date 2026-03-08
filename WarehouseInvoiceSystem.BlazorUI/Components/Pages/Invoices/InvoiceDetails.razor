@@ -12,7 +12,6 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IExcelExportService ExcelExportService
-@inject HttpClient HttpClient
 
 <PageTitle>@Localization.GetString("InvoiceDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -28,7 +27,7 @@ else
 {
     <div class="d-flex justify-space-between align-center mb-4">
         <div>
-            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                        Variant="Variant.Text"
                        Href="/invoices">
                 @Localization.GetString("BackToInvoices")
@@ -39,18 +38,9 @@ else
                        Color="Color.Success"
                        Variant="Variant.Filled"
                        Class="mr-2"
-                       Disabled="@(_sendingEmail)"
                        hidden="@(!_showEmailButton)"
                        OnClick="OpenSendEmailDialog">
-                @if (_sendingEmail)
-                {
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                    <span>@Localization.GetString("Sending")</span>
-                }
-                else
-                {
-                    <span>@Localization.GetString("SendEmail")</span>
-                }
+                @Localization.GetString("SendEmail")
             </MudButton>
             <MudButton StartIcon="@Icons.Material.Filled.Print"
                        Style="width:125px"
@@ -62,7 +52,7 @@ else
             </MudButton>
             <MudButton StartIcon="@Icons.Material.Filled.Edit"
                        Style="width:125px"
-                       Color="Color.Primary" 
+                       Color="Color.Primary"
                        Variant="Variant.Filled"
                        Class="mr-2"
                        Href="@($"/invoices/edit/{Id}")">
@@ -376,12 +366,11 @@ else
             </MudCard>
         </MudItem>
     </MudGrid>
-    }
+}
 @code {
     [Parameter]
     public Guid Id { get; set; }
     private bool _loading = true;
-    private bool _sendingEmail = false;
     private readonly IFormatProvider _currentCultureKey = CultureInfo.CurrentCulture;
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = new();
@@ -466,7 +455,7 @@ else
             InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
             InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
             InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-            InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
+            InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
             _ => status.ToString()
         };
     }
@@ -551,72 +540,25 @@ else
 
     private async Task OpenSendEmailDialog()
     {
-        if (_invoice == null)
-            return;
+        if (_invoice is null) return;
 
-        DialogOptions options = new DialogOptions
+        DialogParameters<SendInvoiceEmailDialog> parameters = new();
+        parameters.Add(x => x.Invoice, _invoice);
+
+        DialogOptions options = new()
         {
             CloseOnEscapeKey = true,
             MaxWidth = MaxWidth.Small,
             FullWidth = true
         };
 
-        IDialogReference? dialog = await DialogService.ShowAsync<SendInvoiceEmailDialog>(
-            Localization.GetString("SendInvoiceEmail"),
-            new DialogParameters<SendInvoiceEmailDialog> { },
-            options);
+        IDialogReference dialog = await DialogService.ShowAsync<SendInvoiceEmailDialog>(
+            Localization.GetString("SendInvoiceEmail"), parameters, options);
 
         DialogResult? result = await dialog.Result;
 
-        if (result != null && !result.Canceled && result.Data is SendInvoiceEmailDialog.SendEmailResult emailResult)
-        {
-            await SendInvoiceEmail(emailResult);
-        }
-    }
-
-    private async Task SendInvoiceEmail(SendInvoiceEmailDialog.SendEmailResult emailResult)
-    {
-        _sendingEmail = true;
-
-        try
-        {
-            SendInvoiceEmailRequest request = new()
-            {
-                CustomMessage = emailResult.CustomMessage
-            };
-
-            // Call the API endpoint
-            HttpResponseMessage response = await HttpClient.PostAsJsonAsync(
-                $"api/Invoices/{Id}/send-email",
-                request);
-
-            if (response.IsSuccessStatusCode)
-            {
-                Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success);
-
-                // Reload the invoice to get the updated status
-                await LoadInvoice();
-                await InvokeAsync(StateHasChanged);
-            }
-            else
-            {
-                string errorContent = await response.Content.ReadAsStringAsync();
-                Snackbar.Add(
-                    Localization.GetString("ErrorSendingEmail") + ": " + errorContent,
-                    Severity.Error);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending email: {ex.Message}");
-            Snackbar.Add(
-                Localization.GetString("ErrorSendingEmail") + ": " + ex.Message,
-                Severity.Error);
-        }
-        finally
-        {
-            _sendingEmail = false;
-        }
+        if (result is { Canceled: false, Data: true })
+            await LoadInvoice();
     }
 
     public void Dispose()
@@ -624,8 +566,4 @@ else
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
-    public class SendInvoiceEmailRequest
-    {
-        public string? CustomMessage { get; set; }
-    }
 }

@@ -155,7 +155,7 @@ html {
 
 /* Subtle background tints per status */
 .row-status-active {
-    background-color: rgba(76, 175, 80, 0.08) !important;
+    background-color: rgba(76, 175, 80, 0.07) !important;
     cursor: pointer;
 }
 
@@ -164,27 +164,27 @@ html {
 }
 
 .row-status-warning {
-    background-color: rgba(255, 152, 0, 0.08) !important;
+    background-color: rgba(255, 152, 0, 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-error {
-    background-color: rgba(244, 67, 54, 0.08) !important;
+    background-color: rgba(244, 67, 54, 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-info {
-    background-color: rgba(33, 150, 243, 0.08) !important;
+    background-color: rgba(33, 150, 243, 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-primary {
-    background-color: rgba(94, 53, 177, 0.08) !important;
+    background-color: rgba(94, 53, 177, 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-secondary {
-    background-color: rgba(156, 39, 176, 0.08) !important;
+    background-color: rgba(156, 39, 176, 0.07) !important;
     cursor: pointer;
 }
 
@@ -391,3 +391,64 @@ html {
     width: 100%;
     flex: 1 1 auto;
 }
+
+/* ── SendInvoiceEmailDialog ── */
+.wis-email-compose-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 16px;
+}
+
+.wis-email-compose-icon {
+    font-size: 2rem !important;
+    width: 2rem !important;
+    height: 2rem !important;
+    color: var(--mud-palette-primary);
+    opacity: 0.85;
+    flex-shrink: 0;
+}
+
+.wis-email-compose-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.wis-email-compose-invoice {
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+}
+
+/* Gmail-style To / Message rows */
+.wis-email-field-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 6px 0;
+}
+
+.wis-email-field-row--message {
+    align-items: flex-start;
+    min-height: 120px;
+}
+
+.wis-email-field-label {
+    width: 72px;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--mud-palette-text-secondary);
+    padding-top: 10px;
+}
+
+.wis-email-field-input {
+    flex: 1;
+    min-width: 0;
+}
+
+    .wis-email-field-input .mud-input-root {
+        padding: 6px 0 !important;
+        font-size: 0.9375rem !important;
+    }

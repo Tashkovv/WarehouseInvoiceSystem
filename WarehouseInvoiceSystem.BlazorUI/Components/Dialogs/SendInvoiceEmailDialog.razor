@@ -1,28 +1,72 @@
 ﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @inject ILocalizationService Localization
+@inject IEmailService EmailService
+@inject ISnackbar Snackbar
 
-<MudDialog>
+<MudDialog Class="wis-email-dialog">
     <DialogContent>
-        <MudTextField @bind-Value="CustomMessage"
-                      Label="@Localization.GetString("CustomMessage")"
-                      HelperText="@Localization.GetString("CustomMessageHelper")"
+        @if (_invoice is not null)
+        {
+            @* ── Compose header ── *@
+            <div class="wis-email-compose-header">
+                <MudIcon Icon="@Icons.Material.Filled.Email" Class="wis-email-compose-icon" />
+                <div class="wis-email-compose-meta">
+                    <MudText Typo="Typo.subtitle2" Class="wis-email-compose-invoice">
+                        @_invoice.InvoiceNumber
+                    </MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_invoice.CompanyName · @_invoice.TotalAmount.ToString("C")
+                    </MudText>
+                </div>
+                <MudChip T="string"
+                         Size="Size.Small"
+                         Color="Color.Success"
+                         Variant="Variant.Outlined"
+                         Class="ml-auto">
+                    @Localization.GetString("Receivable")
+                </MudChip>
+            </div>
+
+            <MudDivider Class="mb-4" />
+        }
+
+        @* ── Message field ── *@
+        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">
+            @Localization.GetString("CustomMessage")
+        </MudText>
+        <MudTextField T="string"
+                      @bind-Value="_customMessage"
+                      Placeholder="@Localization.GetString("CustomMessageHelper")"
                       Variant="Variant.Outlined"
+                      Lines="5"
                       FullWidth="true"
-                      Lines="4"
-                      Disabled="Sending"
-                      Class="mb-4" />
+                      Disabled="_sending" />
+
+        @* ── Error banner ── *@
+        @if (_errorMessage is not null)
+        {
+            <MudAlert Severity="Severity.Error"
+                      Variant="Variant.Filled"
+                      Dense="true"
+                      Class="mt-3 wis-alert-fullwidth">
+                @_errorMessage
+            </MudAlert>
+        }
 
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="Sending">
+        <MudButton OnClick="Cancel"
+                   Variant="Variant.Text"
+                   Disabled="_sending">
             @Localization.GetString("Cancel")
         </MudButton>
-        <MudButton 
-            OnClick="SendEmail" 
-            Color="Color.Primary" 
-            Variant="Variant.Filled"
-            Disabled="Sending">
-            @if (Sending)
+        <MudButton OnClick="Send"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Send"
+                   Disabled="_sending">
+            @if (_sending)
             {
                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
                 <span>@Localization.GetString("Sending")</span>
@@ -38,31 +82,51 @@
 @code {
     [CascadingParameter]
     IMudDialogInstance MudDialog { get; set; } = null!;
-    private string CustomMessage { get; set; } = string.Empty;
-    private bool Sending { get; set; } = false;
 
-    private async Task SendEmail()
+    /// <summary>The invoice to send. Required.</summary>
+    [Parameter, EditorRequired]
+    public InvoiceDto Invoice { get; set; } = null!;
+
+    private InvoiceDto? _invoice;
+    private string? _customMessage;
+    private bool _sending;
+    private string? _errorMessage;
+
+    protected override void OnParametersSet()
     {
-        Sending = true;
+        _invoice = Invoice;
+    }
 
-        // This will be called from the parent component which has HttpClient access
-        SendEmailResult result = new()
+    private async Task Send()
+    {
+        _errorMessage = null;
+        _sending = true;
+
+        try
         {
-            CustomMessage = CustomMessage,
-            Success = true
-        };
+            bool success = await EmailService.SendInvoiceEmailAsync(
+                _invoice!.Id, _customMessage);
 
-        MudDialog.Close(DialogResult.Ok(result));
+            if (success)
+            {
+                Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                _errorMessage = Localization.GetString("ErrorSendingEmail");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending invoice email: {ex.Message}");
+            _errorMessage = Localization.GetString("ErrorSendingEmail");
+        }
+        finally
+        {
+            _sending = false;
+        }
     }
 
-    private void Cancel()
-    {
-        MudDialog.Cancel();
-    }
-
-    public class SendEmailResult
-    {
-        public string? CustomMessage { get; set; }
-        public bool Success { get; set; }
-    }
+    private void Cancel() => MudDialog.Cancel();
 }
