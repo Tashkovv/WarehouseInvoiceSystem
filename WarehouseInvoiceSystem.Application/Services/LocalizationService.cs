@@ -136,7 +136,7 @@
                 ["ByTotalSpend"] = "By total spend",
                 ["ByTotalRevenue"] = "By total revenue",
                 ["TotalSpend"] = "Total Spend",
-                ["PayableInvoicesToday"] = "Payable invoices today",
+                ["PayableInvoicesToday"] = "Payable invoices",
 
                 // Status
                 ["Draft"] = "Draft",
@@ -709,7 +709,7 @@
                 ["ByTotalSpend"] = "По вкупна потрошувачка",
                 ["ByTotalRevenue"] = "По вкупен приход",
                 ["TotalSpend"] = "Вкупна потрошувачка",
-                ["PayableInvoicesToday"] = "Фактури за плаќање денес",
+                ["PayableInvoicesToday"] = "Фактури за плаќање",
 
                 // Status
                 ["Draft"] = "Нацрт",

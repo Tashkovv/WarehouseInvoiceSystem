@@ -34,14 +34,16 @@ else
             </MudButton>
         </div>
         <div>
-            <MudButton StartIcon="@Icons.Material.Filled.Email"
-                       Color="Color.Success"
-                       Variant="Variant.Filled"
-                       Class="mr-2"
-                       hidden="@(!_showEmailButton)"
-                       OnClick="OpenSendEmailDialog">
-                @Localization.GetString("SendEmail")
-            </MudButton>
+            @if (CanSendEmail())
+            {
+                <MudButton StartIcon="@Icons.Material.Filled.Email"
+                           Color="Color.Success"
+                           Variant="Variant.Filled"
+                           Class="mr-2"
+                           OnClick="OpenSendEmailDialog">
+                    @Localization.GetString("SendEmail")
+                </MudButton>
+            }
             <MudButton StartIcon="@Icons.Material.Filled.Print"
                        Style="width:125px"
                        Color="Color.Secondary"
@@ -285,6 +287,7 @@ else
                 </MudCardContent>
             </MudCard>
         </MudItem>
+
         <!-- Payment History -->
         <MudItem xs="12">
             <MudCard Elevation="2">
@@ -367,6 +370,7 @@ else
         </MudItem>
     </MudGrid>
 }
+
 @code {
     [Parameter]
     public Guid Id { get; set; }
@@ -374,7 +378,6 @@ else
     private readonly IFormatProvider _currentCultureKey = CultureInfo.CurrentCulture;
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = new();
-    private bool _showEmailButton = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -401,12 +404,6 @@ else
         try
         {
             _invoice = await InvoiceService.GetInvoiceByIdAsync(Id);
-            if (_invoice?.Type == InvoiceType.Receivable)
-            {
-                _showEmailButton = _invoice?.Status == InvoiceStatus.Draft ||
-                                   _invoice?.Status == InvoiceStatus.PartiallyPaid ||
-                                   _invoice?.Status == InvoiceStatus.Overdue;
-            }
         }
         catch (Exception ex)
         {
@@ -432,45 +429,36 @@ else
         }
     }
 
-    private Color GetStatusColor(InvoiceStatus status)
+    private Color GetStatusColor(InvoiceStatus status) => status switch
     {
-        return status switch
-        {
-            InvoiceStatus.Draft => Color.Default,
-            InvoiceStatus.Sent => Color.Info,
-            InvoiceStatus.PartiallyPaid => Color.Warning,
-            InvoiceStatus.Paid => Color.Success,
-            InvoiceStatus.Overdue => Color.Error,
-            InvoiceStatus.Cancelled => Color.Default,
-            _ => Color.Default
-        };
-    }
+        InvoiceStatus.Draft => Color.Default,
+        InvoiceStatus.Sent => Color.Info,
+        InvoiceStatus.PartiallyPaid => Color.Warning,
+        InvoiceStatus.Paid => Color.Success,
+        InvoiceStatus.Overdue => Color.Error,
+        InvoiceStatus.Cancelled => Color.Default,
+        _ => Color.Default
+    };
 
-    private string GetStatusText(InvoiceStatus status)
+    private string GetStatusText(InvoiceStatus status) => status switch
     {
-        return status switch
-        {
-            InvoiceStatus.Draft => Localization.GetString("Draft"),
-            InvoiceStatus.Sent => Localization.GetString("Sent"),
-            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-            InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-            InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-            InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
-            _ => status.ToString()
-        };
-    }
+        InvoiceStatus.Draft => Localization.GetString("Draft"),
+        InvoiceStatus.Sent => Localization.GetString("Sent"),
+        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
+        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
+        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
+        InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+        _ => status.ToString()
+    };
 
-    private string GetPaymentMethodText(PaymentMethod method)
+    private string GetPaymentMethodText(PaymentMethod method) => method switch
     {
-        return method switch
-        {
-            PaymentMethod.Cash => Localization.GetString("Cash"),
-            PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
-            PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
-            PaymentMethod.Other => Localization.GetString("Other"),
-            _ => method.ToString()
-        };
-    }
+        PaymentMethod.Cash => Localization.GetString("Cash"),
+        PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
+        PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
+        PaymentMethod.Other => Localization.GetString("Other"),
+        _ => method.ToString()
+    };
 
     private Color GetMethodColor(PaymentMethod method) => method switch
     {
@@ -538,6 +526,12 @@ else
         }
     }
 
+    private bool CanSendEmail() =>
+        _invoice?.Type == InvoiceType.Receivable &&
+        (_invoice.Status == InvoiceStatus.Draft ||
+         _invoice.Status == InvoiceStatus.PartiallyPaid ||
+         _invoice.Status == InvoiceStatus.Overdue);
+
     private async Task OpenSendEmailDialog()
     {
         if (_invoice is null) return;
@@ -565,5 +559,4 @@ else
     {
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
-
 }

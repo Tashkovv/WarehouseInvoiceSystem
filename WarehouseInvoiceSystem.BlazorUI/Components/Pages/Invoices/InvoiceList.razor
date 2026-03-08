@@ -252,7 +252,7 @@
                                            Size="Size.Small"
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("SendEmail")"
-                                           Disabled="@IsSendEmailDisabled(context.Item.Type, context.Item.Status)"
+                                           Disabled="@(!CanSendEmail(context.Item.Type, context.Item.Status))"
                                            OnClick="@(() => OpenSendEmailDialog(context.Item))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
@@ -609,19 +609,11 @@
         }
     }
 
-    private bool IsSendEmailDisabled(InvoiceType type, InvoiceStatus status)
-    {
-        if (type == InvoiceType.Payable)
-        {
-            return true;
-        }
-        else
-        {
-            return !(status == InvoiceStatus.Draft ||
-                     status == InvoiceStatus.PartiallyPaid ||
-                     status == InvoiceStatus.Overdue);
-        }
-    }
+    private bool CanSendEmail(InvoiceType type, InvoiceStatus status) =>
+        type == InvoiceType.Receivable &&
+        (status == InvoiceStatus.Draft ||
+         status == InvoiceStatus.PartiallyPaid ||
+         status == InvoiceStatus.Overdue);
 
     public void Dispose()
     {
