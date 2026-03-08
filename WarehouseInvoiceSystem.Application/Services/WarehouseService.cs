@@ -69,6 +69,16 @@
 
         public async Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto createDto)
         {
+            if (createDto.IsDefault)
+            {
+                Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
+                if (existingDefault is not null)
+                {
+                    existingDefault.IsDefault = false;
+                    await warehouseRepository.UpdateAsync(existingDefault);
+                }
+            }
+
             Warehouse warehouse = new()
             {
                 Name = createDto.Name,
@@ -84,6 +94,16 @@
         {
             Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Warehouse with ID {id} not found");
+
+            if (updateDto.IsDefault && !warehouse.IsDefault)
+            {
+                Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
+                if (existingDefault is not null && existingDefault.Id != id)
+                {
+                    existingDefault.IsDefault = false;
+                    await warehouseRepository.UpdateAsync(existingDefault);
+                }
+            }
 
             warehouse.Name = updateDto.Name;
             warehouse.Address = updateDto.Address;

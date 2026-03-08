@@ -1,0 +1,99 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_name"
+                              Label="@Localization.GetString("Name")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("WarehouseNameRequired")"
+                              MaxLength="200"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_address"
+                              Label="@Localization.GetString("Address")"
+                              Variant="Variant.Outlined"
+                              MaxLength="500"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSwitch @bind-Value="_isDefault"
+                           Label="@Localization.GetString("DefaultWarehouse")"
+                           Color="Color.Primary" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid)">
+            @Localization.GetString("Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>Pass an existing WarehouseDto to edit, or null to create.</summary>
+    [Parameter]
+    public WarehouseDto? Warehouse { get; set; }
+
+    private bool IsEditMode => Warehouse is not null;
+
+    private string _name = string.Empty;
+    private string? _address;
+    private bool _isDefault;
+
+    private bool IsValid => !string.IsNullOrWhiteSpace(_name);
+
+    protected override void OnParametersSet()
+    {
+        if (IsEditMode)
+        {
+            _name = Warehouse!.Name;
+            _address = Warehouse.Address;
+            _isDefault = Warehouse.IsDefault;
+        }
+        else
+        {
+            _name = string.Empty;
+            _address = null;
+            _isDefault = false;
+        }
+    }
+
+    private void Save()
+    {
+        if (IsEditMode)
+        {
+            MudDialog.Close(DialogResult.Ok(new UpdateWarehouseDto
+            {
+                Name = _name.Trim(),
+                Address = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim(),
+                IsDefault = _isDefault,
+            }));
+        }
+        else
+        {
+            MudDialog.Close(DialogResult.Ok(new CreateWarehouseDto
+            {
+                Name = _name.Trim(),
+                Address = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim(),
+                IsDefault = _isDefault,
+            }));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
