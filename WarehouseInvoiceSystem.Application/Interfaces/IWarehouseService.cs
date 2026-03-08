@@ -1,10 +1,13 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Interfaces
 {
     using WarehouseInvoiceSystem.Application.DTOs.Warehouse;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IWarehouseService
     {
         Task<IEnumerable<WarehouseDto>> GetAllWarehousesAsync();
+        Task<PagedResult<WarehouseDto>> GetPagedAsync(GetWarehousesQuery query);
         Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id);
         Task<WarehouseDto?> GetDefaultWarehouseAsync();
         Task<bool> SetDefaultWarehouseAsync(Guid id);

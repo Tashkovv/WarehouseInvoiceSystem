@@ -4,6 +4,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class PurchaseNoteRepository(ApplicationDbContext context) : IPurchaseNoteRepository
@@ -18,6 +20,61 @@
                     .ThenInclude(li => li.Product)
                 .OrderByDescending(pn => pn.PurchaseDate)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query)
+        {
+            IQueryable<PurchaseNote> q = context.PurchaseNotes
+                .Where(p => p.DeletedOn == null)
+                .Include(p => p.Individual)
+                .Include(p => p.Warehouse)
+                .Include(p => p.LineItems)
+                    .ThenInclude(li => li.Product);
+
+            if (query.Status.HasValue)
+                q = q.Where(p => p.Status == query.Status.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.IndividualName))
+                q = q.Where(p => query.IndividualName.Contains(p.Individual.FirstName) ||
+                                 query.IndividualName.Contains(p.Individual.LastName));
+
+            if (query.AmountMin.HasValue)
+                q = q.Where(p => p.TotalAmount >= query.AmountMin.Value);
+
+            if (query.AmountMax.HasValue)
+                q = q.Where(p => p.TotalAmount <= query.AmountMax.Value);
+
+            if (query.DateFrom.HasValue)
+                q = q.Where(p => p.PurchaseDate >= query.DateFrom.Value);
+
+            if (query.DateTo.HasValue)
+                q = q.Where(p => p.PurchaseDate <= query.DateTo.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+            {
+                q = q.Where(p => p.NoteNumber.Contains(query.Search) ||
+                                 p.Individual.FirstName.Contains(query.Search) ||
+                                 p.Individual.LastName.Contains(query.Search) ||
+                                 (query.Search.Contains(p.Individual.FirstName) ||
+                                 query.Search.Contains(p.Individual.LastName)));
+            }
+
+            q = ApplySort(q, query.SortBy, query.SortAscending);
+
+            int totalCount = await q.CountAsync();
+
+            List<PurchaseNote> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<PurchaseNote>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<PurchaseNote?> GetByIdAsync(Guid id)
@@ -147,5 +204,15 @@
 
             return true;
         }
+
+        private static IQueryable<PurchaseNote> ApplySort(IQueryable<PurchaseNote> q, string? sortBy, bool ascending)
+            => sortBy switch
+            {
+                "NoteNumber" => ascending ? q.OrderBy(p => p.NoteNumber) : q.OrderByDescending(p => p.NoteNumber),
+                "IndividualLastName" => ascending ? q.OrderBy(p => p.Individual.LastName) : q.OrderByDescending(p => p.Individual.LastName),
+                "PurchaseDate" => ascending ? q.OrderBy(p => p.PurchaseDate) : q.OrderByDescending(p => p.PurchaseDate),
+                "TotalAmount" => ascending ? q.OrderBy(p => p.TotalAmount) : q.OrderByDescending(p => p.TotalAmount),
+                _ => q.OrderByDescending(p => p.CreatedAt)
+            };
     }
 }

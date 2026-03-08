@@ -2,6 +2,9 @@
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Domain.Enums
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IPaymentService PaymentService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
@@ -10,513 +13,378 @@
 
 <PageTitle>@Localization.GetString("Payments") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Payments")</MudText>
+<div style="margin-bottom: 24px; padding: 4px 0;">
+    <MudText Typo="Typo.h3" Class="wis-page-title">
+        @Localization.GetString("Payments")
+    </MudText>
+</div>
 
-<MudCard Elevation="2" Class="mb-4">
-    <MudCardContent>
-        <MudGrid>
-            <MudItem xs="12" sm="6" md="3">
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           Color="Color.Primary"
-                           Variant="Variant.Filled"
-                           FullWidth="true"
-                           Href="/payments/create">
-                    @Localization.GetString("RecordPayment")
-                </MudButton>
+<WisGridToolbar CreateAction="OpenCreateDialog"
+                CreateLabel="@Localization.GetString("RecordPayment")"
+                SearchValue="@_searchString"
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterMethod.HasValue || _activeAdvancedFilterCount > 0)"
+                OnClearAll="ClearAllFilters"
+                ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
+    <Filters>
+        <FilterPopoverList TValue="PaymentMethod?"
+                           Title="@Localization.GetString("PaymentMethod")"
+                           Label="@Localization.GetString("PaymentMethod")"
+                           Items="_methodFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterMethod"
+                           SelectedValueChanged="OnMethodFilterChanged" />
+    </Filters>
+    <AdvancedFilters>
+        <MudGrid Spacing="2" AlignItems="AlignItems.Start">
+            <MudItem xs="12" sm="6" md="4">
+                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
+                    @Localization.GetString("PaymentDate")
+                </MudText>
+                <MudStack Row="true" Spacing="1">
+                    <MudDatePicker @bind-Date="_filterDateFrom"
+                                   @bind-Date:after="ReloadGrid"
+                                   Label="@Localization.GetString("From")"
+                                   Variant="Variant.Outlined"
+                                   Dense="true" />
+                    <MudDatePicker @bind-Date="_filterDateTo"
+                                   @bind-Date:after="ReloadGrid"
+                                   Label="@Localization.GetString("To")"
+                                   Variant="Variant.Outlined"
+                                   Dense="true" />
+                </MudStack>
             </MudItem>
-            <MudItem xs="12" sm="6" md="9">
-                <MudTextField T="string"
-                              Value="_searchString"
-                              ValueChanged="OnSearch"
-                              Placeholder="@Localization.GetString("Search")"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              IconSize="Size.Medium"
-                              Immediate="true"
-                              DebounceInterval="300"
-                              Class="mt-0" />
+            <MudItem xs="12" sm="6" md="4">
+                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
+                    @Localization.GetString("AmountRange")
+                </MudText>
+                <MudStack Row="true" Spacing="1">
+                    <MudNumericField T="decimal?"
+                                     @bind-Value="_filterAmountMin"
+                                     @bind-Value:after="ReloadGrid"
+                                     Label="@Localization.GetString("Min")"
+                                     Variant="Variant.Outlined"
+                                     HideSpinButtons="true"
+                                     Format="N2"
+                                     Dense="true" />
+                    <MudNumericField T="decimal?"
+                                     @bind-Value="_filterAmountMax"
+                                     @bind-Value:after="ReloadGrid"
+                                     Label="@Localization.GetString("Max")"
+                                     Variant="Variant.Outlined"
+                                     HideSpinButtons="true"
+                                     Format="N2"
+                                     Dense="true" />
+                </MudStack>
             </MudItem>
         </MudGrid>
-
-        <!-- Filter Toggle Button -->
-        <div class="mt-4">
-            <MudButton StartIcon="@(_showFilters? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
-                       Variant="Variant.Text"
-                       Color="Color.Primary"
-                       OnClick="@(() => _showFilters = !_showFilters)">
-                @Localization.GetString("AdvancedFilters")
-                @if (_hasActiveFilters)
-                {
-                    <MudChip T="int" Size="Size.Small" Class="ml-2">@_activeFilterCount</MudChip>
-                }
-            </MudButton>
-        </div>
-
-        <!-- Filters Panel (Collapsible) -->
-        @if (_showFilters)
-        {
-            <MudDivider Class="my-4" />
-            <MudGrid>
-                <!-- Payment Method Filter -->
-                <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
-                    <MudSelect T="PaymentMethod ?"
-                               @bind-Value="_filterMethod"
-                               @bind-Value:after="ResetPaginationAndApplyFilters"
-                               Label="@Localization.GetString("PaymentMethod")"
-                               Clearable="true"
-                               Dense="true">
-                        @foreach (var method in Enum.GetValues<PaymentMethod>())
-                        {
-                            <MudSelectItem T="PaymentMethod ?" Value="@(method)">
-                                <MudChip T="string"
-                                         Size="Size.Small"
-                                         Color="Color.Info">
-                                    @Localization.GetString(method.ToString())
-                                </MudChip>
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-
-                <!-- Payment Date Range Filter -->
-                <MudItem xs="12" sm="6" md="3">
-                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("PaymentDate")</MudText>
-                    <MudStack Row="true" Spacing="1">
-                        <MudDatePicker @bind-Date="_filterPaymentDateFrom"
-                                       @bind-Date:after="ResetPaginationAndApplyFilters"
-                                       Label="@Localization.GetString("From")"
-                                       Dense="true"/>
-                        <MudDatePicker @bind-Date="_filterPaymentDateTo"
-                                       @bind-Date:after="ResetPaginationAndApplyFilters"
-                                       Label="@Localization.GetString("To")"
-                                       Dense="true"/>
-                    </MudStack>
-                </MudItem>
-
-                <!-- Amount Range Filter -->
-                <MudItem xs="12" sm="6" md="3">
-                    <MudText Typo="Typo.body2" Class="mb-2">@Localization.GetString("AmountRange")</MudText>
-                    <MudStack Row="true" Spacing="1">
-                        <MudNumericField T="decimal?"
-                                         @bind-Value="_filterAmountMin"
-                                         @bind-Value:after="ResetPaginationAndApplyFilters"
-                                         Label="@Localization.GetString("Min")"
-                                         HideSpinButtons="true"
-                                         Dense="true"
-                                         Format="N2"
-                                         Immediate="true" />
-                        <MudNumericField T="decimal?"
-                                         @bind-Value="_filterAmountMax"
-                                         @bind-Value:after="ResetPaginationAndApplyFilters"
-                                         Label="@Localization.GetString("Max")"
-                                         HideSpinButtons="true"
-                                         Dense="true"
-                                         Format="N2"
-                                         Immediate="true" />
-                    </MudStack>
-                </MudItem>
-
-                <!-- Clear Filters Button -->
-                <MudItem xs="12" sm="6" md="3" Class="d-flex align-end">
-                    <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
-                               Variant="Variant.Outlined"
-                               Color="Color.Default"
-                               OnClick="ClearFilters"
-                               Disabled="@(!_hasActiveFilters)">
-                        @Localization.GetString("ClearFilters")
-                    </MudButton>
-                </MudItem>
-            </MudGrid>
-        }
-    </MudCardContent>
-</MudCard>
+    </AdvancedFilters>
+</WisGridToolbar>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
-        @if (_loading)
-        {
-            <div class="pa-6">
-                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-            </div>
-        }
-        else if (_filteredPayments == null || !_filteredPayments.Any())
-        {
-            <div class="pa-6 text-center">
-                <MudText Color="Color.Secondary">@Localization.GetString("NoPaymentsFound")</MudText>
-            </div>
-        }
-        else
-        {
-            <MudTable Items="_paginatedPayments"
-                      Hover="true"
-                      Breakpoint="Breakpoint.Sm"
-                      Dense="false"
-                      FixedHeader="true"
-                      RowClass="table-row-clickable"
-                      OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => OnRowClick(args))"
-                      Height="710px"
-                      Sort="@((SortDefinition<PaymentDto> sortDefinition) => HandleSort(sortDefinition))">
-                <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentDate)">@Localization.GetString("PaymentDate")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.InvoiceNumber)">@Localization.GetString("InvoiceNumber")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.Amount)">@Localization.GetString("Amount")</MudTableSortLabel></MudTh>
-                    <MudTh>@Localization.GetString("PaymentMethod")</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.ReferenceNumber ?? string.Empty)">@Localization.GetString("ReferenceNumber")</MudTableSortLabel></MudTh>
-                    <MudTh>@Localization.GetString("RecordedBy")</MudTh>
-                    <MudTh>@Localization.GetString("Actions")</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@Localization.GetString("PaymentDate")">
-                        @context.PaymentDate.ToString("MMM dd, yyyy")
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
-                        <MudLink Href="@($"/invoices/{context.InvoiceId}")" Typo="Typo.body2" Class="font-weight-medium">
-                            @context.InvoiceNumber
+        <MudDataGrid T="PaymentDto"
+                     @ref="_grid"
+                     ServerData="LoadServerData"
+                     RowClick="OnRowClick"
+                     RowClassFunc="GetRowClass"
+                     ReadOnly="true"
+                     Hover="true"
+                     FixedHeader="true"
+                     Height="710px"
+                     Filterable="false"
+                     ShowColumnOptions="false"
+                     ColumnResizeMode="ResizeMode.Column"
+                     SortMode="SortMode.Single"
+                     Class="wis-data-grid">
+            <Columns>
+
+                <PropertyColumn Property="x => x.PaymentDate"
+                                Title="@Localization.GetString("PaymentDate")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        @context.Item.PaymentDate.ToString("dd MMM yyyy")
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.InvoiceNumber"
+                                Title="@Localization.GetString("InvoiceNumber")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudLink Href="@($"/invoices/{context.Item.InvoiceId}")"
+                                 Typo="Typo.body2"
+                                 Style="font-family: monospace;">
+                            @context.Item.InvoiceNumber
                         </MudLink>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Amount")">
-                        <MudText Typo="Typo.body2" Class="font-weight-medium" Color="Color.Success">
-                            @context.Amount.ToString("C")
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.Amount"
+                                Title="@Localization.GetString("Amount")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Color="Color.Success" Style="font-weight: 600;">
+                            @context.Item.Amount.ToString("C")
                         </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
-                        <MudChip T="string" Size="Size.Small" Color="Color.Info">
-                            @GetPaymentMethodText(context.PaymentMethod)
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.PaymentMethod"
+                                Title="@Localization.GetString("PaymentMethod")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Color="@GetMethodColor(context.Item.PaymentMethod)">
+                            @GetMethodText(context.Item.PaymentMethod)
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
-                        @context.ReferenceNumber
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("RecordedBy")">
-                        @context.RecordedBy
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Actions")">
-                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
-                            <MudMenuItem Icon="@Icons.Material.Filled.Visibility"
-                                         OnClick="@(() => ViewPayment(context.Id))">
-                                @Localization.GetString("View")
-                            </MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                         OnClick="@(() => EditPayment(context.Id))">
-                                @Localization.GetString("Edit")
-                            </MudMenuItem>
-                            <MudDivider />
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                         IconColor="Color.Error"
-                                         OnClick="@(() => DeletePayment(context.Id))">
-                                @Localization.GetString("Delete")
-                            </MudMenuItem>
-                        </MudMenu>
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+                    </CellTemplate>
+                </PropertyColumn>
 
-            <!-- Pagination Controls -->
-            <MudDivider />
-            <MudCardContent Class="pa-4">
-                <MudGrid>
-                    <!-- Left Side: Page Navigation -->
-                    <MudItem xs="12" sm="6">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       OnClick="PreviousPage"
-                                       Disabled="@(_currentPage == 1)">
-                                @Localization.GetString("Previous")
-                            </MudButton>
+                <PropertyColumn Property="x => x.ReferenceNumber"
+                                Title="@Localization.GetString("ReferenceNumber")"
+                                Sortable="false"
+                                IsEditable="false" />
 
-                            <MudText Typo="Typo.body2">
-                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
-                            </MudText>
+                <PropertyColumn Property="x => x.RecordedBy"
+                                Title="@Localization.GetString("RecordedBy")"
+                                Sortable="false"
+                                IsEditable="false" />
 
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       OnClick="NextPage"
-                                       Disabled="@(_currentPage == _totalPages)">
-                                @Localization.GetString("Next")
-                            </MudButton>
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                MinWidth="80"
+                                HeaderStyle="width: 80px;"
+                                CellStyle="width: 80px;">
+                    <CellTemplate>
+                        <MudStack Row="true" Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           Title="@Localization.GetString("Edit")"
+                                           OnClick="@(() => OpenEditDialog(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           Title="@Localization.GetString("Delete")"
+                                           OnClick="@(() => DeletePayment(context.Item.Id))" />
                         </MudStack>
-                    </MudItem>
+                    </CellTemplate>
+                </TemplateColumn>
 
-                    <!-- Right Side: Items Per Page & Stats -->
-                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
-                            <MudText Typo="Typo.body2">
-                                @Localization.GetString("ItemsPerPage")
-                            </MudText>
+            </Columns>
 
-                            <MudSelect T="int"
-                                       @bind-Value="_itemsPerPage"
-                                       @bind-Value:after="UpdatePagination"
-                                       Dense="true"
-                                       Variant="Variant.Outlined"
-                                       Style="width: 100px;">
-                                <MudSelectItem Value="10">10</MudSelectItem>
-                                <MudSelectItem Value="25">25</MudSelectItem>
-                                <MudSelectItem Value="50">50</MudSelectItem>
-                                <MudSelectItem Value="100">100</MudSelectItem>
-                            </MudSelect>
+            <NoRecordsContent>
+                <div class="pa-8 d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Payment"
+                             Size="Size.Large"
+                             Color="Color.Secondary"
+                             Class="mb-2" />
+                    <MudText Color="Color.Secondary">
+                        @Localization.GetString("NoPaymentsFound")
+                    </MudText>
+                </div>
+            </NoRecordsContent>
 
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                (@_totalPayments @Localization.GetString("Total"))
-                            </MudText>
-                        </MudStack>
-                    </MudItem>
-                </MudGrid>
-            </MudCardContent>
-        }
+            <LoadingContent>
+                <div class="pa-6">
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                </div>
+            </LoadingContent>
+
+            <PagerContent>
+                <WisPagerContent T="PaymentDto" />
+            </PagerContent>
+
+        </MudDataGrid>
     </MudCardContent>
 </MudCard>
 
 @code {
-    private bool _loading = true;
-    private bool _showFilters = false;
-    private List<PaymentDto> _allPayments = new();
-    private List<PaymentDto> _filteredPayments = new();
-    private List<PaymentDto> _paginatedPayments = [];
-    private string _searchString = "";
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "invoiceId")]
+    public Guid? InvoiceIdParam { get; set; }
 
-    // Pagination variables
-    private int _currentPage = 1;
-    private int _itemsPerPage = 10;
-    private int _totalPayments = 0;
-    private int _totalPages = 1;
+    private MudDataGrid<PaymentDto> _grid = null!;
+    private string _searchString = string.Empty;
 
-    // Sorting variables
-    private string _sortBy = "CreatedAt";
-    private bool _sortAscending = false;
+    // Quick filter
+    private PaymentMethod? _filterMethod = null;
 
-    // Filter variables
-    private PaymentMethod? _filterMethod;
-    private decimal? _filterAmountMin;
-    private decimal? _filterAmountMax;
-    private DateTime? _filterPaymentDateFrom;
-    private DateTime? _filterPaymentDateTo;
+    // Advanced filters
+    private DateTime? _filterDateFrom = null;
+    private DateTime? _filterDateTo = null;
+    private decimal? _filterAmountMin = null;
+    private decimal? _filterAmountMax = null;
 
-    private bool _hasActiveFilters =>
-        _filterMethod.HasValue ||
-        _filterAmountMin.HasValue ||
-        _filterAmountMax.HasValue ||
-        _filterPaymentDateFrom.HasValue ||
-        _filterPaymentDateTo.HasValue;
+    private int _activeAdvancedFilterCount =>
+        (_filterDateFrom.HasValue || _filterDateTo.HasValue ? 1 : 0) +
+        (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0);
 
-    private int _activeFilterCount =>
-        (_filterMethod.HasValue ? 1 : 0) +
-        (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0) +
-        (_filterPaymentDateFrom.HasValue || _filterPaymentDateTo.HasValue ? 1 : 0);
+    private List<FilterPopoverItem<PaymentMethod?>> _methodFilterItems = [];
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadPayments();
+        BuildFilterItems();
+    }
+
+    private void BuildFilterItems()
+    {
+        _methodFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),          Value = null,                        Color = Color.Info   },
+            new() { Label = Localization.GetString("Cash"),         Value = PaymentMethod.Cash,          Color = Color.Success   },
+            new() { Label = Localization.GetString("BankTransfer"), Value = PaymentMethod.BankTransfer,  Color = Color.Primary   },
+            new() { Label = Localization.GetString("CreditCard"),   Value = PaymentMethod.CreditCard,    Color = Color.Secondary },
+            new() { Label = Localization.GetString("Other"),        Value = PaymentMethod.Other,         Color = Color.Default   },
+        ];
     }
 
     private async void OnLanguageChanged()
     {
+        BuildFilterItems();
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadPayments()
+    private async Task<GridData<PaymentDto>> LoadServerData(GridState<PaymentDto> state, CancellationToken ct)
     {
-        _loading = true;
+        string? sortBy = state.SortDefinitions.FirstOrDefault()?.SortBy;
+        bool ascending = state.SortDefinitions.FirstOrDefault()?.Descending == false;
 
-        try
+        GetPaymentsQuery query = new()
         {
-            IEnumerable<PaymentDto> payments = await PaymentService.GetAllPaymentsAsync();
-            _allPayments = payments.ToList();
-            ApplyFilters();
-        }
-        catch (Exception ex)
+            Search = _searchString,
+            InvoiceId = InvoiceIdParam,
+            PaymentMethod = _filterMethod,
+            DateFrom = _filterDateFrom,
+            DateTo = _filterDateTo,
+            AmountMin = _filterAmountMin,
+            AmountMax = _filterAmountMax,
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+            SortBy = sortBy,
+            SortAscending = ascending,
+        };
+
+        PagedResult<PaymentDto> result = await PaymentService.GetPagedAsync(query);
+
+        return new GridData<PaymentDto>
         {
-            Console.WriteLine($"Error loading payments: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingPayment"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
-
-    private void ApplyFilters()
-    {
-        IEnumerable<PaymentDto> filtered = _allPayments;
-
-        // Apply Method filter
-        if (_filterMethod.HasValue)
-        {
-            filtered = filtered.Where(i => i.PaymentMethod == _filterMethod.Value);
-        }
-
-        // Apply Amount Range filter
-        if (_filterAmountMin.HasValue)
-        {
-            filtered = filtered.Where(i => i.Amount >= _filterAmountMin.Value);
-        }
-
-        if (_filterAmountMax.HasValue)
-        {
-            filtered = filtered.Where(i => i.Amount <= _filterAmountMax.Value);
-        }
-
-        // Apply Payment Date Range filter
-        if (_filterPaymentDateFrom.HasValue)
-        {
-            filtered = filtered.Where(i => i.PaymentDate.Date >= _filterPaymentDateFrom.Value.Date);
-        }
-
-        if (_filterPaymentDateTo.HasValue)
-        {
-            filtered = filtered.Where(i => i.PaymentDate.Date <= _filterPaymentDateTo.Value.Date);
-        }
-
-        // Apply Search filter
-        if (!string.IsNullOrWhiteSpace(_searchString))
-        {
-            string search = _searchString.ToLower();
-            filtered = filtered.Where(p =>
-                p.InvoiceNumber.ToLower().Contains(search) ||
-                (p.ReferenceNumber?.ToLower().Contains(search) ?? false) ||
-                (p.RecordedBy?.ToLower().Contains(search) ?? false) ||
-                p.Amount.ToString().Contains(search));
-        }
-
-        // Apply sorting
-        filtered = _sortAscending
-            ? filtered.OrderBy(GetSortProperty)
-            : filtered.OrderByDescending(GetSortProperty);
-
-        _filteredPayments = filtered.ToList();
-        _totalPayments = _filteredPayments.Count;
-
-        // Calculate pagination
-        UpdatePagination();
-    }
-
-    private void UpdatePagination()
-    {
-        _currentPage = 1;
-
-        // Calculate total pages
-        _totalPages = (int)Math.Ceiling((double)_totalPayments / _itemsPerPage);
-
-        // Ensure current page is valid
-        if (_currentPage > _totalPages && _totalPages > 0)
-        {
-            _currentPage = _totalPages;
-        }
-
-        // Get paginated items
-        int skipCount = (_currentPage - 1) * _itemsPerPage;
-        _paginatedPayments = _filteredPayments
-            .Skip(skipCount)
-            .Take(_itemsPerPage)
-            .ToList();
-    }
-
-    private void ResetPaginationAndApplyFilters()
-    {
-        _currentPage = 1;
-        ApplyFilters();
-    }
-
-    private object GetSortProperty(PaymentDto payment) => _sortBy switch
-    {
-        "PaymentDate" => payment.PaymentDate,
-        "InvoiceNumber" => payment.InvoiceNumber,
-        "Amount" => payment.Amount,
-        "ReferenceNumber" => payment.ReferenceNumber ?? string.Empty,
-        _ => payment.CreatedAt
-    };
-
-
-    private void HandleSort(SortDefinition<PaymentDto> sortDefinition)
-    {
-        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
-            return;
-
-        _sortBy = sortDefinition.SortBy;
-        _sortAscending = !sortDefinition.Descending;
-        ApplyFilters();
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
     }
 
     private async Task OnSearch(string text)
     {
         _searchString = text;
-        ApplyFilters();
-        await InvokeAsync(StateHasChanged);
+        await _grid.ReloadServerData();
     }
 
-    private void ClearFilters()
+    private async Task OnMethodFilterChanged(PaymentMethod? value)
+    {
+        _filterMethod = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task ReloadGrid() => await _grid.ReloadServerData();
+
+    private async Task ClearAllFilters()
     {
         _filterMethod = null;
+        _filterDateFrom = null;
+        _filterDateTo = null;
         _filterAmountMin = null;
         _filterAmountMax = null;
-        _filterPaymentDateFrom = null;
-        _filterPaymentDateTo = null;
-        ResetPaginationAndApplyFilters();
+        await _grid.ReloadServerData();
     }
 
-    // Pagination methods
-    private void PreviousPage()
-    {
-        if (_currentPage > 1)
-        {
-            _currentPage--;
-            UpdatePagination();
-        }
-    }
-
-    private void NextPage()
-    {
-        if (_currentPage < _totalPages)
-        {
-            _currentPage++;
-            UpdatePagination();
-        }
-    }
-
-    private void OnRowClick(TableRowClickEventArgs<PaymentDto> args)
+    private async void OnRowClick(DataGridRowClickEventArgs<PaymentDto> args)
     {
         if (args.MouseEventArgs.Detail == 2)
+            Navigation.NavigateTo($"/payments/{args.Item.Id}");
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        DialogParameters<PaymentDialog> parameters = new();
+        if (InvoiceIdParam.HasValue)
+            parameters.Add(x => x.PreSelectedInvoiceId, InvoiceIdParam);
+
+        DialogOptions options = new()
         {
-            ViewPayment(args.Item!.Id);
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<PaymentDialog>(
+            Localization.GetString("RecordPayment"), parameters, options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CreatePaymentDto dto })
+        {
+            try
+            {
+                await PaymentService.CreatePaymentAsync(dto);
+                Snackbar.Add(Localization.GetString("PaymentCreated"), Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error creating payment: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorCreatingPayment"), Severity.Error);
+            }
         }
     }
 
-    private string GetPaymentMethodText(PaymentMethod method)
+    private async Task OpenEditDialog(PaymentDto payment)
     {
-        return method switch
+        DialogParameters<PaymentDialog> parameters = new();
+        parameters.Add(x => x.Payment, payment);
+
+        DialogOptions options = new()
         {
-            PaymentMethod.Cash => Localization.GetString("Cash"),
-            PaymentMethod.Check => Localization.GetString("Check"),
-            PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
-            PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
-            PaymentMethod.DebitCard => Localization.GetString("DebitCard"),
-            PaymentMethod.Other => Localization.GetString("Other"),
-            _ => method.ToString()
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true
         };
-    }
 
-    private void ViewPayment(Guid id)
-    {
-        Navigation.NavigateTo($"/payments/{id}");
-    }
+        IDialogReference dialog = await DialogService.ShowAsync<PaymentDialog>(
+            Localization.GetString("EditPayment"), parameters, options);
 
-    private void EditPayment(Guid id)
-    {
-        Navigation.NavigateTo($"/payments/edit/{id}");
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdatePaymentDto dto })
+        {
+            try
+            {
+                await PaymentService.UpdatePaymentAsync(payment.Id, dto);
+                Snackbar.Add(Localization.GetString("PaymentUpdated"), Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating payment: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingPayment"), Severity.Error);
+            }
+        }
     }
 
     private async Task DeletePayment(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            new MessageBoxOptions
-            {
-                Title = Localization.GetString("ConfirmDelete"),
-                Message = Localization.GetString("DeletePaymentConfirm"),
-                YesText = Localization.GetString("Yes"),
-                CancelText = Localization.GetString("No")
-            });
+        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = Localization.GetString("ConfirmDelete"),
+            Message = Localization.GetString("DeletePaymentConfirm"),
+            YesText = Localization.GetString("Yes"),
+            CancelText = Localization.GetString("No")
+        });
 
         if (result == true)
         {
@@ -526,7 +394,7 @@
                 if (deleted)
                 {
                     Snackbar.Add(Localization.GetString("PaymentDeleted"), Severity.Success);
-                    await LoadPayments();
+                    await _grid.ReloadServerData();
                 }
             }
             catch (Exception ex)
@@ -536,6 +404,33 @@
             }
         }
     }
+
+    private string GetRowClass(PaymentDto item, int index) => item.PaymentMethod switch
+    {
+        PaymentMethod.Cash => "row-status-active",
+        PaymentMethod.BankTransfer => "row-status-primary",
+        PaymentMethod.CreditCard => "row-status-secondary",
+        PaymentMethod.Other => "row-status-default",
+        _ => "row-status-default"
+    };
+
+    private string GetMethodText(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => Localization.GetString("Cash"),
+        PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
+        PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
+        PaymentMethod.Other => Localization.GetString("Other"),
+        _ => method.ToString()
+    };
+
+    private Color GetMethodColor(PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => Color.Success,
+        PaymentMethod.BankTransfer => Color.Primary,
+        PaymentMethod.CreditCard => Color.Secondary,
+        PaymentMethod.Other => Color.Default,
+        _ => Color.Default
+    };
 
     public void Dispose()
     {

@@ -3,6 +3,8 @@
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class IndividualRepository(ApplicationDbContext context) : IIndividualRepository
@@ -14,6 +16,43 @@
                 .OrderBy(i => i.LastName)
                 .ThenBy(i => i.FirstName)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<Individual>> GetPagedAsync(GetIndividualsQuery query)
+        {
+            IQueryable<Individual> q = context.Individuals
+                .Where(i => i.DeletedOn == null);
+
+            if (query.IsActive.HasValue)
+                q = q.Where(i => i.IsActive == query.IsActive.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+                q = q.Where(i => i.FirstName.Contains(query.Search) ||
+                                 i.LastName.Contains(query.Search) ||
+                                 i.IdentificationNumber.Contains(query.Search));
+
+            q = query.SortBy switch
+            {
+                "FirstName" => query.SortAscending ? q.OrderBy(i => i.FirstName) : q.OrderByDescending(i => i.FirstName),
+                "LastName" => query.SortAscending ? q.OrderBy(i => i.LastName) : q.OrderByDescending(i => i.LastName),
+                "IdentificationNumber" => query.SortAscending ? q.OrderBy(i => i.IdentificationNumber) : q.OrderByDescending(i => i.IdentificationNumber),
+                _ => q.OrderBy(i => i.LastName)
+            };
+
+            int totalCount = await q.CountAsync();
+
+            List<Individual> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<Individual>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<IEnumerable<Individual>> GetActiveIndividualsAsync()

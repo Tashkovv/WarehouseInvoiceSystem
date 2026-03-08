@@ -183,6 +183,10 @@
                 ["Name"] = "Name",
                 ["Created"] = "Created",
                 ["Deleted"] = "Deleted",
+                ["Ascending"] = "Ascending",
+                ["Descending"] = "Descending",
+                ["All"] = "All",
+                ["Number"] = "Number",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -194,6 +198,9 @@
 
                 // Companies
                 ["AllCompanies"] = "All Companies",
+                ["TaxId"] = "Tax ID",
+                ["FilterByCompanyType"] = "Filter by Type",
+                ["CompanyNameRequired"] = "Company name is required",
                 ["Clients"] = "Clients",
                 ["Vendors"] = "Vendors",
                 ["CreateCompany"] = "Create Company",
@@ -329,10 +336,8 @@
 
                 // Payments
                 ["Cash"] = "Cash",
-                ["Check"] = "Check",
                 ["BankTransfer"] = "Bank Transfer",
                 ["CreditCard"] = "Credit Card",
-                ["DebitCard"] = "Debit Card",
                 ["Other"] = "Other",
                 ["AllPayments"] = "All Payments",
                 ["CreatePayment"] = "Create Payment",
@@ -450,6 +455,12 @@
                 ["Transactions"] = "transactions",
                 ["Purchased"] = "Purchased",
                 ["Sold"] = "Sold",
+                ["SearchProducts"] = "Search by name, code, or description...",
+                ["FilterByStatus"] = "Filter by Status",
+                ["SortBy"] = "Sort by",
+                ["SortByName"] = "Name",
+                ["SortByCode"] = "Code",
+                ["SortByPrice"] = "Price",
 
                 // Inventory
                 ["Inventory"] = "Inventory",
@@ -706,7 +717,7 @@
                 ["PartiallyPaid"] = "Делумно платена",
                 ["PaidStatus"] = "Платена",
                 ["OverdueStatus"] = "Задоцнета",
-                ["Cancelled"] = "Откажана",
+                ["CancelledStatus"] = "Откажана",
 
                 // Common
                 ["Loading"] = "Вчитување...",
@@ -745,6 +756,10 @@
                 ["Name"] = "Име",
                 ["Created"] = "Креирано",
                 ["Deleted"] = "Избришено",
+                ["Ascending"] = "Растечки",
+                ["Descending"] = "Опаѓачки",
+                ["All"] = "Сите",
+                ["Number"] = "Број",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -756,6 +771,9 @@
 
                 // Companies
                 ["AllCompanies"] = "Сите компании",
+                ["TaxId"] = "Даночен број",
+                ["FilterByCompanyType"] = "Филтрирај по Тип",
+                ["CompanyNameRequired"] = "Името на компанијата е задолжително",
                 ["Clients"] = "Клиенти",
                 ["Vendors"] = "Добавувачи",
                 ["CreateCompany"] = "Креирај компанија",
@@ -890,10 +908,8 @@
 
                 // Payments
                 ["Cash"] = "Готовина",
-                ["Check"] = "Чек",
                 ["BankTransfer"] = "Банкарски трансфер",
                 ["CreditCard"] = "Кредитна картичка",
-                ["DebitCard"] = "Дебитна картичка",
                 ["Other"] = "Друго",
                 ["AllPayments"] = "Сите плаќања",
                 ["CreatePayment"] = "Креирај плаќање",
@@ -1012,6 +1028,12 @@
                 ["Transactions"] = "трансакции",
                 ["Purchased"] = "Откупено",
                 ["Sold"] = "Продадено",
+                ["SearchProducts"] = "Пребарај по име, шифра или опис...",
+                ["FilterByStatus"] = "Филтрирај по Статус",
+                ["SortBy"] = "Сортирај по",
+                ["SortByName"] = "Име",
+                ["SortByCode"] = "Шифра",
+                ["SortByPrice"] = "Цена",
 
                 // Inventory
                 ["Inventory"] = "Залиха",

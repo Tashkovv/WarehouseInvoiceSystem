@@ -1,9 +1,13 @@
 ﻿@page "/purchase-notes"
 @implements IDisposable
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Domain.Enums
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IPurchaseNoteService PurchaseNoteService
+@inject IIndividualService IndividualService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
@@ -11,391 +15,415 @@
 
 <PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("PurchaseNotes")</MudText>
+<div style="margin-bottom: 24px; padding: 4px 0;">
+    <MudText Typo="Typo.h3" Class="wis-page-title">
+        @Localization.GetString("PurchaseNotes")
+    </MudText>
+</div>
 
-<MudCard Elevation="2" Class="mb-4">
-    <MudCardContent>
-        <MudGrid>
-            <MudItem xs="12" sm="6" md="3">
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           Color="Color.Primary"
-                           Variant="Variant.Filled"
-                           FullWidth="true"
-                           Href="/purchase-notes/create">
-                    @Localization.GetString("CreatePurchaseNote")
-                </MudButton>
+<WisGridToolbar CreateHref="/purchase-notes/create"
+                CreateLabel="@Localization.GetString("CreatePurchaseNote")"
+                SearchValue="@_searchString"
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterStatus.HasValue || _activeAdvancedFilterCount > 0)"
+                OnClearAll="ClearAllFilters"
+                ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
+    <Filters>
+        <FilterPopoverList TValue="PurchaseNoteStatus?"
+                           Title="@Localization.GetString("Status")"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterStatus"
+                           SelectedValueChanged="OnStatusFilterChanged" />
+    </Filters>
+    <AdvancedFilters>
+        <MudGrid Spacing="2" AlignItems="AlignItems.Start">
+
+            @* Individual autocomplete *@
+            <MudItem xs="12" sm="6" md="4">
+                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
+                    &nbsp
+                </MudText>
+                <MudStack Row="true" Spacing="1">
+                    <MudAutocomplete T="string"
+                                     Value="_filterIndividualName"
+                                     ValueChanged="OnIndividualFilterChanged"
+                                     SearchFunc="SearchIndividuals"
+                                     Label="@Localization.GetString("Individual")"
+                                     Variant="Variant.Outlined"
+                                     Dense="true"
+                                     Clearable="true"
+                                     OnClearedClick="@(() => OnIndividualFilterChanged(null))" />
+                </MudStack>
             </MudItem>
-            <MudItem xs="12" sm="6" md="9">
-                <MudTextField T="string"
-                              Value="_searchString"
-                              ValueChanged="OnSearch"
-                              Placeholder="@Localization.GetString("Search")"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              IconSize="Size.Medium"
-                              Immediate="true"
-                              DebounceInterval="300"
-                              Class="mt-0" />
+
+            @* Purchase date range *@
+            <MudItem xs="12" sm="6" md="4">
+                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
+                    @Localization.GetString("PurchaseDate")
+                </MudText>
+                <MudStack Row="true" Spacing="1">
+                    <MudDatePicker @bind-Date="_filterDateFrom"
+                                   @bind-Date:after="ReloadGrid"
+                                   Label="@Localization.GetString("From")"
+                                   Variant="Variant.Outlined"
+                                   Dense="true" />
+                    <MudDatePicker @bind-Date="_filterDateTo"
+                                   @bind-Date:after="ReloadGrid"
+                                   Label="@Localization.GetString("To")"
+                                   Variant="Variant.Outlined"
+                                   Dense="true" />
+                </MudStack>
             </MudItem>
+
+            @* Amount range *@
+            <MudItem xs="12" sm="6" md="4">
+                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
+                    @Localization.GetString("AmountRange")
+                </MudText>
+                <MudStack Row="true" Spacing="1">
+                    <MudNumericField T="decimal?"
+                                     @bind-Value="_filterAmountMin"
+                                     @bind-Value:after="ReloadGrid"
+                                     Label="@Localization.GetString("Min")"
+                                     Variant="Variant.Outlined"
+                                     HideSpinButtons="true"
+                                     Format="N2"
+                                     Dense="true" />
+                    <MudNumericField T="decimal?"
+                                     @bind-Value="_filterAmountMax"
+                                     @bind-Value:after="ReloadGrid"
+                                     Label="@Localization.GetString("Max")"
+                                     Variant="Variant.Outlined"
+                                     HideSpinButtons="true"
+                                     Format="N2"
+                                     Dense="true" />
+                </MudStack>
+            </MudItem>
+
         </MudGrid>
-
-        <MudTabs Elevation="0"
-                 Rounded="true"
-                 Class="mt-4"
-                 ActivePanelIndex="_activeTabIndex"
-                 ActivePanelIndexChanged="OnTabChanged">
-            <MudTabPanel Text="@Localization.GetString("AllPurchaseNotes")" Icon="@Icons.Material.Filled.List" />
-            <MudTabPanel Text="@Localization.GetString("Draft")" Icon="@Icons.Material.Filled.Edit" />
-            <MudTabPanel Text="@Localization.GetString("Completed")" Icon="@Icons.Material.Filled.CheckCircle" />
-            <MudTabPanel Text="@Localization.GetString("Paid")" Icon="@Icons.Material.Filled.Payment" />
-        </MudTabs>
-    </MudCardContent>
-</MudCard>
+    </AdvancedFilters>
+</WisGridToolbar>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
-        @if (_loading)
-        {
-            <div class="pa-6">
-                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-            </div>
-        }
-        else if (_filteredNotes == null || !_filteredNotes.Any())
-        {
-            <div class="pa-6 text-center">
-                <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
-            </div>
-        }
-        else
-        {
-            <MudTable Items="_paginatedNotes"
-                      Hover="true"
-                      Breakpoint="Breakpoint.Sm"
-                      Dense="false"
-                      FixedHeader="true"
-                      RowClass="table-row-clickable"
-                      OnRowClick="@((TableRowClickEventArgs<PurchaseNoteDto> args) => OnRowClick(args))"
-                      Height="600px"
-                      Sort="@((SortDefinition<PurchaseNoteDto> sortDefinition) => HandleSort(sortDefinition))">
-                <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.NoteNumber)">@Localization.GetString("NoteNumber")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.IndividualFullName)">@Localization.GetString("Individual")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.PurchaseDate)">@Localization.GetString("PurchaseDate")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PurchaseNoteDto, object>(x => x.TotalAmount)">@Localization.GetString("Total")</MudTableSortLabel></MudTh>
-                    <MudTh>@Localization.GetString("Status")</MudTh>
-                    <MudTh>@Localization.GetString("Actions")</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@Localization.GetString("NoteNumber")">
-                        <MudText Typo="Typo.body2" Class="font-weight-medium">
-                            @context.NoteNumber
+        <MudDataGrid T="PurchaseNoteDto"
+                     @ref="_grid"
+                     ServerData="LoadServerData"
+                     RowClick="OnRowClick"
+                     RowClassFunc="GetRowClass"
+                     ReadOnly="true"
+                     Hover="true"
+                     FixedHeader="true"
+                     Height="710px"
+                     Filterable="false"
+                     ShowColumnOptions="false"
+                     ColumnResizeMode="ResizeMode.Column"
+                     SortMode="SortMode.Single"
+                     Class="wis-data-grid">
+            <Columns>
+
+                <PropertyColumn Property="x => x.NoteNumber"
+                                Title="@Localization.GetString("Number")"
+                                Sortable="true"
+                                IsEditable="false"
+                                CellStyle="font-family: monospace;" />
+
+                <PropertyColumn Property="x => x.IndividualFullName"
+                                Title="@Localization.GetString("Individual")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Style="font-weight: 500;">
+                            @context.Item.IndividualFullName
                         </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Individual")">
-                        <MudText>@context.IndividualFullName</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @context.IndividualIdentificationNumber
+                            @context.Item.IndividualIdentificationNumber
                         </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("PurchaseDate")">
-                        @context.PurchaseDate.ToString("dd MMM yyyy")
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Total")">
-                        <MudText Typo="Typo.body2" Class="font-weight-medium">
-                            @context.TotalAmount.ToString("C")
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.PurchaseDate"
+                                Title="@Localization.GetString("PurchaseDate")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        @context.Item.PurchaseDate.ToString("dd MMM yyyy")
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.WarehouseName"
+                                Title="@Localization.GetString("Warehouse")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
+                        @(context.Item.WarehouseName ?? "—")
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.TotalAmount"
+                                Title="@Localization.GetString("Total")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                            @context.Item.TotalAmount.ToString("C")
                         </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Status")">
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.Status"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Color="GetStatusColor(context.Status)">
-                            @GetStatusText(context.Status)
+                                 Color="@GetStatusColor(context.Item.Status)">
+                            @GetStatusText(context.Item.Status)
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Actions")">
-                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
-                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                         OnClick="@(() => EditNote(context.Id))">
-                                @Localization.GetString("Edit")
-                            </MudMenuItem>
-                            @if (context.Status != PurchaseNoteStatus.Paid)
-                            {
-                                <MudMenuItem Icon="@Icons.Material.Filled.Payment"
-                                             OnClick="@(() => MarkAsPaid(context.Id))">
-                                    @Localization.GetString("MarkAsPaid")
-                                </MudMenuItem>
-                            }
-                            <MudDivider />
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                         IconColor="Color.Error"
-                                         OnClick="@(() => DeleteNote(context.Id))">
-                                @Localization.GetString("Delete")
-                            </MudMenuItem>
-                        </MudMenu>
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+                    </CellTemplate>
+                </PropertyColumn>
 
-            <!-- Pagination Controls -->
-            <MudDivider />
-            <MudCardContent Class="pa-4">
-                <MudGrid>
-                    <MudItem xs="12" sm="6">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       OnClick="PreviousPage"
-                                       Disabled="@(_currentPage == 1)">
-                                @Localization.GetString("Previous")
-                            </MudButton>
-
-                            <MudText Typo="Typo.body2">
-                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
-                            </MudText>
-
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       OnClick="NextPage"
-                                       Disabled="@(_currentPage == _totalPages)">
-                                @Localization.GetString("Next")
-                            </MudButton>
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                MinWidth="110"
+                                HeaderStyle="width: 110px;"
+                                CellStyle="width: 110px;">
+                    <CellTemplate>
+                        <MudStack Row="true" Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           Title="@Localization.GetString("Edit")"
+                                           OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/edit/{context.Item.Id}"))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Payment"
+                                           Size="Size.Small"
+                                           Color="Color.Success"
+                                           Title="@Localization.GetString("MarkAsPaid")"
+                                           Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid)"
+                                           OnClick="@(() => MarkAsPaid(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           Title="@Localization.GetString("Delete")"
+                                           OnClick="@(() => DeleteNote(context.Item.Id))" />
                         </MudStack>
-                    </MudItem>
+                    </CellTemplate>
+                </TemplateColumn>
 
-                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
-                            <MudText Typo="Typo.body2">
-                                @Localization.GetString("ItemsPerPage")
-                            </MudText>
+            </Columns>
 
-                            <MudSelect T="int"
-                                       Value="_itemsPerPage"
-                                       Dense="true"
-                                       Variant="Variant.Outlined"
-                                       Style="width: 100px;"
-                                       ValueChanged="@((int val) => OnItemsPerPageChanged(val))">
-                                <MudSelectItem Value="10">10</MudSelectItem>
-                                <MudSelectItem Value="25">25</MudSelectItem>
-                                <MudSelectItem Value="50">50</MudSelectItem>
-                                <MudSelectItem Value="100">100</MudSelectItem>
-                            </MudSelect>
+            <NoRecordsContent>
+                <div class="pa-8 d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Receipt"
+                             Size="Size.Large"
+                             Color="Color.Secondary"
+                             Class="mb-2" />
+                    <MudText Color="Color.Secondary">
+                        @Localization.GetString("NoPurchaseNotesFound")
+                    </MudText>
+                </div>
+            </NoRecordsContent>
 
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                (@_totalNotes @Localization.GetString("Total"))
-                            </MudText>
-                        </MudStack>
-                    </MudItem>
-                </MudGrid>
-            </MudCardContent>
-        }
+            <LoadingContent>
+                <div class="pa-6">
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                </div>
+            </LoadingContent>
+
+            <PagerContent>
+                <WisPagerContent T="PurchaseNoteDto" />
+            </PagerContent>
+
+        </MudDataGrid>
     </MudCardContent>
 </MudCard>
 
 @code {
-    private bool _loading = true;
-    private List<PurchaseNoteDto> _allNotes = [];
-    private List<PurchaseNoteDto> _filteredNotes = [];
-    private List<PurchaseNoteDto> _paginatedNotes = [];
-    private string _searchString = "";
-    private int _activeTabIndex = 0;
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "individualId")]
+    public Guid? IndividualIdParam { get; set; }
 
-    private int _currentPage = 1;
-    private int _itemsPerPage = 25;
-    private int _totalNotes = 0;
-    private int _totalPages = 1;
+    private MudDataGrid<PurchaseNoteDto> _grid = null!;
+    private string _searchString = string.Empty;
 
-    private string _sortBy = "PurchaseDate";
-    private bool _sortAscending = false;
+    // Quick filter
+    private PurchaseNoteStatus? _filterStatus = null;
+
+    // Advanced filters
+    private string? _filterIndividualName = null;
+    private DateTime? _filterDateFrom = null;
+    private DateTime? _filterDateTo = null;
+    private decimal? _filterAmountMin = null;
+    private decimal? _filterAmountMax = null;
+
+    private int _activeAdvancedFilterCount =>
+        (!string.IsNullOrWhiteSpace(_filterIndividualName) ? 1 : 0) +
+        (_filterDateFrom.HasValue || _filterDateTo.HasValue ? 1 : 0) +
+        (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0);
+
+    // Individuals cache for autocomplete
+    private List<IndividualDto> _individuals = [];
+
+    private List<FilterPopoverItem<PurchaseNoteStatus?>> _statusFilterItems = [];
 
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadNotes();
+        BuildFilterItems();
+
+        // Pre-load individuals for autocomplete
+        try
+        {
+            IEnumerable<IndividualDto> all = await IndividualService.GetAllIndividualsAsync();
+            _individuals = all.Where(i => i.IsActive).OrderBy(i => i.FullName).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading individuals: {ex.Message}");
+        }
+
+        // Resolve ?individualId= param to a name for the filter
+        if (IndividualIdParam.HasValue)
+        {
+            IndividualDto? match = _individuals.FirstOrDefault(i => i.Id == IndividualIdParam.Value);
+            if (match is not null)
+                _filterIndividualName = match.FullName;
+        }
+    }
+
+    private void BuildFilterItems()
+    {
+        _statusFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),       Value = null,                         Color = Color.Primary },
+            new() { Label = Localization.GetString("Draft"),     Value = PurchaseNoteStatus.Draft,     Color = Color.Default },
+            new() { Label = Localization.GetString("Completed"), Value = PurchaseNoteStatus.Completed, Color = Color.Info    },
+            new() { Label = Localization.GetString("Paid"),      Value = PurchaseNoteStatus.Paid,      Color = Color.Success },
+        ];
     }
 
     private async void OnLanguageChanged()
     {
+        BuildFilterItems();
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadNotes()
+    private async Task<GridData<PurchaseNoteDto>> LoadServerData(GridState<PurchaseNoteDto> state, CancellationToken ct)
     {
-        _loading = true;
+        string? sortBy = state.SortDefinitions.FirstOrDefault()?.SortBy;
+        bool ascending = state.SortDefinitions.FirstOrDefault()?.Descending == false;
 
-        try
+        GetPurchaseNotesQuery query = new()
         {
-            // Use status-scoped call when a specific tab is selected
-            IEnumerable<PurchaseNoteDto> notes = _activeTabIndex switch
-            {
-                1 => await PurchaseNoteService.GetPurchaseNotesByStatusAsync(PurchaseNoteStatus.Draft),
-                2 => await PurchaseNoteService.GetPurchaseNotesByStatusAsync(PurchaseNoteStatus.Completed),
-                3 => await PurchaseNoteService.GetPurchaseNotesByStatusAsync(PurchaseNoteStatus.Paid),
-                _ => await PurchaseNoteService.GetAllPurchaseNotesAsync()
-            };
-
-            _allNotes = notes.ToList();
-            ApplyFilters();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading purchase notes: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingPurchaseNotes"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
-
-    private void ApplyFilters()
-    {
-        IEnumerable<PurchaseNoteDto> filtered = _allNotes;
-
-        filtered = _activeTabIndex switch
-        {
-            1 => filtered.Where(n => n.Status == PurchaseNoteStatus.Draft),
-            2 => filtered.Where(n => n.Status == PurchaseNoteStatus.Completed),
-            3 => filtered.Where(n => n.Status == PurchaseNoteStatus.Paid),
-            _ => filtered
+            Search = _searchString,
+            Status = _filterStatus,
+            IndividualName = _filterIndividualName,
+            DateFrom = _filterDateFrom,
+            DateTo = _filterDateTo,
+            AmountMin = _filterAmountMin,
+            AmountMax = _filterAmountMax,
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+            SortBy = sortBy,
+            SortAscending = ascending,
         };
 
-        if (!string.IsNullOrWhiteSpace(_searchString))
+        PagedResult<PurchaseNoteDto> result = await PurchaseNoteService.GetPagedAsync(query);
+
+        return new GridData<PurchaseNoteDto>
         {
-            string search = _searchString.ToLower();
-            filtered = filtered.Where(n =>
-                n.NoteNumber.ToLower().Contains(search) ||
-                n.IndividualFullName.ToLower().Contains(search) ||
-                n.IndividualIdentificationNumber.Contains(search));
-        }
-
-        filtered = _sortAscending
-            ? filtered.OrderBy(GetSortProperty)
-            : filtered.OrderByDescending(GetSortProperty);
-
-        _filteredNotes = filtered.ToList();
-        _totalNotes = _filteredNotes.Count;
-
-        UpdatePagination();
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
     }
 
-    private void UpdatePagination()
+    private async Task<IEnumerable<string>> SearchIndividuals(string value, CancellationToken ct)
     {
-        _totalPages = (int)Math.Ceiling((double)_totalNotes / _itemsPerPage);
+        if (string.IsNullOrWhiteSpace(value))
+            return _individuals.Select(i => i.FullName);
 
-        if (_currentPage > _totalPages && _totalPages > 0)
-        {
-            _currentPage = _totalPages;
-        }
-
-        int skipCount = (_currentPage - 1) * _itemsPerPage;
-        _paginatedNotes = _filteredNotes
-            .Skip(skipCount)
-            .Take(_itemsPerPage)
-            .ToList();
-    }
-
-    private void ResetPaginationAndApplyFilters()
-    {
-        _currentPage = 1;
-        ApplyFilters();
-    }
-
-    private object GetSortProperty(PurchaseNoteDto note) => _sortBy switch
-    {
-        "NoteNumber" => note.NoteNumber,
-        "IndividualFullName" => note.IndividualFullName,
-        "PurchaseDate" => note.PurchaseDate,
-        "TotalAmount" => note.TotalAmount,
-        _ => note.CreatedAt
-    };
-
-    private void HandleSort(SortDefinition<PurchaseNoteDto> sortDefinition)
-    {
-        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
-            return;
-
-        _sortBy = sortDefinition.SortBy;
-        _sortAscending = !sortDefinition.Descending;
-        ApplyFilters();
+        return _individuals
+            .Where(i => i.FullName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+                        i.IdentificationNumber.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .Select(i => i.FullName);
     }
 
     private async Task OnSearch(string text)
     {
         _searchString = text;
-        ResetPaginationAndApplyFilters();
-        await InvokeAsync(StateHasChanged);
+        await _grid.ReloadServerData();
     }
 
-    private async Task OnTabChanged(int index)
+    private async Task OnStatusFilterChanged(PurchaseNoteStatus? value)
     {
-        _activeTabIndex = index;
-        ResetPaginationAndApplyFilters();
-        await InvokeAsync(StateHasChanged);
+        _filterStatus = value;
+        await _grid.ReloadServerData();
     }
 
-    private Color GetStatusColor(PurchaseNoteStatus status)
+    private async Task OnIndividualFilterChanged(string? value)
     {
-        return status switch
+        _filterIndividualName = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task ReloadGrid() => await _grid.ReloadServerData();
+
+    private async Task ClearAllFilters()
+    {
+        _filterStatus = null;
+        _filterIndividualName = null;
+        _filterDateFrom = null;
+        _filterDateTo = null;
+        _filterAmountMin = null;
+        _filterAmountMax = null;
+        await _grid.ReloadServerData();
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<PurchaseNoteDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+            Navigation.NavigateTo($"/purchase-notes/{args.Item.Id}");
+    }
+
+    private async Task MarkAsPaid(PurchaseNoteDto note)
+    {
+        bool? confirm = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
         {
-            PurchaseNoteStatus.Draft => Color.Default,
-            PurchaseNoteStatus.Completed => Color.Info,
-            PurchaseNoteStatus.Paid => Color.Success,
-            _ => Color.Default
-        };
-    }
+            Title = Localization.GetString("MarkAsPaidQuestion"),
+            Message = $"{note.NoteNumber} — {note.IndividualFullName}",
+            YesText = Localization.GetString("MarkAsPaid"),
+            CancelText = Localization.GetString("Cancel")
+        });
 
-    private string GetStatusText(PurchaseNoteStatus status)
-    {
-        return status switch
+        if (confirm == true)
         {
-            PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
-            PurchaseNoteStatus.Completed => Localization.GetString("Completed"),
-            PurchaseNoteStatus.Paid => Localization.GetString("Paid"),
-            _ => status.ToString()
-        };
-    }
-
-    private void ViewNote(Guid id)
-    {
-        Navigation.NavigateTo($"/purchase-notes/{id}");
-    }
-
-    private void EditNote(Guid id)
-    {
-        Navigation.NavigateTo($"/purchase-notes/edit/{id}");
-    }
-
-    private async Task MarkAsPaid(Guid id)
-    {
-        try
-        {
-            PurchaseNoteDto updated = await PurchaseNoteService.MarkAsPaidAsync(id);
-            Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
-
-            // Update local state instead of full reload
-            int index = _allNotes.FindIndex(n => n.Id == id);
-            if (index >= 0)
-                _allNotes[index] = updated;
-
-            ApplyFilters();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error marking as paid: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+            try
+            {
+                await PurchaseNoteService.MarkAsPaidAsync(note.Id);
+                Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error marking as paid: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+            }
         }
     }
 
     private async Task DeleteNote(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            new MessageBoxOptions
-            {
-                Title = Localization.GetString("ConfirmDelete"),
-                Message = Localization.GetString("DeletePurchaseNoteConfirm"),
-                YesText = Localization.GetString("Yes"),
-                CancelText = Localization.GetString("No")
-            });
+        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = Localization.GetString("ConfirmDelete"),
+            Message = Localization.GetString("DeletePurchaseNoteConfirm"),
+            YesText = Localization.GetString("Yes"),
+            CancelText = Localization.GetString("No")
+        });
 
         if (result == true)
         {
@@ -405,10 +433,7 @@
                 if (deleted)
                 {
                     Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
-
-                    // Remove from local list instead of full reload
-                    _allNotes.RemoveAll(n => n.Id == id);
-                    ApplyFilters();
+                    await _grid.ReloadServerData();
                 }
             }
             catch (Exception ex)
@@ -419,38 +444,29 @@
         }
     }
 
-    private void PreviousPage()
+    private string GetRowClass(PurchaseNoteDto item, int index) => item.Status switch
     {
-        if (_currentPage > 1)
-        {
-            _currentPage--;
-            UpdatePagination();
-        }
-    }
+        PurchaseNoteStatus.Draft => "row-status-default",
+        PurchaseNoteStatus.Completed => "row-status-info",
+        PurchaseNoteStatus.Paid => "row-status-active",
+        _ => string.Empty
+    };
 
-    private void NextPage()
+    private Color GetStatusColor(PurchaseNoteStatus status) => status switch
     {
-        if (_currentPage < _totalPages)
-        {
-            _currentPage++;
-            UpdatePagination();
-        }
-    }
+        PurchaseNoteStatus.Draft => Color.Default,
+        PurchaseNoteStatus.Completed => Color.Info,
+        PurchaseNoteStatus.Paid => Color.Success,
+        _ => Color.Default
+    };
 
-    private void OnRowClick(TableRowClickEventArgs<PurchaseNoteDto> args)
+    private string GetStatusText(PurchaseNoteStatus status) => status switch
     {
-        if (args.MouseEventArgs.Detail == 2)
-        {
-            ViewNote(args.Item!.Id);
-        }
-    }
-
-    private void OnItemsPerPageChanged(int newItemsPerPage)
-    {
-        _itemsPerPage = newItemsPerPage;
-        _currentPage = 1;
-        UpdatePagination();
-    }
+        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
+        PurchaseNoteStatus.Completed => Localization.GetString("Completed"),
+        PurchaseNoteStatus.Paid => Localization.GetString("Paid"),
+        _ => status.ToString()
+    };
 
     public void Dispose()
     {

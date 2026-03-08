@@ -3,6 +3,8 @@
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class WarehouseRepository(ApplicationDbContext context) : IWarehouseRepository
@@ -13,6 +15,38 @@
                 .Where(w => w.DeletedOn == null)
                 .OrderBy(w => w.Name)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<Warehouse>> GetPagedAsync(GetWarehousesQuery query)
+        {
+            IQueryable<Warehouse> q = context.Warehouses
+                .Where(w => w.DeletedOn == null);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+                q = q.Where(w => w.Name.Contains(query.Search) ||
+                                 (w.Address != null && w.Address.Contains(query.Search)));
+
+            q = query.SortBy switch
+            {
+                "Name" => query.SortAscending ? q.OrderBy(w => w.Name) : q.OrderByDescending(w => w.Name),
+                "Address" => query.SortAscending ? q.OrderBy(w => w.Address) : q.OrderByDescending(w => w.Address),
+                _ => q.OrderBy(w => w.Name)
+            };
+
+            int totalCount = await q.CountAsync();
+
+            List<Warehouse> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<Warehouse>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<Warehouse?> GetByIdAsync(Guid id)

@@ -5,6 +5,8 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class PurchaseNoteService(
         IPurchaseNoteRepository purchaseNoteRepository,
@@ -21,6 +23,38 @@
         {
             IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetAllAsync();
             return notes.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<PurchaseNoteDto>> GetPagedAsync(GetPurchaseNotesQuery query)
+        {
+            PagedResult<PurchaseNote> result = await purchaseNoteRepository.GetPagedAsync(query);
+            return new PagedResult<PurchaseNoteDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
+        }
+
+        public async Task<IEnumerable<PurchaseNoteDto>> GetAllFilteredAsync(GetPurchaseNotesQuery query)
+        {
+            GetPurchaseNotesQuery exportQuery = new()
+            {
+                Page = 1,
+                PageSize = int.MaxValue,
+                SortBy = query.SortBy,
+                SortAscending = query.SortAscending,
+                Search = query.Search,
+                Status = query.Status,
+                IndividualName = query.IndividualName,
+                AmountMin = query.AmountMin,
+                AmountMax = query.AmountMax,
+                DateFrom = query.DateFrom,
+                DateTo = query.DateTo
+            };
+            PagedResult<PurchaseNote> result = await purchaseNoteRepository.GetPagedAsync(exportQuery);
+            return result.Items.Select(MapToDto);
         }
 
         public async Task<PurchaseNoteDto?> GetPurchaseNoteByIdAsync(Guid id)

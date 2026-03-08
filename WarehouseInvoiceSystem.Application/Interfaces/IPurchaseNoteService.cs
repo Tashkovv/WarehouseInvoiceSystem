@@ -2,10 +2,14 @@
 {
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IPurchaseNoteService
     {
         Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync();
+        Task<PagedResult<PurchaseNoteDto>> GetPagedAsync(GetPurchaseNotesQuery query);
+        Task<IEnumerable<PurchaseNoteDto>> GetAllFilteredAsync(GetPurchaseNotesQuery query);
         Task<PurchaseNoteDto?> GetPurchaseNoteByIdAsync(Guid id);
         Task<PurchaseNoteDto?> GetPurchaseNoteByNumberAsync(string noteNumber);
         Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByIndividualAsync(Guid individualId);

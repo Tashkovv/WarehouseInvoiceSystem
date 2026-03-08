@@ -1,0 +1,170 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_company.Name"
+                              Label="@Localization.GetString("Name")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("PleaseEnterCompanyName")"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="CompanyType"
+                           @bind-Value="_company.Type"
+                           Label="@Localization.GetString("CompanyType")"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           FullWidth="true">
+                    <MudSelectItem Value="CompanyType.Client">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" Color="Color.Success" />
+                            <MudText>@Localization.GetString("Client")</MudText>
+                        </MudStack>
+                    </MudSelectItem>
+                    <MudSelectItem Value="CompanyType.Vendor">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.TrendingDown" Size="Size.Small" Color="Color.Warning" />
+                            <MudText>@Localization.GetString("Vendor")</MudText>
+                        </MudStack>
+                    </MudSelectItem>
+                    <MudSelectItem Value="CompanyType.Both">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <MudIcon Icon="@Icons.Material.Filled.SyncAlt" Size="Size.Small" Color="Color.Primary" />
+                            <MudText>@Localization.GetString("ClientAndVendor")</MudText>
+                        </MudStack>
+                    </MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_company.ContactPerson"
+                              Label="@Localization.GetString("ContactPerson")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_company.Email"
+                              Label="@Localization.GetString("Email")"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Email"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_company.Phone"
+                              Label="@Localization.GetString("Phone")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_company.Address"
+                              Label="@Localization.GetString("Address")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_company.TaxId"
+                              Label="@Localization.GetString("TaxId")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="int"
+                                 @bind-Value="_company.PaymentTermsDays"
+                                 Label="@Localization.GetString("PaymentTerms")"
+                                 Variant="Variant.Outlined"
+                                 HideSpinButtons="true"
+                                 Min="0"
+                                 FullWidth="true"
+                                 Adornment="Adornment.End"
+                                 AdornmentText="@Localization.GetString("Days")" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="decimal"
+                                 @bind-Value="_company.CreditLimit"
+                                 Label="@Localization.GetString("CreditLimit")"
+                                 Variant="Variant.Outlined"
+                                 HideSpinButtons="true"
+                                 Format="N2"
+                                 Min="0m"
+                                 FullWidth="true"
+                                 Adornment="Adornment.Start"
+                                 AdornmentText="MKD" />
+            </MudItem>
+            @if (IsEditMode)
+            {
+                <MudItem xs="12" sm="2">
+                    <MudSwitch T="bool"
+                               @bind-Value="_company.IsActive"
+                               Color="Color.Success"
+                               Label="@(_company.IsActive ? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))" />
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid)">
+            @Localization.GetString("Save")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>
+    /// Pass an existing CompanyDto to edit, or null to create a new company.
+    /// </summary>
+    [Parameter]
+    public CompanyDto? Company { get; set; }
+
+    private CompanyDto _company = new();
+    private bool IsEditMode => Company is not null;
+
+    private bool IsValid => !string.IsNullOrWhiteSpace(_company.Name);
+
+    protected override void OnParametersSet()
+    {
+        if (Company is not null)
+        {
+            _company = new CompanyDto
+            {
+                Id = Company.Id,
+                Name = Company.Name,
+                Type = Company.Type,
+                ContactPerson = Company.ContactPerson,
+                Email = Company.Email,
+                Phone = Company.Phone,
+                Address = Company.Address,
+                TaxId = Company.TaxId,
+                PaymentTermsDays = Company.PaymentTermsDays,
+                CreditLimit = Company.CreditLimit,
+                IsActive = Company.IsActive,
+                CreatedAt = Company.CreatedAt
+            };
+        }
+        else
+        {
+            _company = new CompanyDto
+            {
+                IsActive = true,
+                Type = CompanyType.Client,
+                PaymentTermsDays = 30
+            };
+        }
+    }
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(_company));
+    private void Cancel() => MudDialog.Cancel();
+}

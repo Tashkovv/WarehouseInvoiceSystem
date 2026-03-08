@@ -1,10 +1,13 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.Interfaces
 {
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IProductRepository
     {
         Task<IEnumerable<Product>> GetAllAsync();
+        Task<PagedResult<Product>> GetPagedAsync(GetProductsQuery query);
         Task<IEnumerable<Product>> GetByIdsAsync(List<Guid> ids);
         Task<IEnumerable<Product>> GetActiveProductsAsync();
         Task<Product?> GetByIdAsync(Guid id);

@@ -3,10 +3,14 @@
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public interface IInvoiceService
     {
         Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync();
+        Task<PagedResult<InvoiceDto>> GetPagedAsync(GetInvoicesQuery query);
+        Task<IEnumerable<InvoiceDto>> GetAllFilteredAsync(GetInvoicesQuery query);
         Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId);
         Task<IEnumerable<InvoiceDto>> GetInvoicesByTypeAsync(InvoiceType type);
         Task<IEnumerable<InvoiceDto>> GetInvoicesByStatusAsync(InvoiceStatus status);

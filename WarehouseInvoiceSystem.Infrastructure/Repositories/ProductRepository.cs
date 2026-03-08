@@ -3,6 +3,8 @@
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class ProductRepository(ApplicationDbContext context) : IProductRepository
@@ -14,6 +16,43 @@
                 .OrderBy(p => p.Name)
                 .ToListAsync();
         }
+
+        public async Task<PagedResult<Product>> GetPagedAsync(GetProductsQuery query)
+        {
+            IQueryable<Product> q = context.Products
+                .Where(p => p.DeletedOn == null);
+
+            if (query.IsActive.HasValue)
+                q = q.Where(p => p.IsActive == query.IsActive.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.Search))
+                q = q.Where(p => p.Name.Contains(query.Search) ||
+                                 p.Code.Contains(query.Search));
+
+            q = query.SortBy switch
+            {
+                "Code" => query.SortAscending ? q.OrderBy(p => p.Code) : q.OrderByDescending(p => p.Code),
+                "Name" => query.SortAscending ? q.OrderBy(p => p.Name) : q.OrderByDescending(p => p.Name),
+                "DefaultPrice" => query.SortAscending ? q.OrderBy(p => p.DefaultPrice) : q.OrderByDescending(p => p.DefaultPrice),
+                _ => q.OrderBy(p => p.Name)
+            };
+
+            int totalCount = await q.CountAsync();
+
+            List<Product> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<Product>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
+        }
+
         public async Task<IEnumerable<Product>> GetByIdsAsync(List<Guid> ids)
         {
             return await context.Products

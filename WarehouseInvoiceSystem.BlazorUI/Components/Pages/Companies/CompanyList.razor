@@ -1,7 +1,10 @@
 ﻿@page "/companies"
 @implements IDisposable
-@using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@using WarehouseInvoiceSystem.Domain.Enums
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
@@ -10,379 +13,377 @@
 
 <PageTitle>@Localization.GetString("Companies") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Companies")</MudText>
+<div style="margin-bottom: 24px; padding: 4px 0;">
+    <MudText Typo="Typo.h3" Class="wis-page-title">
+        @Localization.GetString("Companies")
+    </MudText>
+</div>
 
-<MudCard Elevation="2" Class="mb-4">
-    <MudCardContent>
-        <MudGrid>
-            <MudItem xs="12" sm="6" md="3">
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           Color="Color.Primary"
-                           Variant="Variant.Filled"
-                           FullWidth="true"
-                           Href="/companies/create">
-                    @Localization.GetString("CreateCompany")
-                </MudButton>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="9">
-                <MudTextField T="string"
-                              Value="_searchString"
-                              ValueChanged="OnSearch"
-                              Placeholder="@Localization.GetString("Search")"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              IconSize="Size.Medium"
-                              Immediate="true"
-                              DebounceInterval="300"
-                              Class="mt-0" />
-            </MudItem>
-        </MudGrid>
-
-        <MudTabs Elevation="0"
-                 Rounded="true"
-                 Class="mt-4"
-                 ActivePanelIndex="_activeTabIndex"
-                 ActivePanelIndexChanged="OnTabChanged">
-            <MudTabPanel Text="@Localization.GetString("AllCompanies")" Icon="@Icons.Material.Filled.List" />
-            <MudTabPanel Text="@Localization.GetString("Clients")" Icon="@Icons.Material.Filled.TrendingUp" />
-            <MudTabPanel Text="@Localization.GetString("Vendors")" Icon="@Icons.Material.Filled.TrendingDown" />
-        </MudTabs>
-    </MudCardContent>
-</MudCard>
+<WisGridToolbar CreateAction="OpenCreateDialog"
+                CreateLabel="@Localization.GetString("CreateCompany")"
+                SearchValue="@_searchString"
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterType.HasValue || _filterIsActive.HasValue)"
+                OnClearAll="ClearAllFilters">
+    <Filters>
+        <FilterPopoverList TValue="CompanyType?"
+                           Title="@Localization.GetString("FilterByCompanyType")"
+                           Label="@Localization.GetString("Type")"
+                           Items="_typeFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterType"
+                           SelectedValueChanged="OnTypeFilterChanged" />
+        <FilterPopoverList TValue="bool?"
+                           Title="@Localization.GetString("FilterByStatus")"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterIsActive"
+                           SelectedValueChanged="OnStatusFilterChanged" />
+    </Filters>
+</WisGridToolbar>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
-        @if (_loading)
-        {
-            <div class="pa-6">
-                <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-            </div>
-        }
-        else if (_filteredCompanies == null || !_filteredCompanies.Any())
-        {
-            <div class="pa-6 text-center">
-                <MudText Color="Color.Secondary">@Localization.GetString("NoCompaniesFound")</MudText>
-            </div>
-        }
-        else
-        {
-            <MudTable Items="_paginatedCompanies"
-                      Hover="true"
-                      Breakpoint="Breakpoint.Sm"
-                      Dense="false"
-                      FixedHeader="true"
-                      RowClass="table-row-clickable"
-                      OnRowClick="@((TableRowClickEventArgs<CompanyDto> args) => OnRowClick(args))"
-                      Height="710px"
-                      Sort="@((SortDefinition<CompanyDto> sortDefinition) => HandleSort(sortDefinition))">
-                <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.Name)">@Localization.GetString("CompanyName")</MudTableSortLabel></MudTh>
-                    <MudTh>@Localization.GetString("Type")</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.ContactPerson ?? string.Empty)">@Localization.GetString("ContactPerson")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.Email ?? string.Empty)">@Localization.GetString("Email")</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<CompanyDto, object>(x => x.Phone ?? string.Empty)">@Localization.GetString("Phone")</MudTableSortLabel></MudTh>
-                    <MudTh>@Localization.GetString("Status")</MudTh>
-                    <MudTh>@Localization.GetString("Actions")</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="@Localization.GetString("CompanyName")">
-                        <MudText Typo="Typo.body2" Class="font-weight-medium">
-                            @context.Name
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Type")">
+        <MudDataGrid T="CompanyDto"
+                     @ref="_grid"
+                     ServerData="LoadServerData"
+                     RowClick="OnRowClick"
+                     RowClassFunc="GetRowClass"
+                     ReadOnly="true"
+                     Hover="true"
+                     FixedHeader="true"
+                     Height="710px"
+                     Filterable="false"
+                     ShowColumnOptions="false"
+                     ColumnResizeMode="ResizeMode.Column"
+                     SortMode="SortMode.Single"
+                     Class="wis-data-grid">
+            <Columns>
+
+                <PropertyColumn Property="x => x.Name"
+                                Title="@Localization.GetString("Name")"
+                                Sortable="true"
+                                IsEditable="false"
+                                CellStyle="font-weight: 600;" />
+
+                <PropertyColumn Property="x => x.Type"
+                                Title="@Localization.GetString("Type")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Color="GetTypeColor(context.Type)">
-                            @GetTypeText(context.Type)
+                                 Color="@GetTypeColor(context.Item.Type)">
+                            @GetTypeText(context.Item.Type)
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("ContactPerson")">
-                        @context.ContactPerson
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Email")">
-                        @context.Email
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Phone")">
-                        @context.Phone
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Status")">
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.ContactPerson"
+                                Title="@Localization.GetString("ContactPerson")"
+                                Sortable="true"
+                                IsEditable="false" />
+
+                <PropertyColumn Property="x => x.Email"
+                                Title="@Localization.GetString("Email")"
+                                Sortable="true"
+                                IsEditable="false" />
+
+                <PropertyColumn Property="x => x.Phone"
+                                Title="@Localization.GetString("Phone")"
+                                Sortable="false"
+                                IsEditable="false" />
+
+                <PropertyColumn Property="x => x.IsActive"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Color="@(context.IsActive ? Color.Success : Color.Default)">
-                            @(context.IsActive? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                            @(context.Item.IsActive ? Localization.GetString("ActiveCompany")
+                                                    : Localization.GetString("InactiveCompany"))
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.GetString("Actions")">
-                        <MudMenu Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small">
-                            <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                         OnClick="@(() => EditCompany(context.Id))">
-                                @Localization.GetString("Edit")
-                            </MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Filled.Receipt"
-                                         OnClick="@(() => ViewCompanyInvoices(context.Id))">
-                                @Localization.GetString("ViewInvoices")
-                            </MudMenuItem>
-                            <MudDivider />
-                            <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                         IconColor="Color.Error"
-                                         OnClick="@(() => DeleteCompany(context.Id))">
-                                @Localization.GetString("Delete")
-                            </MudMenuItem>
-                        </MudMenu>
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+                    </CellTemplate>
+                </PropertyColumn>
 
-            <!-- Pagination Controls -->
-            <MudDivider />
-            <MudCardContent Class="pa-4">
-                <MudGrid>
-                    <!-- Left Side: Page Navigation -->
-                    <MudItem xs="12" sm="6">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       OnClick="PreviousPage"
-                                       Disabled="@(_currentPage == 1)">
-                                @Localization.GetString("Previous")
-                            </MudButton>
-
-                            <MudText Typo="Typo.body2">
-                                @Localization.GetString("Page") @_currentPage @Localization.GetString("Of") @_totalPages
-                            </MudText>
-
-                            <MudButton Variant="Variant.Outlined"
-                                       Size="Size.Small"
-                                       OnClick="NextPage"
-                                       Disabled="@(_currentPage == _totalPages)">
-                                @Localization.GetString("Next")
-                            </MudButton>
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                MinWidth="120"
+                                HeaderStyle="width: 120px;"
+                                CellStyle="width: 120px;">
+                    <CellTemplate>
+                        <MudStack Row="true" Spacing="0">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           Title="@Localization.GetString("Edit")"
+                                           OnClick="@(() => OpenEditDialog(context.Item))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Receipt"
+                                           Size="Size.Small"
+                                           Color="Color.Secondary"
+                                           Title="@Localization.GetString("ViewInvoices")"
+                                           OnClick="@(() => ViewCompanyInvoices(context.Item.Id))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           Title="@Localization.GetString("Delete")"
+                                           OnClick="@(() => DeleteCompany(context.Item.Id))" />
                         </MudStack>
-                    </MudItem>
+                    </CellTemplate>
+                </TemplateColumn>
 
-                    <!-- Right Side: Items Per Page & Stats -->
-                    <MudItem xs="12" sm="6" Class="d-flex justify-end align-center">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="ml-auto">
-                            <MudText Typo="Typo.body2">
-                                @Localization.GetString("ItemsPerPage")
-                            </MudText>
+            </Columns>
 
-                            <MudSelect T="int"
-                                       @bind-Value="_itemsPerPage"
-                                       @bind-Value:after="UpdatePagination"
-                                       Dense="true"
-                                       Variant="Variant.Outlined"
-                                       Style="width: 100px;">
-                                <MudSelectItem Value="10">10</MudSelectItem>
-                                <MudSelectItem Value="25">25</MudSelectItem>
-                                <MudSelectItem Value="50">50</MudSelectItem>
-                                <MudSelectItem Value="100">100</MudSelectItem>
-                            </MudSelect>
+            <NoRecordsContent>
+                <div class="pa-8 d-flex flex-column align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.Business"
+                             Size="Size.Large"
+                             Color="Color.Secondary"
+                             Class="mb-2" />
+                    <MudText Color="Color.Secondary">
+                        @Localization.GetString("NoCompaniesFound")
+                    </MudText>
+                </div>
+            </NoRecordsContent>
 
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                (@_totalCompanies @Localization.GetString("Total"))
-                            </MudText>
-                        </MudStack>
-                    </MudItem>
-                </MudGrid>
-            </MudCardContent>
-        }
+            <LoadingContent>
+                <div class="pa-6">
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                </div>
+            </LoadingContent>
+
+            <PagerContent>
+                <WisPagerContent T="CompanyDto" />
+            </PagerContent>
+
+        </MudDataGrid>
     </MudCardContent>
 </MudCard>
 
 @code {
-    private bool _loading = true;
-    private List<CompanyDto> _allCompanies = [];
-    private List<CompanyDto> _filteredCompanies = [];
-    private List<CompanyDto> _paginatedCompanies = [];
-    private string _searchString = "";
-    private int _activeTabIndex = 0;
+    private MudDataGrid<CompanyDto> _grid = null!;
+    private string _searchString = string.Empty;
+    private CompanyType? _filterType = null;
+    private bool? _filterIsActive = null;
 
-    // Pagination variables
-    private int _currentPage = 1;
-    private int _itemsPerPage = 10;
-    private int _totalCompanies = 0;
-    private int _totalPages = 1;
+    private List<FilterPopoverItem<CompanyType?>> _typeFilterItems = [];
+    private List<FilterPopoverItem<bool?>> _statusFilterItems = [];
 
-    // Sorting variables
-    private string _sortBy = "CreatedAt";
-    private bool _sortAscending = false;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadCompanies();
+        BuildFilterItems();
+    }
+
+    private void BuildFilterItems()
+    {
+        _typeFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),             Value = null,               Color = Color.Info  },
+            new() { Label = Localization.GetString("Client"),          Value = CompanyType.Client, Color = Color.Success  },
+            new() { Label = Localization.GetString("Vendor"),          Value = CompanyType.Vendor, Color = Color.Warning  },
+            new() { Label = Localization.GetString("ClientAndVendor"), Value = CompanyType.Both,   Color = Color.Primary  },
+        ];
+
+        _statusFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),             Value = null,  Color = Color.Info },
+            new() { Label = Localization.GetString("ActiveCompany"),   Value = true,  Color = Color.Success },
+            new() { Label = Localization.GetString("InactiveCompany"), Value = false, Color = Color.Default },
+        ];
     }
 
     private async void OnLanguageChanged()
     {
+        BuildFilterItems();
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadCompanies()
+    private async Task<GridData<CompanyDto>> LoadServerData(GridState<CompanyDto> state, CancellationToken ct)
     {
-        _loading = true;
+        string? sortBy = state.SortDefinitions.FirstOrDefault()?.SortBy;
+        bool ascending = state.SortDefinitions.FirstOrDefault()?.Descending == false;
 
-        try
+        GetCompaniesQuery query = new()
         {
-            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
-            _allCompanies = companies.ToList();
-            ApplyFilters();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading companies: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingCompany"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
-
-    private void ApplyFilters()
-    {
-        IEnumerable<CompanyDto> filtered = _allCompanies;
-
-        // Filter by tab
-        filtered = _activeTabIndex switch
-        {
-            1 => filtered.Where(c => c.Type == CompanyType.Client || c.Type == CompanyType.Both),
-            2 => filtered.Where(c => c.Type == CompanyType.Vendor || c.Type == CompanyType.Both),
-            _ => filtered
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+            SortBy = sortBy,
+            SortAscending = ascending,
+            Search = _searchString,
+            Type = _filterType,
+            IsActive = _filterIsActive
         };
 
-        // Apply Search filter
-        if (!string.IsNullOrWhiteSpace(_searchString))
+        PagedResult<CompanyDto> result = await CompanyService.GetPagedAsync(query);
+
+        return new GridData<CompanyDto>
         {
-            string search = _searchString.ToLower();
-            filtered = filtered.Where(c =>
-                c.Name.ToLower().Contains(search) ||
-                (c.ContactPerson?.ToLower().Contains(search) ?? false) ||
-                (c.Email?.ToLower().Contains(search) ?? false) ||
-                (c.Phone?.ToLower().Contains(search) ?? false));
-        }
-
-        // Apply sorting
-        filtered = _sortAscending
-            ? filtered.OrderBy(GetSortProperty)
-            : filtered.OrderByDescending(GetSortProperty);
-
-        _filteredCompanies = filtered.ToList();
-        _totalCompanies = _filteredCompanies.Count;
-
-        // Calculate pagination
-        UpdatePagination();
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
     }
 
-    private void UpdatePagination()
+    private string GetRowClass(CompanyDto item, int index) => item.Type switch
     {
-        _currentPage = 1; 
-
-        // Calculate total pages
-        _totalPages = (int)Math.Ceiling((double)_totalCompanies / _itemsPerPage);
-
-        // Ensure current page is valid
-        if (_currentPage > _totalPages && _totalPages > 0)
-        {
-            _currentPage = _totalPages;
-        }
-
-        // Get paginated items
-        int skipCount = (_currentPage - 1) * _itemsPerPage;
-        _paginatedCompanies = _filteredCompanies
-            .Skip(skipCount)
-            .Take(_itemsPerPage)
-            .ToList();
-    }
-
-    private void ResetPaginationAndApplyFilters()
-    {
-        _currentPage = 1;
-        ApplyFilters();
-    }
-
-    private object GetSortProperty(CompanyDto company) => _sortBy switch
-    {
-        "Name" => company.Name,
-        "ContactPerson" => company.ContactPerson ?? string.Empty,
-        "Email" => company.Email ?? string.Empty,
-        "Phone" => company.Phone ?? string.Empty,
-        _ => company.CreatedAt
+        CompanyType.Client => "row-status-active",
+        CompanyType.Vendor => "row-status-warning",
+        CompanyType.Both => "row-status-primary",
+        _ => "row-status-default"
     };
 
-    private void HandleSort(SortDefinition<CompanyDto> sortDefinition)
+    private Color GetTypeColor(CompanyType type) => type switch
     {
-        if (sortDefinition == null || string.IsNullOrEmpty(sortDefinition.SortBy))
-            return;
+        CompanyType.Client => Color.Success,
+        CompanyType.Vendor => Color.Warning,
+        CompanyType.Both => Color.Primary,
+        _ => Color.Default
+    };
 
-        _sortBy = sortDefinition.SortBy;
-        _sortAscending = !sortDefinition.Descending;
-        ApplyFilters();
-    }
+    private string GetTypeText(CompanyType type) => type switch
+    {
+        CompanyType.Client => Localization.GetString("Client"),
+        CompanyType.Vendor => Localization.GetString("Vendor"),
+        CompanyType.Both => Localization.GetString("ClientAndVendor"),
+        _ => type.ToString()
+    };
 
     private async Task OnSearch(string text)
     {
         _searchString = text;
-        ResetPaginationAndApplyFilters();
-        await InvokeAsync(StateHasChanged);
+        await _grid.ReloadServerData();
     }
 
-    private async Task OnTabChanged(int index)
+    private async Task OnTypeFilterChanged(CompanyType? value)
     {
-        _activeTabIndex = index;
-        ResetPaginationAndApplyFilters();
-        await InvokeAsync(StateHasChanged);
+        _filterType = value;
+        await _grid.ReloadServerData();
     }
 
-    private Color GetTypeColor(CompanyType type)
+    private async Task OnStatusFilterChanged(bool? value)
     {
-        return type switch
-        {
-            CompanyType.Client => Color.Success,
-            CompanyType.Vendor => Color.Warning,
-            CompanyType.Both => Color.Info,
-            _ => Color.Default
-        };
+        _filterIsActive = value;
+        await _grid.ReloadServerData();
     }
 
-    private string GetTypeText(CompanyType type)
+    private async void OnRowClick(DataGridRowClickEventArgs<CompanyDto> args)
     {
-        return type switch
-        {
-            CompanyType.Client => Localization.GetString("Client"),
-            CompanyType.Vendor => Localization.GetString("Vendor"),
-            CompanyType.Both => Localization.GetString("ClientAndVendor"),
-            _ => type.ToString()
-        };
+        if (args.MouseEventArgs.Detail == 2)
+            Navigation.NavigateTo($"/companies/{args.Item.Id}");
     }
 
-    private void ViewCompany(Guid id)
-    {
-        Navigation.NavigateTo($"/companies/{id}");
-    }
-
-    private void EditCompany(Guid id)
-    {
-        Navigation.NavigateTo($"/companies/edit/{id}");
-    }
-
-    private void ViewCompanyInvoices(Guid id)
-    {
+    private void ViewCompanyInvoices(Guid id) =>
         Navigation.NavigateTo($"/invoices?companyId={id}");
+
+    private async Task OpenCreateDialog()
+    {
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<CompanyDialog>(
+            Localization.GetString("CreateCompany"), options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CompanyDto created })
+            await CreateCompany(created);
+    }
+
+    private async Task OpenEditDialog(CompanyDto company)
+    {
+        DialogParameters<CompanyDialog> parameters = new();
+        parameters.Add(x => x.Company, company);
+
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<CompanyDialog>(
+            Localization.GetString("EditCompany"), parameters, options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: CompanyDto edited })
+            await SaveCompany(edited);
+    }
+
+    private async Task CreateCompany(CompanyDto item)
+    {
+        try
+        {
+            CreateCompanyDto createDto = new()
+            {
+                Name = item.Name,
+                Type = item.Type,
+                ContactPerson = item.ContactPerson,
+                Email = item.Email,
+                Phone = item.Phone,
+                Address = item.Address,
+                TaxId = item.TaxId,
+                PaymentTermsDays = item.PaymentTermsDays,
+                CreditLimit = item.CreditLimit
+            };
+
+            await CompanyService.CreateCompanyAsync(createDto);
+            Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating company: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingCompany"), Severity.Error);
+        }
+    }
+
+    private async Task SaveCompany(CompanyDto item)
+    {
+        try
+        {
+            UpdateCompanyDto updateDto = new()
+            {
+                Name = item.Name,
+                Type = item.Type,
+                ContactPerson = item.ContactPerson,
+                Email = item.Email,
+                Phone = item.Phone,
+                Address = item.Address,
+                TaxId = item.TaxId,
+                PaymentTermsDays = item.PaymentTermsDays,
+                CreditLimit = item.CreditLimit,
+                IsActive = item.IsActive
+            };
+
+            await CompanyService.UpdateCompanyAsync(item.Id, updateDto);
+            Snackbar.Add(Localization.GetString("CompanyUpdated"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving company: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
+        }
     }
 
     private async Task DeleteCompany(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            new MessageBoxOptions
-            {
-                Title = Localization.GetString("ConfirmDelete"),
-                Message = Localization.GetString("DeleteCompanyConfirm"),
-                YesText = Localization.GetString("Yes"),
-                CancelText = Localization.GetString("No")
-            });
+        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
+        {
+            Title = Localization.GetString("ConfirmDelete"),
+            Message = Localization.GetString("DeleteCompanyConfirm"),
+            YesText = Localization.GetString("Yes"),
+            CancelText = Localization.GetString("No")
+        });
 
         if (result == true)
         {
@@ -392,7 +393,7 @@
                 if (deleted)
                 {
                     Snackbar.Add(Localization.GetString("CompanyDeleted"), Severity.Success);
-                    await LoadCompanies();
+                    await _grid.ReloadServerData();
                 }
             }
             catch (Exception ex)
@@ -403,35 +404,15 @@
         }
     }
 
-    // Pagination methods
-    private void PreviousPage()
+    private async Task ClearAllFilters()
     {
-        if (_currentPage > 1)
-        {
-            _currentPage--;
-            UpdatePagination();
-        }
-    }
-
-    private void NextPage()
-    {
-        if (_currentPage < _totalPages)
-        {
-            _currentPage++;
-            UpdatePagination();
-        }
+        _filterType = null;
+        _filterIsActive = null;
+        await _grid.ReloadServerData();
     }
 
     public void Dispose()
     {
         Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
-
-    private void OnRowClick(TableRowClickEventArgs<CompanyDto> args)
-    {
-        if (args.MouseEventArgs.Detail == 2)
-        {
-            ViewCompany(args.Item!.Id);
-        }
     }
 }

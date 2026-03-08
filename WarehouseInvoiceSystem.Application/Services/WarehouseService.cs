@@ -4,6 +4,8 @@
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class WarehouseService(IWarehouseRepository warehouseRepository) : IWarehouseService
     {
@@ -11,6 +13,18 @@
         {
             IEnumerable<Warehouse> warehouses = await warehouseRepository.GetAllAsync();
             return warehouses.Select(MapToDto);
+        }
+
+        public async Task<PagedResult<WarehouseDto>> GetPagedAsync(GetWarehousesQuery query)
+        {
+            PagedResult<Warehouse> result = await warehouseRepository.GetPagedAsync(query);
+            return new PagedResult<WarehouseDto>
+            {
+                Items = [.. result.Items.Select(MapToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
         }
 
         public async Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id)
@@ -55,6 +69,16 @@
 
         public async Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto createDto)
         {
+            if (createDto.IsDefault)
+            {
+                Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
+                if (existingDefault is not null)
+                {
+                    existingDefault.IsDefault = false;
+                    await warehouseRepository.UpdateAsync(existingDefault);
+                }
+            }
+
             Warehouse warehouse = new()
             {
                 Name = createDto.Name,
@@ -70,6 +94,16 @@
         {
             Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Warehouse with ID {id} not found");
+
+            if (updateDto.IsDefault && !warehouse.IsDefault)
+            {
+                Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
+                if (existingDefault is not null && existingDefault.Id != id)
+                {
+                    existingDefault.IsDefault = false;
+                    await warehouseRepository.UpdateAsync(existingDefault);
+                }
+            }
 
             warehouse.Name = updateDto.Name;
             warehouse.Address = updateDto.Address;

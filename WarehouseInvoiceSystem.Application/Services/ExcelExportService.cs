@@ -177,7 +177,7 @@
             return stream.ToArray();
         }
 
-        public async Task<byte[]> ExportInvoicesToExcelAsync(List<InvoiceDto> invoicesToExport)
+        public async Task<byte[]> ExportInvoicesToExcelAsync(IEnumerable<InvoiceDto> invoicesToExport)
         {
             using XLWorkbook workbook = new();
             IXLWorksheet worksheet = workbook.Worksheets.Add(translations.GetString("Invoices"));
