@@ -155,7 +155,7 @@ html {
 
 /* Subtle background tints per status */
 .row-status-active {
-    background-color: rgba(76, 175, 80, 0.09) !important;
+    background-color: rgba(76, 175, 80, 0.08) !important;
     cursor: pointer;
 }
 
@@ -164,27 +164,27 @@ html {
 }
 
 .row-status-warning {
-    background-color: rgba(255, 152, 0, 0.09) !important;
+    background-color: rgba(255, 152, 0, 0.08) !important;
     cursor: pointer;
 }
 
 .row-status-error {
-    background-color: rgba(244, 67, 54, 0.09) !important;
+    background-color: rgba(244, 67, 54, 0.08) !important;
     cursor: pointer;
 }
 
 .row-status-info {
-    background-color: rgba(33, 150, 243, 0.09) !important;
+    background-color: rgba(33, 150, 243, 0.08) !important;
     cursor: pointer;
 }
 
 .row-status-primary {
-    background-color: rgba(94, 53, 177, 0.09) !important;
+    background-color: rgba(94, 53, 177, 0.08) !important;
     cursor: pointer;
 }
 
 .row-status-secondary {
-    background-color: rgba(128, 128, 128, 0.09) !important;
+    background-color: rgba(156, 39, 176, 0.08) !important;
     cursor: pointer;
 }
 
@@ -208,7 +208,6 @@ html {
     border-bottom: 2px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
     font-weight: 600;
     position: relative;
-    overflow: hidden;
 }
 
     .wis-data-grid .mud-table-head .mud-table-cell:last-child {
@@ -292,12 +291,26 @@ html {
     background: var(--mud-palette-primary);
 }
 
+/* Error/red variant — used for toggle filters like Low Stock */
+.wis-filter-btn--error {
+    border-color: var(--mud-palette-error);
+    color: var(--mud-palette-error);
+    background: rgba(var(--mud-palette-error-rgb), 0.08);
+}
+
+    .wis-filter-btn--error:hover {
+        border-color: var(--mud-palette-error);
+        color: var(--mud-palette-error);
+        background: rgba(var(--mud-palette-error-rgb), 0.14);
+    }
+
 /* Advanced filter toggle row */
-.wis-toolbar-advanced-toggle {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 2px;
+.wis-toolbar-filter-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.15);
+    margin: 0 4px;
+    align-self: center;
 }
 
 .wis-toolbar-advanced-btn {

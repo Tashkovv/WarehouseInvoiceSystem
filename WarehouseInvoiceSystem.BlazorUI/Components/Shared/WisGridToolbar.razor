@@ -11,7 +11,7 @@
                 <MudItem xs="12" Style="flex: 0 0 auto; width: auto;">
                     @if (CreateHref is not null)
                     {
-                        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                        <MudButton StartIcon="@CreateIcon"
                                    Color="Color.Primary"
                                    Variant="Variant.Filled"
                                    Href="@CreateHref">
@@ -20,7 +20,7 @@
                     }
                     else
                     {
-                        <MudButton StartIcon="@Icons.Material.Filled.Add"
+                        <MudButton StartIcon="@CreateIcon"
                                    Color="Color.Primary"
                                    Variant="Variant.Filled"
                                    OnClick="CreateAction">
@@ -49,12 +49,44 @@
             </MudItem>
         </MudGrid>
 
-        @* Row 2: Quick filters + Clear All button *@
-        @if (Filters is not null)
+        @* Row 2: Quick filters | Advanced toggle + Clear All *@
+        @if (Filters is not null || AdvancedFilters is not null)
         {
             <MudDivider Class="mt-3 mb-2" />
             <div class="wis-toolbar-filters">
+
                 @Filters
+
+                @if (Filters is not null && AdvancedFilters is not null)
+                {
+                    <div class="wis-toolbar-filter-divider"></div>
+                }
+
+                @if (AdvancedFilters is not null)
+                {
+                    <div style="display: inline-flex; align-items: center; gap: 4px;">
+                        <MudButton StartIcon="@(_showAdvancedFilters ? Icons.Material.Filled.ExpandLess
+                                                                     : Icons.Material.Filled.ExpandMore)"
+                           Variant="Variant.Text"
+                           Color="Color.Default"
+                           Size="Size.Small"
+                           Class="wis-toolbar-advanced-btn"
+                           OnClick="@(() => _showAdvancedFilters = !_showAdvancedFilters)">
+                    @Localization.GetString("AdvancedFilters")
+                </MudButton>
+                @if (ActiveAdvancedFilterCount > 0)
+                        {
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Color="Color.Primary"
+                                     Variant="Variant.Filled"
+                                     Class="wis-toolbar-advanced-badge">
+                                @ActiveAdvancedFilterCount
+                            </MudChip>
+                        }
+                    </div>
+                }
+
                 @if (HasAnyActiveFilter)
                 {
                     <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
@@ -66,36 +98,10 @@
                         @Localization.GetString("ClearFilters")
                     </MudButton>
                 }
-            </div>
-        }
 
-        @* Row 3: Advanced filter toggle + collapsible panel *@
-        @if (AdvancedFilters is not null)
-        {
-            <MudDivider Class="mt-3 mb-1" />
-            <div class="wis-toolbar-advanced-toggle">
-                <MudButton StartIcon="@(_showAdvancedFilters ? Icons.Material.Filled.ExpandLess
-                                                             : Icons.Material.Filled.ExpandMore)"
-                       Variant="Variant.Text"
-                       Color="Color.Default"
-                       Size="Size.Small"
-                       Class="wis-toolbar-advanced-btn"
-                       OnClick="@(() => _showAdvancedFilters = !_showAdvancedFilters)">
-                @Localization.GetString("AdvancedFilters")
-            </MudButton>
-            @if (ActiveAdvancedFilterCount > 0)
-                {
-                    <MudChip T="string"
-                             Size="Size.Small"
-                             Color="Color.Primary"
-                             Variant="Variant.Filled"
-                             Class="wis-toolbar-advanced-badge">
-                        @ActiveAdvancedFilterCount
-                    </MudChip>
-                }
             </div>
 
-            @if (_showAdvancedFilters)
+            @if (AdvancedFilters is not null && _showAdvancedFilters)
             {
                 <div class="wis-toolbar-advanced-panel">
                     @AdvancedFilters
@@ -110,6 +116,7 @@
     [Parameter] public string? CreateHref { get; set; }
     [Parameter] public EventCallback CreateAction { get; set; }
     [Parameter] public string CreateLabel { get; set; } = string.Empty;
+    [Parameter] public string CreateIcon { get; set; } = Icons.Material.Filled.Add;
     [Parameter] public string SearchValue { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
 

@@ -1,0 +1,296 @@
+﻿@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@inject ILocalizationService Localization
+@inject IProductService ProductService
+@inject IWarehouseService WarehouseService
+@inject IInventoryService InventoryService
+
+<MudDialog>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            <MudGrid>
+
+                @* Product *@
+                <MudItem xs="12" sm="6">
+                    @if (_productLocked)
+                    {
+                        <MudTextField Value="@_selectedProduct?.Name"
+                                      Label="@Localization.GetString("SelectProduct")"
+                                      Variant="Variant.Outlined"
+                                      ReadOnly="true"
+                                      FullWidth="true" />
+                    }
+                    else
+                    {
+                        <MudAutocomplete T="ProductDto"
+                                         Value="_selectedProduct"
+                                         ValueChanged="OnProductSelected"
+                                         SearchFunc="SearchProducts"
+                                         ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                                         Label="@Localization.GetString("SelectProduct")"
+                                         Variant="Variant.Outlined"
+                                         Required="true"
+                                         Clearable="true"
+                                         ResetValueOnEmptyText="true"
+                                         FullWidth="true" />
+                    }
+                </MudItem>
+
+                @* Warehouse *@
+                <MudItem xs="12" sm="6">
+                    @if (_warehouseLocked)
+                    {
+                        <MudTextField Value="@(_warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name)"
+                                      Label="@Localization.GetString("SelectWarehouse")"
+                                      Variant="Variant.Outlined"
+                                      ReadOnly="true"
+                                      FullWidth="true" />
+                    }
+                    else
+                    {
+                        <MudSelect T="Guid?"
+                                   Value="_selectedWarehouseId"
+                                   ValueChanged="OnWarehouseSelected"
+                                   Label="@Localization.GetString("SelectWarehouse")"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   FullWidth="true"
+                                   AnchorOrigin="Origin.BottomLeft">
+                            @foreach (WarehouseDto w in _warehouses)
+                            {
+                                <MudSelectItem Value="@((Guid?)w.Id)">@w.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                </MudItem>
+
+                @* Current stock summary panel *@
+                @if (_currentStock is not null)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Info"
+                                  Variant="Variant.Outlined"
+                                  Class="py-2 wis-alert-fullwidth">
+                            <MudGrid Spacing="0">
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("CurrentStock")</MudText>
+                                    <MudText Typo="Typo.subtitle2"
+                                             Color="@(IsLowStock(_currentStock) ? Color.Error : Color.Primary)">
+                                        @_currentStock.Quantity.ToString("N2")
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MinimumQuantity")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                                        @(_currentStock.MinimumQuantity?.ToString("N2") ?? "—")
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("ReorderPoint")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                                        @(_currentStock.ReorderPoint?.ToString("N2") ?? "—")
+                                    </MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudAlert>
+                    </MudItem>
+                }
+
+                @* Adjustment type *@
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="AdjustmentDirection"
+                               @bind-Value="_direction"
+                               Label="@Localization.GetString("AdjustmentType")"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               FullWidth="true"
+                               AnchorOrigin="Origin.BottomLeft">
+                        <MudSelectItem Value="AdjustmentDirection.Add">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.AddCircle" Color="Color.Success" Size="Size.Small" />
+                                <MudText>@Localization.GetString("IncreaseStock")</MudText>
+                            </MudStack>
+                        </MudSelectItem>
+                        <MudSelectItem Value="AdjustmentDirection.Remove">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.RemoveCircle" Color="Color.Error" Size="Size.Small" />
+                                <MudText>@Localization.GetString("DecreaseStock")</MudText>
+                            </MudStack>
+                        </MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                @* Quantity *@
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal"
+                                     @bind-Value="_quantity"
+                                     Label="@Localization.GetString("Quantity")"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     Min="1m"
+                                     Format="N2"
+                                     HideSpinButtons="true"
+                                     FullWidth="true" />
+                </MudItem>
+
+                @* Reason *@
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_reason"
+                                  Label="@Localization.GetString("AdjustmentReason")"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="300"
+                                  FullWidth="true" />
+                </MudItem>
+
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">
+            @Localization.GetString("Cancel")
+        </MudButton>
+        <MudButton OnClick="Save"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@(!IsValid || _loading)">
+            @Localization.GetString("Adjust")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    /// <summary>Pre-select and lock the product. Pass from inventory list row action.</summary>
+    [Parameter] public Guid? PreSelectedProductId { get; set; }
+
+    /// <summary>Pre-select and lock the warehouse. Pass from inventory list row action.</summary>
+    [Parameter] public Guid? PreSelectedWarehouseId { get; set; }
+
+    public enum AdjustmentDirection { Add, Remove }
+
+    public record AdjustStockResult(
+        Guid ProductId,
+        Guid WarehouseId,
+        decimal QuantityChange,
+        string Reason);
+
+    private bool _loading = true;
+    private bool _productLocked;
+    private bool _warehouseLocked;
+
+    private List<ProductDto> _products = [];
+    private List<WarehouseDto> _warehouses = [];
+
+    private ProductDto? _selectedProduct;
+    private Guid? _selectedWarehouseId;
+    private StockLevelDto? _currentStock;
+
+    private AdjustmentDirection _direction = AdjustmentDirection.Add;
+    private decimal _quantity = 1m;
+    private string? _reason;
+
+    private bool IsValid =>
+        _selectedProduct is not null &&
+        _selectedWarehouseId.HasValue &&
+        _quantity > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _products = (await ProductService.GetActiveProductsAsync())
+                .OrderBy(p => p.Name).ToList();
+            _warehouses = (await WarehouseService.GetAllWarehousesAsync())
+                .OrderByDescending(w => w.IsDefault).ThenBy(w => w.Name).ToList();
+
+            if (PreSelectedProductId.HasValue)
+            {
+                _selectedProduct = _products.FirstOrDefault(p => p.Id == PreSelectedProductId.Value)
+                    ?? await ProductService.GetProductByIdAsync(PreSelectedProductId.Value);
+                _productLocked = true;
+            }
+
+            if (PreSelectedWarehouseId.HasValue)
+            {
+                _selectedWarehouseId = PreSelectedWarehouseId.Value;
+                _warehouseLocked = true;
+            }
+
+            await LoadCurrentStock();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading adjust stock data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadCurrentStock()
+    {
+        if (_selectedProduct is null || !_selectedWarehouseId.HasValue)
+        {
+            _currentStock = null;
+            return;
+        }
+
+        try
+        {
+            _currentStock = await InventoryService.GetStockLevelAsync(
+                _selectedProduct.Id, _selectedWarehouseId.Value);
+        }
+        catch
+        {
+            _currentStock = null;
+        }
+    }
+
+    private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return _products;
+
+        return _products.Where(p =>
+            p.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            p.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task OnProductSelected(ProductDto? product)
+    {
+        _selectedProduct = product;
+        await LoadCurrentStock();
+    }
+
+    private async Task OnWarehouseSelected(Guid? id)
+    {
+        _selectedWarehouseId = id;
+        await LoadCurrentStock();
+    }
+
+    private bool IsLowStock(StockLevelDto stock) =>
+        stock.MinimumQuantity.HasValue && stock.Quantity <= stock.MinimumQuantity.Value;
+
+    private void Save()
+    {
+        decimal change = _direction == AdjustmentDirection.Add ? _quantity : -_quantity;
+
+        MudDialog.Close(DialogResult.Ok(new AdjustStockResult(
+            _selectedProduct!.Id,
+            _selectedWarehouseId!.Value,
+            change,
+            _reason ?? string.Empty)));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
