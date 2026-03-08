@@ -252,7 +252,7 @@
                                            Size="Size.Small"
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("SendEmail")"
-                                           Disabled="@(context.Item.Status == InvoiceStatus.Cancelled)"
+                                           Disabled="@(context.Item.Type == InvoiceType.Payable || context.Item.Status == InvoiceStatus.Cancelled)"
                                            OnClick="@(() => OpenSendEmailDialog(context.Item))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
