@@ -3,7 +3,6 @@
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IInventoryService InventoryService
@@ -62,7 +61,7 @@
                                 @if (w.IsDefault)
                                 {
                                     <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1">
-                                        @Localization.GetString("DefaultWarehouse")
+                                        @Localization.GetString("Default")
                                     </MudChip>
                                 }
                             </MudStack>

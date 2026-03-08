@@ -126,5 +126,19 @@
 
             return true;
         }
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            Individual? individual = await context.Individuals
+                .Where(i => i.DeletedOn == null)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (individual is null)
+                return false;
+
+            individual.IsActive = isActive;
+            await context.SaveChangesAsync();
+
+            return true;
+        }
     }
 }

@@ -208,6 +208,7 @@ html {
     border-bottom: 2px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
     font-weight: 600;
     position: relative;
+    overflow: hidden;
 }
 
     .wis-data-grid .mud-table-head .mud-table-cell:last-child {
@@ -452,3 +453,248 @@ html {
         padding: 6px 0 !important;
         font-size: 0.9375rem !important;
     }
+
+/* ── WisDetailHeader split button ── */
+.wis-split-btn {
+    display: inline-flex;
+    align-items: stretch;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12);
+    height: 42px;
+}
+
+/* Round the left corners of the first real child (the primary button) */
+.wis-split-btn__primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    padding: 0 14px 0 12px;
+    background: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    border: none;
+    border-radius: 10px 0 0 10px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+    .wis-split-btn__primary:hover:not(:disabled) {
+        background: var(--mud-palette-primary-darken);
+    }
+
+.wis-split-btn__primary--solo {
+    border-radius: 10px;
+    padding: 0 16px 0 12px;
+}
+
+.wis-split-btn__primary--disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.wis-split-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+}
+
+    .wis-split-btn__icon .mud-icon-root {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+.wis-split-btn__divider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    align-self: stretch;
+}
+
+/* Round the right corners of the arrow button */
+.wis-split-btn__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 100%;
+    padding: 0;
+    background: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    border: none;
+    border-radius: 0 10px 10px 0;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+}
+
+    .wis-split-btn__arrow:hover {
+        background: var(--mud-palette-primary-darken);
+    }
+
+    .wis-split-btn__arrow svg {
+        display: block;
+        flex-shrink: 0;
+    }
+
+/* ── Dropdown popover ── */
+.wis-split-btn__popover {
+    padding: 4px 0;
+    border-radius: 10px !important;
+    overflow: hidden;
+}
+
+    .wis-split-btn__popover .mud-popover-paper {
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+.wis-split-btn__menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+    text-align: left;
+    transition: background 0.12s ease;
+    white-space: nowrap;
+}
+
+    .wis-split-btn__menu-item:hover:not(:disabled) {
+        background: rgba(var(--mud-palette-text-primary-rgb), 0.06);
+    }
+
+.wis-split-btn__menu-item--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.wis-split-btn__menu-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+    .wis-split-btn__menu-icon .mud-icon-root {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+/* Text color helpers for menu items */
+.wis-text-error {
+    color: var(--mud-palette-error) !important;
+}
+
+.wis-text-success {
+    color: var(--mud-palette-success) !important;
+}
+
+.wis-text-warning {
+    color: var(--mud-palette-warning) !important;
+}
+
+.wis-text-info {
+    color: var(--mud-palette-info) !important;
+}
+
+/* ── Detail page horizontal card layout (shared by all detail pages) ── */
+
+/* Identity row: name + chip inline */
+.wis-detail-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Contact row: id / phone / email / address pills inline */
+.wis-detail-contact {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.wis-detail-contact-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Stats row: columns stretching full card width with subtle separators */
+.wis-detail-stats > .mud-grid-item {
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+    .wis-detail-stats > .mud-grid-item:last-child {
+        border-right: none;
+    }
+
+/* Stat value — main number */
+.wis-detail-stats .wis-stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 2px 0;
+}
+
+/* History column: dates side by side, product to the right */
+.wis-detail-history {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+}
+
+.wis-detail-history-dates {
+    display: flex;
+    gap: 28px;
+    flex-shrink: 0;
+}
+
+.wis-detail-history-product {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    padding-left: 8px;
+    border-left: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+/* Embedded detail table — subordinate style, headers muted */
+.wis-detail-table .mud-table-head th {
+    font-size: 0.72rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mud-palette-text-secondary) !important;
+    font-weight: 500;
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+.wis-section-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem !important;
+}
+
+.wis-capitalize {
+    text-transform: capitalize;
+}

@@ -16,5 +16,6 @@
         Task<Individual> CreateAsync(Individual individual);
         Task<Individual> UpdateAsync(Individual individual);
         Task<bool> DeleteAsync(Guid id);
+        Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
     }
 }
