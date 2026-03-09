@@ -259,8 +259,18 @@
                 ["ChooseCompanyType"] = "Choose company type",
                 ["PaymentTerms"] = "Payment Terms",
                 ["BalanceOverview"] = "Balance Overview",
-
-                // Invoices
+                ["InvoiceHistory"] = "Invoice History",
+                ["FirstInvoice"] = "First Invoice",
+                ["LastInvoice"] = "Last Invoice",
+                ["MostTradedProduct"] = "Most Traded Product",
+                ["TotalReceivables"] = "Total Receivables",
+                ["TotalPayables"] = "Total Payables",
+                ["OpenReceivables"] = "Open Receivables",
+                ["OpenPayables"] = "Open Payables",
+                ["OverdueReceivables"] = "Overdue Receivables",
+                ["OverduePayables"] = "Overdue Payables",
+                ["AllReceivablesPaid"] = "All receivables paid ✓",
+                ["AllPayablesPaid"] = "All payables paid ✓",
                 ["Invoice"] = "Invoice",
                 ["CreateInvoice"] = "Create Invoice",
                 ["EditInvoice"] = "Edit Invoice",
@@ -578,6 +588,7 @@
                 ["AllPurchasesPaid"] = "All purchases paid ✓",
 
                 // Purchase Notes
+                ["Cancelled"] = "Cancelled",
                 ["PurchaseNotes"] = "Purchase Notes",
                 ["PurchaseNote"] = "Purchase Note",
                 ["CreatePurchaseNote"] = "Create Purchase Note",
@@ -867,8 +878,18 @@
                 ["ChooseCompanyType"] = "Одбери тип на компанија",
                 ["PaymentTerms"] = "Услови за Плаќање",
                 ["BalanceOverview"] = "Преглед на Салдо",
-
-                // Invoices
+                ["InvoiceHistory"] = "Историја на фактури",
+                ["FirstInvoice"] = "Прва фактура",
+                ["LastInvoice"] = "Последна фактура",
+                ["MostTradedProduct"] = "Најтргуван производ",
+                ["TotalReceivables"] = "Вкупно побарувања",
+                ["TotalPayables"] = "Вкупно обврски",
+                ["OpenReceivables"] = "Отворени побарувања",
+                ["OpenPayables"] = "Отворени обврски",
+                ["OverdueReceivables"] = "Задоцнети побарувања",
+                ["OverduePayables"] = "Задоцнети обврски",
+                ["AllReceivablesPaid"] = "Сите побарувања наплатени ✓",
+                ["AllPayablesPaid"] = "Сите обврски платени ✓",
                 ["Invoice"] = "Фактура",
                 ["CreateInvoice"] = "Креирај фактура",
                 ["EditInvoice"] = "Измени фактура",
@@ -1186,6 +1207,7 @@
                 ["AllPurchasesPaid"] = "Сите откупи платени ✓",
 
                 // Purchase Notes
+                ["Cancelled"] = "Откажани",
                 ["PurchaseNotes"] = "Откупни Белешки",
                 ["PurchaseNote"] = "Откупна Белешка",
                 ["CreatePurchaseNote"] = "Креирај Откупна Белешка",

@@ -61,9 +61,14 @@
                 return analytics;
             }
 
-            // Overall statistics
-            analytics.TotalPurchaseNotes = purchaseNotesList.Count;
-            analytics.TotalAmount = purchaseNotesList.Where(pn => pn.Status != PurchaseNoteStatus.Cancelled).Sum(pn => pn.TotalAmount);
+            // Overall statistics — cancelled notes excluded from totals
+            var cancelledNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Cancelled).ToList();
+            analytics.CancelledCount = cancelledNotes.Count;
+            analytics.CancelledAmount = cancelledNotes.Sum(pn => pn.TotalAmount);
+
+            var activeNotes = purchaseNotesList.Where(pn => pn.Status != PurchaseNoteStatus.Cancelled).ToList();
+            analytics.TotalPurchaseNotes = activeNotes.Count;
+            analytics.TotalAmount = activeNotes.Sum(pn => pn.TotalAmount);
 
             // Payment status
             var paidNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Paid).ToList();

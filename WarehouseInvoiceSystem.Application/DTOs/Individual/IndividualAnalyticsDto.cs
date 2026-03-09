@@ -11,6 +11,8 @@ namespace WarehouseInvoiceSystem.Application.DTOs.Individual
         public decimal PaidAmount { get; set; }
         public int UnpaidCount { get; set; }
         public decimal UnpaidAmount { get; set; }
+        public int CancelledCount { get; set; }
+        public decimal CancelledAmount { get; set; }
 
         // Quick Facts
         public DateTime? FirstPurchaseDate { get; set; }

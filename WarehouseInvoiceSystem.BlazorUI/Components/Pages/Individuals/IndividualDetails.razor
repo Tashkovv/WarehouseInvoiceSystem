@@ -103,8 +103,18 @@ else
                             }
                         </MudItem>
 
+                        <!-- Cancelled -->
+                        @if (_analytics.CancelledCount > 0)
+                        {
+                            <MudItem xs="2">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
+                                <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.CancelledAmount.ToString("C")</div>
+                                <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.CancelledCount @Localization.GetString("PurchaseNotes")</MudText>
+                            </MudItem>
+                        }
+
                         <!-- Purchase History: dates + most purchased side by side -->
-                        <MudItem xs="6">
+                        <MudItem xs="4">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label mb-2">@Localization.GetString("PurchaseHistory")</MudText>
                             <div class="wis-detail-history">
                                 <div class="wis-detail-history-dates">

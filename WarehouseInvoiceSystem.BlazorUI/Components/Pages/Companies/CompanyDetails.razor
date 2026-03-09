@@ -47,99 +47,212 @@ else
                         </MudChip>
                     </div>
 
-                    <!-- Row 2: Contact pills -->
-                    <div class="wis-detail-contact mb-4">
-                        @if (!string.IsNullOrWhiteSpace(_company.ContactPerson))
-                        {
-                            <div class="wis-detail-contact-item">
-                                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_company.ContactPerson</MudText>
+                    <!-- Row 2: Contact pills (left) | vertical divider | Company metadata (right) -->
+                    <div class="wis-contact-row mb-4">
+
+                        <!-- Left half: contact pills -->
+                        <div class="wis-contact-row-left">
+                            @if (!string.IsNullOrWhiteSpace(_company.ContactPerson))
+                            {
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_company.ContactPerson</MudText>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_company.Phone))
+                            {
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2">@_company.Phone</MudText>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_company.Email))
+                            {
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2">@_company.Email</MudText>
+                                </div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_company.Address))
+                            {
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2">@_company.Address</MudText>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Vertical divider -->
+                        <div class="wis-contact-row-divider"></div>
+
+                        <!-- Right half: company metadata with labels -->
+                        <div class="wis-contact-row-right">
+                            @if (!string.IsNullOrWhiteSpace(_company.TaxId))
+                            {
+                                <div class="wis-contact-meta-item">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TaxID")</MudText>
+                                    <div class="d-flex align-center gap-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_company.TaxId</MudText>
+                                    </div>
+                                </div>
+                            }
+                            <div class="wis-contact-meta-item">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PaymentTerms")</MudText>
+                                <div class="d-flex align-center gap-1">
+                                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2">@_company.PaymentTermsDays @Localization.GetString("Days")</MudText>
+                                </div>
                             </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_company.Phone))
-                        {
-                            <div class="wis-detail-contact-item">
-                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
-                                <MudText Typo="Typo.body2">@_company.Phone</MudText>
-                            </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_company.Email))
-                        {
-                            <div class="wis-detail-contact-item">
-                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
-                                <MudText Typo="Typo.body2">@_company.Email</MudText>
-                            </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(_company.Address))
-                        {
-                            <div class="wis-detail-contact-item">
-                                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
-                                <MudText Typo="Typo.body2">@_company.Address</MudText>
-                            </div>
-                        }
+                            @if (_company.CreditLimit != 0)
+                            {
+                                <div class="wis-contact-meta-item">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("CreditLimit")</MudText>
+                                    <div class="d-flex align-center gap-1">
+                                        <MudIcon Icon="@Icons.Material.Filled.CreditCard" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_company.CreditLimit.ToString("C")</MudText>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
                     </div>
 
                     <MudDivider Class="mb-6" />
 
-                    <!-- Row 3: Stats across full width -->
-                    <MudGrid Spacing="4" Class="wis-detail-stats">
+                    @if (_loadingAnalytics)
+                    {
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+                    }
+                    else if (_analytics.ReceivableTotalCount > 0 || _analytics.PayableTotalCount > 0)
+                    {
+                        <div class="wis-ca-outer">
 
-                        <!-- Tax ID -->
-                        @if (!string.IsNullOrWhiteSpace(_company.TaxId))
-                        {
-                            <MudItem xs="2">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TaxID")</MudText>
-                                <div class="wis-stat-value">@_company.TaxId</div>
-                            </MudItem>
-                        }
+                            <!-- Left col: receivables row + payables row -->
+                            <div class="wis-ca-left">
 
-                        <!-- Payment Terms -->
-                        <MudItem xs="2">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PaymentTerms")</MudText>
-                            <div class="wis-stat-value mud-info-text">@_company.PaymentTermsDays</div>
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Days")</MudText>
-                        </MudItem>
+                                <!-- Receivables -->
+                                <div class="wis-ca-row">
+                                    <div class="wis-ca-stat">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalReceivables")</MudText>
+                                        <div class="wis-stat-value mud-info-text">@_analytics.ReceivableTotalAmount.ToString("C")</div>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.ReceivableTotalCount @Localization.GetString("Invoices")</MudText>
+                                    </div>
+                                    <div class="wis-ca-stat">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Paid")</MudText>
+                                        <div class="wis-stat-value mud-success-text">@_analytics.ReceivablePaidAmount.ToString("C")</div>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.ReceivablePaidCount @Localization.GetString("Invoices")</MudText>
+                                    </div>
+                                    <div class="wis-ca-stat">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OpenReceivables")</MudText>
+                                        @if (_analytics.ReceivableOpenCount > 0)
+                                        {
+                                            <div class="wis-stat-value mud-warning-text">@_analytics.ReceivableAmountDue.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Warning">@_analytics.ReceivableOpenCount @Localization.GetString("Invoices")</MudText>
+                                        }
+                                        else
+                                        {
+                                            <div class="wis-stat-value mud-success-text">—</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Success">✓ @Localization.GetString("AllReceivablesPaid")</MudText>
+                                        }
+                                    </div>
+                                    @if (_analytics.ReceivableOverdueCount > 0)
+                                    {
+                                        <div class="wis-ca-stat">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverdueReceivables")</MudText>
+                                            <div class="wis-stat-value mud-error-text">@_analytics.ReceivableOverdueAmountDue.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableOverdueCount @Localization.GetString("Invoices")</MudText>
+                                        </div>
+                                    }
+                                    @if (_analytics.ReceivableCancelledCount > 0)
+                                    {
+                                        <div class="wis-ca-stat">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
+                                            <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.ReceivableCancelledAmount.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableCancelledCount @Localization.GetString("Invoices")</MudText>
+                                        </div>
+                                    }
+                                </div>
 
-                        <!-- Credit Limit -->
-                        @if (_company.CreditLimit != 0)
-                        {
-                            <MudItem xs="2">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("CreditLimit")</MudText>
-                                <div class="wis-stat-value mud-info-text">@_company.CreditLimit.ToString("C")</div>
-                            </MudItem>
-                        }
+                                <div class="wis-ca-divider"></div>
 
-                        <!-- Balance Overview -->
-                        <MudItem xs="6">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label mb-2">@Localization.GetString("BalanceOverview")</MudText>
-                            @if (_loadingBalance)
-                            {
-                                <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
-                            }
-                            else if (_balance != null)
-                            {
+                                <!-- Payables -->
+                                <div class="wis-ca-row">
+                                    <div class="wis-ca-stat">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalPayables")</MudText>
+                                        <div class="wis-stat-value mud-info-text">@_analytics.PayableTotalAmount.ToString("C")</div>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.PayableTotalCount @Localization.GetString("Invoices")</MudText>
+                                    </div>
+                                    <div class="wis-ca-stat">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Paid")</MudText>
+                                        <div class="wis-stat-value mud-success-text">@_analytics.PayablePaidAmount.ToString("C")</div>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.PayablePaidCount @Localization.GetString("Invoices")</MudText>
+                                    </div>
+                                    <div class="wis-ca-stat">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OpenPayables")</MudText>
+                                        @if (_analytics.PayableOpenCount > 0)
+                                        {
+                                            <div class="wis-stat-value mud-warning-text">@_analytics.PayableAmountDue.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Warning">@_analytics.PayableOpenCount @Localization.GetString("Invoices")</MudText>
+                                        }
+                                        else
+                                        {
+                                            <div class="wis-stat-value mud-success-text">—</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Success">✓ @Localization.GetString("AllPayablesPaid")</MudText>
+                                        }
+                                    </div>
+                                    @if (_analytics.PayableOverdueCount > 0)
+                                    {
+                                        <div class="wis-ca-stat">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverduePayables")</MudText>
+                                            <div class="wis-stat-value mud-error-text">@_analytics.PayableOverdueAmountDue.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableOverdueCount @Localization.GetString("Invoices")</MudText>
+                                        </div>
+                                    }
+                                    @if (_analytics.PayableCancelledCount > 0)
+                                    {
+                                        <div class="wis-ca-stat">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
+                                            <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.PayableCancelledAmount.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableCancelledCount @Localization.GetString("Invoices")</MudText>
+                                        </div>
+                                    }
+                                </div>
+
+                            </div>
+
+                            <!-- Right col: history centered -->
+                            <div class="wis-ca-right">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label mb-2 d-block">@Localization.GetString("InvoiceHistory")</MudText>
                                 <div class="wis-detail-history">
                                     <div class="wis-detail-history-dates">
                                         <div>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("TheyOwe")</MudText>
-                                            <MudText Typo="Typo.body1" Class="font-weight-medium mud-success-text">@_balance.TotalOwedToUs.ToString("C")</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("FirstInvoice")</MudText>
+                                            <MudText Typo="Typo.body1" Class="font-weight-medium">@(_analytics.FirstInvoiceDate?.ToString("dd MMM yyyy") ?? "—")</MudText>
                                         </div>
                                         <div>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("WeOwe")</MudText>
-                                            <MudText Typo="Typo.body1" Class="font-weight-medium mud-warning-text">@_balance.TotalOwedByUs.ToString("C")</MudText>
-                                        </div>
-                                        <div>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("NetBalance")</MudText>
-                                            <MudText Typo="Typo.body1" Class="@(_balance.NetBalance >= 0 ? "font-weight-medium mud-success-text" : "font-weight-medium mud-error-text")">
-                                                @_balance.NetBalance.ToString("C")
-                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("LastInvoice")</MudText>
+                                            <MudText Typo="Typo.body1" Class="font-weight-medium">@(_analytics.LastInvoiceDate?.ToString("dd MMM yyyy") ?? "—")</MudText>
                                         </div>
                                     </div>
+                                    @if (!string.IsNullOrEmpty(_analytics.MostTradedProduct))
+                                    {
+                                        <div class="wis-detail-history-product">
+                                            <MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" Color="Color.Warning" />
+                                            <div>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MostTradedProduct")</MudText>
+                                                <div class="d-flex align-center gap-2">
+                                                    <MudText Typo="Typo.body1" Class="wis-capitalize font-weight-medium">@_analytics.MostTradedProduct</MudText>
+                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.MostTradedProductQuantity.ToString("N2") @_analytics.MostTradedProductUnit</MudText>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
-                            }
-                        </MudItem>
+                            </div>
 
-                    </MudGrid>
+                        </div>
+                    }
 
                 </MudCardContent>
             </MudCard>
@@ -170,13 +283,13 @@ else
                             <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
                         </div>
                     }
-                    else if (_invoices.Any())
+                    else if (_analytics.RecentInvoices.Any())
                     {
-                        <MudTable Items="_invoices"
+                        <MudTable Items="_analytics.RecentInvoices"
                                   Hover="true"
                                   Dense="false"
                                   Elevation="0"
-                                  T="InvoiceDto"
+                                  T="RecentInvoiceDto"
                                   RowClass="table-row-clickable"
                                   OnRowClick="@ViewInvoice">
                             <HeaderContent>
@@ -238,11 +351,10 @@ else
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
-    private bool _loadingBalance = true;
+    private bool _loadingAnalytics = true;
     private bool _loadingInvoices = true;
     private CompanyDto? _company;
-    private CompanyBalanceDto? _balance;
-    private List<InvoiceDto> _invoices = [];
+    private CompanyAnalyticsDto _analytics = new();
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
@@ -251,8 +363,7 @@ else
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadCompany();
-        await LoadBalance();
-        await LoadInvoices();
+        await LoadAnalytics();
     }
 
     private async void OnLanguageChanged()
@@ -282,46 +393,22 @@ else
         }
     }
 
-    private async Task LoadBalance()
+    private async Task LoadAnalytics()
     {
-        _loadingBalance = true;
-
-        try
-        {
-            _balance = await CompanyService.GetCompanyBalanceAsync(Id);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading balance: {ex.Message}");
-        }
-        finally
-        {
-            _loadingBalance = false;
-        }
-    }
-
-    private async Task LoadInvoices()
-    {
+        _loadingAnalytics = true;
         _loadingInvoices = true;
 
         try
         {
-            PagedResult<InvoiceDto> result = await InvoiceService.GetPagedAsync(new GetInvoicesQuery
-            {
-                CompanyId = Id,
-                Page = 1,
-                PageSize = 5,
-                SortBy = nameof(InvoiceDto.CreatedAt),
-                SortAscending = false
-            });
-            _invoices = result.Items.ToList();
+            _analytics = await CompanyService.GetCompanyAnalyticsAsync(Id);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading invoices: {ex.Message}");
+            Console.WriteLine($"Error loading analytics: {ex.Message}");
         }
         finally
         {
+            _loadingAnalytics = false;
             _loadingInvoices = false;
         }
     }
@@ -394,7 +481,7 @@ else
         }
     }
 
-    private void ViewInvoice(TableRowClickEventArgs<InvoiceDto> args)
+    private void ViewInvoice(TableRowClickEventArgs<RecentInvoiceDto> args)
     {
         Navigation.NavigateTo($"/invoices/{args.Item!.Id}");
     }
@@ -411,10 +498,10 @@ else
 
     private async Task DeactivateCompany()
     {
-        int unpaidCount = _invoices.Count(i => i.Status != InvoiceStatus.Paid && i.Status != InvoiceStatus.Cancelled);
+        int openCount = _analytics.ReceivableOpenCount + _analytics.PayableOpenCount;
 
-        string message = unpaidCount > 0
-            ? string.Format(Localization.GetString("DeactivateCompanyWithOpenInvoices"), unpaidCount)
+        string message = openCount > 0
+            ? string.Format(Localization.GetString("DeactivateCompanyWithOpenInvoices"), openCount)
             : Localization.GetString("DeactivateCompanyConfirm");
 
         bool confirmed = await WisDialog.ConfirmAsync(

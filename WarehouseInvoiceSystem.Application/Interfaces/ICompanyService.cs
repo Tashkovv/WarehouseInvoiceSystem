@@ -17,5 +17,6 @@
         Task<bool> DeleteCompanyAsync(Guid id);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id);
+        Task<CompanyAnalyticsDto> GetCompanyAnalyticsAsync(Guid id);
     }
 }
