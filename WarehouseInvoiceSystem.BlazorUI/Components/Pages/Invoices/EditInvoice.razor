@@ -17,7 +17,7 @@
 
 <div class="d-flex justify-space-between align-center mb-4">
     <MudText Typo="Typo.h4">@Localization.GetString("EditInvoice")</MudText>
-    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                Variant="Variant.Text"
                Href="@($"/invoices/{Id}")">
         @Localization.GetString("BackToInvoices")
@@ -95,27 +95,6 @@ else
                                                  ResetValueOnEmptyText="true"
                                                  Variant="Variant.Outlined"
                                                  Clearable="true" />
-                            </MudItem>
-
-                            <MudItem xs="12" md="3">
-                                <MudSelect T="InvoiceStatus"
-                                           @bind-Value="_selectedStatus"
-                                           Label="@Localization.GetString("Status")"
-                                           Required="true"
-                                           RequiredError="@Localization.GetString("StatusRequired")"
-                                           Variant="Variant.Outlined"
-                                           AnchorOrigin="Origin.BottomLeft">
-                                    @foreach (var status in Enum.GetValues<InvoiceStatus>())
-                                    {
-                                        <MudSelectItem T="InvoiceStatus" Value="@(status)">
-                                            <MudChip T="InvoiceStatus"
-                                                     Size="Size.Small"
-                                                     Color="GetStatusColor(status)">
-                                                @GetStatusText(status)
-                                            </MudChip>
-                                        </MudSelectItem>
-                                    }
-                                </MudSelect>
                             </MudItem>
 
                             <MudItem xs="12" md="3">
@@ -319,28 +298,28 @@ else
             </MudItem>
 
             <!-- Actions -->
-                    <MudItem xs="12">
-                        <div class="d-flex justify-end gap-2">
-                            <MudButton Variant="Variant.Outlined"
-                                       OnClick="@(() => Navigation.NavigateTo($"/invoices/{Id}"))">
-                                @Localization.GetString("Cancel")
-                            </MudButton>
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Primary"
-                                       OnClick="HandleSubmit"
-                                       Disabled="@_saving">
-                                @if (_saving)
-                                {
-                                    <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
-                                    @Localization.GetString("Save")
-                                }
-                                else
-                                {
-                                    @Localization.GetString("Update")
-                                }
-                            </MudButton>
-                        </div>
-                    </MudItem>
+            <MudItem xs="12">
+                <div class="d-flex justify-end gap-2">
+                    <MudButton Variant="Variant.Outlined"
+                               OnClick="@(() => Navigation.NavigateTo($"/invoices/{Id}"))">
+                        @Localization.GetString("Cancel")
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="HandleSubmit"
+                               Disabled="@_saving">
+                        @if (_saving)
+                        {
+                            <MudProgressCircular Class="mr-2" Size="Size.Small" Indeterminate="true" />
+                            @Localization.GetString("Save")
+                        }
+                        else
+                        {
+                            @Localization.GetString("Update")
+                        }
+                    </MudButton>
+                </div>
+            </MudItem>
         </MudGrid>
     </MudForm>
 }
@@ -363,7 +342,6 @@ else
 
     private Guid _selectedCompanyId;
     private InvoiceType _selectedType;
-    private InvoiceStatus _selectedStatus;
     private DateTime? _issueDate;
     private DateTime? _dueDate;
     private int _paymentTermsDays = 30;
@@ -471,7 +449,6 @@ else
             {
                 _selectedCompanyId = _invoice.CompanyId;
                 _selectedType = _invoice.Type;
-                _selectedStatus = _invoice.Status;
                 _issueDate = _invoice.IssueDate;
                 _dueDate = _invoice.DueDate;
                 _notes = _invoice.Notes;
@@ -505,34 +482,6 @@ else
         {
             _loading = false;
         }
-    }
-
-    private Color GetStatusColor(InvoiceStatus status)
-    {
-        return status switch
-        {
-            InvoiceStatus.Draft => Color.Default,
-            InvoiceStatus.Sent => Color.Info,
-            InvoiceStatus.PartiallyPaid => Color.Warning,
-            InvoiceStatus.Paid => Color.Success,
-            InvoiceStatus.Overdue => Color.Error,
-            InvoiceStatus.Cancelled => Color.Dark,
-            _ => Color.Default
-        };
-    }
-
-    private string GetStatusText(InvoiceStatus status)
-    {
-        return status switch
-        {
-            InvoiceStatus.Draft => Localization.GetString("Draft"),
-            InvoiceStatus.Sent => Localization.GetString("Sent"),
-            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-            InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-            InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-            InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
-            _ => status.ToString()
-        };
     }
 
     private void OnTaxRateChanged(LineItemModel item, decimal value)
@@ -604,7 +553,6 @@ else
         {
             _updateDto.CompanyId = _selectedCompanyId;
             _updateDto.Type = _selectedType;
-            _updateDto.Status = _selectedStatus;
             _updateDto.IssueDate = _issueDate ?? DateTime.UtcNow;
             _updateDto.DueDate = _dueDate ?? DateTime.UtcNow.AddDays(30);
             _updateDto.WarehouseId = _selectedWarehouse.Id;

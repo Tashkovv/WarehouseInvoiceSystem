@@ -1,7 +1,9 @@
 ﻿namespace WarehouseInvoiceSystem.BlazorUI.Services
 {
     using MudBlazor;
+    using WarehouseInvoiceSystem.Application.DTOs.Payment;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.BlazorUI.Components.Dialogs;
     using Microsoft.AspNetCore.Components;
 
     /// <summary>
@@ -9,7 +11,8 @@
     /// Register as scoped in Program.cs.
     /// </summary>
     public class WisDialogService(IDialogService dialogService,
-                                  ILocalizationService localizationService)
+                                  ILocalizationService localizationService,
+                                  IPaymentService paymentService)
     {
         private static readonly DialogOptions DefaultFormOptions = new()
         {
@@ -20,10 +23,6 @@
 
         // ── Form dialogs ────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Opens a dialog with no parameters and returns the result DTO,
-        /// or null if the user cancelled.
-        /// </summary>
         public async Task<TResult?> ShowFormAsync<TDialog, TResult>(string title)
             where TDialog : ComponentBase
         {
@@ -36,10 +35,6 @@
             return default;
         }
 
-        /// <summary>
-        /// Opens a dialog, configures its parameters, and returns the result DTO,
-        /// or null if the user cancelled.
-        /// </summary>
         public async Task<TResult?> ShowFormAsync<TDialog, TResult>(
             string title,
             Action<DialogParameters<TDialog>> configure)
@@ -59,9 +54,6 @@
 
         // ── Confirmation dialogs ─────────────────────────────────────────────────
 
-        /// <summary>
-        /// Shows a confirmation message box. Returns true if the user confirmed.
-        /// </summary>
         public async Task<bool> ConfirmAsync(
             string title,
             string message,
@@ -77,6 +69,51 @@
             });
 
             return result == true;
+        }
+
+        // ── Payment dialog ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Opens the PaymentDialog pre-locked to the given invoice, saves the payment,
+        /// and returns true if a payment was successfully recorded.
+        /// The caller is responsible for showing feedback (snackbar) and reloading its data.
+        /// </summary>
+        public async Task<bool> ShowPaymentDialogAsync(Guid invoiceId)
+        {
+            DialogParameters<PaymentDialog> parameters = new();
+            parameters.Add(x => x.PreSelectedInvoiceId, invoiceId);
+
+            IDialogReference dialog = await dialogService.ShowAsync<PaymentDialog>(
+                localizationService.GetString("RecordPayment"),
+                parameters,
+                DefaultFormOptions);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is not { Canceled: false, Data: CreatePaymentDto dto })
+                return false;
+
+            await paymentService.CreatePaymentAsync(dto);
+            return true;
+        }
+
+        /// <summary>
+        /// Opens the PaymentDialog with free invoice selection (no pre-selection),
+        /// saves the payment, and returns true if a payment was successfully recorded.
+        /// </summary>
+        public async Task<bool> ShowPaymentDialogAsync()
+        {
+            IDialogReference dialog = await dialogService.ShowAsync<PaymentDialog>(
+                localizationService.GetString("RecordPayment"),
+                DefaultFormOptions);
+
+            DialogResult? result = await dialog.Result;
+
+            if (result is not { Canceled: false, Data: CreatePaymentDto dto })
+                return false;
+
+            await paymentService.CreatePaymentAsync(dto);
+            return true;
         }
     }
 }

@@ -18,6 +18,8 @@
     {
         private const string invoiceString = "Invoice";
 
+        // ── Queries ───────────────────────────────────────────────────────────────────
+
         public async Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync()
         {
             IEnumerable<Invoice> invoices = await invoiceRepository.GetAllAsync();
@@ -96,25 +98,22 @@
             return invoice == null ? null : MapToDto(invoice);
         }
 
+        // ── Create ────────────────────────────────────────────────────────────────────
+
         public async Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createDto)
         {
-            // Validate company exists
             if (!await companyRepository.ExistsAsync(createDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
 
-            // Validate provided warehouse (required)
             if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
 
-            // Validate products
             var productIds = createDto.LineItems.Select(li => li.ProductId).ToList();
             if (!await productRepository.AllExistAsync(productIds))
                 throw new KeyNotFoundException("One or more products in the line items were not found");
 
-            // Generate invoice number
             string invoiceNumber = await invoiceRepository.GenerateInvoiceNumberAsync(createDto.Type);
 
-            // Calculate totals
             List<InvoiceLine> lineItems = createDto.LineItems.Select(li => new InvoiceLine
             {
                 ProductId = li.ProductId,
@@ -147,45 +146,34 @@
             };
 
             Invoice created = await invoiceRepository.CreateAsync(invoice);
-
             return MapToDto(created);
         }
+
+        // ── Update ────────────────────────────────────────────────────────────────────
 
         public async Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
-            // Validate company exists
             if (!await companyRepository.ExistsAsync(updateDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {updateDto.CompanyId} not found");
 
-            // Validate warehouse exists
             if (!await warehouseRepository.ExistsAsync(updateDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {updateDto.WarehouseId} not found");
 
-            // Validate products
             var productIds = updateDto.LineItems.Select(li => li.ProductId).ToList();
             if (!await productRepository.AllExistAsync(productIds))
                 throw new KeyNotFoundException("One or more products in the line items were not found");
 
-            // Track status change for inventory transactions
-            InvoiceStatus oldStatus = invoice.Status;
-            InvoiceStatus newStatus = updateDto.Status;
-
-            // Update basic properties
             invoice.CompanyId = updateDto.CompanyId;
             invoice.WarehouseId = updateDto.WarehouseId;
             invoice.Type = updateDto.Type;
-            invoice.Status = updateDto.Status;
             invoice.IssueDate = updateDto.IssueDate;
             invoice.DueDate = updateDto.DueDate;
             invoice.Notes = updateDto.Notes;
 
-            // Remove old items
             invoice.LineItems.Clear();
-
-            // Add new/updated items
             List<InvoiceLine> newLineItems = [.. updateDto.LineItems.Select(li => new InvoiceLine
             {
                 ProductId = li.ProductId,
@@ -196,99 +184,125 @@
             })];
 
             invoice.LineItems = newLineItems;
-
-            // Recalculate totals
             invoice.SubTotal = newLineItems.Sum(li => li.Amount);
             invoice.TaxAmount = newLineItems.Sum(li => li.TaxAmount);
             invoice.TotalAmount = newLineItems.Sum(li => li.TotalAmount);
 
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
-
-            if (newStatus == InvoiceStatus.Cancelled && oldStatus != InvoiceStatus.Cancelled)
-            {
-                await CreateReverseTransactionsIfNeeded(updated);
-            }
-            else if (oldStatus == InvoiceStatus.Cancelled &&
-                     newStatus != InvoiceStatus.Cancelled &&
-                     newStatus != InvoiceStatus.Draft)
-            {
-                // Restore stock by soft-deleting the reversal — original transaction becomes live again
-                await inventoryService.SoftDeleteReversalForDocumentAsync(updated.Id, invoiceString);
-            }
-            else if (oldStatus == InvoiceStatus.Draft &&
-                     newStatus != InvoiceStatus.Draft &&
-                     newStatus != InvoiceStatus.Cancelled)
-            {
-                await CreateInventoryTransactionsIfNeededAsync(updated);
-            }
-
             return MapToDto(updated);
         }
+
+        // ── Delete ────────────────────────────────────────────────────────────────────
 
         public async Task<bool> DeleteInvoiceAsync(Guid id)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id);
             if (invoice == null) return false;
 
-            // Reverse any stock movements before soft-deleting
             if (invoice.Status != InvoiceStatus.Draft && invoice.Status != InvoiceStatus.Cancelled)
-            {
                 await CreateReverseTransactionsIfNeeded(invoice);
-            }
 
             return await invoiceRepository.DeleteAsync(id);
         }
 
-        public async Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus newStatus)
+        // ── Status transitions ────────────────────────────────────────────────────────
+
+        /// <summary>Draft → Sent. Receivable only. Creates outbound inventory transactions.</summary>
+        public async Task<InvoiceDto> SendAsync(Guid id)
         {
-            Invoice invoice = await invoiceRepository.GetByIdAsync(id)
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
-            InvoiceStatus oldStatus = invoice.Status;
-            invoice.Status = newStatus;
-            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+            if (invoice.Type != InvoiceType.Receivable)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} is Payable and cannot be sent.");
 
-            if (newStatus == InvoiceStatus.Cancelled && oldStatus != InvoiceStatus.Cancelled)
-            {
-                await CreateReverseTransactionsIfNeeded(updated);
-            }
-            else if (oldStatus == InvoiceStatus.Cancelled &&
-                     newStatus != InvoiceStatus.Cancelled &&
-                     newStatus != InvoiceStatus.Draft)
-            {
-                // Restore stock by soft-deleting the reversal — original transaction becomes live again
-                await inventoryService.SoftDeleteReversalForDocumentAsync(updated.Id, invoiceString);
-            }
-            else if (oldStatus == InvoiceStatus.Draft &&
-                     newStatus != InvoiceStatus.Draft &&
-                     newStatus != InvoiceStatus.Cancelled)
-            {
-                await CreateInventoryTransactionsIfNeededAsync(updated);
-            }
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} must be in Draft to send (current: {invoice.Status}).");
+
+            invoice.Status = InvoiceStatus.Sent;
+            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+            await CreateInventoryTransactionsIfNeededAsync(updated);
 
             return MapToDto(updated);
         }
 
-        public async Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync()
+        /// <summary>
+        /// Sent/PartiallyPaid/Overdue → Paid.
+        /// Calls CreateInventoryTransactionsIfNeededAsync to handle the edge case where
+        /// a Payable invoice was never sent (went Draft → Overdue) and stock was never moved.
+        /// The idempotency guard inside ensures no duplicate transactions for normal flows.
+        /// </summary>
+        public async Task<InvoiceDto> MarkAsPaidAsync(Guid id)
         {
-            (int total, int paid, int unpaid, int overdue) = await invoiceRepository.GetPayableInvoiceCountsAsync();
-            (decimal totalAmount, decimal totalPaid, decimal totalDue) = await invoiceRepository.GetPayableInvoiceTotalsAsync();
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
-            return new InvoiceSummaryDto
-            {
-                TotalInvoices = total,
-                PaidInvoices = paid,
-                UnpaidInvoices = unpaid,
-                OverdueInvoices = overdue,
-                TotalAmount = totalAmount,
-                TotalPaid = totalPaid,
-                TotalDue = totalDue
-            };
+            if (invoice.Status != InvoiceStatus.Sent &&
+                invoice.Status != InvoiceStatus.PartiallyPaid &&
+                invoice.Status != InvoiceStatus.Overdue)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} cannot be marked as paid (current: {invoice.Status}).");
+
+            invoice.Status = InvoiceStatus.Paid;
+            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+
+            // Covers the Payable Draft → Overdue → Paid edge case where stock was never moved.
+            // No-op for invoices that already had transactions created (e.g. normal Sent → Paid flow).
+            await CreateInventoryTransactionsIfNeededAsync(updated);
+
+            return MapToDto(updated);
         }
+
+        /// <summary>
+        /// Draft/Sent/Overdue → Cancelled. Reverses inventory transactions if any exist.
+        /// Blocked for PartiallyPaid and Paid.
+        /// </summary>
+        public async Task<InvoiceDto> CancelAsync(Guid id)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status == InvoiceStatus.PartiallyPaid)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} has partial payments and cannot be cancelled.");
+
+            if (invoice.Status == InvoiceStatus.Paid)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} is fully paid and cannot be cancelled.");
+
+            if (invoice.Status == InvoiceStatus.Cancelled)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} is already cancelled.");
+
+            invoice.Status = InvoiceStatus.Cancelled;
+            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+
+            // No-op for Draft since no transactions exist yet. Reverses for Sent/Overdue.
+            await CreateReverseTransactionsIfNeeded(updated);
+
+            return MapToDto(updated);
+        }
+
+        /// <summary>
+        /// Any non-terminal status → Overdue. Called exclusively by BackgroundJobService.
+        /// Pure status flag — no inventory changes. Overdue is a financial/time state only.
+        /// </summary>
+        public async Task<InvoiceDto> MarkAsOverdueAsync(Guid id)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            invoice.Status = InvoiceStatus.Overdue;
+            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+            return MapToDto(updated);
+        }
+
+        // ── Inventory helpers ─────────────────────────────────────────────────────────
 
         public async Task CreateInventoryTransactionsIfNeededAsync(Invoice invoice)
         {
-            // Only create if not already created for this document
             bool alreadyCreated = await transactionRepository
                 .HasTransactionsForDocumentAsync(invoice.Id, invoiceString);
 
@@ -316,7 +330,6 @@
 
         public async Task CreateReverseTransactionsIfNeeded(Invoice invoice, string? reason = null)
         {
-            // Only create if not already created for this document
             bool alreadyCreated = await transactionRepository
                 .HasTransactionsForDocumentAsync(invoice.Id, $"{invoiceString}_Reversal");
 
@@ -328,20 +341,35 @@
                     reason ?? $"{localizationService.GetString("InvoiceCancelled")}: {invoice.InvoiceNumber}");
         }
 
+        // ── Summary ───────────────────────────────────────────────────────────────────
+
+        public async Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync()
+        {
+            (int total, int paid, int unpaid, int overdue) = await invoiceRepository.GetPayableInvoiceCountsAsync();
+            (decimal totalAmount, decimal totalPaid, decimal totalDue) = await invoiceRepository.GetPayableInvoiceTotalsAsync();
+
+            return new InvoiceSummaryDto
+            {
+                TotalInvoices = total,
+                PaidInvoices = paid,
+                UnpaidInvoices = unpaid,
+                OverdueInvoices = overdue,
+                TotalAmount = totalAmount,
+                TotalPaid = totalPaid,
+                TotalDue = totalDue
+            };
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────────
+
         private string GenerateNote(Invoice invoice, InventoryTransactionType transactionType)
         {
             if (transactionType == InventoryTransactionType.Inbound)
-            {
                 return $"{localizationService.GetString("PurchaseFrom")} {invoice.Company.Name} - {invoice.InvoiceNumber}";
-            }
             else if (transactionType == InventoryTransactionType.Outbound)
-            {
                 return $"{localizationService.GetString("SaleTo")} {invoice.Company.Name} - {invoice.InvoiceNumber}";
-            }
             else
-            {
                 return $"{localizationService.GetString("InventoryTransactionForInvoice")}: {invoice.InvoiceNumber}";
-            }
         }
 
         private static InvoiceDto MapToDto(Invoice invoice)

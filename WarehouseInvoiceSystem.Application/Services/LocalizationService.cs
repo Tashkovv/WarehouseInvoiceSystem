@@ -336,6 +336,10 @@
                 ["ViewInvoice"] = "View Invoice",
                 ["InvoiceCancelled"] = "Cancelled invoice",
                 ["InvoiceIsDeleted"] = "Deleted invoice",
+                ["CancelInvoice"] = "Cancel Invoice",
+                ["CancelInvoiceConfirm"] = "Are you sure you want to cancel this invoice? This action cannot be undone.",
+                ["PaymentRecorded"] = "Payment recorded successfully",
+                ["ErrorRecordingPayment"] = "Error recording payment",
 
                 // Payments
                 ["Cash"] = "Cash",
@@ -931,6 +935,10 @@
                 ["ErrorSendingEmail"] = "Се случи грешка при испраќањето е-пошта",
                 ["InvoiceCancelled"] = "Откажана фактура",
                 ["InvoiceIsDeleted"] = "Избришена фактура",
+                ["CancelInvoice"] = "Откажи Фактура",
+                ["CancelInvoiceConfirm"] = "Дали сте сигурни дека сакате да ја откажете оваа фактура? Оваа акција не може да се поврати.",
+                ["PaymentRecorded"] = "Уплатата е успешно евидентирана",
+                ["ErrorRecordingPayment"] = "Грешка при евидентирање на уплата",
 
                 // Payments
                 ["Cash"] = "Готовина",
