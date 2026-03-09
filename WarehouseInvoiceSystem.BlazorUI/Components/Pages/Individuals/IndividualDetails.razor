@@ -5,7 +5,7 @@
 @inject IIndividualService IndividualService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("IndividualDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -292,49 +292,37 @@ else
     {
         if (_individual is null) return;
 
-        DialogParameters<IndividualDialog> parameters = new();
-        parameters.Add(x => x.Individual, _individual);
+        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
+            Localization.GetString("EditIndividual"),
+            p => p.Add(x => x.Individual, _individual));
 
-        DialogOptions options = new()
+        if (dto is null) return;
+
+        try
         {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+            UpdateIndividualDto updateDto = new()
+            {
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                IdentificationNumber = dto.IdentificationNumber,
+                Phone = dto.Phone,
+                Email = dto.Email,
+                Address = dto.Address,
+                IsActive = dto.IsActive,
+            };
 
-        IDialogReference dialog = await DialogService.ShowAsync<IndividualDialog>(
-            Localization.GetString("EditIndividual"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: IndividualDto dto })
+            await IndividualService.UpdateIndividualAsync(Id, updateDto);
+            Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
+            await LoadIndividual();
+        }
+        catch (InvalidOperationException ex)
         {
-            try
-            {
-                UpdateIndividualDto updateDto = new()
-                {
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    IdentificationNumber = dto.IdentificationNumber,
-                    Phone = dto.Phone,
-                    Email = dto.Email,
-                    Address = dto.Address,
-                    IsActive = dto.IsActive,
-                };
-
-                await IndividualService.UpdateIndividualAsync(Id, updateDto);
-                Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
-                await LoadIndividual();
-            }
-            catch (InvalidOperationException ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating individual: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
-            }
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating individual: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
         }
     }
 
@@ -361,15 +349,13 @@ else
             ? string.Format(Localization.GetString("DeactivateIndividualWithOpenNotes"), _analytics.UnpaidCount)
             : Localization.GetString("DeactivateIndividualConfirm");
 
-        bool? confirmed = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("DeactivateIndividual"),
-            Message = message,
-            YesText = Localization.GetString("Deactivate"),
-            CancelText = Localization.GetString("Cancel")
-        });
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("DeactivateIndividual"),
+            message,
+            Localization.GetString("Deactivate"),
+            Localization.GetString("Cancel"));
 
-        if (confirmed != true) return;
+        if (!confirmed) return;
 
         try
         {

@@ -1,3 +1,4 @@
+using WarehouseInvoiceSystem.BlazorUI.Services;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using System.Globalization;
@@ -60,6 +61,7 @@ builder.Services.AddScoped<IPurchaseNoteService, PurchaseNoteService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<WisDialogService>();
 
 // Add HttpClient
 builder.Services.AddScoped(sp =>
