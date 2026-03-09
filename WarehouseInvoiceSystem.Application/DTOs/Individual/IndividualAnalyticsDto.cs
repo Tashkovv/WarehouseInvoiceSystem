@@ -1,4 +1,6 @@
-﻿namespace WarehouseInvoiceSystem.Application.DTOs.Individual
+﻿using WarehouseInvoiceSystem.Domain.Enums;
+
+namespace WarehouseInvoiceSystem.Application.DTOs.Individual
 {
     public class IndividualAnalyticsDto
     {
@@ -27,6 +29,6 @@
         public string NoteNumber { get; set; } = string.Empty;
         public DateTime PurchaseDate { get; set; }
         public decimal TotalAmount { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public PurchaseNoteStatus Status { get; set; }
     }
 }

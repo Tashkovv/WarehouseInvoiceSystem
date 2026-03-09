@@ -183,18 +183,7 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
-                                    @if (context.Status == PurchaseNoteStatus.Paid.ToString())
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">@Localization.GetString("Paid")</MudChip>
-                                    }
-                                    else if (context.Status == PurchaseNoteStatus.Completed.ToString())
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">@Localization.GetString("Completed")</MudChip>
-                                    }
-                                    else
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">@Localization.GetString("Draft")</MudChip>
-                                    }
+                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined">@GetStatusText(context.Status)</MudChip>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -384,6 +373,26 @@ else
             Snackbar.Add(Localization.GetString("ErrorActivatingIndividual"), Severity.Error);
         }
     }
+    
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private Color GetStatusColor(PurchaseNoteStatus status) => status switch
+    {
+        PurchaseNoteStatus.Draft => Color.Default,
+        PurchaseNoteStatus.Pending => Color.Warning,
+        PurchaseNoteStatus.Paid => Color.Success,
+        PurchaseNoteStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetStatusText(PurchaseNoteStatus status) => status switch
+    {
+        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
+        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
+        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
+        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
+        _ => status.ToString()
+    };
 
     public void Dispose()
     {

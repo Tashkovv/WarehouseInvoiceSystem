@@ -71,7 +71,7 @@
 
             var unpaidNotes = purchaseNotesList.Where(pn =>
                 pn.Status == Domain.Enums.PurchaseNoteStatus.Draft ||
-                pn.Status == Domain.Enums.PurchaseNoteStatus.Completed).ToList();
+                pn.Status == Domain.Enums.PurchaseNoteStatus.Pending).ToList();
             analytics.UnpaidCount = unpaidNotes.Count;
             analytics.UnpaidAmount = unpaidNotes.Sum(pn => pn.TotalAmount);
 
@@ -110,7 +110,7 @@
                     NoteNumber = pn.NoteNumber,
                     PurchaseDate = pn.PurchaseDate,
                     TotalAmount = pn.TotalAmount,
-                    Status = pn.Status.ToString()
+                    Status = pn.Status
                 })
                 .ToList();
 

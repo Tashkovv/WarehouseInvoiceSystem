@@ -190,8 +190,8 @@ else
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Status")">
-                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status.ToString())">
-                                            @GetPurchaseNoteStatusText(context.Status.ToString())
+                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)">
+                                            @GetPurchaseNoteStatusText(context.Status)
                                         </MudChip>
                                     </MudTd>
                                 </RowTemplate>
@@ -497,19 +497,25 @@ else
         }
     }
 
-    private Color GetPurchaseNoteStatusColor(string status)
-    {
-        if (status == PurchaseNoteStatus.Paid.ToString()) return Color.Success;
-        if (status == PurchaseNoteStatus.Completed.ToString()) return Color.Info;
-        return Color.Default;
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private string GetPurchaseNoteStatusText(string status)
+    private Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
     {
-        if (status == PurchaseNoteStatus.Paid.ToString()) return Localization.GetString("Paid");
-        if (status == PurchaseNoteStatus.Completed.ToString()) return Localization.GetString("Completed");
-        return Localization.GetString("Draft");
-    }
+        PurchaseNoteStatus.Draft => Color.Default,
+        PurchaseNoteStatus.Pending => Color.Warning,
+        PurchaseNoteStatus.Paid => Color.Success,
+        PurchaseNoteStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
+    {
+        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
+        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
+        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
+        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
+        _ => status.ToString()
+    };
 
     private Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
     {

@@ -9,7 +9,7 @@
 @inject IIndividualService IndividualService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -197,6 +197,7 @@
                                            Size="Size.Small"
                                            Color="Color.Primary"
                                            Title="@Localization.GetString("Edit")"
+                                           Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid || context.Item.Status == PurchaseNoteStatus.Cancelled)"
                                            OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/edit/{context.Item.Id}"))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Payment"
                                            Size="Size.Small"
@@ -204,11 +205,6 @@
                                            Title="@Localization.GetString("MarkAsPaid")"
                                            Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid)"
                                            OnClick="@(() => MarkAsPaid(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteNote(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -298,10 +294,11 @@
     {
         _statusFilterItems =
         [
-            new() { Label = Localization.GetString("All"),       Value = null,                         Color = Color.Primary },
-            new() { Label = Localization.GetString("Draft"),     Value = PurchaseNoteStatus.Draft,     Color = Color.Default },
-            new() { Label = Localization.GetString("Completed"), Value = PurchaseNoteStatus.Completed, Color = Color.Info    },
-            new() { Label = Localization.GetString("Paid"),      Value = PurchaseNoteStatus.Paid,      Color = Color.Success },
+            new() { Label = Localization.GetString("All"),             Value = null,                         Color = Color.Info },
+            new() { Label = Localization.GetString("Draft"),           Value = PurchaseNoteStatus.Draft,     Color = Color.Default },
+            new() { Label = Localization.GetString("PendingStatus"),   Value = PurchaseNoteStatus.Pending,   Color = Color.Warning },
+            new() { Label = Localization.GetString("PaidStatus"),      Value = PurchaseNoteStatus.Paid,      Color = Color.Success },
+            new() { Label = Localization.GetString("CancelledStatus"), Value = PurchaseNoteStatus.Cancelled, Color = Color.Error   },
         ];
     }
 
@@ -390,13 +387,11 @@
 
     private async Task MarkAsPaid(PurchaseNoteDto note)
     {
-        bool? confirm = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("MarkAsPaidQuestion"),
-            Message = $"{note.NoteNumber} — {note.IndividualFullName}",
-            YesText = Localization.GetString("MarkAsPaid"),
-            CancelText = Localization.GetString("Cancel")
-        });
+        bool confirm = await WisDialog.ConfirmAsync(
+            Localization.GetString("MarkAsPaidQuestion"),
+            $"{note.NoteNumber} — {note.IndividualFullName}",
+            Localization.GetString("MarkAsPaid"),
+            Localization.GetString("Cancel"));
 
         if (confirm == true)
         {
@@ -414,56 +409,30 @@
         }
     }
 
-    private async Task DeleteNote(Guid id)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeletePurchaseNoteConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
-
-        if (result == true)
-        {
-            try
-            {
-                bool deleted = await PurchaseNoteService.DeletePurchaseNoteAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting purchase note: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingPurchaseNote"), Severity.Error);
-            }
-        }
-    }
-
     private string GetRowClass(PurchaseNoteDto item, int index) => item.Status switch
     {
         PurchaseNoteStatus.Draft => "row-status-default",
-        PurchaseNoteStatus.Completed => "row-status-info",
+        PurchaseNoteStatus.Pending => "row-status-warning",
         PurchaseNoteStatus.Paid => "row-status-active",
+        PurchaseNoteStatus.Cancelled => "row-status-inactive",
         _ => string.Empty
     };
 
     private Color GetStatusColor(PurchaseNoteStatus status) => status switch
     {
         PurchaseNoteStatus.Draft => Color.Default,
-        PurchaseNoteStatus.Completed => Color.Info,
+        PurchaseNoteStatus.Pending => Color.Warning,
         PurchaseNoteStatus.Paid => Color.Success,
+        PurchaseNoteStatus.Cancelled => Color.Error,
         _ => Color.Default
     };
 
     private string GetStatusText(PurchaseNoteStatus status) => status switch
     {
         PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
-        PurchaseNoteStatus.Completed => Localization.GetString("Completed"),
-        PurchaseNoteStatus.Paid => Localization.GetString("Paid"),
+        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
+        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
+        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
         _ => status.ToString()
     };
 

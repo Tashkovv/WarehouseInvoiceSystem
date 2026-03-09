@@ -145,6 +145,7 @@
                 ["PaidStatus"] = "Paid",
                 ["OverdueStatus"] = overdueString,
                 ["CancelledStatus"] = "Cancelled",
+                ["PendingStatus"] = "Pending",
 
                 // Common
                 ["Loading"] = "Loading...",
@@ -187,6 +188,8 @@
                 ["Descending"] = "Descending",
                 ["All"] = "All",
                 ["Number"] = "Number",
+                ["Back"] = "Back",
+                ["Revert"] = "Revert",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -372,7 +375,6 @@
                 ["Payment"] = "Payment",
                 ["RelatedInvoice"] = "Related Invoice",
                 ["PaymentsRemovedFromInvoice"] = "All payments removed from invoice",
-                ["RevertToDraft"] = "reverting to Draft",
 
                 // Export
                 ["ExportToExcel"] = "Export to Excel",
@@ -599,6 +601,18 @@
                 ["Items"] = "items",
                 ["UnitsTotal"] = "units total",
                 ["PurchaseNoteIsDeleted"] = "Deleted purchase note",
+                ["ReceiveGoods"] = "Receive Goods",
+                ["PurchaseNoteReceived"] = "Goods received — purchase note is now Pending",
+                ["RevertToDraft"] = "Revert to Draft",
+                ["RevertToDraftConfirm"] = "This will reverse all inventory transactions for this note. The note will return to Draft and can be edited.",
+                ["PurchaseNoteRevertedToDraft"] = "Purchase note reverted to Draft",
+                ["CancelPurchaseNote"] = "Cancel Purchase Note",
+                ["CancelDraftNoteConfirm"] = "Are you sure you want to cancel this purchase note?",
+                ["CancelPendingNoteConfirm"] = "This note has received goods. Cancelling will reverse all inventory transactions. Are you sure?",
+                ["PurchaseNoteCancelled"] = "Purchase note cancelled",
+                ["PurchaseNoteNotEditable"] = "This purchase note cannot be edited because it is Paid or Cancelled.",
+                ["BackToPurchaseNote"] = "Back to purchase note",
+                ["LineItemsLockedPending"] = "Line items are locked while the note is Pending (goods already received). Revert to Draft to make changes.",
             },
             #endregion
 
@@ -727,6 +741,7 @@
                 ["PaidStatus"] = "Платена",
                 ["OverdueStatus"] = "Задоцнета",
                 ["CancelledStatus"] = "Откажана",
+                ["PendingStatus"] = "На Чекање",
 
                 // Common
                 ["Loading"] = "Вчитување...",
@@ -769,6 +784,8 @@
                 ["Descending"] = "Опаѓачки",
                 ["All"] = "Сите",
                 ["Number"] = "Број",
+                ["Back"] = "Назад",
+                ["Revert"] = "Врати",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -954,7 +971,6 @@
                 ["RelatedInvoice"] = "Поврзана Фактура",
                 ["ViewInvoice"] = "Прегледај Фактура",
                 ["PaymentsRemovedFromInvoice"] = "Сите плаќања се избришани за фактурата",
-                ["RevertToDraft"] = "враќање на Нацрт",
 
                 // Export
                 ["ExportToExcel"] = "Извези во Excel",
@@ -1171,7 +1187,7 @@
                 ["ErrorUpdatingPurchaseNote"] = "Грешка при изменување на откупната белешка",
                 ["ErrorDeletingPurchaseNote"] = "Грешка при бришење на откупната белешка",
                 ["PurchaseNoteNotFound"] = "Откупната белешка не е пронајдена",
-                ["SaveAndNew"] = "Зачувај и Нов",
+                ["SaveAndNew"] = "Зачувај и Нова",
                 ["AddProduct"] = "Додај Производ",
                 ["IndividualRequired"] = "Физичкото лице е задолжително",
                 ["ErrorLoadingData"] = "Грешка при вчитување на податоците",
@@ -1181,6 +1197,18 @@
                 ["Items"] = "ставки",
                 ["UnitsTotal"] = "единици вкупно",
                 ["PurchaseNoteIsDeleted"] = "Избришана откупна белешка",
+                ["ReceiveGoods"] = "Прими Стока",
+                ["PurchaseNoteReceived"] = "Стоката е примена — откупната белешка е На Чекање",
+                ["RevertToDraft"] = "Врати на Нацрт",
+                ["RevertToDraftConfirm"] = "Ова ќе ги поништи сите промени на залихата. Белешката ќе се врати на Нацрт и може повторно да се уредува.",
+                ["PurchaseNoteRevertedToDraft"] = "Откупната белешка е вратена на Нацрт",
+                ["CancelPurchaseNote"] = "Откажи Откупна Белешка",
+                ["CancelDraftNoteConfirm"] = "Дали сте сигурни дека сакате да ја откажете оваа откупна белешка?",
+                ["CancelPendingNoteConfirm"] = "Оваа белешка има примено стока. Откажувањето ќе ги поништи сите промени на залихата. Дали сте сигурни?",
+                ["PurchaseNoteCancelled"] = "Откупната белешка е откажана",
+                ["PurchaseNoteNotEditable"] = "Оваа откупна белешка не може да се уредува бидејќи е Платена или Откажана.",
+                ["BackToPurchaseNote"] = "Назад кон откупна белешка",
+                ["LineItemsLockedPending"] = "Производите се заклучени додека белешката е На Чекање (стоката е веќе примена). Вратете на Нацрт за да направите промени.",
             }
             #endregion
         };
