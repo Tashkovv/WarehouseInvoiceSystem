@@ -258,7 +258,7 @@ else
         _primaryAction = new WisDetailActionItem
         {
             Icon = Icons.Material.Filled.Edit,
-            Label = Localization.GetString("Edit").ToUpper(),
+            Label = Localization.GetString("Edit"),
             OnClick = EventCallback.Factory.Create(this, OpenEditDialog)
         };
 
@@ -270,8 +270,8 @@ else
                     ? Icons.Material.Filled.PersonOff
                     : Icons.Material.Filled.PersonAdd,
                 Label = _individual.IsActive
-                    ? Localization.GetString("Deactivate").ToUpper()
-                    : Localization.GetString("Activate").ToUpper(),
+                    ? Localization.GetString("Deactivate")
+                    : Localization.GetString("Activate"),
                 Color = _individual.IsActive ? Color.Error : Color.Success,
                 OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
             }
