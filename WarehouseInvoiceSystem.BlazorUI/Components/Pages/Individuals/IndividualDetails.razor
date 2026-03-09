@@ -191,7 +191,7 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.Receipt"
                                      Size="Size.Large"
                                      Color="Color.Secondary"
@@ -267,8 +267,8 @@ else
             new WisDetailActionItem
             {
                 Icon = _individual.IsActive
-                    ? Icons.Material.Filled.PersonOff
-                    : Icons.Material.Filled.PersonAdd,
+                    ? Icons.Material.Filled.DoNotDisturbOn
+                    : Icons.Material.Filled.CheckCircle,
                 Label = _individual.IsActive
                     ? Localization.GetString("Deactivate")
                     : Localization.GetString("Activate"),
@@ -374,7 +374,7 @@ else
             Snackbar.Add(Localization.GetString("ErrorActivatingIndividual"), Severity.Error);
         }
     }
-    
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private Color GetStatusColor(PurchaseNoteStatus status) => status switch

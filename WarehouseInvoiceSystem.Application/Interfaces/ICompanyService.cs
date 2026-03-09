@@ -15,6 +15,7 @@
         Task<CompanyDto> CreateCompanyAsync(CreateCompanyDto createDto);
         Task<CompanyDto> UpdateCompanyAsync(Guid id, UpdateCompanyDto updateDto);
         Task<bool> DeleteCompanyAsync(Guid id);
+        Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id);
     }
 }

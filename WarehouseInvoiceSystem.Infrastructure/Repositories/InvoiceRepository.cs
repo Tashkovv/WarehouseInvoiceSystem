@@ -41,6 +41,9 @@
             if (!string.IsNullOrWhiteSpace(query.CompanyName))
                 q = q.Where(i => i.Company.Name == query.CompanyName);
 
+            if (query.CompanyId.HasValue)
+                q = q.Where(i => i.CompanyId == query.CompanyId.Value);
+
             if (query.AmountMin.HasValue)
                 q = q.Where(i => i.TotalAmount >= query.AmountMin.Value);
 

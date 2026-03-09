@@ -90,6 +90,14 @@
             return await companyRepository.DeleteAsync(id);
         }
 
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            Company company = await companyRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Company with ID {id} not found");
+            company.IsActive = isActive;
+            await companyRepository.UpdateAsync(company);
+            return true;
+        }
+
         public async Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id)
         {
             Company? company = await companyRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Company with ID {id} not found");

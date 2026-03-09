@@ -12,6 +12,7 @@
         public List<InvoiceStatus>? Statuses { get; set; }
 
         public InvoiceType? Type { get; set; }
+        public Guid? CompanyId { get; set; }
         public string? CompanyName { get; set; }
         public decimal? AmountMin { get; set; }
         public decimal? AmountMax { get; set; }

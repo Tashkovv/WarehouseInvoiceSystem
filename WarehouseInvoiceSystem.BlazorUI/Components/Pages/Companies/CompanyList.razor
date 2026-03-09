@@ -101,7 +101,7 @@
                                  Size="Size.Small"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ActiveCompany")
-                                                    : Localization.GetString("InactiveCompany"))
+                                                        : Localization.GetString("InactiveCompany"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -109,9 +109,9 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="120"
-                                HeaderStyle="width: 120px;"
-                                CellStyle="width: 120px;">
+                                MinWidth="80"
+                                HeaderStyle="width: 80px;"
+                                CellStyle="width: 80px;">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -124,11 +124,6 @@
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("ViewInvoices")"
                                            OnClick="@(() => ViewCompanyInvoices(context.Item.Id))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteCompany(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -369,35 +364,6 @@
         {
             Console.WriteLine($"Error saving company: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
-        }
-    }
-
-    private async Task DeleteCompany(Guid id)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteCompanyConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
-
-        if (result == true)
-        {
-            try
-            {
-                bool deleted = await CompanyService.DeleteCompanyAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("CompanyDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting company: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingCompany"), Severity.Error);
-            }
         }
     }
 
