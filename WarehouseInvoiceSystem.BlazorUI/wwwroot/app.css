@@ -215,13 +215,45 @@ html {
         border-right: none;
     }
 
-/* Toolbar filter strip — quick enum filters */
-.wis-toolbar-filters {
+/* ── Toolbar single-row layout ── */
+.wis-toolbar-row {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+}
+
+/* Vertical divider between toolbar sections */
+.wis-toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.12);
+    flex-shrink: 0;
+    margin: 0 12px;
+    align-self: center;
+}
+
+/* Create button slot */
+.wis-toolbar-btn {
+    flex-shrink: 0;
+}
+
+/* Inline filters slot */
+.wis-toolbar-filters-inline {
+    display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
 }
+
+/* Search — fixed width, anchored to the right end of the toolbar */
+.wis-toolbar-search {
+    flex: 0 0 auto;
+    width: 300px;
+    margin-left: auto;
+    padding-left: 8px;
+}
+
 
 /* Clear All button in the filter strip */
 .wis-toolbar-clearall-btn {
@@ -304,6 +336,53 @@ html {
         color: var(--mud-palette-error);
         background: rgba(var(--mud-palette-error-rgb), 0.14);
     }
+
+/* Color variants for selected Single filter state */
+.wis-filter-btn--success {
+    border-color: var(--mud-palette-success);
+    color: var(--mud-palette-success);
+    background: rgba(var(--mud-palette-success-rgb), 0.08);
+}
+
+    .wis-filter-btn--success:hover {
+        background: rgba(var(--mud-palette-success-rgb), 0.14);
+    }
+
+.wis-filter-btn--warning {
+    border-color: var(--mud-palette-warning);
+    color: var(--mud-palette-warning);
+    background: rgba(var(--mud-palette-warning-rgb), 0.08);
+}
+
+    .wis-filter-btn--warning:hover {
+        background: rgba(var(--mud-palette-warning-rgb), 0.14);
+    }
+
+.wis-filter-btn--info {
+    border-color: var(--mud-palette-info);
+    color: var(--mud-palette-info);
+    background: rgba(var(--mud-palette-info-rgb), 0.08);
+}
+
+    .wis-filter-btn--info:hover {
+        background: rgba(var(--mud-palette-info-rgb), 0.14);
+    }
+
+.wis-filter-btn--primary {
+    border-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary);
+    background: rgba(var(--mud-palette-primary-rgb), 0.08);
+}
+
+    .wis-filter-btn--primary:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.14);
+    }
+
+/* Selected value label — slightly bolder */
+.wis-filter-btn__label--selected {
+    font-weight: 600;
+}
+
 
 /* Advanced filter toggle row */
 .wis-toolbar-filter-divider {

@@ -111,11 +111,6 @@
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("PurchaseNotes")"
                                            OnClick="@(() => Navigation.NavigateTo($"/purchase-notes?individualId={context.Item.Id}"))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteIndividual(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -296,33 +291,6 @@
         {
             Console.WriteLine($"Error updating individual: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
-        }
-    }
-
-    private async Task DeleteIndividual(Guid id)
-    {
-        bool confirmed = await WisDialog.ConfirmAsync(
-            Localization.GetString("ConfirmDelete"),
-            Localization.GetString("DeleteIndividualConfirm"),
-            Localization.GetString("Yes"),
-            Localization.GetString("No"));
-
-        if (confirmed)
-        {
-            try
-            {
-                bool deleted = await IndividualService.DeleteIndividualAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("IndividualDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting individual: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingIndividual"), Severity.Error);
-            }
         }
     }
 

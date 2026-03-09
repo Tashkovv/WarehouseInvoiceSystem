@@ -9,7 +9,7 @@
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IExcelExportService ExcelExportService
@@ -22,22 +22,14 @@
     </MudText>
 </div>
 
-<WisGridToolbar CreateHref="/invoices/create"
+<WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/invoices/create"))"
                 CreateLabel="@Localization.GetString("CreateInvoice")"
+                CreateActions="@_createActions"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterStatuses.Count > 0 || _filterType.HasValue || _activeAdvancedFilterCount > 0)"
                 OnClearAll="ClearAllFilters"
                 ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
-    <AdditionalActions>
-        <MudButton StartIcon="@Icons.Material.Filled.Download"
-                   Color="Color.Secondary"
-                   Variant="Variant.Outlined"
-                   OnClick="PerformExport"
-                   Disabled="_exporting">
-            @Localization.GetString("ExportToExcel")
-        </MudButton>
-    </AdditionalActions>
     <Filters>
         <FilterPopoverList TValue="InvoiceStatus"
                            Title="@Localization.GetString("FilterByStatus")"
@@ -322,6 +314,8 @@
     private List<FilterPopoverItem<InvoiceStatus>> _statusFilterItems = [];
     private List<FilterPopoverItem<InvoiceType?>> _typeFilterItems = [];
 
+    private List<WisDetailActionItem> _createActions = [];
+
     private int _activeAdvancedFilterCount =>
         (!string.IsNullOrWhiteSpace(_filterCompanyName) ? 1 : 0) +
         (_filterIssueDateFrom.HasValue || _filterIssueDateTo.HasValue ? 1 : 0) +
@@ -332,8 +326,23 @@
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
         BuildFilterItems();
+        BuildCreateActions();
         await PreloadCompanyNames();
         ApplyQueryParams();
+    }
+
+    private void BuildCreateActions()
+    {
+        _createActions =
+        [
+            new WisDetailActionItem
+            {
+                Icon = Icons.Material.Filled.Download,
+                Label = Localization.GetString("ExportToExcel"),
+                Disabled = _exporting,
+                OnClick = EventCallback.Factory.Create(this, PerformExport)
+            }
+        ];
     }
 
     private void ApplyQueryParams()
@@ -528,36 +537,23 @@
 
     private async Task OpenSendEmailDialog(InvoiceDto invoice)
     {
-        DialogParameters<SendInvoiceEmailDialog> parameters = new();
-        parameters.Add(x => x.Invoice, invoice);
+        bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
+            Localization.GetString("SendInvoiceEmail"),
+            p => p.Add(x => x.Invoice, invoice));
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<SendInvoiceEmailDialog>(
-            Localization.GetString("SendInvoiceEmail"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: true })
+        if (sent == true)
             await _grid.ReloadServerData();
     }
 
     private async Task DeleteInvoice(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteInvoiceConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteInvoiceConfirm"),
+            Localization.GetString("Yes"),
+            Localization.GetString("No"));
 
-        if (result == true)
+        if (confirmed)
         {
             try
             {

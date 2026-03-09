@@ -5,18 +5,16 @@
     @* Labeled trigger (toolbar mode) vs icon-only trigger (legacy/header mode) *@
     @if (Label is not null)
     {
-        <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "")"
+        <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "") @(_selectedItem is not null ? GetColorClass(_selectedItem.Color) : "")"
                 @onclick="TogglePopover"
                 type="button">
-            <span class="wis-filter-btn__label">@Label</span>
+            <span class="wis-filter-btn__label @(_selectedItem is not null ? "wis-filter-btn__label--selected" : "")">
+                @(_selectedItem is not null ? _selectedItem.Label : Label)
+            </span>
             <span class="wis-filter-btn__icon">
                 <MudIcon Icon="@Icons.Material.Filled.ArrowDropDown"
                          Size="Size.Small" />
             </span>
-            @if (_isFilterActive)
-            {
-                <span class="wis-filter-btn__dot"></span>
-            }
         </button>
     }
     else
@@ -143,11 +141,27 @@
         ? _singleValue != null && !_singleValue.Equals(default(TValue))
         : _multiValues.Count > 0;
 
+    // Resolved selected item for Single mode — null when inactive or default "All" value
+    private FilterPopoverItem<TValue>? _selectedItem =>
+        Mode == FilterSelectionMode.Single && _isFilterActive
+            ? Items.FirstOrDefault(i => Equals(i.Value, _singleValue))
+            : null;
+
     protected override void OnParametersSet()
     {
         _singleValue = SelectedValue;
         _multiValues = SelectedValues?.ToHashSet() ?? [];
     }
+
+    private static string GetColorClass(Color color) => color switch
+    {
+        Color.Success => "wis-filter-btn--success",
+        Color.Warning => "wis-filter-btn--warning",
+        Color.Error => "wis-filter-btn--error",
+        Color.Info => "wis-filter-btn--info",
+        Color.Primary => "wis-filter-btn--primary",
+        _ => ""
+    };
 
     private void TogglePopover() => _open = !_open;
     private void Close() => _open = false;

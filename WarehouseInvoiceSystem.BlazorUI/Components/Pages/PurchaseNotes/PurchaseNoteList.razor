@@ -20,7 +20,7 @@
     </MudText>
 </div>
 
-<WisGridToolbar CreateHref="/purchase-notes/create"
+<WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/purchase-notes/create"))"
                 CreateLabel="@Localization.GetString("CreatePurchaseNote")"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"

@@ -1,206 +1,23 @@
-﻿@inject IJSRuntime JS
-@inject ILocalizationService Localization
+﻿@inject ILocalizationService Localization
 
 <div class="d-flex justify-space-between align-center mb-4">
 
-    @* ── Back button ── *@
     <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                Variant="Variant.Text"
                Href="@BackHref">
         @BackLabel
     </MudButton>
 
-    @* ── Actions ── *@
-    @if (PrimaryAction is not null || (Actions is not null && Actions.Count > 0))
-    {
-        <div style="position: relative; display: inline-flex;" @ref="_buttonContainer">
-
-            @* ── Split button: primary + arrow ── *@
-            @if (PrimaryAction is not null && Actions is not null && Actions.Count > 0)
-            {
-                <div class="wis-split-btn" data-wis-split-btn="true">
-                    @* Left: primary action — no tooltip wrapper inside flex *@
-                    <button class="wis-split-btn__primary @(PrimaryAction.Disabled ? "wis-split-btn__primary--disabled" : "")"
-                            type="button"
-                            disabled="@PrimaryAction.Disabled"
-                            title="@(PrimaryAction.Disabled? PrimaryAction.DisabledReason ?? string.Empty : string.Empty)"
-                            @onclick="PrimaryAction.OnClick">
-                        <span class="wis-split-btn__icon">
-                            <MudIcon Icon="@PrimaryAction.Icon" Size="Size.Small" />
-                        </span>
-                        <span>@PrimaryAction.Label</span>
-                    </button>
-
-                    @* Divider *@
-                    <div class="wis-split-btn__divider"></div>
-
-                    @* Right: arrow toggle *@
-                    <button class="wis-split-btn__arrow"
-                            type="button"
-                            @onclick="ToggleDropdown">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            @if (_open)
-                            {
-                                <path d="M7 14l5-5 5 5z" />
-                            }
-                            else
-                            {
-                                <path d="M7 10l5 5 5-5z" />
-                            }
-                        </svg>
-                    </button>
-                </div>
-            }
-
-            @* ── Primary only — no dropdown ── *@
-            else if (PrimaryAction is not null)
-            {
-                <MudTooltip Text="@(PrimaryAction.Disabled? PrimaryAction.DisabledReason ?? string.Empty : string.Empty)"
-                            Disabled="@(!PrimaryAction.Disabled || string.IsNullOrEmpty(PrimaryAction.DisabledReason))">
-                    <button class="wis-split-btn__primary wis-split-btn__primary--solo @(PrimaryAction.Disabled ? "wis-split-btn__primary--disabled" : "")"
-                            type="button"
-                            disabled="@PrimaryAction.Disabled"
-                            @onclick="PrimaryAction.OnClick">
-                        <span class="wis-split-btn__icon">
-                            <MudIcon Icon="@PrimaryAction.Icon" Size="Size.Small" />
-                        </span>
-                        <span>@PrimaryAction.Label</span>
-                    </button>
-                </MudTooltip>
-            }
-
-            @* ── Dropdown only — terminal/complete states ── *@
-            else if (Actions is not null && Actions.Count > 0)
-            {
-                <button class="wis-split-btn__primary wis-split-btn__primary--solo"
-                        type="button"
-                        @onclick="ToggleDropdown">
-                    <span>@Localization.GetString("Actions")</span>
-                    <span class="wis-split-btn__icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                            @if (_open)
-                            {
-                                <path d="M7 14l5-5 5 5z" />
-                            }
-                            else
-                            {
-                                <path d="M7 10l5 5 5-5z" />
-                            }
-                        </svg>
-                    </span>
-                </button>
-            }
-
-            @* ── Overlay + Popover ── *@
-            @if (_open)
-            {
-                <MudOverlay Visible="true"
-                            OnClick="CloseDropdown"
-                            ZIndex="1399"
-                            AutoClose="false" />
-            }
-
-            <MudPopover Open="_open"
-                        AnchorOrigin="Origin.BottomRight"
-                        TransformOrigin="Origin.TopRight"
-                        Paper="true"
-                        Class="wis-split-btn__popover"
-                        Style="@($"z-index: 1400; min-width: {_buttonWidth}px;")">
-                @if (Actions is not null)
-                {
-                    foreach (WisDetailActionItem item in Actions)
-                    {
-                        @if (item.IsDividerBefore)
-                        {
-                            <MudDivider />
-                        }
-                        @if (item.Disabled && !string.IsNullOrEmpty(item.DisabledReason))
-                        {
-                            <MudTooltip Text="@item.DisabledReason"
-                                        Placement="Placement.Left">
-                                <ChildContent>
-                                    <button class="wis-split-btn__menu-item wis-split-btn__menu-item--disabled"
-                                            type="button"
-                                            disabled>
-                                        <span class="wis-split-btn__menu-icon">
-                                            <MudIcon Icon="@item.Icon" Size="Size.Small" Color="Color.Default" />
-                                        </span>
-                                        <span>@item.Label</span>
-                                    </button>
-                                </ChildContent>
-                            </MudTooltip>
-                        }
-                        else
-                        {
-                            <button class="wis-split-btn__menu-item @(item.Disabled ? "wis-split-btn__menu-item--disabled" : "")"
-                                    type="button"
-                                    disabled="@item.Disabled"
-                                    @onclick="@(() => OnMenuItemClick(item))">
-                                <span class="wis-split-btn__menu-icon">
-                                    <MudIcon Icon="@item.Icon"
-                                             Size="Size.Small"
-                                             Color="@(item.Disabled ? Color.Default : item.Color)" />
-                                </span>
-                                <span class="@(item.Disabled ? "" : GetTextColorClass(item.Color))">
-                                    @item.Label
-                                </span>
-                            </button>
-                        }
-                    }
-                }
-            </MudPopover>
-
-        </div>
-    }
+    <WisSplitButton PrimaryAction="@PrimaryAction"
+                    Actions="@Actions"
+                    AnchorOrigin="Origin.BottomRight"
+                    TransformOrigin="Origin.TopRight" />
 
 </div>
 
 @code {
-    [Parameter, EditorRequired]
-    public string BackHref { get; set; } = string.Empty;
-
-    [Parameter, EditorRequired]
-    public string BackLabel { get; set; } = string.Empty;
-
-    [Parameter]
-    public WisDetailActionItem? PrimaryAction { get; set; }
-
-    [Parameter]
-    public List<WisDetailActionItem>? Actions { get; set; }
-
-    private bool _open;
-    private ElementReference _buttonContainer;
-    private double _buttonWidth = 180;
-
-    private async Task ToggleDropdown()
-    {
-        _open = !_open;
-        if (_open)
-        {
-            try
-            {
-                double w = await JS.InvokeAsync<double>(
-                    "eval", "document.querySelector('[data-wis-split-btn]')?.offsetWidth ?? 180");
-                if (w > 0) _buttonWidth = w;
-            }
-            catch { /* fallback to default */ }
-        }
-    }
-
-    private void CloseDropdown() => _open = false;
-
-    private async Task OnMenuItemClick(WisDetailActionItem item)
-    {
-        _open = false;
-        await item.OnClick.InvokeAsync();
-    }
-
-    private static string GetTextColorClass(Color color) => color switch
-    {
-        Color.Error => "wis-text-error",
-        Color.Success => "wis-text-success",
-        Color.Warning => "wis-text-warning",
-        Color.Info => "wis-text-info",
-        _ => ""
-    };
+    [Parameter, EditorRequired] public string BackHref { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string BackLabel { get; set; } = string.Empty;
+    [Parameter] public WisDetailActionItem? PrimaryAction { get; set; }
+    [Parameter] public List<WisDetailActionItem>? Actions { get; set; }
 }
