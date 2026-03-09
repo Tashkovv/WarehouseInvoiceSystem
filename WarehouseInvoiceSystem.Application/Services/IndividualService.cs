@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
@@ -62,16 +63,16 @@
 
             // Overall statistics
             analytics.TotalPurchaseNotes = purchaseNotesList.Count;
-            analytics.TotalAmount = purchaseNotesList.Sum(pn => pn.TotalAmount);
+            analytics.TotalAmount = purchaseNotesList.Where(pn => pn.Status != PurchaseNoteStatus.Cancelled).Sum(pn => pn.TotalAmount);
 
             // Payment status
-            var paidNotes = purchaseNotesList.Where(pn => pn.Status == Domain.Enums.PurchaseNoteStatus.Paid).ToList();
+            var paidNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Paid).ToList();
             analytics.PaidCount = paidNotes.Count;
             analytics.PaidAmount = paidNotes.Sum(pn => pn.TotalAmount);
 
             var unpaidNotes = purchaseNotesList.Where(pn =>
-                pn.Status == Domain.Enums.PurchaseNoteStatus.Draft ||
-                pn.Status == Domain.Enums.PurchaseNoteStatus.Pending).ToList();
+                pn.Status == PurchaseNoteStatus.Draft ||
+                pn.Status == PurchaseNoteStatus.Pending).ToList();
             analytics.UnpaidCount = unpaidNotes.Count;
             analytics.UnpaidAmount = unpaidNotes.Sum(pn => pn.TotalAmount);
 

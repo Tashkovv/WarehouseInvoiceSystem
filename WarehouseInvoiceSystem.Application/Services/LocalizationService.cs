@@ -190,6 +190,7 @@
                 ["Number"] = "Number",
                 ["Back"] = "Back",
                 ["Revert"] = "Revert",
+                ["Send"] = "Send",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -745,7 +746,7 @@
                 ["PaidStatus"] = "Платена",
                 ["OverdueStatus"] = "Задоцнета",
                 ["CancelledStatus"] = "Откажана",
-                ["PendingStatus"] = "На Чекање",
+                ["PendingStatus"] = "Во Тек",
 
                 // Common
                 ["Loading"] = "Вчитување...",
@@ -790,6 +791,7 @@
                 ["Number"] = "Број",
                 ["Back"] = "Назад",
                 ["Revert"] = "Врати",
+                ["Send"] = "Испрати",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -901,7 +903,7 @@
                 ["Close"] = "Затвори",
                 ["PaymentDate"] = "Датум на плаќање",
                 ["PaymentAmount"] = "Износ на плаќање",
-                ["PaymentMethod"] = "Начин на плаќање",
+                ["PaymentMethod"] = "Начин",
                 ["ReferenceNumber"] = "Референтен број",
                 ["RecordedBy"] = "Евидентирано од",
                 ["ShowingResults"] = "Прикажани {0} до {1} од {2} резултати",
@@ -1206,7 +1208,7 @@
                 ["UnitsTotal"] = "единици вкупно",
                 ["PurchaseNoteIsDeleted"] = "Избришана откупна белешка",
                 ["ReceiveGoods"] = "Прими Стока",
-                ["PurchaseNoteReceived"] = "Стоката е примена — откупната белешка е На Чекање",
+                ["PurchaseNoteReceived"] = "Стоката е примена — откупната белешка е Во Тек",
                 ["RevertToDraft"] = "Врати на Нацрт",
                 ["RevertToDraftConfirm"] = "Ова ќе ги поништи сите промени на залихата. Белешката ќе се врати на Нацрт и може повторно да се уредува.",
                 ["PurchaseNoteRevertedToDraft"] = "Откупната белешка е вратена на Нацрт",
@@ -1216,7 +1218,7 @@
                 ["PurchaseNoteCancelled"] = "Откупната белешка е откажана",
                 ["PurchaseNoteNotEditable"] = "Оваа откупна белешка не може да се уредува бидејќи е Платена или Откажана.",
                 ["BackToPurchaseNote"] = "Назад кон откупна белешка",
-                ["LineItemsLockedPending"] = "Производите се заклучени додека белешката е На Чекање (стоката е веќе примена). Вратете на Нацрт за да направите промени.",
+                ["LineItemsLockedPending"] = "Производите се заклучени додека белешката е Во Тек (стоката е веќе примена). Вратете на Нацрт за да направите промени.",
             }
             #endregion
         };

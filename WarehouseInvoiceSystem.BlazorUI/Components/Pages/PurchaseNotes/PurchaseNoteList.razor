@@ -14,14 +14,14 @@
 
 <PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div style="margin-bottom: 15px; padding: 4px 0;">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("PurchaseNotes")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/purchase-notes/create"))"
-                CreateLabel="@Localization.GetString("CreatePurchaseNote")"
+                CreateLabel="@Localization.GetString("PurchaseNote")"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterStatus.HasValue || _activeAdvancedFilterCount > 0)"
@@ -29,7 +29,6 @@
                 ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
     <Filters>
         <FilterPopoverList TValue="PurchaseNoteStatus?"
-                           Title="@Localization.GetString("Status")"
                            Label="@Localization.GetString("Status")"
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Single"
@@ -115,7 +114,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"

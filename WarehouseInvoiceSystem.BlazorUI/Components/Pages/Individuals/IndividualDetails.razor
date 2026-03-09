@@ -21,7 +21,7 @@ else if (_individual == null)
 else
 {
     <WisDetailHeader BackHref="/individuals"
-                     BackLabel="@Localization.GetString("BackToIndividuals")"
+                     BackLabel="@Localization.GetString("Individuals")"
                      PrimaryAction="@_primaryAction"
                      Actions="@_actions" />
 
@@ -149,10 +149,11 @@ else
                     <CardHeaderActions>
                         <MudButton Href="@($"/purchase-notes?individualId={Id}")"
                                    Color="Color.Primary"
-                                   Variant="Variant.Text"
+                                   Variant="Variant.Outlined"
                                    Size="Size.Small"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward">
-                            @Localization.GetString("ViewAllPurchaseNotes")
+                                   EndIcon="@Icons.Material.Filled.ArrowForward"
+                                   Class="wis-back-btn">
+                            @Localization.GetString("PurchaseNotes")
                         </MudButton>
                     </CardHeaderActions>
                 </MudCardHeader>
@@ -257,7 +258,7 @@ else
         _primaryAction = new WisDetailActionItem
         {
             Icon = Icons.Material.Filled.Edit,
-            Label = Localization.GetString("Edit"),
+            Label = Localization.GetString("Edit").ToUpper(),
             OnClick = EventCallback.Factory.Create(this, OpenEditDialog)
         };
 
@@ -269,8 +270,8 @@ else
                     ? Icons.Material.Filled.PersonOff
                     : Icons.Material.Filled.PersonAdd,
                 Label = _individual.IsActive
-                    ? Localization.GetString("Deactivate")
-                    : Localization.GetString("Activate"),
+                    ? Localization.GetString("Deactivate").ToUpper()
+                    : Localization.GetString("Activate").ToUpper(),
                 Color = _individual.IsActive ? Color.Error : Color.Success,
                 OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
             }

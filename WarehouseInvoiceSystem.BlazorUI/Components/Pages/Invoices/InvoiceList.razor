@@ -16,14 +16,14 @@
 
 <PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div style="margin-bottom: 15px; padding: 4px 0;">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Invoices")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/invoices/create"))"
-                CreateLabel="@Localization.GetString("CreateInvoice")"
+                CreateLabel="@Localization.GetString("Invoice")"
                 CreateActions="@_createActions"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
@@ -32,14 +32,12 @@
                 ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
     <Filters>
         <FilterPopoverList TValue="InvoiceType?"
-                           Title="@Localization.GetString("Type")"
                            Label="@Localization.GetString("Type")"
                            Items="_typeFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterType"
                            SelectedValueChanged="OnTypeFilterChanged" />
         <FilterPopoverList TValue="InvoiceStatus"
-                           Title="@Localization.GetString("FilterByStatus")"
                            Label="@Localization.GetString("Status")"
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Multiple"
@@ -133,7 +131,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"
@@ -329,8 +327,8 @@
         [
             new WisDetailActionItem
             {
-                Icon = Icons.Material.Filled.Download,
-                Label = Localization.GetString("ExportToExcel"),
+                Icon = Icons.Material.Filled.Print,
+                Label = Localization.GetString("Export"),
                 Disabled = _exporting,
                 OnClick = EventCallback.Factory.Create(this, PerformExport)
             }

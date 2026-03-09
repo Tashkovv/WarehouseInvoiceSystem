@@ -12,28 +12,26 @@
 
 <PageTitle>@Localization.GetString("Companies") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div style="margin-bottom: 15px; padding: 4px 0;">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Companies")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="OpenCreateDialog"
-                CreateLabel="@Localization.GetString("CreateCompany")"
+                CreateLabel="@Localization.GetString("Company")"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterType.HasValue || _filterIsActive.HasValue)"
                 OnClearAll="ClearAllFilters">
     <Filters>
         <FilterPopoverList TValue="CompanyType?"
-                           Title="@Localization.GetString("FilterByCompanyType")"
                            Label="@Localization.GetString("Type")"
                            Items="_typeFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterType"
                            SelectedValueChanged="OnTypeFilterChanged" />
         <FilterPopoverList TValue="bool?"
-                           Title="@Localization.GetString("FilterByStatus")"
                            Label="@Localization.GetString("Status")"
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Single"
@@ -52,7 +50,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"

@@ -15,13 +15,16 @@
                                     AnchorOrigin="Origin.BottomLeft"
                                     TransformOrigin="Origin.TopLeft" />
                 </div>
-
-                <div class="wis-toolbar-divider"></div>
             }
 
             @* Quick filters *@
             @if (Filters is not null)
             {
+                @if (_primaryAction is not null)
+                {
+                    <div class="wis-toolbar-divider"></div>
+                }
+
                 <div class="wis-toolbar-filters-inline">
                     @Filters
                 </div>

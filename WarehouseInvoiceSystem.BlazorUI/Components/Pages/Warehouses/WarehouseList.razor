@@ -11,14 +11,14 @@
 
 <PageTitle>@Localization.GetString("Warehouses") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div style="margin-bottom: 15px; padding: 4px 0;">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Warehouses")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="OpenCreateDialog"
-                CreateLabel="@Localization.GetString("CreateWarehouse")"
+                CreateLabel="@Localization.GetString("Warehouse")"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch" />
 
@@ -31,7 +31,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"

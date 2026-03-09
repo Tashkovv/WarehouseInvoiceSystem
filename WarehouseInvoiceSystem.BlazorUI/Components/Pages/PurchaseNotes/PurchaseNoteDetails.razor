@@ -21,7 +21,7 @@ else if (_note == null)
 else
 {
     <WisDetailHeader BackHref="/purchase-notes"
-                     BackLabel="@Localization.GetString("BackToPurchaseNotes")"
+                     BackLabel="@Localization.GetString("PurchaseNotes")"
                      PrimaryAction="@_primaryAction"
                      Actions="@_actions" />
 
@@ -251,7 +251,7 @@ else
                     new WisDetailActionItem
                     {
                         Icon = Icons.Material.Filled.Undo,
-                        Label = Localization.GetString("RevertToDraft"),
+                        Label = Localization.GetString("Draft"),
                         OnClick = EventCallback.Factory.Create(this, RevertToDraft)
                     },
                     new WisDetailActionItem

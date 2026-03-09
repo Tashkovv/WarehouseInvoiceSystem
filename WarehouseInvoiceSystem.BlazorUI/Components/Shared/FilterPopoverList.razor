@@ -22,7 +22,6 @@
         <MudIconButton Icon="@Icons.Material.Filled.FilterList"
                        Size="Size.Small"
                        Color="@(_isFilterActive ? Color.Primary : Color.Default)"
-                       Title="@Title"
                        OnClick="TogglePopover" />
     }
 
@@ -41,7 +40,6 @@
                 Class="pa-3"
                 Style="z-index: 1400; min-width: 180px;">
         <MudStack Spacing="0">
-            <MudText Typo="Typo.subtitle2" Class="mb-2">@Title</MudText>
             <div style="max-height: 260px; overflow-y: auto;">
                 @if (Mode == FilterSelectionMode.Single)
                 {
@@ -99,13 +97,6 @@
 </div>
 
 @code {
-    /// <summary>
-    /// Popover header text (always shown inside the popover).
-    /// Also used as tooltip when Label is null.
-    /// </summary>
-    [Parameter, EditorRequired]
-    public string Title { get; set; } = string.Empty;
-
     /// <summary>
     /// When set, renders a labeled pill button instead of a bare icon.
     /// Use this in the WisGridToolbar Filters slot.
