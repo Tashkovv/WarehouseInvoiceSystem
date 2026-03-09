@@ -109,8 +109,8 @@ html {
    ============================================= */
 
 /* Pillar — smooth right edge shared by all status variants */
-.row-status-active td:first-child,
-.row-status-inactive td:first-child,
+.row-status-success td:first-child,
+.row-status-dark td:first-child,
 .row-status-warning td:first-child,
 .row-status-error td:first-child,
 .row-status-info td:first-child,
@@ -121,12 +121,12 @@ html {
 }
 
 /* Pillar colors */
-.row-status-active td:first-child {
+.row-status-success td:first-child {
     border-left: 5px solid var(--mud-palette-success) !important;
 }
 
-.row-status-inactive td:first-child {
-    border-left: 5px solid var(--mud-palette-action-disabled) !important;
+.row-status-dark td:first-child {
+    border-left: 5px solid var(--mud-palette-dark) !important;
 }
 
 .row-status-warning td:first-child {
@@ -154,12 +154,13 @@ html {
 }
 
 /* Subtle background tints per status */
-.row-status-active {
+.row-status-success {
     background-color: rgba(76, 175, 80, 0.07) !important;
     cursor: pointer;
 }
 
-.row-status-inactive {
+.row-status-dark {
+    background-color: rgba(30, 30, 30, 0.07) !important;
     cursor: pointer;
 }
 
@@ -434,12 +435,12 @@ html {
     }
 
     /* Re-assert pillar borders on hover — hover background-color would otherwise override them */
-    .wis-data-grid .mud-table-body tr.row-status-active:hover td:first-child {
+    .wis-data-grid .mud-table-body tr.row-status-success:hover td:first-child {
         border-left: 5px solid var(--mud-palette-success) !important;
     }
 
-    .wis-data-grid .mud-table-body tr.row-status-inactive:hover td:first-child {
-        border-left: 5px solid var(--mud-palette-action-disabled) !important;
+    .wis-data-grid .mud-table-body tr.row-status-dark:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-dark) !important;
     }
 
     .wis-data-grid .mud-table-body tr.row-status-warning:hover td:first-child {

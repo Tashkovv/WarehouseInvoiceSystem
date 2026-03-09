@@ -197,7 +197,7 @@
     }
 
     private string GetRowClass(IndividualDto item, int index) =>
-        item.IsActive ? "row-status-active" : "row-status-inactive";
+        item.IsActive ? "row-status-success" : "row-status-default";
 
     private async Task OnSearch(string text)
     {

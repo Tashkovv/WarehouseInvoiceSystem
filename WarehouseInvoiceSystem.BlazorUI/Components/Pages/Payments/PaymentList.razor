@@ -406,7 +406,7 @@
 
     private string GetRowClass(PaymentDto item, int index) => item.PaymentMethod switch
     {
-        PaymentMethod.Cash => "row-status-active",
+        PaymentMethod.Cash => "row-status-success",
         PaymentMethod.BankTransfer => "row-status-primary",
         PaymentMethod.CreditCard => "row-status-secondary",
         PaymentMethod.Other => "row-status-default",

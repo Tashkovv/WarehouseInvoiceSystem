@@ -203,7 +203,7 @@
                                            Size="Size.Small"
                                            Color="Color.Success"
                                            Title="@Localization.GetString("MarkAsPaid")"
-                                           Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid)"
+                                           Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid || context.Item.Status == PurchaseNoteStatus.Cancelled)"
                                            OnClick="@(() => MarkAsPaid(context.Item))" />
                         </MudStack>
                     </CellTemplate>
@@ -413,8 +413,8 @@
     {
         PurchaseNoteStatus.Draft => "row-status-default",
         PurchaseNoteStatus.Pending => "row-status-warning",
-        PurchaseNoteStatus.Paid => "row-status-active",
-        PurchaseNoteStatus.Cancelled => "row-status-inactive",
+        PurchaseNoteStatus.Paid => "row-status-success",
+        PurchaseNoteStatus.Cancelled => "row-status-default",
         _ => string.Empty
     };
 

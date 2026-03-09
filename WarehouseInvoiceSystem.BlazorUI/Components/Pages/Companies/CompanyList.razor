@@ -229,7 +229,7 @@
 
     private string GetRowClass(CompanyDto item, int index) => item.Type switch
     {
-        CompanyType.Client => "row-status-active",
+        CompanyType.Client => "row-status-success",
         CompanyType.Vendor => "row-status-warning",
         CompanyType.Both => "row-status-primary",
         _ => "row-status-default"

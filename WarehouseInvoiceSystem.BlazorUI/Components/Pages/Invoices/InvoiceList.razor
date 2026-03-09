@@ -374,7 +374,7 @@
             new() { Label = Localization.GetString("PartiallyPaid"),   Value = InvoiceStatus.PartiallyPaid, Color = Color.Warning },
             new() { Label = Localization.GetString("PaidStatus"),      Value = InvoiceStatus.Paid,          Color = Color.Success },
             new() { Label = Localization.GetString("OverdueStatus"),   Value = InvoiceStatus.Overdue,       Color = Color.Error   },
-            new() { Label = Localization.GetString("CancelledStatus"), Value = InvoiceStatus.Cancelled,     Color = Color.Default },
+            new() { Label = Localization.GetString("CancelledStatus"), Value = InvoiceStatus.Cancelled,     Color = Color.Dark },
     ];
 
         _typeFilterItems =
@@ -452,9 +452,9 @@
         InvoiceStatus.Draft => "row-status-default",
         InvoiceStatus.Sent => "row-status-info",
         InvoiceStatus.PartiallyPaid => "row-status-warning",
-        InvoiceStatus.Paid => "row-status-active",
+        InvoiceStatus.Paid => "row-status-success",
         InvoiceStatus.Overdue => "row-status-error",
-        InvoiceStatus.Cancelled => "row-status-inactive",
+        InvoiceStatus.Cancelled => "row-status-dark",
         _ => "row-status-default"
     };
 
@@ -465,7 +465,7 @@
         InvoiceStatus.PartiallyPaid => Color.Warning,
         InvoiceStatus.Paid => Color.Success,
         InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Default,
+        InvoiceStatus.Cancelled => Color.Dark,
         _ => Color.Default
     };
 
