@@ -113,7 +113,8 @@
                     <CellTemplate>
                         <MudLink Href="@($"/invoices/{context.Item.InvoiceId}")"
                                  Typo="Typo.body2"
-                                 Style="font-family: monospace;">
+                                 Style="font-family: monospace;"
+                                 @onclick:stopPropagation="true">
                             @context.Item.InvoiceNumber
                         </MudLink>
                     </CellTemplate>
@@ -301,10 +302,9 @@
         await _grid.ReloadServerData();
     }
 
-    private async void OnRowClick(DataGridRowClickEventArgs<PaymentDto> args)
+    private void OnRowClick(DataGridRowClickEventArgs<PaymentDto> args)
     {
-        if (args.MouseEventArgs.Detail == 2)
-            Navigation.NavigateTo($"/payments/{args.Item.Id}");
+        Navigation.NavigateTo($"/payments/{args.Item.Id}");
     }
 
     private async Task OpenCreateDialog()

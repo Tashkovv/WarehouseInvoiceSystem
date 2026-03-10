@@ -32,64 +32,77 @@ else
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
 
-                    @* Row 1: note number + status chip *@
-                    <div class="wis-detail-identity mb-3">
-                        <MudText Typo="Typo.h4" Class="font-weight-bold mb-0" Style="font-family: monospace;">
-                            @_note.NoteNumber
-                        </MudText>
-                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_note.Status)">
-                            @GetStatusText(_note.Status)
-                        </MudChip>
-                    </div>
+                    @* Top section: identity + pills (left 6) | notes (right 6) *@
+                    <div class="wis-contact-row mb-4">
+                        <div class="wis-contact-row-left">
 
-                    @* Row 2: individual + warehouse contact pills *@
-                    <div class="wis-detail-contact mb-4">
-                        <div class="wis-detail-contact-item">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                            <MudText Typo="Typo.body2" Style="font-weight: 500;">@_note.IndividualFullName</MudText>
+                            @* Row 1: note number + status chip *@
+                            <div class="wis-detail-identity mb-3">
+                                <MudText Typo="Typo.h4" Class="font-weight-bold mb-0" Style="font-family: monospace;">
+                                    @_note.NoteNumber
+                                </MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_note.Status)">
+                                    @GetStatusText(_note.Status)
+                                </MudChip>
+                            </div>
+
+                            @* Row 2: individual + warehouse contact pills *@
+                            <div class="wis-detail-contact">
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Style="font-weight: 500;">@_note.IndividualFullName</MudText>
+                                </div>
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.IndividualIdentificationNumber</MudText>
+                                </div>
+                                @if (!string.IsNullOrEmpty(_note.WarehouseName))
+                                {
+                                    <div class="wis-detail-contact-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_note.WarehouseName</MudText>
+                                    </div>
+                                }
+                            </div>
+
                         </div>
-                        <div class="wis-detail-contact-item">
-                            <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" Color="Color.Secondary" />
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.IndividualIdentificationNumber</MudText>
-                        </div>
-                        @if (!string.IsNullOrEmpty(_note.WarehouseName))
+
+                        @if (!string.IsNullOrWhiteSpace(_note.Notes))
                         {
-                            <div class="wis-detail-contact-item">
-                                <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
-                                <MudText Typo="Typo.body2">@_note.WarehouseName</MudText>
+                            <div class="wis-contact-row-divider"></div>
+                            <div class="wis-contact-row-right">
+                                <div class="d-flex align-start gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" Class="mt-1" />
+                                    <div>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Notes")</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">@_note.Notes</MudText>
+                                    </div>
+                                </div>
                             </div>
                         }
                     </div>
 
                     <MudDivider Class="mb-4" />
 
-                    @* Row 3: stats *@
+                    @* Stats row: full width *@
                     <MudGrid Spacing="4" Class="wis-detail-stats">
 
-                        <MudItem xs="2">
+                        <MudItem xs="3">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Total")</MudText>
                             <div class="wis-stat-value mud-info-text">@_note.TotalAmount.ToString("C")</div>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.LineItems.Count @Localization.GetString("Products")</MudText>
                         </MudItem>
 
-                        <MudItem xs="2">
+                        <MudItem xs="3">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PurchaseDate")</MudText>
                             <div class="wis-stat-value">@_note.PurchaseDate.ToString("dd MMM yyyy")</div>
                         </MudItem>
 
                         @if (_note.PaidDate.HasValue)
                         {
-                            <MudItem xs="2">
+                            <MudItem xs="3">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PaidDate")</MudText>
                                 <div class="wis-stat-value mud-success-text">@_note.PaidDate.Value.ToString("dd MMM yyyy")</div>
-                            </MudItem>
-                        }
-
-                        @if (!string.IsNullOrWhiteSpace(_note.Notes))
-                        {
-                            <MudItem xs="@(_note.PaidDate.HasValue ? 6 : 8)">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Notes")</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6; padding-top: 4px;">@_note.Notes</MudText>
                             </MudItem>
                         }
 
@@ -110,7 +123,8 @@ else
                 <MudCardContent Class="pa-0">
                     <MudTable Items="_note.LineItems"
                               Hover="true"
-                              Elevation="0">
+                              Elevation="0"
+                              Class="wis-secondary-list">
                         <HeaderContent>
                             <MudTh>@Localization.GetString("Product")</MudTh>
                             <MudTh>@Localization.GetString("Description")</MudTh>
@@ -120,7 +134,7 @@ else
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="@Localization.GetString("Product")">
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.ProductCode - @context.ProductName</MudText>
+                                <MudText Typo="Typo.body2">@context.ProductCode - @context.ProductName</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Description")">
                                 <MudText Typo="Typo.body2">
@@ -129,31 +143,17 @@ else
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
                                 <MudText Typo="Typo.body2" Style="font-weight: 500;">
-                                    @context.Quantity.ToString("N2")
-                                    <MudText Typo="Typo.body2" Inline="true">@context.ProductUnit</MudText>
+                                    @context.Quantity.ToString("N2") @context.ProductUnit
                                 </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
                                 <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
-                                <MudText Typo="Typo.body2" Style="font-weight: 700;" Color="Color.Primary">@context.Amount.ToString("C")</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Primary">@context.Amount.ToString("C")</MudText>
                             </MudTd>
                         </RowTemplate>
                     </MudTable>
-
-                    <MudDivider />
-
-                    <div class="d-flex justify-end pa-4">
-                        <MudStack Spacing="1" Style="min-width: 260px;">
-                            <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.h6" Style="font-weight: 700;">@Localization.GetString("Total")</MudText>
-                                <MudText Typo="Typo.h5" Style="font-weight: 700;" Color="Color.Primary">
-                                    @_note.TotalAmount.ToString("C")
-                                </MudText>
-                            </div>
-                        </MudStack>
-                    </div>
 
                 </MudCardContent>
             </MudCard>
