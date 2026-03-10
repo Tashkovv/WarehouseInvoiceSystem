@@ -53,16 +53,6 @@
                               FullWidth="true"
                               MaxLength="500" />
             </MudItem>
-            @if (IsEditMode)
-            {
-                <MudItem xs="12" sm="2">
-                    <MudSwitch T="bool"
-                               @bind-Value="_model.IsActive"
-                               Color="Color.Success"
-                               Label="@(_model.IsActive ? Localization.GetString("ActiveIndividual")
-                                                        : Localization.GetString("InactiveIndividual"))" />
-            </MudItem>
-            }
         </MudGrid>
     </DialogContent>
     <DialogActions>

@@ -144,7 +144,7 @@
             analytics.ReceivableTotalCount = receivableActive.Count;
             analytics.ReceivableTotalAmount = receivableActive.Sum(i => i.TotalAmount);
             analytics.ReceivablePaidCount = receivablePaid.Count;
-            analytics.ReceivablePaidAmount = receivablePaid.Sum(i => i.TotalAmount);
+            analytics.ReceivablePaidAmount = receivableActive.Sum(i => i.AmountPaid);
             analytics.ReceivableOpenCount = receivableOpen.Count;
             analytics.ReceivableAmountDue = receivableOpen.Sum(i => i.AmountDue);
             analytics.ReceivableOverdueCount = receivableOverdue.Count;
@@ -165,7 +165,7 @@
             analytics.PayableTotalCount = payableActive.Count;
             analytics.PayableTotalAmount = payableActive.Sum(i => i.TotalAmount);
             analytics.PayablePaidCount = payablePaid.Count;
-            analytics.PayablePaidAmount = payablePaid.Sum(i => i.TotalAmount);
+            analytics.PayablePaidAmount = payableActive.Sum(i => i.AmountPaid);
             analytics.PayableOpenCount = payableOpen.Count;
             analytics.PayableAmountDue = payableOpen.Sum(i => i.AmountDue);
             analytics.PayableOverdueCount = payableOverdue.Count;
