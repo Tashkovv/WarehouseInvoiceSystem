@@ -5,10 +5,10 @@
     @* Labeled trigger (toolbar mode) vs icon-only trigger (legacy/header mode) *@
     @if (Label is not null)
     {
-        <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "") @(_selectedItem is not null ? GetColorClass(_selectedItem.Color) : "")"
+        <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "") @(_isFilterActive && _selectedItem is not null ? GetColorClass(_selectedItem.Color) : "")"
                 @onclick="TogglePopover"
                 type="button">
-            <span class="wis-filter-btn__label @(_selectedItem is not null ? "wis-filter-btn__label--selected" : "")">
+            <span class="wis-filter-btn__label @(_isFilterActive ? "wis-filter-btn__label--selected" : "")">
                 @(_selectedItem is not null ? _selectedItem.Label : Label)
             </span>
             <span class="wis-filter-btn__icon">
@@ -34,8 +34,9 @@
     }
 
     <MudPopover Open="_open"
-                AnchorOrigin="Origin.BottomLeft"
-                TransformOrigin="Origin.TopLeft"
+                AnchorOrigin="@PopoverAnchorOrigin"
+                TransformOrigin="@PopoverTransformOrigin"
+                Fixed="true"
                 Paper="true"
                 Class="pa-3"
                 Style="z-index: 1400; min-width: 180px;">
@@ -72,7 +73,7 @@
                 {
                     @foreach (FilterPopoverItem<TValue> item in Items)
                     {
-                        bool isChecked = _multiValues.Contains(item.Value!);
+                        bool isChecked = _multiValues.Contains(item.Value);
                         <div class="d-flex align-center py-1 px-1 rounded"
                              style="gap: 8px; cursor: pointer;">
                             <MudCheckBox T="bool"
@@ -99,7 +100,6 @@
 @code {
     /// <summary>
     /// When set, renders a labeled pill button instead of a bare icon.
-    /// Use this in the WisGridToolbar Filters slot.
     /// </summary>
     [Parameter]
     public string? Label { get; set; }
@@ -124,24 +124,34 @@
     [Parameter]
     public EventCallback<IReadOnlyCollection<TValue>> SelectedValuesChanged { get; set; }
 
+
+
+    /// <summary>Controls which edge of the trigger the popover anchors to. Default: BottomLeft.</summary>
+    [Parameter]
+    public Origin PopoverAnchorOrigin { get; set; } = Origin.BottomLeft;
+
+    /// <summary>Controls which edge of the popover aligns to the anchor. Default: TopLeft.</summary>
+    [Parameter]
+    public Origin PopoverTransformOrigin { get; set; } = Origin.TopLeft;
+
     private bool _open = false;
     private TValue? _singleValue;
-    private HashSet<TValue> _multiValues = [];
+    private List<TValue?> _multiValues = [];
 
     private bool _isFilterActive => Mode == FilterSelectionMode.Single
-        ? _singleValue != null && !_singleValue.Equals(default(TValue))
+        ? !Equals(_singleValue, default(TValue))
         : _multiValues.Count > 0;
 
-    // Resolved selected item for Single mode — null when inactive or default "All" value
+    // Resolved selected item — non-null whenever something is selected, including the default item
     private FilterPopoverItem<TValue>? _selectedItem =>
-        Mode == FilterSelectionMode.Single && _isFilterActive
+        Mode == FilterSelectionMode.Single && _singleValue is not null
             ? Items.FirstOrDefault(i => Equals(i.Value, _singleValue))
             : null;
 
     protected override void OnParametersSet()
     {
         _singleValue = SelectedValue;
-        _multiValues = SelectedValues?.ToHashSet() ?? [];
+        _multiValues = SelectedValues?.Cast<TValue?>().ToList() ?? [];
     }
 
     private static string GetColorClass(Color color) => color switch
@@ -159,6 +169,15 @@
 
     private async Task OnSingleValueChanged(TValue value)
     {
+        // Toggle off if already selected
+        if (Equals(_singleValue, value) && _isFilterActive)
+        {
+            _singleValue = default;
+            _open = false;
+            await SelectedValueChanged.InvokeAsync(default);
+            return;
+        }
+
         _singleValue = value;
         _open = false;
         await SelectedValueChanged.InvokeAsync(value);
@@ -167,10 +186,15 @@
     private async Task OnMultiValueChanged(TValue value, bool isChecked)
     {
         if (isChecked)
-            _multiValues.Add(value);
+        {
+            if (!_multiValues.Contains(value))
+                _multiValues.Add(value);
+        }
         else
+        {
             _multiValues.Remove(value);
+        }
 
-        await SelectedValuesChanged.InvokeAsync(_multiValues.ToList().AsReadOnly());
+        await SelectedValuesChanged.InvokeAsync(_multiValues.Cast<TValue>().ToList().AsReadOnly());
     }
 }

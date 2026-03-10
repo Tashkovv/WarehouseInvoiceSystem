@@ -38,85 +38,67 @@ else
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
 
-                    @* 5-column grid: [1fr][1fr][1px divider][1fr][1fr] × rows: identity | h-divider | stats *@
-                    <div class="wis-product-header-grid">
-
-                        @* Identity — left half (cols 1-2) *@
-                        <div class="wis-product-header-left">
-                            <div class="wis-detail-identity mb-3">
-                                <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">@_product.Name</MudText>
-                                <MudChip T="string" Size="Size.Small" Color="@(_product.IsActive? Color.Success: Color.Default)">
-                                    @(_product.IsActive? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))
-                                </MudChip>
-                            </div>
-                            <div class="wis-detail-contact">
-                                <div class="wis-detail-contact-item">
-                                    <MudIcon Icon="@Icons.Material.Filled.Tag" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2" Style="font-weight: 500;">@_product.Code</MudText>
-                                </div>
-                                <div class="wis-detail-contact-item">
-                                    <MudIcon Icon="@Icons.Material.Filled.Scale" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2">@_product.Unit</MudText>
-                                </div>
-                                @if (!string.IsNullOrWhiteSpace(_product.Description))
-                                {
-                                    <div class="wis-detail-contact-item">
-                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_product.Description</MudText>
-                                    </div>
-                                }
-                            </div>
+                    @* ── Identity row: name+chip left, warehouse filter right ── *@
+                    <div class="wis-product-identity-row">
+                        <div class="wis-detail-identity">
+                            <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">@_product.Name</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@(_product.IsActive? Color.Success: Color.Default)">
+                                @(_product.IsActive? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))
+                            </MudChip>
                         </div>
+                        <FilterPopoverList TValue="Guid?"
+                                           Label="@Localization.GetString("AllWarehouses")"
+                                           Items="_warehouseItems"
+                                           Mode="FilterSelectionMode.Single"
+                                           PopoverAnchorOrigin="Origin.BottomRight"
+                                           PopoverTransformOrigin="Origin.TopRight"
+                                           SelectedValue="_selectedWarehouseId"
+                                           SelectedValueChanged="@(async (Guid? v) => await OnWarehouseChanged(v))" />
+                    </div>
 
-                        @* Shared vertical divider — spans all rows *@
-                        <div class="wis-product-header-divider"></div>
-
-                        @* Warehouse selector — right half (cols 4-5) *@
-                        <div class="wis-product-header-right">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label mb-1">
-                                @Localization.GetString("Warehouse")
-                            </MudText>
-                            <MudSelect T="Guid?"
-                                       Value="_selectedWarehouseId"
-                                       ValueChanged="@(async (Guid? v) => await OnWarehouseChanged(v))"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       AnchorOrigin="Origin.BottomLeft"
-                                       FullWidth="true">
-                                <MudSelectItem Value="@((Guid?)null)">@Localization.GetString("AllWarehouses")</MudSelectItem>
-                                @foreach (WarehouseDto w in _warehouses)
-                                {
-                                    <MudSelectItem Value="@((Guid?)w.Id)">
-                                        @w.Name @(w.IsDefault ? $" ({Localization.GetString("Default")})" : "")
-                                    </MudSelectItem>
-                                }
-                            </MudSelect>
+                    @* ── Meta row: code, unit, description ── *@
+                    <div class="wis-detail-contact wis-product-meta-row">
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Tag" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Style="font-weight: 500;">@_product.Code</MudText>
                         </div>
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Scale" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2">@_product.Unit</MudText>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_product.Description))
+                        {
+                            <div class="wis-detail-contact-item">
+                                <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_product.Description</MudText>
+                            </div>
+                        }
+                    </div>
 
-                        @* Horizontal divider — full width (cols 1-5) *@
-                        <div class="wis-product-header-h-divider"></div>
+                    @* ── Stats bar — 4 stats, full width ── *@
+                    <div class="wis-product-stats-bar">
 
-                        @* Stat 1 — col 1 *@
-                        <div class="wis-product-stat-1">
+                        @* Stat 1 *@
+                        <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("DefaultPrice")</MudText>
                             <div class="wis-stat-value mud-success-text">@_product.DefaultPrice.ToString("C")</div>
                         </div>
 
-                        @* Stat 2 — col 2 *@
-                        <div class="wis-product-stat-2">
+                        @* Stat 2 *@
+                        <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalStock")</MudText>
                             <div class="wis-stat-value @StockColorClass">@_filteredTotalStock.ToString("N2") @_product.Unit</div>
                             <MudText Typo="Typo.caption" Color="@StockBadgeColor" Class="mt-1">@StockStatusLabel</MudText>
                         </div>
 
-                        @* Stat 3 — col 4 *@
-                        <div class="wis-product-stat-3">
+                        @* Stat 3 *@
+                        <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("StockValue")</MudText>
                             <div class="wis-stat-value mud-success-text">@_filteredStockValue.ToString("C")</div>
                         </div>
 
-                        @* Stat 4 — col 5 *@
-                        <div class="wis-product-stat-4">
+                        @* Stat 4 *@
+                        <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("GrossMargin")</MudText>
                             <div class="wis-stat-value @(_scopedGrossMarginPct > 30 ? "mud-success-text" : "mud-warning-text")">
                                 @_scopedGrossMarginPct.ToString("N1")%
@@ -330,49 +312,30 @@ else
 
                 <MudCardContent Class="pa-4" Style="border-bottom: 1px solid var(--mud-palette-divider);">
                     <div class="d-flex align-center flex-wrap gap-3">
-                        <MudSelect T="string"
-                                   Value="_historyPartyFilter"
-                                   ValueChanged="@((string v) => { _historyPartyFilter = v; })"
-                                   Label="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))"
-                                   Variant="Variant.Outlined"
-                                   Margin="Margin.Dense"
-                                   Clearable="true"
-                                   Class="wis-filter-input"
-                                   Style="min-width: 220px;">
-                            @foreach (string party in _historyParties)
-                            {
-                                <MudSelectItem Value="@((string)party)">@party</MudSelectItem>
-                            }
-                        </MudSelect>
+                        <div style="flex-shrink: 0;">
+                            <FilterPopoverList TValue="string"
+                                               Label="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))"
+                                               Items="@(_historyParties.Select(p => new FilterPopoverItem<string> { Label = p, Value = p, Color = Color.Default }).ToList())"
+                                               Mode="FilterSelectionMode.Single"
+                                               SelectedValue="@_historyPartyFilter"
+                                               SelectedValueChanged="@((string v) => { _historyPartyFilter = string.IsNullOrEmpty(v) ? null : v; StateHasChanged(); })" />
+                        </div>
 
-                        <MudDatePicker @bind-Date="_historyFrom"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       DateFormat="dd MMM yyyy"
-                                       Label="@Localization.GetString("From")"
-                                       PickerVariant="PickerVariant.Inline"
-                                       Class="wis-filter-input"
-                                       Style="width: 315px;" />
+                        @* Period preset + date range picker *@
+                        <WisDateRangeFilter @ref="_dateRangeFilter"
+                                            DateRange="_historyDateRange"
+                                            DateRangeChanged="OnDateRangeChanged"
+                                            DatePreset="_historyDatePreset"
+                                            DatePresetChanged="OnDatePresetChanged" />
 
-                        <MudDatePicker @bind-Date="_historyTo"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       DateFormat="dd MMM yyyy"
-                                       Label="@Localization.GetString("To")"
-                                       MaxDate="DateTime.Today"
-                                       PickerVariant="PickerVariant.Inline"
-                                       Class="wis-filter-input"
-                                       Style="width: 315px;" />
-
-                        @if (_historyPartyFilter != null || _historyFrom != null || _historyTo != null)
+                        @if (_historyPartyFilter != null || _historyDateRange.Start != null || _historyDateRange.End != null)
                         {
-                            <MudButton Variant="Variant.Text"
-                                       Color="Color.Default"
-                                       Size="Size.Small"
-                                       StartIcon="@Icons.Material.Filled.Clear"
-                                       OnClick="ClearHistoryFilter">
+                            <button type="button"
+                                    class="wis-filter-btn wis-filter-btn--clear"
+                                    @onclick="ClearHistoryFilter">
+                                <MudIcon Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Style="margin-right: 6px;" />
                                 @Localization.GetString("ClearFilters")
-                            </MudButton>
+                            </button>
                         }
 
                         <MudSpacer />
@@ -473,6 +436,17 @@ else
     private ProductAnalyticsDto _analytics = new();
 
     private List<WarehouseDto> _warehouses = [];
+
+    private List<FilterPopoverItem<Guid?>> _warehouseItems => new[] {
+            new FilterPopoverItem<Guid?> { Label = Localization.GetString("AllWarehouses"), Value = null, Color = Color.Default }
+        }
+        .Concat(_warehouses.Select(w => new FilterPopoverItem<Guid?>
+        {
+            Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+            Value = w.Id,
+            Color = Color.Default
+        }))
+        .ToList();
     private Guid? _selectedWarehouseId = null;
 
     private WisDetailActionItem? _primaryAction;
@@ -761,8 +735,9 @@ else
     private bool _loadingHistory = false;
     private HistoryMode _historyMode = HistoryMode.Purchased;
     private string? _historyPartyFilter = null;
-    private DateTime? _historyFrom = null;
-    private DateTime? _historyTo = null;
+    private DateRange _historyDateRange = new(null, null);
+    private int? _historyDatePreset = null;
+    private WisDateRangeFilter? _dateRangeFilter;
 
     private List<ProductTransactionRow> _allHistoryPurchased = [];
     private List<ProductTransactionRow> _allHistorySold = [];
@@ -775,8 +750,8 @@ else
 
     private IEnumerable<ProductTransactionRow> _filteredHistory => _activeHistory
         .Where(h => _historyPartyFilter == null || h.PartyName == _historyPartyFilter)
-        .Where(h => _historyFrom == null || h.Date.Date >= _historyFrom.Value.Date)
-        .Where(h => _historyTo == null || h.Date.Date <= _historyTo.Value.Date)
+        .Where(h => _historyDateRange.Start == null || h.Date.Date >= _historyDateRange.Start.Value.Date)
+        .Where(h => _historyDateRange.End == null || h.Date.Date <= _historyDateRange.End.Value.Date)
         .OrderByDescending(h => h.Date);
 
     private IEnumerable<string> _historyParties => _activeHistory
@@ -843,8 +818,20 @@ else
     private async Task ClearHistoryFilter()
     {
         _historyPartyFilter = null;
-        _historyFrom = null;
-        _historyTo = null;
+        if (_dateRangeFilter is not null)
+            await _dateRangeFilter.ClearAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnDatePresetChanged(int? days)
+    {
+        _historyDatePreset = days;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnDateRangeChanged(DateRange range)
+    {
+        _historyDateRange = range;
         await InvokeAsync(StateHasChanged);
     }
 

@@ -63,14 +63,12 @@
             @if (HasAnyActiveFilter || !string.IsNullOrEmpty(SearchValue))
             {
                 <div class="wis-toolbar-divider"></div>
-                <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
-                           Variant="Variant.Outlined"
-                           Color="Color.Default"
-                           Size="Size.Small"
-                           Class="wis-toolbar-clearall-btn"
-                           OnClick="HandleClearAll">
+                <button type="button"
+                        class="wis-filter-btn wis-filter-btn--clear"
+                        @onclick="HandleClearAll">
+                    <MudIcon Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Style="margin-right: 6px;" />
                     @Localization.GetString("ClearFilters")
-                </MudButton>
+                </button>
             }
 
             @* Search — grows to fill remaining space *@
