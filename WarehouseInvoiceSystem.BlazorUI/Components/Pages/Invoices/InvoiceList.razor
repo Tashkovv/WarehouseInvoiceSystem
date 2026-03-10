@@ -16,7 +16,7 @@
 
 <PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Invoices")
     </MudText>
@@ -145,7 +145,7 @@
                                 Title="@Localization.GetString("InvoiceNumber")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-family: monospace;" />
+                                CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.CompanyName"
                                 Title="@Localization.GetString("Company")"
@@ -202,7 +202,7 @@
                                 Sortable="true"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                        <MudText Typo="Typo.body2" Class="wis-cell-amount">
                             @context.Item.TotalAmount.ToString("N2")
                         </MudText>
                     </CellTemplate>
@@ -223,9 +223,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="110"
-                                HeaderStyle="width: 110px;"
-                                CellStyle="width: 110px;">
+                                HeaderClass="wis-col-actions-3"
+                                CellClass="wis-col-actions-3">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -252,21 +251,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Receipt"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoInvoicesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Receipt"
+                                     Message="@Localization.GetString("NoInvoicesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

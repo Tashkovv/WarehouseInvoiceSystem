@@ -11,7 +11,7 @@
 
 <PageTitle>@Localization.GetString("Individuals") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Individuals")
     </MudText>
@@ -54,19 +54,14 @@
                 <PropertyColumn Property="x => x.FullName"
                                 Title="@Localization.GetString("FullName")"
                                 Sortable="true"
-                                IsEditable="false">
-                    <CellTemplate>
-                        <MudText Typo="Typo.body2" Style="font-weight: 600;">
-                            @context.Item.FullName
-                        </MudText>
-                    </CellTemplate>
-                </PropertyColumn>
+                                IsEditable="false"
+                                CellClass="wis-cell-primary" />
 
                 <PropertyColumn Property="x => x.IdentificationNumber"
                                 Title="@Localization.GetString("IdentificationNumber")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-family: monospace;" />
+                                CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.Phone"
                                 Title="@Localization.GetString("Phone")"
@@ -95,9 +90,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="100"
-                                HeaderStyle="width: 100px;"
-                                CellStyle="width: 100px;">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -117,21 +111,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Person"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoIndividualsFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Person"
+                                     Message="@Localization.GetString("NoIndividualsFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

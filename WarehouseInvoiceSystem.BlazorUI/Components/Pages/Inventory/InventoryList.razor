@@ -14,7 +14,7 @@
 
 <PageTitle>@Localization.GetString("Inventory") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Inventory")
     </MudText>
@@ -108,7 +108,7 @@
                                 Title="@Localization.GetString("Code")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-family: monospace;" />
+                                CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.ProductName"
                                 Title="@Localization.GetString("ProductName")"
@@ -127,7 +127,7 @@
                     <CellTemplate>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                             <MudText Typo="Typo.body2"
-                                     Style="font-weight: 600;"
+                                     Class="wis-cell-amount"
                                      Color="@(IsLowStock(context.Item) ? Color.Error : Color.Default)">
                                 @context.Item.Quantity.ToString("N2")
                             </MudText>
@@ -171,36 +171,28 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="60"
-                                HeaderStyle="width: 60px;"
-                                CellStyle="width: 60px;">
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
                     <CellTemplate>
-                        <MudIconButton Icon="@Icons.Material.Filled.Inventory2"
-                                       Size="Size.Small"
-                                       Color="Color.Primary"
-                                       Title="@Localization.GetString("AdjustStock")"
-                                       OnClick="@(() => OpenAdjustDialog(context.Item.ProductId, context.Item.WarehouseId))" />
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <MudIconButton Icon="@Icons.Material.Filled.Inventory2"
+                                           Size="Size.Small"
+                                           Color="Color.Primary"
+                                           Title="@Localization.GetString("AdjustStock")"
+                                           OnClick="@(() => OpenAdjustDialog(context.Item.ProductId, context.Item.WarehouseId))" />
+                        </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
 
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Inventory"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoItemsFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Inventory"
+                                     Message="@Localization.GetString("NoItemsFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

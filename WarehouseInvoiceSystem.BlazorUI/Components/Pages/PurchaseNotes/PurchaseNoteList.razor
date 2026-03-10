@@ -14,7 +14,7 @@
 
 <PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("PurchaseNotes")
     </MudText>
@@ -126,14 +126,14 @@
                                 Title="@Localization.GetString("Number")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-family: monospace;" />
+                                CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.IndividualFullName"
                                 Title="@Localization.GetString("Individual")"
                                 Sortable="true"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudText Typo="Typo.body2" Style="font-weight: 500;">
+                        <MudText Typo="Typo.body2" Class="wis-cell-primary">
                             @context.Item.IndividualFullName
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
@@ -165,7 +165,7 @@
                                 Sortable="true"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                        <MudText Typo="Typo.body2" Class="wis-cell-amount">
                             @context.Item.TotalAmount.ToString("C")
                         </MudText>
                     </CellTemplate>
@@ -187,9 +187,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="110"
-                                HeaderStyle="width: 110px;"
-                                CellStyle="width: 110px;">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -211,21 +210,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Receipt"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoPurchaseNotesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Receipt"
+                                     Message="@Localization.GetString("NoPurchaseNotesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

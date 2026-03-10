@@ -12,7 +12,7 @@
 
 <PageTitle>@Localization.GetString("Payments") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Payments")
     </MudText>
@@ -113,7 +113,7 @@
                     <CellTemplate>
                         <MudLink Href="@($"/invoices/{context.Item.InvoiceId}")"
                                  Typo="Typo.body2"
-                                 Style="font-family: monospace;"
+                                 Class="wis-cell-mono"
                                  @onclick:stopPropagation="true">
                             @context.Item.InvoiceNumber
                         </MudLink>
@@ -125,7 +125,7 @@
                                 Sortable="true"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudText Typo="Typo.body2" Color="Color.Success" Style="font-weight: 600;">
+                        <MudText Typo="Typo.body2" Class="wis-cell-amount-success">
                             @context.Item.Amount.ToString("C")
                         </MudText>
                     </CellTemplate>
@@ -155,9 +155,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="80"
-                                HeaderStyle="width: 80px;"
-                                CellStyle="width: 80px;">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -177,21 +176,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Payment"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoPaymentsFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Payment"
+                                     Message="@Localization.GetString("NoPaymentsFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

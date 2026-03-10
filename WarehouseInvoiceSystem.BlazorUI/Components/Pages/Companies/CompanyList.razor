@@ -12,7 +12,7 @@
 
 <PageTitle>@Localization.GetString("Companies") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Companies")
     </MudText>
@@ -62,7 +62,7 @@
                                 Title="@Localization.GetString("Name")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-weight: 600;" />
+                                CellClass="wis-cell-primary" />
 
                 <PropertyColumn Property="x => x.Type"
                                 Title="@Localization.GetString("Type")"
@@ -109,9 +109,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="80"
-                                HeaderStyle="width: 80px;"
-                                CellStyle="width: 80px;">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -131,21 +130,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Business"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoCompaniesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Business"
+                                     Message="@Localization.GetString("NoCompaniesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

@@ -11,7 +11,7 @@
 
 <PageTitle>@Localization.GetString("Warehouses") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 15px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Warehouses")
     </MudText>
@@ -45,7 +45,7 @@
                                 IsEditable="false">
                     <CellTemplate>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudText Typo="Typo.body2" Style="font-weight: 500;">
+                            <MudText Typo="Typo.body2" Class="wis-cell-primary">
                                 @context.Item.Name
                             </MudText>
                             @if (context.Item.IsDefault)
@@ -79,9 +79,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="110"
-                                HeaderStyle="width: 110px;"
-                                CellStyle="width: 110px;">
+                                HeaderClass="wis-col-actions-3"
+                                CellClass="wis-col-actions-3">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -108,21 +107,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Warehouse"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoWarehousesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Warehouse"
+                                     Message="@Localization.GetString("NoWarehousesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>

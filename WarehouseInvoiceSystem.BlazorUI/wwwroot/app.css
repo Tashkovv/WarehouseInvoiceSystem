@@ -56,6 +56,16 @@ html {
     gap: 16px;
 }
 
+.gap-8 {
+    gap: 32px;
+}
+
+/* Page title wrapper — consistent spacing above every list page */
+.wis-page-header {
+    margin-bottom: 15px;
+    padding: 4px 0;
+}
+
 .text-secondary {
     color: var(--mud-palette-text-secondary);
 }
@@ -422,11 +432,6 @@ html {
     padding-top: 4px;
 }
 
-/* ── Consistent row height across all list grids ── */
-:root {
-    --wis-row-h: 50px;
-}
-
 /* Body cursor — prevent col-resize cursor leaking from header resizer */
 .wis-data-grid .mud-table-body .mud-table-cell {
     cursor: pointer !important;
@@ -479,6 +484,84 @@ html {
     .wis-data-grid .mud-table-body tr.row-status-default:hover td:first-child {
         border-left: 5px solid var(--mud-palette-action-disabled) !important;
     }
+
+/* =============================================
+   WIS Cell style classes — replace all inline CellStyle/style strings
+   ============================================= */
+
+/* Primary text column — name, title, main identifier */
+.wis-cell-primary {
+    font-weight: 600;
+}
+
+/* Mono column — codes, invoice numbers, IDs */
+.wis-cell-mono {
+    font-family: monospace;
+}
+
+/* Mono + medium weight — product codes with label weight */
+.wis-cell-mono-medium {
+    font-family: monospace;
+    font-weight: 500;
+}
+
+/* Amount column — bold monetary value */
+.wis-cell-amount {
+    font-weight: 600;
+}
+
+/* Amount column — bold + success color (e.g. payments) */
+.wis-cell-amount-success {
+    font-weight: 600;
+    color: var(--mud-palette-success);
+}
+
+/* Secondary weight — medium, e.g. warehouse name in a stack */
+.wis-cell-semibold {
+    font-weight: 500;
+}
+
+/* =============================================
+   WIS Grid empty state — NoRecordsContent
+   ============================================= */
+.wis-no-records {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    gap: 8px;
+    color: var(--mud-palette-text-secondary);
+}
+
+/* =============================================
+   WIS Actions column — standardized widths
+   Three sizes: 1, 2, or 3 icon buttons
+   ============================================= */
+:root {
+    --wis-row-h: 50px;
+    --wis-actions-1: 48px; /* 1 icon button  */
+    --wis-actions-2: 84px; /* 2 icon buttons */
+    --wis-actions-3: 120px; /* 3 icon buttons */
+}
+
+.wis-col-actions-1 {
+    width: var(--wis-actions-1) !important;
+    min-width: var(--wis-actions-1) !important;
+    max-width: var(--wis-actions-1) !important;
+    text-align: center !important;
+}
+
+.wis-col-actions-2 {
+    width: var(--wis-actions-2) !important;
+    min-width: var(--wis-actions-2) !important;
+    max-width: var(--wis-actions-2) !important;
+}
+
+.wis-col-actions-3 {
+    width: var(--wis-actions-3) !important;
+    min-width: var(--wis-actions-3) !important;
+    max-width: var(--wis-actions-3) !important;
+}
 
 /* Force MudAlert inner content wrapper to stretch full width */
 .wis-alert-fullwidth .mud-alert-message {
