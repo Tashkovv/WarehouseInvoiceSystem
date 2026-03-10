@@ -101,20 +101,15 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                HeaderClass="wis-col-actions-2"
-                                CellClass="wis-col-actions-2">
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
                     <CellTemplate>
-                        <MudStack Row="true" Spacing="0">
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Primary"
                                            Title="@Localization.GetString("Edit")"
                                            OnClick="@(() => OpenEditDialog(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteProduct(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -298,35 +293,6 @@
         {
             Console.WriteLine($"Error creating product: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingProduct"), Severity.Error);
-        }
-    }
-
-    private async Task DeleteProduct(Guid id)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteProductConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
-
-        if (result == true)
-        {
-            try
-            {
-                bool deleted = await ProductService.DeleteProductAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("ProductDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting product: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
-            }
         }
     }
 
