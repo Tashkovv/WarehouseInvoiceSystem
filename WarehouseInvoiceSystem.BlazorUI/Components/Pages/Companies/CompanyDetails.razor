@@ -52,34 +52,36 @@ else
 
                         <!-- Left half: contact pills -->
                         <div class="wis-contact-row-left">
-                            @if (!string.IsNullOrWhiteSpace(_company.ContactPerson))
-                            {
-                                <div class="wis-detail-contact-item">
-                                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_company.ContactPerson</MudText>
-                                </div>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(_company.Phone))
-                            {
-                                <div class="wis-detail-contact-item">
-                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2">@_company.Phone</MudText>
-                                </div>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(_company.Email))
-                            {
-                                <div class="wis-detail-contact-item">
-                                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2">@_company.Email</MudText>
-                                </div>
-                            }
-                            @if (!string.IsNullOrWhiteSpace(_company.Address))
-                            {
-                                <div class="wis-detail-contact-item">
-                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2">@_company.Address</MudText>
-                                </div>
-                            }
+                            <div class="wis-detail-contact">
+                                @if (!string.IsNullOrWhiteSpace(_company.ContactPerson))
+                                {
+                                    <div class="wis-detail-contact-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_company.ContactPerson</MudText>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(_company.Phone))
+                                {
+                                    <div class="wis-detail-contact-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_company.Phone</MudText>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(_company.Email))
+                                {
+                                    <div class="wis-detail-contact-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_company.Email</MudText>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(_company.Address))
+                                {
+                                    <div class="wis-detail-contact-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_company.Address</MudText>
+                                    </div>
+                                }
+                            </div>
                         </div>
 
                         <!-- Vertical divider -->
@@ -87,33 +89,35 @@ else
 
                         <!-- Right half: company metadata with labels -->
                         <div class="wis-contact-row-right">
-                            @if (!string.IsNullOrWhiteSpace(_company.TaxId))
-                            {
+                            <div class="d-flex gap-8 flex-wrap align-start">
+                                @if (!string.IsNullOrWhiteSpace(_company.TaxId))
+                                {
+                                    <div class="wis-contact-meta-item">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TaxID")</MudText>
+                                        <div class="d-flex align-center gap-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2">@_company.TaxId</MudText>
+                                        </div>
+                                    </div>
+                                }
                                 <div class="wis-contact-meta-item">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TaxID")</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PaymentTerms")</MudText>
                                     <div class="d-flex align-center gap-1">
-                                        <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2">@_company.TaxId</MudText>
+                                        <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_company.PaymentTermsDays @Localization.GetString("Days")</MudText>
                                     </div>
                                 </div>
-                            }
-                            <div class="wis-contact-meta-item">
-                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PaymentTerms")</MudText>
-                                <div class="d-flex align-center gap-1">
-                                    <MudIcon Icon="@Icons.Material.Filled.CalendarMonth" Size="Size.Small" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.body2">@_company.PaymentTermsDays @Localization.GetString("Days")</MudText>
-                                </div>
+                                @if (_company.CreditLimit != 0)
+                                {
+                                    <div class="wis-contact-meta-item">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("CreditLimit")</MudText>
+                                        <div class="d-flex align-center gap-1">
+                                            <MudIcon Icon="@Icons.Material.Filled.CreditCard" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2">@_company.CreditLimit.ToString("C")</MudText>
+                                        </div>
+                                    </div>
+                                }
                             </div>
-                            @if (_company.CreditLimit != 0)
-                            {
-                                <div class="wis-contact-meta-item">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("CreditLimit")</MudText>
-                                    <div class="d-flex align-center gap-1">
-                                        <MudIcon Icon="@Icons.Material.Filled.CreditCard" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2">@_company.CreditLimit.ToString("C")</MudText>
-                                    </div>
-                                </div>
-                            }
                         </div>
 
                     </div>

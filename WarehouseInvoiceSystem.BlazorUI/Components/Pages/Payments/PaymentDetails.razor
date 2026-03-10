@@ -29,12 +29,12 @@ else
     <MudCard Elevation="2">
         <MudCardContent Class="pa-6">
 
-            <!-- wis-ca-outer: left col (amount + pills) | right col (notes centered, spans full height) -->
-            <div class="wis-ca-outer mb-4">
+            <!-- wis-contact-row: left col (amount + pills) | divider | right col (notes) -->
+            <div class="wis-contact-row mb-4">
 
-                <div class="wis-ca-left">
+                <div class="wis-contact-row-left">
                     <!-- Amount + chip -->
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PaymentAmount")</MudText>
                         <div class="d-flex align-center gap-3">
                             <MudText Typo="Typo.h3" Color="Color.Success">@_payment.Amount.ToString("C")</MudText>
@@ -48,7 +48,7 @@ else
                     </div>
 
                     <!-- Detail pills -->
-                    <div class="wis-detail-contact mt-4">
+                    <div class="wis-detail-contact">
                         <div class="wis-detail-contact-item">
                             <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Color="Color.Secondary" />
                             <MudText Typo="Typo.body2">@_payment.PaymentDate.ToString("dd MMM yyyy")</MudText>
@@ -76,7 +76,8 @@ else
 
                 @if (!string.IsNullOrWhiteSpace(_payment.Notes))
                 {
-                    <div class="wis-ca-right">
+                    <div class="wis-contact-row-divider"></div>
+                    <div class="wis-contact-row-right">
                         <div class="d-flex align-start gap-2">
                             <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" Class="mt-1" />
                             <div>

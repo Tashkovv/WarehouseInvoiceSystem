@@ -801,14 +801,13 @@ html {
         border-right: none;
     }
 
-/* ── Company Analytics Layout ─────────────────────────────────────────────
-   Outer: CSS grid, 2fr left (two stacked rows) | 1fr right (history)
-   The right column naturally spans the full height of both left rows
-   because it's a single grid cell in a 2-column grid.
+/* ── Two-column analytics layout ──────────────────────────────────────────
+   Outer: CSS grid, 1fr left (stacked stat rows) | 1fr right (history/summary)
+   Used by CompanyDetails analytics section.
 ──────────────────────────────────────────────────────────────────────────── */
 .wis-ca-outer {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
     gap: 0;
     align-items: stretch;
 }
@@ -916,17 +915,6 @@ html {
     border-bottom: none;
 }
 
-/* Embedded detail table — kept for backwards compat */
-.wis-detail-table .mud-table-head th {
-    font-size: 0.72rem !important;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--mud-palette-text-secondary) !important;
-    font-weight: 500;
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
-    border-bottom: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
-}
 
 .wis-section-label {
     text-transform: uppercase;
