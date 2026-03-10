@@ -58,12 +58,6 @@
                                  Adornment="Adornment.Start"
                                  AdornmentText="MKD" />
             </MudItem>
-            <MudItem xs="12" sm="4">
-                <MudSwitch T="bool"
-                           @bind-Value="_product.IsActive"
-                           Color="Color.Success"
-                           Label="@(_product.IsActive ? Localization.GetString("ProductActive") : Localization.GetString("ProductInactive"))" />
-            </MudItem>
         </MudGrid>
     </DialogContent>
     <DialogActions>

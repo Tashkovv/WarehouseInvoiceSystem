@@ -434,6 +434,13 @@
                 ["ProductCreated"] = "Product created successfully",
                 ["ProductUpdated"] = "Product updated successfully",
                 ["ProductDeleted"] = "Product deleted successfully",
+                ["ProductDeactivated"] = "Product deactivated successfully",
+                ["ProductActivated"] = "Product activated successfully",
+                ["ProductDetailsWarehouseHint"] = "Stock, value and margin figures reflect the selected warehouse.",
+                ["DeactivateProduct"] = "Deactivate Product",
+                ["ActivateProduct"] = "Activate Product",
+                ["DeactivateProductConfirm"] = "Are you sure you want to deactivate this product? It will no longer appear in new invoices or purchase notes.",
+                ["ActivateProductConfirm"] = "Are you sure you want to activate this product?",
                 ["DeleteProductConfirm"] = "Are you sure you want to delete this product?",
                 ["ErrorLoadingProduct"] = "Error loading product",
                 ["ErrorLoadingProducts"] = "Error loading products",
@@ -1054,6 +1061,13 @@
                 ["ProductCreated"] = "Производот е успешно креиран",
                 ["ProductUpdated"] = "Производот е успешно изменет",
                 ["ProductDeleted"] = "Производот е успешно избришан",
+                ["ProductDeactivated"] = "Производот е успешно деактивиран",
+                ["ProductActivated"] = "Производот е успешно активиран",
+                ["ProductDetailsWarehouseHint"] = "Залихата, вредноста и маржата зависат од избраниот магацин.",
+                ["DeactivateProduct"] = "Деактивирај Производ",
+                ["ActivateProduct"] = "Активирај Производ",
+                ["DeactivateProductConfirm"] = "Дали сте сигурни дека сакате да го деактивирате овој производ? Нема да се прикажува во нови фактури или белешки за откуп.",
+                ["ActivateProductConfirm"] = "Дали сте сигурни дека сакате да го активирате овој производ?",
                 ["DeleteProductConfirm"] = "Дали сте сигурни дека сакате да го избришете овој производ?",
                 ["ErrorLoadingProduct"] = "Грешка при вчитување на производот",
                 ["ErrorLoadingProducts"] = "Грешка при вчитување на производите",
@@ -1268,7 +1282,7 @@
 
             CultureInfo culture = new($"{language}-{language.ToUpper()}");
 
-            culture.NumberFormat.CurrencySymbol = "MKD";
+            culture.NumberFormat.CurrencySymbol = language == "mk" ? "ден." : "MKD";
             culture.NumberFormat.CurrencyDecimalDigits = 2;
             culture.NumberFormat.CurrencyPositivePattern = 3;
             CultureInfo.DefaultThreadCurrentCulture = culture;

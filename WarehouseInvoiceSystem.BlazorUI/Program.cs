@@ -14,7 +14,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Culture setup 
 CultureInfo mkdCulture = new("mk-MK");
-mkdCulture.NumberFormat.CurrencySymbol = "MKD";
+mkdCulture.NumberFormat.CurrencySymbol = "ден.";
 mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
 mkdCulture.NumberFormat.CurrencyPositivePattern = 3;
 

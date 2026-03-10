@@ -130,6 +130,21 @@
             return product;
         }
 
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            Product? product = await context.Products
+                .Where(p => p.DeletedOn == null)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product is null)
+                return false;
+
+            product.IsActive = isActive;
+            await context.SaveChangesAsync();
+
+            return true;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             Product? product = await context.Products.FindAsync(id);

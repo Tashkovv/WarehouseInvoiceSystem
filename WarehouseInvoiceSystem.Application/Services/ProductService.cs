@@ -72,15 +72,6 @@
             // Get stock information
             await PopulateStockAnalytics(productId, analytics);
 
-            // Get sales analytics (from invoices)
-            await PopulateSalesAnalytics(productId, analytics);
-
-            // Get purchase analytics (from purchase notes)
-            await PopulatePurchaseAnalytics(productId, analytics);
-
-            // Calculate profitability
-            CalculateProfitability(analytics);
-
             // Get recent transactions
             await PopulateRecentTransactions(productId, analytics);
 
@@ -202,6 +193,11 @@
             return MapToDto(updated);
         }
 
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            return await productRepository.SetActiveStatusAsync(id, isActive);
+        }
+
         public async Task<bool> DeleteProductAsync(Guid id)
         {
             return await productRepository.DeleteAsync(id);
@@ -215,8 +211,6 @@
                 var stockList = stockLevels.ToList();
 
                 analytics.TotalStockAcrossWarehouses = stockList.Sum(sl => sl.Quantity);
-                analytics.TotalStockValue = stockList.Sum(sl => sl.Quantity * analytics.CurrentSellingPrice);
-                analytics.IsOutOfStock = analytics.TotalStockAcrossWarehouses == 0;
                 analytics.HasLowStock = stockList.Any(sl => sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0);
 
                 analytics.StockByWarehouse = stockList.Select(sl => new WarehouseStockDto
@@ -237,87 +231,6 @@
             }
         }
 
-        private async Task PopulateSalesAnalytics(Guid productId, ProductAnalyticsDto analytics)
-        {
-            try
-            {
-                IEnumerable<InvoiceLine> lines = await invoiceRepository
-                    .GetLineItemsByProductIdAsync(productId);
-
-                var salesLines = lines
-                    .Where(li => li.Invoice.Type == InvoiceType.Receivable)
-                    .ToList();
-
-                if (salesLines.Count == 0) return;
-
-                analytics.TotalUnitsSold = salesLines.Sum(li => li.Quantity);
-                analytics.TotalRevenue = salesLines.Sum(li => li.TotalAmount);
-                analytics.AverageSaleQuantity = (decimal)salesLines.Average(li => li.Quantity);
-                analytics.LastSaleDate = salesLines.Max(li => li.Invoice.IssueDate);
-
-                var topCustomer = salesLines
-                    .GroupBy(li => li.Invoice.Company?.Name ?? "")
-                    .Select(g => new { Name = g.Key, Qty = g.Sum(li => li.Quantity) })
-                    .OrderByDescending(x => x.Qty)
-                    .FirstOrDefault();
-
-                if (topCustomer != null)
-                {
-                    analytics.TopCustomer = topCustomer.Name;
-                    analytics.TopCustomerQuantity = topCustomer.Qty;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading sales analytics: {ex.Message}");
-            }
-        }
-
-        private async Task PopulatePurchaseAnalytics(Guid productId, ProductAnalyticsDto analytics)
-        {
-            try
-            {
-                IEnumerable<PurchaseNoteLine> lines = await purchaseNoteRepository
-                    .GetLineItemsByProductIdAsync(productId);
-
-                var purchaseLines = lines.ToList();
-
-                if (purchaseLines.Count == 0) return;
-
-                analytics.TotalUnitsPurchased = purchaseLines.Sum(li => li.Quantity);
-                analytics.TotalPurchaseCost = purchaseLines.Sum(li => li.Amount);
-                analytics.AveragePurchaseQuantity = (decimal)purchaseLines.Average(li => li.Quantity);
-                analytics.AveragePurchasePrice = purchaseLines.Average(li => li.UnitPrice);
-                analytics.LastPurchaseDate = purchaseLines.Max(li => li.PurchaseNote.PurchaseDate);
-
-                var topSupplier = purchaseLines
-                    .GroupBy(li => li.PurchaseNote.Individual?.FullName ?? "")
-                    .Select(g => new { Name = g.Key, Qty = g.Sum(li => li.Quantity) })
-                    .OrderByDescending(x => x.Qty)
-                    .FirstOrDefault();
-
-                if (topSupplier != null)
-                {
-                    analytics.TopSupplier = topSupplier.Name;
-                    analytics.TopSupplierQuantity = topSupplier.Qty;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading purchase analytics: {ex.Message}");
-            }
-        }
-
-        private static void CalculateProfitability(ProductAnalyticsDto analytics)
-        {
-            if (analytics.AveragePurchasePrice > 0 && analytics.CurrentSellingPrice > 0)
-            {
-                decimal grossProfit = analytics.CurrentSellingPrice - analytics.AveragePurchasePrice;
-                analytics.GrossMarginPercentage = (grossProfit / analytics.CurrentSellingPrice) * 100;
-                analytics.EstimatedProfitIfSoldAll = grossProfit * analytics.TotalStockAcrossWarehouses;
-            }
-        }
-
         private async Task PopulateRecentTransactions(Guid productId, ProductAnalyticsDto analytics)
         {
             try
@@ -334,8 +247,6 @@
                              || (!t.SourceDocumentType.EndsWith(reversalString)
                                  && !reversalSourceIds.Contains(t.SourceDocumentId)))
                     .ToList();
-
-                analytics.TotalTransactions = meaningfulTransactions.Count;
 
                 analytics.RecentTransactions = meaningfulTransactions
                     .OrderByDescending(t => t.CreatedAt)

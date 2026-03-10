@@ -16,6 +16,7 @@
         Task<ProductTransactionHistoryDto> GetProductTransactionHistoryAsync(Guid productId);
         Task<ProductDto> CreateProductAsync(CreateProductDto createDto);
         Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductDto updateDto);
+        Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<bool> DeleteProductAsync(Guid id);
     }
 }

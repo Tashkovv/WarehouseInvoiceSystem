@@ -17,6 +17,7 @@
         Task<bool> CodeExistsAsync(string code, Guid? excludeId = null);
         Task<Product> CreateAsync(Product product);
         Task<Product> UpdateAsync(Product product);
+        Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<bool> DeleteAsync(Guid id);
     }
 }
