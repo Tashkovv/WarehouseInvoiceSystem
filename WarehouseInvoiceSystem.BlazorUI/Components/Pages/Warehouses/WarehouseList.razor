@@ -20,7 +20,18 @@
 <WisGridToolbar CreateAction="OpenCreateDialog"
                 CreateLabel="@Localization.GetString("Warehouse")"
                 SearchValue="@_searchString"
-                SearchValueChanged="OnSearch" />
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterIsActive.HasValue)"
+                OnClearAll="ClearAllFilters">
+    <Filters>
+        <FilterPopoverList TValue="bool?"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterIsActive"
+                           SelectedValueChanged="OnStatusFilterChanged" />
+    </Filters>
+</WisGridToolbar>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
@@ -67,6 +78,20 @@
                     </CellTemplate>
                 </PropertyColumn>
 
+                <PropertyColumn Property="x => x.IsActive"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                            @(context.Item.IsActive ? Localization.GetString("ActiveWarehouse")
+                                                    : Localization.GetString("InactiveWarehouse"))
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+
                 <PropertyColumn Property="x => x.CreatedAt"
                                 Title="@Localization.GetString("Created")"
                                 Sortable="true"
@@ -92,14 +117,26 @@
                                            Size="Size.Small"
                                            Color="@(context.Item.IsDefault ? Color.Warning : Color.Default)"
                                            Title="@Localization.GetString("SetAsDefault")"
-                                           Disabled="@context.Item.IsDefault"
+                                           Disabled="@(context.Item.IsDefault || !context.Item.IsActive)"
                                            OnClick="@(() => SetAsDefault(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           Disabled="@context.Item.IsDefault"
-                                           OnClick="@(() => DeleteWarehouse(context.Item.Id))" />
+                            @if (context.Item.IsActive)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew"
+                                               Size="Size.Small"
+                                               Color="Color.Warning"
+                                               Title="@(context.Item.HasProducts ? Localization.GetString("DeactivateWarehouseDisabledTooltip")
+                                                                                 : Localization.GetString("Deactivate"))"
+                                               Disabled="@(context.Item.IsDefault || context.Item.HasProducts)"
+                                               OnClick="@(() => SetActiveStatus(context.Item, false))" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew"
+                                               Size="Size.Small"
+                                               Color="Color.Success"
+                                               Title="@Localization.GetString("Activate")"
+                                               OnClick="@(() => SetActiveStatus(context.Item, true))" />
+                            }
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -126,14 +163,29 @@
 @code {
     private MudDataGrid<WarehouseDto> _grid = null!;
     private string _searchString = string.Empty;
+    private bool? _filterIsActive = null;
+
+    private List<FilterPopoverItem<bool?>> _statusFilterItems = [];
 
     protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
+        BuildFilterItems();
+    }
+
+    private void BuildFilterItems()
+    {
+        _statusFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),               Value = null,  Color = Color.Info },
+            new() { Label = Localization.GetString("ActiveWarehouse"),   Value = true,  Color = Color.Success },
+            new() { Label = Localization.GetString("InactiveWarehouse"), Value = false, Color = Color.Default },
+    ];
     }
 
     private async void OnLanguageChanged()
     {
+        BuildFilterItems();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -145,6 +197,7 @@
         GetWarehousesQuery query = new()
         {
             Search = _searchString,
+            IsActive = _filterIsActive,
             Page = state.Page + 1,
             PageSize = state.PageSize,
             SortBy = sortBy,
@@ -160,9 +213,26 @@
         };
     }
 
+    private string GetRowClass(WarehouseDto item, int index) =>
+        item.IsActive
+            ? (item.IsDefault ? "row-status-success" : string.Empty)
+            : "row-status-default";
+
     private async Task OnSearch(string text)
     {
         _searchString = text;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnStatusFilterChanged(bool? value)
+    {
+        _filterIsActive = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task ClearAllFilters()
+    {
+        _filterIsActive = null;
         await _grid.ReloadServerData();
     }
 
@@ -244,37 +314,38 @@
         }
     }
 
-    private async Task DeleteWarehouse(Guid id)
+    private async Task SetActiveStatus(WarehouseDto warehouse, bool isActive)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteWarehouseConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
+        bool confirmed = isActive;
 
-        if (result == true)
+        if (!isActive)
+        {
+            confirmed = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
+            {
+                Title = Localization.GetString("ConfirmDeactivateWarehouse"),
+                Message = Localization.GetString("DeactivateWarehouseConfirm"),
+                YesText = Localization.GetString("Yes"),
+                CancelText = Localization.GetString("No")
+            }) ?? false;
+        }
+
+        if (confirmed == true)
         {
             try
             {
-                bool deleted = await WarehouseService.DeleteWarehouseAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("WarehouseDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
+                await WarehouseService.SetActiveStatusAsync(warehouse.Id, isActive);
+                string successKey = isActive ? "WarehouseActivated" : "WarehouseDeactivated";
+                Snackbar.Add(Localization.GetString(successKey), Severity.Success);
+                await _grid.ReloadServerData();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting warehouse: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingWarehouse"), Severity.Error);
+                Console.WriteLine($"Error changing warehouse status: {ex.Message}");
+                string errorKey = isActive ? "ErrorActivatingWarehouse" : "ErrorDeactivatingWarehouse";
+                Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
             }
         }
     }
-
-    private string GetRowClass(WarehouseDto item, int index) =>
-        item.IsDefault ? "row-status-success" : string.Empty;
 
     public void Dispose()
     {

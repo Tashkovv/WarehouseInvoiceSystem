@@ -564,6 +564,12 @@
                 ["SetAsDefault"] = "Set as default",
                 ["ErrorSettingDefaultWarehouse"] = "Error setting default warehouse",
                 ["WarehouseSetAsDefault"] = "Warehouse set as default",
+                ["Activewarehouse"] = activeString,
+                ["InactiveWarehouse"] = inactiveString,
+                ["ConfirmDeactivateWarehouse"] = "Deactivate warehouse",
+                ["DeactivateWarehouseConfirm"] = "Are you sure you want to deactivate this warehouse?",
+                ["WarehouseActivated"] = "Warehouse successfully activated",
+                ["WarehouseDeactivated"] = "Warehouse successfully deactivated",
 
                 // Individuals
                 ["Individuals"] = "Individuals",
@@ -1209,6 +1215,12 @@
                 ["SetAsDefault"] = "Направи стандарден",
                 ["ErrorSettingDefaultWarehouse"] = "Се случи грешка при сетирање на стандарден магацин",
                 ["WarehouseSetAsDefault"] = "Магацинот е поставен како стандарден",
+                ["ActiveWarehouse"] = "Активен",
+                ["InactiveWarehouse"] = "Неактивен",
+                ["ConfirmDeactivateWarehouse"] = "Деактивирај магацин",
+                ["DeactivateWarehouseConfirm"] = "Дали сте сигурни дека сакате да го деактивирате овој магацин?",
+                ["WarehouseActivated"] = "Магацинот е успешно активиран",
+                ["WarehouseDeactivated"] = "Магацинот е успешно деактивиран",
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",

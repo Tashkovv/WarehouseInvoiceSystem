@@ -12,15 +12,24 @@
         public async Task<IEnumerable<WarehouseDto>> GetAllWarehousesAsync()
         {
             IEnumerable<Warehouse> warehouses = await warehouseRepository.GetAllAsync();
-            return warehouses.Select(MapToDto);
+            return warehouses.Select(x => MapToDto(x));
         }
 
         public async Task<PagedResult<WarehouseDto>> GetPagedAsync(GetWarehousesQuery query)
         {
             PagedResult<Warehouse> result = await warehouseRepository.GetPagedAsync(query);
+
+            // Check HasProducts for each warehouse in the page
+            List<WarehouseDto> items = [];
+            foreach (Warehouse w in result.Items)
+            {
+                bool hasProducts = await warehouseRepository.HasProductsAsync(w.Id);
+                items.Add(MapToDto(w, hasProducts));
+            }
+
             return new PagedResult<WarehouseDto>
             {
-                Items = [.. result.Items.Select(MapToDto)],
+                Items = items,
                 TotalCount = result.TotalCount,
                 Page = result.Page,
                 PageSize = result.PageSize
@@ -67,23 +76,22 @@
             return warehouse != null;
         }
 
+        public async Task<bool> HasProductsAsync(Guid id)
+        {
+            return await warehouseRepository.HasProductsAsync(id);
+        }
+
         public async Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto createDto)
         {
-            if (createDto.IsDefault)
-            {
-                Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
-                if (existingDefault is not null)
-                {
-                    existingDefault.IsDefault = false;
-                    await warehouseRepository.UpdateAsync(existingDefault);
-                }
-            }
+            // Automatically set as default only if no default warehouse exists yet
+            Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
+            bool isDefault = existingDefault is null;
 
             Warehouse warehouse = new()
             {
                 Name = createDto.Name,
                 Address = createDto.Address,
-                IsDefault = createDto.IsDefault
+                IsDefault = isDefault
             };
 
             Warehouse created = await warehouseRepository.CreateAsync(warehouse);
@@ -95,30 +103,19 @@
             Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Warehouse with ID {id} not found");
 
-            if (updateDto.IsDefault && !warehouse.IsDefault)
-            {
-                Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
-                if (existingDefault is not null && existingDefault.Id != id)
-                {
-                    existingDefault.IsDefault = false;
-                    await warehouseRepository.UpdateAsync(existingDefault);
-                }
-            }
-
             warehouse.Name = updateDto.Name;
             warehouse.Address = updateDto.Address;
-            warehouse.IsDefault = updateDto.IsDefault;
 
             Warehouse updated = await warehouseRepository.UpdateAsync(warehouse);
             return MapToDto(updated);
         }
 
-        public async Task<bool> DeleteWarehouseAsync(Guid id)
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
         {
-            return await warehouseRepository.DeleteAsync(id);
+            return await warehouseRepository.SetActiveStatusAsync(id, isActive);
         }
 
-        private static WarehouseDto MapToDto(Warehouse warehouse)
+        private static WarehouseDto MapToDto(Warehouse warehouse, bool hasProducts = false)
         {
             return new WarehouseDto
             {
@@ -126,7 +123,9 @@
                 Name = warehouse.Name,
                 Address = warehouse.Address,
                 IsDefault = warehouse.IsDefault,
-                CreatedAt = warehouse.CreatedAt
+                IsActive = warehouse.IsActive,
+                CreatedAt = warehouse.CreatedAt,
+                HasProducts = hasProducts
             };
         }
     }

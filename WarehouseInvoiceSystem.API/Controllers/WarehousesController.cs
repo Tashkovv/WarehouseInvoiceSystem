@@ -127,26 +127,5 @@
                 return StatusCode(500, "An error occurred while updating the warehouse");
             }
         }
-
-        /// <summary>
-        /// Delete warehouse
-        /// </summary>
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(Guid id)
-        {
-            try
-            {
-                bool deleted = await warehouseService.DeleteWarehouseAsync(id);
-                if (!deleted)
-                    return NotFound($"Warehouse with ID {id} not found");
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error deleting warehouse {Id}", id);
-                return StatusCode(500, "An error occurred while deleting the warehouse");
-            }
-        }
     }
 }

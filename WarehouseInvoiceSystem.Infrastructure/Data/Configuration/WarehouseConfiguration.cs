@@ -18,6 +18,7 @@
 
             builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
             builder.Property(e => e.Address).HasMaxLength(100);
+            builder.Property(e => e.IsActive).IsRequired();
             builder.Property(e => e.IsDefault).IsRequired();
         }
     }

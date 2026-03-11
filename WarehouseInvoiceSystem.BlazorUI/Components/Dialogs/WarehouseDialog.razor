@@ -20,11 +20,6 @@
                               MaxLength="500"
                               FullWidth="true" />
             </MudItem>
-            <MudItem xs="12">
-                <MudSwitch @bind-Value="_isDefault"
-                           Label="@Localization.GetString("DefaultWarehouse")"
-                           Color="Color.Primary" />
-            </MudItem>
         </MudGrid>
     </DialogContent>
     <DialogActions>
@@ -52,7 +47,6 @@
 
     private string _name = string.Empty;
     private string? _address;
-    private bool _isDefault;
 
     private bool IsValid => !string.IsNullOrWhiteSpace(_name);
 
@@ -62,13 +56,11 @@
         {
             _name = Warehouse!.Name;
             _address = Warehouse.Address;
-            _isDefault = Warehouse.IsDefault;
         }
         else
         {
             _name = string.Empty;
             _address = null;
-            _isDefault = false;
         }
     }
 
@@ -80,7 +72,6 @@
             {
                 Name = _name.Trim(),
                 Address = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim(),
-                IsDefault = _isDefault,
             }));
         }
         else
@@ -89,7 +80,6 @@
             {
                 Name = _name.Trim(),
                 Address = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim(),
-                IsDefault = _isDefault,
             }));
         }
     }
