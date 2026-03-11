@@ -1281,3 +1281,75 @@ html {
     opacity: 0.6;
     flex-shrink: 0;
 }
+
+/* ── Global: disable MudBlazor's default uppercase on all buttons ── */
+.mud-button-root span.mud-button-label {
+    text-transform: none;
+}
+
+/* ── Dialog actions: cancel left, confirm right ── */
+.mud-dialog-actions {
+    justify-content: space-between !important;
+    padding: 8px 24px !important;
+}
+
+/* ── WisAmountRangeFilter ── */
+.wis-arf-layout {
+    display: flex;
+    align-items: stretch;
+}
+
+.wis-arf-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 12px 12px;
+    flex-shrink: 0;
+}
+
+.wis-arf-presets {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 12px 10px 10px;
+    border-left: 1px solid var(--mud-palette-divider);
+}
+
+/* Preset pill — vertical variant (right column) */
+.wis-arf-preset {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
+    border-radius: 13px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--mud-palette-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    user-select: none;
+    text-align: left;
+}
+
+    .wis-arf-preset:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+        background: rgba(var(--mud-palette-primary-rgb), 0.06);
+    }
+
+.wis-arf-preset--selected {
+    border-color: var(--mud-palette-primary);
+    background: rgba(var(--mud-palette-primary-rgb), 0.1);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+    padding-left: 6px;
+}
+
+    .wis-arf-preset--selected:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.16);
+    }

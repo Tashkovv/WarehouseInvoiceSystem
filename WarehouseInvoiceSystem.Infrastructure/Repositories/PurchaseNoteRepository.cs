@@ -50,13 +50,15 @@
             if (query.DateTo.HasValue)
                 q = q.Where(p => p.PurchaseDate <= query.DateTo.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                q = q.Where(p => p.NoteNumber.Contains(query.Search) ||
-                                 p.Individual.FirstName.Contains(query.Search) ||
-                                 p.Individual.LastName.Contains(query.Search) ||
-                                 (query.Search.Contains(p.Individual.FirstName) ||
-                                 query.Search.Contains(p.Individual.LastName)));
+                q = q.Where(p => p.NoteNumber.ToLower().Contains(search) ||
+                                 p.Individual.FirstName.ToLower().Contains(search) ||
+                                 p.Individual.LastName.ToLower().Contains(search) ||
+                                 (query.Search.Contains(p.Individual.FirstName.ToLower()) ||
+                                 query.Search.Contains(p.Individual.LastName.ToLower())));
             }
 
             q = ApplySort(q, query.SortBy, query.SortAscending);

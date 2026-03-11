@@ -29,10 +29,12 @@
             if (query.IsActive.HasValue)
                 q = q.Where(c => c.IsActive == query.IsActive.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(c => c.Name.Contains(query.Search) ||
-                                 (c.ContactPerson != null && c.ContactPerson.Contains(query.Search)) ||
-                                 (c.Email != null && c.Email.Contains(query.Search)));
+                q = q.Where(c => c.Name.ToLower().Contains(search) ||
+                                 (c.ContactPerson != null && c.ContactPerson.ToLower().Contains(search)) ||
+                                 (c.Email != null && c.Email.ToLower().Contains(search)));
 
             q = query.SortBy switch
             {

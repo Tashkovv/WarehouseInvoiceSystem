@@ -60,15 +60,22 @@
             string confirmText,
             string? cancelText = null)
         {
-            bool? result = await dialogService.ShowMessageBoxAsync(new MessageBoxOptions
-            {
-                Title = title,
-                Message = message,
-                YesText = confirmText,
-                CancelText = cancelText ?? localizationService.GetString("Cancel")
-            });
+            DialogParameters<WisConfirmDialog> parameters = new();
+            parameters.Add(x => x.Message, message);
+            parameters.Add(x => x.ConfirmText, confirmText);
+            parameters.Add(x => x.CancelText, cancelText ?? localizationService.GetString("Cancel"));
 
-            return result == true;
+            DialogOptions options = new()
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseOnEscapeKey = true
+            };
+
+            IDialogReference dialog = await dialogService.ShowAsync<WisConfirmDialog>(title, parameters, options);
+            DialogResult? result = await dialog.Result;
+
+            return result is { Canceled: false };
         }
 
         // ── Payment dialog ───────────────────────────────────────────────────────

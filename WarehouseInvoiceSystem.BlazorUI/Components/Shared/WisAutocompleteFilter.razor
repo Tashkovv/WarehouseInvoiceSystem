@@ -91,8 +91,6 @@
                         {
                             <div class="wis-autocomplete-item @(_selectedItem is null ? "wis-autocomplete-item--selected" : "")"
                                  @onclick="ClearSelectionAsync">
-                                <MudRadio T="bool" Value="true" Checked="_selectedItem is null"
-                                          Dense="true" Class="ma-0 pa-0" @onclick:stopPropagation />
                                 <span class="wis-autocomplete-item__label">@AllLabel</span>
                             </div>
                         }
@@ -102,8 +100,6 @@
                             bool isSelected = _selectedItem is not null && Equals(_selectedItem.Value, item.Value);
                             <div class="wis-autocomplete-item @(isSelected ? "wis-autocomplete-item--selected" : "")"
                                  @onclick="@(() => SelectItemAsync(item))">
-                                <MudRadio T="bool" Value="true" Checked="isSelected"
-                                          Dense="true" Class="ma-0 pa-0" @onclick:stopPropagation />
                                 <span class="wis-autocomplete-item__label">@item.Label</span>
                                 @if (!string.IsNullOrEmpty(item.SubLabel))
                                 {
@@ -248,7 +244,7 @@
 
         _debounceTimer?.Dispose();
 
-        // Don't search on a single character — wait for at least 2
+        // Single character — show spinner, wait for more input
         if (!string.IsNullOrWhiteSpace(value) && value.Length < 2)
         {
             StateHasChanged();

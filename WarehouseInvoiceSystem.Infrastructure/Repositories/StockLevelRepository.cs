@@ -33,10 +33,12 @@
             if (query.IsLowStock == true)
                 q = q.Where(s => s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(s => s.Product.Name.Contains(query.Search) ||
-                                 s.Product.Code.Contains(query.Search) ||
-                                 s.Warehouse.Name.Contains(query.Search));
+                q = q.Where(s => s.Product.Name.ToLower().Contains(search) ||
+                                 s.Product.Code.ToLower().Contains(search) ||
+                                 s.Warehouse.Name.ToLower().Contains(search));
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
 

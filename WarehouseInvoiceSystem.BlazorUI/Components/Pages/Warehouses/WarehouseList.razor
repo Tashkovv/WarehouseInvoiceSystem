@@ -7,6 +7,7 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Warehouses") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -87,7 +88,7 @@
                                  Size="Size.Small"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ActiveWarehouse")
-                                                    : Localization.GetString("InactiveWarehouse"))
+                                                        : Localization.GetString("InactiveWarehouse"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -125,7 +126,7 @@
                                                Size="Size.Small"
                                                Color="Color.Warning"
                                                Title="@(context.Item.HasProducts ? Localization.GetString("DeactivateWarehouseDisabledTooltip")
-                                                                                 : Localization.GetString("Deactivate"))"
+                                                                                                                            : Localization.GetString("Deactivate"))"
                                                Disabled="@(context.Item.IsDefault || context.Item.HasProducts)"
                                                OnClick="@(() => SetActiveStatus(context.Item, false))" />
                             }
@@ -320,13 +321,11 @@
 
         if (!isActive)
         {
-            confirmed = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-            {
-                Title = Localization.GetString("ConfirmDeactivateWarehouse"),
-                Message = Localization.GetString("DeactivateWarehouseConfirm"),
-                YesText = Localization.GetString("Yes"),
-                CancelText = Localization.GetString("No")
-            }) ?? false;
+            confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("ConfirmDeactivateWarehouse"),
+                Localization.GetString("DeactivateWarehouseConfirm"),
+                Localization.GetString("Yes"),
+                Localization.GetString("No"));
         }
 
         if (confirmed == true)

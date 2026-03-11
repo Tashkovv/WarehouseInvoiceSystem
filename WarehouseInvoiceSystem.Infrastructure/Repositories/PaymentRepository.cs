@@ -46,10 +46,12 @@
             if (query.AmountMax.HasValue)
                 q = q.Where(p => p.Amount <= query.AmountMax.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(p => (p.ReferenceNumber != null && p.ReferenceNumber.Contains(query.Search)) ||
-                                  p.Invoice.InvoiceNumber.Contains(query.Search) ||
-                                  p.Invoice.Company.Name.Contains(query.Search));
+                q = q.Where(p => (p.ReferenceNumber != null && p.ReferenceNumber.Contains(search)) ||
+                                  p.Invoice.InvoiceNumber.ToLower().Contains(search) ||
+                                  p.Invoice.Company.Name.ToLower().Contains(search));
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
 

@@ -25,9 +25,11 @@
             if (query.IsActive.HasValue)
                 q = q.Where(p => p.IsActive == query.IsActive.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(p => p.Name.Contains(query.Search) ||
-                                 p.Code.Contains(query.Search));
+                q = q.Where(p => p.Name.ToLower().Contains(search) ||
+                                 p.Code.ToLower().Contains(search));
 
             q = query.SortBy switch
             {

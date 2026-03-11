@@ -62,9 +62,11 @@
             if (query.DueDateTo.HasValue)
                 q = q.Where(i => i.DueDate <= query.DueDateTo.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(i => i.InvoiceNumber.Contains(query.Search) ||
-                                 i.Company.Name.Contains(query.Search));
+                q = q.Where(i => i.InvoiceNumber.ToLower().Contains(search) ||
+                                 i.Company.Name.ToLower().Contains(search));
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
 

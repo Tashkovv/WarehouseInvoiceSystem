@@ -8,6 +8,7 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Payments") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -366,15 +367,13 @@
 
     private async Task DeletePayment(Guid id)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeletePaymentConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
+        bool result = await WisDialog.ConfirmAsync(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeletePaymentConfirm"),
+            Localization.GetString("Yes"),
+            Localization.GetString("No"));
 
-        if (result == true)
+        if (result)
         {
             try
             {

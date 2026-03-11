@@ -121,9 +121,24 @@
 
     private bool _showAdvancedFilters;
     private WisDetailActionItem? _primaryAction;
+    private EventCallback _lastCreateAction;
+    private string _lastCreateLabel = string.Empty;
+    private string _lastCreateIcon = string.Empty;
 
     protected override void OnParametersSet()
     {
+        // Only rebuild _primaryAction when the relevant parameters actually change,
+        // so unrelated parent re-renders don't recreate the object and cause
+        // WisSplitButton to re-render, which could reset internal toolbar state.
+        if (_lastCreateAction.Equals(CreateAction) &&
+            _lastCreateLabel == CreateLabel &&
+            _lastCreateIcon == CreateIcon)
+            return;
+
+        _lastCreateAction = CreateAction;
+        _lastCreateLabel = CreateLabel;
+        _lastCreateIcon = CreateIcon;
+
         _primaryAction = CreateAction.HasDelegate
             ? new WisDetailActionItem
             {

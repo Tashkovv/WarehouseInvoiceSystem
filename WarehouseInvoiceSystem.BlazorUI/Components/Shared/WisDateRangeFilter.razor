@@ -80,6 +80,9 @@
     public EventCallback<DateRange> DateRangeChanged { get; set; }
 
     [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
     public int? DatePreset { get; set; }
 
     [Parameter]
@@ -96,7 +99,7 @@
         {
             if (DatePreset != null)
                 return _datePresets.FirstOrDefault(p => p.Value == DatePreset)?.Label
-                       ?? Localization.GetString("Period");
+                       ?? Label ?? Localization.GetString("Period");
 
             if (DateRange.Start != null && DateRange.End != null)
                 return $"{DateRange.Start.Value:dd MMM yy} – {DateRange.End.Value:dd MMM yy}";
@@ -104,7 +107,7 @@
             if (DateRange.Start != null)
                 return $"{DateRange.Start.Value:dd MMM yy} – …";
 
-            return Localization.GetString("Period");
+            return Label ?? Localization.GetString("Period");
         }
     }
 
