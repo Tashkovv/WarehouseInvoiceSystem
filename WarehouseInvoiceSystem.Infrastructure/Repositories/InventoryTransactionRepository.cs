@@ -5,6 +5,9 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
+    using WarehouseInvoiceSystem.Domain.Queries;
+    using WarehouseInvoiceSystem.Domain.Queries.Common;
+
     public class InventoryTransactionRepository(ApplicationDbContext context) : IInventoryTransactionRepository
     {
         public async Task<IEnumerable<InventoryTransaction>> GetAllAsync()
@@ -24,6 +27,47 @@
                 .Include(t => t.Warehouse)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<InventoryTransaction>> GetPagedByProductAsync(GetInventoryTransactionsQuery query)
+        {
+            IQueryable<InventoryTransaction> q = context.InventoryTransactions
+                .Where(t => t.DeletedOn == null && t.ProductId == query.ProductId)
+                .Include(t => t.Warehouse);
+
+            if (query.WarehouseId.HasValue)
+                q = q.Where(t => t.WarehouseId == query.WarehouseId.Value);
+
+            if (query.Types is { Count: > 0 })
+            {
+                // Always include reversals regardless of type filter so the history stays coherent.
+                // A reversal row has SourceDocumentType ending with "_Reversal".
+                q = q.Where(t => query.Types.Contains(t.Type)
+                               || (t.SourceDocumentType != null && t.SourceDocumentType.EndsWith("_Reversal")));
+            }
+
+            if (query.DateFrom.HasValue)
+                q = q.Where(t => t.CreatedAt >= query.DateFrom.Value.Date);
+
+            if (query.DateTo.HasValue)
+                q = q.Where(t => t.CreatedAt < query.DateTo.Value.Date.AddDays(1));
+
+            q = q.OrderByDescending(t => t.CreatedAt);
+
+            int totalCount = await q.CountAsync();
+
+            List<InventoryTransaction> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<InventoryTransaction>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<IEnumerable<InventoryTransaction>> GetByWarehouseIdAsync(Guid warehouseId)

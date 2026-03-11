@@ -16,6 +16,7 @@
         /// Returns full product analytics + transaction history + stock movements in a single coordinated call.
         /// </summary>
         Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId);
+        Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query);
         Task<ProductDto> CreateProductAsync(CreateProductDto createDto);
         Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);

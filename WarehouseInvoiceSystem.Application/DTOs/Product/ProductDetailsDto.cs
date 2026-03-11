@@ -1,11 +1,9 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Product
 {
-    using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
-
     /// <summary>
     /// Full product detail payload returned by GetProductDetailsAsync.
-    /// Combines what was previously two separate service calls (analytics + transaction history)
-    /// into a single coordinated fetch.
+    /// Contains stock data and pre-aggregated purchase/sale summaries per warehouse.
+    /// All heavy aggregation is done in the service — no raw document lists cross this boundary.
     /// </summary>
     public class ProductDetailsDto
     {
@@ -17,21 +15,31 @@
         // ── Profitability ─────────────────────────────────────────────────────
         public decimal CurrentSellingPrice { get; set; }
         public decimal GrossMarginPercentage { get; set; }
+        public decimal AveragePurchasePrice { get; set; }
 
-        // ── Transaction history ───────────────────────────────────────────────
-        public List<ProductTransactionRowDto> Purchased { get; set; } = [];
-        public List<ProductTransactionRowDto> Sold { get; set; } = [];
+        // ── Per-warehouse transaction summaries ───────────────────────────────
+        /// <summary>Aggregated purchase totals per warehouse (purchase notes + payable invoices).</summary>
+        public List<WarehouseTransactionSummaryDto> PurchasedByWarehouse { get; set; } = [];
 
-        // ── Raw inventory movements (stock movements tab) ─────────────────────
-        public List<InventoryTransactionDto> Movements { get; set; } = [];
+        /// <summary>Aggregated sale totals per warehouse (receivable invoices).</summary>
+        public List<WarehouseTransactionSummaryDto> SoldByWarehouse { get; set; } = [];
 
-        // ── Computed ──────────────────────────────────────────────────────────
+        // ── Global totals (across all warehouses) ─────────────────────────────
+        public int TotalPurchasedCount { get; set; }
+        public decimal TotalPurchasedQuantity { get; set; }
+        public decimal TotalPurchasedAmount { get; set; }
+        public int TotalSoldCount { get; set; }
+        public decimal TotalSoldQuantity { get; set; }
+        public decimal TotalSoldAmount { get; set; }
+        public decimal TotalProfit { get; set; }
+    }
 
-        /// <summary>Total revenue from all sold lines minus total cost from all purchased lines.</summary>
-        public decimal TotalProfit => Sold.Sum(r => r.TotalPrice) - Purchased.Sum(r => r.TotalPrice);
-
-        /// <summary>Average unit price across all purchase lines. Returns 0 when there are no purchases.</summary>
-        public decimal AveragePurchasePrice =>
-            Purchased.Count > 0 ? Purchased.Average(r => r.UnitPrice) : 0;
+    public class WarehouseTransactionSummaryDto
+    {
+        public Guid WarehouseId { get; set; }
+        public int Count { get; set; }
+        public decimal TotalQuantity { get; set; }
+        public decimal TotalAmount { get; set; }
+        public decimal AverageUnitPrice { get; set; }
     }
 }

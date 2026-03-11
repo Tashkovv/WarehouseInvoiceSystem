@@ -86,11 +86,55 @@
                 .Select(t => t.SourceDocumentId)
                 .ToHashSet();
 
-            // ── Build result ─────────────────────────────────────────────────
-            var details = new ProductDetailsDto
-            {
-                CurrentSellingPrice = product.DefaultPrice,
+            // ── Aggregate purchased rows (purchase notes + payable invoices) ──
+            var purchasedRows = purchaseLines
+                .Where(li => liveDocumentIds.Contains(li.PurchaseNoteId))
+                .Select(li => new { li.PurchaseNote.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.Amount })
+                .Concat(invoiceLines
+                    .Where(li => li.Invoice.Type == InvoiceType.Payable && liveDocumentIds.Contains(li.InvoiceId))
+                    .Select(li => new { li.Invoice.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.TotalAmount }))
+                .ToList();
 
+            var purchasedByWarehouse = purchasedRows
+                .GroupBy(r => r.WarehouseId)
+                .Select(g => new WarehouseTransactionSummaryDto
+                {
+                    WarehouseId = g.Key,
+                    Count = g.Count(),
+                    TotalQuantity = g.Sum(r => r.Quantity),
+                    TotalAmount = g.Sum(r => r.TotalPrice),
+                    AverageUnitPrice = g.Average(r => r.UnitPrice)
+                }).ToList();
+
+            // ── Aggregate sold rows (receivable invoices) ─────────────────────
+            var soldRows = invoiceLines
+                .Where(li => li.Invoice.Type == InvoiceType.Receivable && liveDocumentIds.Contains(li.InvoiceId))
+                .Select(li => new { li.Invoice.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.TotalAmount })
+                .ToList();
+
+            var soldByWarehouse = soldRows
+                .GroupBy(r => r.WarehouseId)
+                .Select(g => new WarehouseTransactionSummaryDto
+                {
+                    WarehouseId = g.Key,
+                    Count = g.Count(),
+                    TotalQuantity = g.Sum(r => r.Quantity),
+                    TotalAmount = g.Sum(r => r.TotalPrice),
+                    AverageUnitPrice = g.Average(r => r.UnitPrice)
+                }).ToList();
+
+            // ── Compute profitability ─────────────────────────────────────────
+            decimal avgPurchasePrice = purchasedRows.Count > 0 ? purchasedRows.Average(r => r.UnitPrice) : 0;
+            decimal sellingPrice = product.DefaultPrice;
+            decimal grossMargin = sellingPrice > 0 && avgPurchasePrice > 0
+                ? (sellingPrice - avgPurchasePrice) / sellingPrice * 100
+                : 0;
+
+            decimal totalPurchasedAmount = purchasedRows.Sum(r => r.TotalPrice);
+            decimal totalSoldAmount = soldRows.Sum(r => r.TotalPrice);
+
+            return new ProductDetailsDto
+            {
                 // Stock
                 TotalStockAcrossWarehouses = stockList.Sum(sl => sl.Quantity),
                 HasLowStock = stockList.Any(sl => sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0),
@@ -106,27 +150,36 @@
                     LastRestockedAt = sl.LastRestockedAt
                 }).ToList(),
 
-                // Transaction history — purchased from purchase notes
-                Purchased = purchaseLines
-                    .Where(li => liveDocumentIds.Contains(li.PurchaseNoteId))
-                    .Select(li => new ProductTransactionRowDto
-                    {
-                        Date = li.PurchaseNote.PurchaseDate,
-                        DocumentNumber = li.PurchaseNote.NoteNumber,
-                        DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
-                        PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
-                        WarehouseId = li.PurchaseNote.WarehouseId,
-                        WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
-                        Quantity = li.Quantity,
-                        UnitPrice = li.UnitPrice,
-                        TotalPrice = li.Amount
-                    }).ToList(),
+                // Profitability
+                CurrentSellingPrice = sellingPrice,
+                AveragePurchasePrice = avgPurchasePrice,
+                GrossMarginPercentage = grossMargin,
 
-                // Transaction history — sold via receivable invoices
-                Sold = invoiceLines
-                    .Where(li => li.Invoice.Type == InvoiceType.Receivable
-                              && liveDocumentIds.Contains(li.InvoiceId))
-                    .Select(li => new ProductTransactionRowDto
+                // Per-warehouse summaries
+                PurchasedByWarehouse = purchasedByWarehouse,
+                SoldByWarehouse = soldByWarehouse,
+
+                // Global totals
+                TotalPurchasedCount = purchasedRows.Count,
+                TotalPurchasedQuantity = purchasedRows.Sum(r => r.Quantity),
+                TotalPurchasedAmount = totalPurchasedAmount,
+                TotalSoldCount = soldRows.Count,
+                TotalSoldQuantity = soldRows.Sum(r => r.Quantity),
+                TotalSoldAmount = totalSoldAmount,
+                TotalProfit = totalSoldAmount - totalPurchasedAmount
+            };
+        }
+
+        public async Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query)
+        {
+            if (!query.Purchased)
+            {
+                // Sold — receivable invoices only, single repo call
+                PagedResult<InvoiceLine> result = await invoiceRepository.GetPagedLineItemsByProductIdAsync(query);
+
+                return new PagedResult<ProductTransactionRowDto>
+                {
+                    Items = result.Items.Select(li => new ProductTransactionRowDto
                     {
                         Date = li.Invoice.IssueDate,
                         DocumentNumber = li.Invoice.InvoiceNumber,
@@ -137,35 +190,79 @@
                         Quantity = li.Quantity,
                         UnitPrice = li.UnitPrice,
                         TotalPrice = li.TotalAmount
-                    }).ToList()
-            };
-
-            // Purchased also includes payable invoices (goods purchased via invoice)
-            details.Purchased.AddRange(invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Payable
-                          && liveDocumentIds.Contains(li.InvoiceId))
-                .Select(li => new ProductTransactionRowDto
+                    }).ToList(),
+                    TotalCount = result.TotalCount,
+                    Page = result.Page,
+                    PageSize = result.PageSize
+                };
+            }
+            else
+            {
+                // Purchased — purchase note lines + payable invoice lines merged.
+                // Both repos are queried with filters applied, then merged in memory and re-paged.
+                // This is necessary because the two sources have different date fields and party types.
+                var unpaged = new GetProductHistoryQuery
                 {
-                    Date = li.Invoice.IssueDate,
-                    DocumentNumber = li.Invoice.InvoiceNumber,
-                    DocumentUrl = $"/invoices/{li.Invoice.Id}",
-                    PartyName = li.Invoice.Company?.Name ?? "-",
-                    WarehouseId = li.Invoice.WarehouseId,
-                    WarehouseName = li.Invoice.Warehouse?.Name ?? "-",
-                    Quantity = li.Quantity,
-                    UnitPrice = li.UnitPrice,
-                    TotalPrice = li.TotalAmount
-                }));
+                    ProductId = query.ProductId,
+                    WarehouseId = query.WarehouseId,
+                    Purchased = true,
+                    PartyName = query.PartyName,
+                    DateFrom = query.DateFrom,
+                    DateTo = query.DateTo,
+                    Page = 1,
+                    PageSize = int.MaxValue
+                };
 
-            // ── Gross margin — based on average purchase price vs selling price ─
-            if (details.CurrentSellingPrice > 0 && details.AveragePurchasePrice > 0)
-                details.GrossMarginPercentage = (details.CurrentSellingPrice - details.AveragePurchasePrice)
-                    / details.CurrentSellingPrice * 100;
+                PagedResult<PurchaseNoteLine> noteResult =
+                    await purchaseNoteRepository.GetPagedLineItemsByProductIdAsync(unpaged);
 
-            // ── Raw movements for the stock movements tab ─────────────────────
-            details.Movements = allTransactions.ToList();
+                PagedResult<InvoiceLine> invoiceResult =
+                    await invoiceRepository.GetPagedLineItemsByProductIdAsync(unpaged);
 
-            return details;
+                List<ProductTransactionRowDto> allRows =
+                [
+                    .. noteResult.Items.Select(li => new ProductTransactionRowDto
+                    {
+                        Date = li.PurchaseNote.PurchaseDate,
+                        DocumentNumber = li.PurchaseNote.NoteNumber,
+                        DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
+                        PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
+                        WarehouseId = li.PurchaseNote.WarehouseId,
+                        WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TotalPrice = li.Amount
+                    }),
+                    .. invoiceResult.Items.Select(li => new ProductTransactionRowDto
+                    {
+                        Date = li.Invoice.IssueDate,
+                        DocumentNumber = li.Invoice.InvoiceNumber,
+                        DocumentUrl = $"/invoices/{li.Invoice.Id}",
+                        PartyName = li.Invoice.Company?.Name ?? "-",
+                        WarehouseId = li.Invoice.WarehouseId,
+                        WarehouseName = li.Invoice.Warehouse?.Name ?? "-",
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TotalPrice = li.TotalAmount
+                    })
+                ];
+
+                List<ProductTransactionRowDto> sorted = [.. allRows.OrderByDescending(r => r.Date)];
+                int totalCount = sorted.Count;
+
+                List<ProductTransactionRowDto> page = sorted
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToList();
+
+                return new PagedResult<ProductTransactionRowDto>
+                {
+                    Items = page,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            }
         }
 
         public async Task<ProductDto> CreateProductAsync(CreateProductDto createDto)

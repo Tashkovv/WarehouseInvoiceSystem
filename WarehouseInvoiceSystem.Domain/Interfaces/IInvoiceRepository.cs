@@ -16,6 +16,7 @@
         Task<Invoice?> GetByIdAsync(Guid id);
         Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber);
         Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId);
+        Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query);
         Task<Invoice> CreateAsync(Invoice invoice);
         Task<Invoice> UpdateAsync(Invoice invoice);
         Task<bool> DeleteAsync(Guid id);

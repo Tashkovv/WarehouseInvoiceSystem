@@ -230,28 +230,28 @@ else
 
                         <MudItem xs="12" sm="4" md="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Purchased")</MudText>
-                            <div class="wis-stat-value mud-info-text">@_scopedPurchased.Count()</div>
+                            <div class="wis-stat-value mud-info-text">@_scopedPurchasedCount</div>
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
-                                @_scopedPurchased.Sum(r => r.Quantity).ToString("N2") @_product.Unit
+                                @_scopedPurchasedQuantity.ToString("N2") @_product.Unit
                             </MudText>
                         </MudItem>
 
                         <MudItem xs="12" sm="4" md="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Sold")</MudText>
-                            <div class="wis-stat-value mud-success-text">@_scopedSold.Count()</div>
+                            <div class="wis-stat-value mud-success-text">@_scopedSoldCount</div>
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-1">
-                                @_scopedSold.Sum(r => r.Quantity).ToString("N2") @_product.Unit
+                                @_scopedSoldQuantity.ToString("N2") @_product.Unit
                             </MudText>
                         </MudItem>
 
                         <MudItem xs="12" sm="4" md="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalPurchased")</MudText>
-                            <div class="wis-stat-value mud-info-text">@_scopedPurchased.Sum(r => r.TotalPrice).ToString("C")</div>
+                            <div class="wis-stat-value mud-info-text">@_scopedPurchasedAmount.ToString("C")</div>
                         </MudItem>
 
                         <MudItem xs="12" sm="4" md="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalSold")</MudText>
-                            <div class="wis-stat-value mud-success-text">@_scopedSold.Sum(r => r.TotalPrice).ToString("C")</div>
+                            <div class="wis-stat-value mud-success-text">@_scopedSoldAmount.ToString("C")</div>
                         </MudItem>
 
                         <MudItem xs="12" sm="4" md="4">
@@ -340,29 +340,54 @@ else
         _filteredHasLowStock ? Localization.GetString("LowStock") :
                                 Localization.GetString("InStock");
 
-    private IEnumerable<ProductTransactionRow> _scopedPurchased =>
-        _selectedWarehouseId.HasValue
-            ? _allHistoryPurchased.Where(r => r.WarehouseId == _selectedWarehouseId.Value)
-            : _allHistoryPurchased;
+    // ── Transaction summary computed properties ──────────────────────────────
+    // Read directly from pre-aggregated WarehouseTransactionSummaryDto — no in-memory lists.
+    // When a warehouse is selected but has no transactions, values are zero (not global totals).
+    // Global totals are only used when no warehouse is selected (null).
 
-    private IEnumerable<ProductTransactionRow> _scopedSold =>
+    private WarehouseTransactionSummaryDto? _scopedPurchasedSummary =>
         _selectedWarehouseId.HasValue
-            ? _allHistorySold.Where(r => r.WarehouseId == _selectedWarehouseId.Value)
-            : _allHistorySold;
+            ? _details.PurchasedByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
+            : null;
+
+    private WarehouseTransactionSummaryDto? _scopedSoldSummary =>
+        _selectedWarehouseId.HasValue
+            ? _details.SoldByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
+            : null;
+
+    private int _scopedPurchasedCount =>
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.Count ?? 0) : _details.TotalPurchasedCount;
+
+    private decimal _scopedPurchasedQuantity =>
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.TotalQuantity ?? 0) : _details.TotalPurchasedQuantity;
+
+    private decimal _scopedPurchasedAmount =>
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.TotalAmount ?? 0) : _details.TotalPurchasedAmount;
+
+    private int _scopedSoldCount =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.Count ?? 0) : _details.TotalSoldCount;
+
+    private decimal _scopedSoldQuantity =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.TotalQuantity ?? 0) : _details.TotalSoldQuantity;
+
+    private decimal _scopedSoldAmount =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.TotalAmount ?? 0) : _details.TotalSoldAmount;
 
     private decimal _scopedAvgPurchasePrice =>
-        _scopedPurchased.Any() ? _scopedPurchased.Average(r => r.UnitPrice) : 0;
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.AverageUnitPrice ?? 0) : _details.AveragePurchasePrice;
 
     private decimal _scopedGrossMarginPct =>
-        _details.CurrentSellingPrice > 0 && _scopedAvgPurchasePrice > 0
+    _selectedWarehouseId.HasValue
+        ? (_details.CurrentSellingPrice > 0 && _scopedAvgPurchasePrice > 0
             ? (_details.CurrentSellingPrice - _scopedAvgPurchasePrice) / _details.CurrentSellingPrice * 100
-            : _details.GrossMarginPercentage;
+            : 0)
+        : _details.GrossMarginPercentage;
 
     private decimal _scopedEstimatedProfit =>
         (_details.CurrentSellingPrice - _scopedAvgPurchasePrice) * _filteredTotalStock;
 
     private decimal _scopedProfit =>
-        _scopedSold.Sum(r => r.TotalPrice) - _scopedPurchased.Sum(r => r.TotalPrice);
+        _scopedSoldAmount - _scopedPurchasedAmount;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -393,7 +418,6 @@ else
                 _selectedWarehouseId = null;
 
                 BuildActions();
-                PopulateHistory(_details);
             }
         }
         catch (Exception ex)
@@ -574,43 +598,6 @@ else
                 Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
             }
         }
-    }
-
-    // ── Transaction History (summary data) ───────────────────────────────────
-
-    private List<ProductTransactionRow> _allHistoryPurchased = [];
-    private List<ProductTransactionRow> _allHistorySold = [];
-
-    /// <summary>Populates history lists from the already-loaded ProductDetailsDto — no extra DB call.</summary>
-    private void PopulateHistory(ProductDetailsDto details)
-    {
-        _allHistoryPurchased = details.Purchased
-            .Select(r => new ProductTransactionRow
-            {
-                WarehouseId = r.WarehouseId,
-                Quantity = r.Quantity,
-                UnitPrice = r.UnitPrice,
-                TotalPrice = r.TotalPrice
-            }).ToList();
-
-        _allHistorySold = details.Sold
-            .Select(r => new ProductTransactionRow
-            {
-                WarehouseId = r.WarehouseId,
-                Quantity = r.Quantity,
-                UnitPrice = r.UnitPrice,
-                TotalPrice = r.TotalPrice
-            }).ToList();
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private class ProductTransactionRow
-    {
-        public Guid WarehouseId { get; set; }
-        public decimal Quantity { get; set; }
-        public decimal UnitPrice { get; set; }
-        public decimal TotalPrice { get; set; }
     }
 
     public void Dispose()
