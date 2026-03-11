@@ -1296,7 +1296,7 @@ html {
 /* ── WisAmountRangeFilter ── */
 .wis-arf-layout {
     display: flex;
-    align-items: stretch;
+    align-items: center;
 }
 
 .wis-arf-inputs {
@@ -1353,3 +1353,92 @@ html {
     .wis-arf-preset--selected:hover {
         background: rgba(var(--mud-palette-primary-rgb), 0.16);
     }
+
+/* =============================================
+   WisAmountInput — outlined + dense, matches
+   MudBlazor Variant.Outlined / Margin.Dense
+   ============================================= */
+
+/* Outer wrapper — positions the floating label */
+.wis-amt-field {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    max-width: 200px;
+    width: 200px;
+}
+
+/* The border box that wraps input + adornment */
+.wis-amt-field__inner {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
+    border-radius: 4px;
+    height: 40px;
+    padding: 0 12px;
+    transition: border-color 0.15s ease;
+    background: transparent;
+}
+
+.wis-amt-field:focus-within .wis-amt-field__inner,
+.wis-amt-field--focused .wis-amt-field__inner {
+    border-color: var(--mud-palette-primary);
+    border-width: 2px;
+    padding: 0 11px; /* compensate for extra border px */
+}
+
+/* Floating label */
+.wis-amt-field__label {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.6);
+    pointer-events: none;
+    transition: top 0.15s ease, font-size 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    background: var(--mud-palette-surface);
+    padding: 0 3px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.wis-amt-field__label--float {
+    top: 0;
+    transform: translateY(-50%);
+    font-size: 0.72rem;
+}
+
+.wis-amt-field:focus-within .wis-amt-field__label,
+.wis-amt-field--focused .wis-amt-field__label {
+    color: var(--mud-palette-primary);
+}
+
+/* The actual <input> */
+.wis-amt-field__input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+    min-width: 0;
+    /* hide browser spin buttons just in case */
+    -moz-appearance: textfield;
+}
+
+    .wis-amt-field__input::-webkit-outer-spin-button,
+    .wis-amt-field__input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+/* Currency adornment on the right */
+.wis-amt-field__adornment {
+    font-size: 0.8125rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.5);
+    margin-left: 4px;
+    flex-shrink: 0;
+    user-select: none;
+}

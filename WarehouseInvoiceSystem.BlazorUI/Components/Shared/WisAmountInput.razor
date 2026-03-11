@@ -1,0 +1,145 @@
+﻿@using System.Globalization
+
+@* 
+    A plain native-input replacement for MudNumericField T="decimal?".
+    
+    Why not MudNumericField?
+      MudNumericField fires ValueChanged with 0m on first render when Value is
+      null. This races against the Blazor lifecycle and causes the filter button
+      to appear active (primary colour) even when nothing is filtered. There is
+      no reliable lifecycle hook that runs before MudNumericField's own init
+      callback, so the bug cannot be fixed from the outside.
+
+    This component:
+      - Never fires ValueChanged on render — only on real user interaction.
+      - Formats the display value on blur (e.g. 1500 → 1.500).
+      - Applies (fires ValueChanged + calls OnApply) on Enter key.
+      - Clears to null when the user empties the field.
+      - Mirrors the MudBlazor Outlined / Dense visual style via CSS.
+*@
+
+<div class="wis-amt-field @(_isFocused ? "wis-amt-field--focused" : "")">
+    <label class="wis-amt-field__label @(_hasValue || _isFocused ? "wis-amt-field__label--float" : "")">
+        @Label
+    </label>
+    <div class="wis-amt-field__inner">
+        <input class="wis-amt-field__input"
+               type="text"
+               inputmode="decimal"
+               value="@_displayValue"
+               @onfocus="OnFocus"
+               @onblur="OnBlur"
+               @onchange="OnChange"
+               @onkeydown="OnKeyDown" />
+        <span class="wis-amt-field__adornment">@AdornmentText</span>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public decimal? Value { get; set; }
+
+    [Parameter, EditorRequired]
+    public EventCallback<decimal?> ValueChanged { get; set; }
+
+    /// <summary>Fired when Enter is pressed — lets the parent close the popover.</summary>
+    [Parameter]
+    public EventCallback OnApply { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public string AdornmentText { get; set; } = string.Empty;
+
+    // ── Internal state ────────────────────────────────────────────────────────
+
+    private bool _isFocused;
+
+    // What the <input> actually shows. We own this completely — it is never
+    // set from a render callback, only from user events and parameter sync.
+    private string _displayValue = string.Empty;
+
+    // The last decimal we parsed and emitted, used as a change guard.
+    private decimal? _committed;
+
+    private bool _hasValue => !string.IsNullOrWhiteSpace(_displayValue);
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    protected override void OnParametersSet()
+    {
+        // Sync display when the parent resets the value externally (e.g. "Clear
+        // all filters"), but only while not focused so we never clobber typing.
+        if (!_isFocused && Value != _committed)
+        {
+            _committed = Value;
+            _displayValue = Value.HasValue ? FormatDisplay(Value.Value) : string.Empty;
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static string FormatDisplay(decimal v) =>
+        v.ToString("C", CultureInfo.CurrentCulture);
+
+    private static decimal? Parse(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+
+        // Strip thousand separators so "1.000" and "1000" both parse fine.
+        string clean = raw
+            .Replace(CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator, "")
+            .Replace(CultureInfo.CurrentCulture.NumberFormat.CurrencyGroupSeparator, "")
+            .Trim();
+
+        return decimal.TryParse(clean,
+               NumberStyles.Number,
+               CultureInfo.CurrentCulture,
+               out decimal result)
+               && result >= 0
+            ? result
+            : null;
+    }
+
+    // ── Event handlers ────────────────────────────────────────────────────────
+
+    private void OnFocus() => _isFocused = true;
+
+    private async Task OnBlur(FocusEventArgs _)
+    {
+        _isFocused = false;
+        await CommitAsync();
+    }
+
+    private async Task OnChange(ChangeEventArgs e)
+    {
+        // Keep _displayValue in sync with what the user typed so that if they
+        // blur without pressing Enter the value is still up to date.
+        _displayValue = e.Value?.ToString() ?? string.Empty;
+        await CommitAsync();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _isFocused = false;
+            await CommitAsync();
+            await OnApply.InvokeAsync();
+        }
+    }
+
+    private async Task CommitAsync()
+    {
+        decimal? parsed = Parse(_displayValue);
+
+        // Reformat display (e.g. "1500" → "1.500") only on a valid value.
+        _displayValue = parsed.HasValue ? FormatDisplay(parsed.Value) : _displayValue;
+
+        if (parsed == _committed) return;
+
+        _committed = parsed;
+        await ValueChanged.InvokeAsync(parsed);
+    }
+}
