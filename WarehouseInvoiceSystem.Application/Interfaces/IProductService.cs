@@ -13,16 +13,9 @@
         Task<ProductDto?> GetProductByIdAsync(Guid id);
         Task<ProductDto?> GetProductByCodeAsync(string code);
         /// <summary>
-        /// Returns full product analytics + transaction history in a single coordinated call.
-        /// Prefer this over calling GetProductAnalyticsAsync and GetProductTransactionHistoryAsync separately.
+        /// Returns full product analytics + transaction history + stock movements in a single coordinated call.
         /// </summary>
         Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId);
-
-        /// <summary>Thin wrapper around GetProductDetailsAsync. Kept for backward compatibility.</summary>
-        Task<ProductAnalyticsDto> GetProductAnalyticsAsync(Guid productId);
-
-        /// <summary>Kept for backward compatibility. Use GetProductDetailsAsync when possible.</summary>
-        Task<ProductTransactionHistoryDto> GetProductTransactionHistoryAsync(Guid productId);
         Task<ProductDto> CreateProductAsync(CreateProductDto createDto);
         Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);

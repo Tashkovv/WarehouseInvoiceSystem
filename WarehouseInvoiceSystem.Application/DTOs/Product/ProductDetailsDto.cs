@@ -1,5 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Product
 {
+    using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
+
     /// <summary>
     /// Full product detail payload returned by GetProductDetailsAsync.
     /// Combines what was previously two separate service calls (analytics + transaction history)
@@ -19,6 +21,9 @@
         // ── Transaction history ───────────────────────────────────────────────
         public List<ProductTransactionRowDto> Purchased { get; set; } = [];
         public List<ProductTransactionRowDto> Sold { get; set; } = [];
+
+        // ── Raw inventory movements (stock movements tab) ─────────────────────
+        public List<InventoryTransactionDto> Movements { get; set; } = [];
 
         // ── Computed ──────────────────────────────────────────────────────────
 

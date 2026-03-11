@@ -162,35 +162,10 @@
                 details.GrossMarginPercentage = (details.CurrentSellingPrice - details.AveragePurchasePrice)
                     / details.CurrentSellingPrice * 100;
 
+            // ── Raw movements for the stock movements tab ─────────────────────
+            details.Movements = allTransactions.ToList();
+
             return details;
-        }
-
-        /// <summary>Thin wrapper — calls GetProductDetailsAsync and maps to the legacy shape.</summary>
-        public async Task<ProductAnalyticsDto> GetProductAnalyticsAsync(Guid productId)
-        {
-            ProductDetailsDto details = await GetProductDetailsAsync(productId);
-
-            return new ProductAnalyticsDto
-            {
-                CurrentSellingPrice = details.CurrentSellingPrice,
-                GrossMarginPercentage = details.GrossMarginPercentage,
-                TotalStockAcrossWarehouses = details.TotalStockAcrossWarehouses,
-                HasLowStock = details.HasLowStock,
-                StockByWarehouse = details.StockByWarehouse,
-                RecentTransactions = [] // was never used; kept for shape compatibility
-            };
-        }
-
-        /// <summary>Thin wrapper — calls GetProductDetailsAsync and maps to the legacy shape.</summary>
-        public async Task<ProductTransactionHistoryDto> GetProductTransactionHistoryAsync(Guid productId)
-        {
-            ProductDetailsDto details = await GetProductDetailsAsync(productId);
-
-            return new ProductTransactionHistoryDto
-            {
-                Purchased = details.Purchased,
-                Sold = details.Sold
-            };
         }
 
         public async Task<ProductDto> CreateProductAsync(CreateProductDto createDto)
