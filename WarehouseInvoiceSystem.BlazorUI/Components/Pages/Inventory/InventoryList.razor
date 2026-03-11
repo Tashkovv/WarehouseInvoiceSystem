@@ -11,6 +11,7 @@
 @inject ILocalizationService Localization
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <PageTitle>@Localization.GetString("Inventory") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -93,6 +94,7 @@
                      @ref="_grid"
                      ServerData="LoadServerData"
                      RowClassFunc="GetRowClass"
+                     RowClick="OnRowClick"
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
@@ -111,12 +113,12 @@
                                 CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.ProductName"
-                                Title="@Localization.GetString("ProductName")"
+                                Title="@Localization.GetString("Product")"
                                 Sortable="true"
                                 IsEditable="false" />
 
                 <PropertyColumn Property="x => x.WarehouseName"
-                                Title="@Localization.GetString("WarehouseName")"
+                                Title="@Localization.GetString("Warehouse")"
                                 Sortable="true"
                                 IsEditable="false" />
 
@@ -332,7 +334,13 @@
         item.MinimumQuantity.HasValue && item.Quantity <= item.MinimumQuantity.Value;
 
     private string GetRowClass(StockLevelDto item, int index) =>
-        IsLowStock(item) ? "row-status-error" : string.Empty;
+        IsLowStock(item) ? "row-status-error table-row-clickable" : "table-row-clickable";
+
+    private void OnRowClick(DataGridRowClickEventArgs<StockLevelDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+            Navigation.NavigateTo($"/products/{args.Item.ProductId}/transactions?warehouse={args.Item.WarehouseId}");
+    }
 
     private Task OpenAdjustDialog() => OpenAdjustDialog(null, null);
 
