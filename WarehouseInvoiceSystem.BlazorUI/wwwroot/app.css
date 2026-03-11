@@ -426,9 +426,57 @@ html {
         padding: 0 !important;
     }
 
-/* Calendar wrapper — no extra padding */
+    /* Hide the big date header banner — trigger button already shows the range */
+    .wis-daterange-static .mud-picker-date-header,
+    .wis-daterange-static .mud-picker-datepicker-toolbar,
+    .wis-daterange-static .mud-toolbar,
+    .wis-daterange-static .mud-picker-toolbar {
+        display: none !important;
+    }
+
+    /* Tighten month navigation row */
+    .wis-daterange-static .mud-picker-calendar-header,
+    .wis-daterange-static .mud-daterangepicker-month-year {
+        padding-top: 4px !important;
+        padding-bottom: 0 !important;
+        min-height: unset !important;
+    }
+
+    /* Remove padding around the calendar grid */
+    .wis-daterange-static .mud-picker-calendar-content,
+    .wis-daterange-static .mud-daterange-calendar-content {
+        padding: 0 6px 4px 6px !important;
+    }
+
+    /* Compact day-of-week header */
+    .wis-daterange-static .mud-day-of-week,
+    .wis-daterange-static th {
+        padding: 2px 0 !important;
+        height: 28px !important;
+    }
+
+    /* Smaller day cells */
+    .wis-daterange-static .mud-button-date,
+    .wis-daterange-static .mud-picker-calendar-day {
+        height: 34px !important;
+        width: 34px !important;
+        min-width: 34px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Remove gap between the two month columns */
+    .wis-daterange-static .mud-picker-calendar-container,
+    .wis-daterange-static .mud-daterange-calendar-container {
+        gap: 0 !important;
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+
+/* Calendar wrapper */
 .wis-drf-calendar {
-    padding: 4px 4px 0 4px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
 }
 
 /* Preset footer row */
@@ -1196,4 +1244,40 @@ html {
 
 .wis-capitalize {
     text-transform: capitalize;
+}
+
+/* ── WisAutocompleteFilter ──────────────────────────────────────────────── */
+
+.wis-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.875rem;
+}
+
+    .wis-autocomplete-item:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.07);
+    }
+
+.wis-autocomplete-item--selected {
+    background: rgba(var(--mud-palette-primary-rgb), 0.10);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+}
+
+.wis-autocomplete-item__label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wis-autocomplete-item__sublabel {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    flex-shrink: 0;
 }

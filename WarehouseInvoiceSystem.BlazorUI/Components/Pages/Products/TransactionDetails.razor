@@ -3,6 +3,8 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
@@ -40,14 +42,16 @@ else
                             </MudText>
                         </div>
 
-                        <FilterPopoverList TValue="Guid?"
-                                           Label="@Localization.GetString("AllWarehouses")"
-                                           Items="_warehouseItems"
-                                           Mode="FilterSelectionMode.Single"
-                                           PopoverAnchorOrigin="Origin.BottomRight"
-                                           PopoverTransformOrigin="Origin.TopRight"
-                                           SelectedValue="_selectedWarehouseId"
-                                           SelectedValueChanged="@(async (Guid? v) => await OnWarehouseChanged(v))" />
+                        <WisAutocompleteFilter TValue="Guid"
+                                               Label="@Localization.GetString("AllWarehouses")"
+                                               AllLabel="@Localization.GetString("AllWarehouses")"
+                                               Icon="@Icons.Material.Filled.Warehouse"
+                                               LoadItems="LoadWarehouseItems"
+                                               PopoverAnchorOrigin="Origin.BottomRight"
+                                               PopoverTransformOrigin="Origin.TopRight"
+                                               SelectedValue="@(_selectedWarehouseId ?? default)"
+                                               SelectedValueChanged="@(async (Guid v) => await OnWarehouseChanged(v == default ? (Guid?)null : v))"
+                                               MinWidth="200px" />
                     </div>
 
                     @* ── Product meta row ── *@
@@ -371,28 +375,47 @@ else
 
     private bool _loading = true;
     private ProductDto? _product;
-    private List<WarehouseDto> _warehouses = [];
+    private ProductDetailsDto _details = new();
     private Guid? _selectedWarehouseId;
     private Tab _activeTab = Tab.StockMovements;
 
+    // ── Warehouse autocomplete data source ────────────────────────────────────
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(
+            new GetWarehousesQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                SortBy = "Name",
+                SortAscending = true
+            });
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+            {
+                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+                Value = w.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
     // ── Computed ──────────────────────────────────────────────────────────────
 
-    private List<FilterPopoverItem<Guid?>> _warehouseItems => new[] {
-            new FilterPopoverItem<Guid?> { Label = Localization.GetString("AllWarehouses"), Value = null, Color = Color.Default }
-        }
-        .Concat(_warehouses.Select(w => new FilterPopoverItem<Guid?>
-        {
-            Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
-            Value = w.Id,
-            Color = Color.Default
-        }))
-        .ToList();
-
     private string _selectedWarehouseName => _selectedWarehouseId.HasValue
-        ? _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId.Value)?.Name ?? ""
+        ? _details.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)?.WarehouseName ?? ""
         : "";
 
-    private decimal? _currentStock;
+    private decimal? _currentStock => _selectedWarehouseId.HasValue
+        ? _details.StockByWarehouse.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
+        : _details.TotalStockAcrossWarehouses;
 
     // ── Stock Movements state ─────────────────────────────────────────────────
 
@@ -448,20 +471,18 @@ else
 
         try
         {
+            // Single call — product + stock + full history in one round-trip set
             _product = await ProductService.GetProductByIdAsync(Id);
+            _details = await ProductService.GetProductDetailsAsync(Id);
 
             if (_product != null)
             {
-                IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
-                _warehouses = warehouses.ToList();
-
                 // Apply query param pre-selection
                 if (WarehouseQueryParam.HasValue)
                     _selectedWarehouseId = WarehouseQueryParam;
 
-                await RefreshStockAsync();
                 await LoadMovementsAsync();
-                await LoadHistoryAsync();
+                LoadHistory(_details);
             }
         }
         catch (Exception ex)
@@ -475,30 +496,12 @@ else
         }
     }
 
-    private async Task RefreshStockAsync()
-    {
-        try
-        {
-            ProductAnalyticsDto analytics = await ProductService.GetProductAnalyticsAsync(Id);
-
-            _currentStock = _selectedWarehouseId.HasValue
-                ? analytics.StockByWarehouse
-                    .Where(s => s.WarehouseId == _selectedWarehouseId.Value)
-                    .Sum(s => s.Quantity)
-                : analytics.TotalStockAcrossWarehouses;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading stock: {ex.Message}");
-        }
-    }
-
     // ── Interactions ──────────────────────────────────────────────────────────
 
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
         _selectedWarehouseId = warehouseId;
-        await RefreshStockAsync();
+        // _currentStock is now a computed property — just re-render
         await InvokeAsync(StateHasChanged);
     }
 
@@ -636,7 +639,7 @@ else
         .Distinct()
         .OrderBy(p => p);
 
-    private async Task LoadHistoryAsync()
+    private void LoadHistory(ProductDetailsDto details)
     {
         _loadingHistory = true;
         _allHistoryPurchased = [];
@@ -644,10 +647,7 @@ else
 
         try
         {
-            ProductTransactionHistoryDto history =
-                await ProductService.GetProductTransactionHistoryAsync(Id);
-
-            _allHistoryPurchased = history.Purchased
+            _allHistoryPurchased = details.Purchased
                 .Select(r => new ProductTransactionRow
                 {
                     Date = r.Date,
@@ -661,7 +661,7 @@ else
                     TotalPrice = r.TotalPrice
                 }).ToList();
 
-            _allHistorySold = history.Sold
+            _allHistorySold = details.Sold
                 .Select(r => new ProductTransactionRow
                 {
                     Date = r.Date,
@@ -674,11 +674,6 @@ else
                     UnitPrice = r.UnitPrice,
                     TotalPrice = r.TotalPrice
                 }).ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading document history: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingData"), Severity.Error);
         }
         finally
         {

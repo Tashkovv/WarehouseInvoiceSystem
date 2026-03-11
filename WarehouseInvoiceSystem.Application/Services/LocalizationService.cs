@@ -195,6 +195,8 @@
                 ["Back"] = "Back",
                 ["Revert"] = "Revert",
                 ["Send"] = "Send",
+                ["NoResults"] = "No results",
+                ["TypeMoreCharacters"] = "Type at least 2 characters",
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
@@ -497,9 +499,9 @@
                 ["ComingSoon"] = "Coming soon",
                 ["Period"] = "Period",
                 ["PeriodToday"] = "Today",
-                ["PeriodLast7Days"] = "Last 7 days",
-                ["PeriodLast30Days"] = "Last 30 days",
-                ["PeriodLast90Days"] = "Last 90 days",
+                ["PeriodLast7Days"] = "7 days",
+                ["PeriodLast30Days"] = "30 days",
+                ["PeriodLast90Days"] = "90 days",
                 ["PeriodThisYear"] = "This year",
                 ["PeriodLastYear"] = "Last year",
                 ["SelectDateRange"] = "Select date range",
@@ -838,6 +840,8 @@
                 ["Back"] = "Назад",
                 ["Revert"] = "Врати",
                 ["Send"] = "Испрати",
+                ["NoResults"] = "Нема резултати",
+                ["TypeMoreCharacters"] = "Внеси барем 2 знаци",
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
@@ -1140,9 +1144,9 @@
                 ["ComingSoon"] = "Наскоро",
                 ["Period"] = "Период",
                 ["PeriodToday"] = "Денес",
-                ["PeriodLast7Days"] = "Последни 7 дена",
-                ["PeriodLast30Days"] = "Последни 30 дена",
-                ["PeriodLast90Days"] = "Последни 90 дена",
+                ["PeriodLast7Days"] = "7 дена",
+                ["PeriodLast30Days"] = "30 дена",
+                ["PeriodLast90Days"] = "90 дена",
                 ["PeriodThisYear"] = "Оваа година",
                 ["PeriodLastYear"] = "Минатата година",
                 ["SelectDateRange"] = "Избери период",

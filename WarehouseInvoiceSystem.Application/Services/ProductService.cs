@@ -59,32 +59,21 @@
             return product == null ? null : MapToDto(product);
         }
 
-        public async Task<ProductAnalyticsDto> GetProductAnalyticsAsync(Guid productId)
+        public async Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId)
         {
             Product? product = await productRepository.GetByIdAsync(productId)
                 ?? throw new KeyNotFoundException($"Product with ID {productId} not found");
 
-            var analytics = new ProductAnalyticsDto
-            {
-                CurrentSellingPrice = product.DefaultPrice
-            };
-
-            // Get stock information
-            await PopulateStockAnalytics(productId, analytics);
-
-            // Get recent transactions
-            await PopulateRecentTransactions(productId, analytics);
-
-            return analytics;
-        }
-
-        public async Task<ProductTransactionHistoryDto> GetProductTransactionHistoryAsync(Guid productId)
-        {
-            var result = new ProductTransactionHistoryDto();
-
-            // Only show documents that have live (non-reversed) inventory transactions
+            // EF Core's scoped DbContext cannot run concurrent queries on the same instance.
+            // These must be awaited sequentially even though they're logically independent.
+            IEnumerable<StockLevelDto> stockLevels = await inventoryService.GetStockByProductAsync(productId);
             IEnumerable<InventoryTransactionDto> allTransactions = await inventoryService.GetTransactionsByProductAsync(productId);
+            IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository.GetLineItemsByProductIdAsync(productId);
+            IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository.GetLineItemsByProductIdAsync(productId);
 
+            var stockList = stockLevels.ToList();
+
+            // ── Build live document id set (exclude reversed docs) ────────────
             var reversalSourceIds = allTransactions
                 .Where(t => t.SourceDocumentType != null && t.SourceDocumentType.EndsWith(reversalString))
                 .Select(t => t.SourceDocumentId)
@@ -97,28 +86,62 @@
                 .Select(t => t.SourceDocumentId)
                 .ToHashSet();
 
-            IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository
-                .GetLineItemsByProductIdAsync(productId);
+            // ── Build result ─────────────────────────────────────────────────
+            var details = new ProductDetailsDto
+            {
+                CurrentSellingPrice = product.DefaultPrice,
 
-            result.Purchased = purchaseLines
-                .Where(li => liveDocumentIds.Contains(li.PurchaseNoteId))
-                .Select(li => new ProductTransactionRowDto
+                // Stock
+                TotalStockAcrossWarehouses = stockList.Sum(sl => sl.Quantity),
+                HasLowStock = stockList.Any(sl => sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0),
+                StockByWarehouse = stockList.Select(sl => new WarehouseStockDto
                 {
-                    Date = li.PurchaseNote.PurchaseDate,
-                    DocumentNumber = li.PurchaseNote.NoteNumber,
-                    DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
-                    PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
-                    WarehouseId = li.PurchaseNote.WarehouseId,
-                    WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
-                    Quantity = li.Quantity,
-                    UnitPrice = li.UnitPrice,
-                    TotalPrice = li.Amount
-                }).ToList();
+                    WarehouseId = sl.WarehouseId,
+                    WarehouseName = sl.WarehouseName ?? "",
+                    Quantity = sl.Quantity,
+                    ReservedQuantity = sl.ReservedQuantity,
+                    AvailableQuantity = sl.AvailableQuantity,
+                    MinimumQuantity = sl.MinimumQuantity,
+                    ReorderPoint = sl.ReorderPoint,
+                    LastRestockedAt = sl.LastRestockedAt
+                }).ToList(),
 
-            IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository
-                .GetLineItemsByProductIdAsync(productId);
+                // Transaction history — purchased from purchase notes
+                Purchased = purchaseLines
+                    .Where(li => liveDocumentIds.Contains(li.PurchaseNoteId))
+                    .Select(li => new ProductTransactionRowDto
+                    {
+                        Date = li.PurchaseNote.PurchaseDate,
+                        DocumentNumber = li.PurchaseNote.NoteNumber,
+                        DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
+                        PartyName = li.PurchaseNote.Individual?.FullName ?? "-",
+                        WarehouseId = li.PurchaseNote.WarehouseId,
+                        WarehouseName = li.PurchaseNote.Warehouse?.Name ?? "-",
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TotalPrice = li.Amount
+                    }).ToList(),
 
-            result.Purchased.AddRange(invoiceLines
+                // Transaction history — sold via receivable invoices
+                Sold = invoiceLines
+                    .Where(li => li.Invoice.Type == InvoiceType.Receivable
+                              && liveDocumentIds.Contains(li.InvoiceId))
+                    .Select(li => new ProductTransactionRowDto
+                    {
+                        Date = li.Invoice.IssueDate,
+                        DocumentNumber = li.Invoice.InvoiceNumber,
+                        DocumentUrl = $"/invoices/{li.Invoice.Id}",
+                        PartyName = li.Invoice.Company?.Name ?? "-",
+                        WarehouseId = li.Invoice.WarehouseId,
+                        WarehouseName = li.Invoice.Warehouse?.Name ?? "-",
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TotalPrice = li.TotalAmount
+                    }).ToList()
+            };
+
+            // Purchased also includes payable invoices (goods purchased via invoice)
+            details.Purchased.AddRange(invoiceLines
                 .Where(li => li.Invoice.Type == InvoiceType.Payable
                           && liveDocumentIds.Contains(li.InvoiceId))
                 .Select(li => new ProductTransactionRowDto
@@ -134,23 +157,40 @@
                     TotalPrice = li.TotalAmount
                 }));
 
-            result.Sold = invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Receivable
-                          && liveDocumentIds.Contains(li.InvoiceId))
-                .Select(li => new ProductTransactionRowDto
-                {
-                    Date = li.Invoice.IssueDate,
-                    DocumentNumber = li.Invoice.InvoiceNumber,
-                    DocumentUrl = $"/invoices/{li.Invoice.Id}",
-                    PartyName = li.Invoice.Company?.Name ?? "-",
-                    WarehouseId = li.Invoice.WarehouseId,
-                    WarehouseName = li.Invoice.Warehouse?.Name ?? "-",
-                    Quantity = li.Quantity,
-                    UnitPrice = li.UnitPrice,
-                    TotalPrice = li.TotalAmount
-                }).ToList();
+            // ── Gross margin — based on average purchase price vs selling price ─
+            if (details.CurrentSellingPrice > 0 && details.AveragePurchasePrice > 0)
+                details.GrossMarginPercentage = (details.CurrentSellingPrice - details.AveragePurchasePrice)
+                    / details.CurrentSellingPrice * 100;
 
-            return result;
+            return details;
+        }
+
+        /// <summary>Thin wrapper — calls GetProductDetailsAsync and maps to the legacy shape.</summary>
+        public async Task<ProductAnalyticsDto> GetProductAnalyticsAsync(Guid productId)
+        {
+            ProductDetailsDto details = await GetProductDetailsAsync(productId);
+
+            return new ProductAnalyticsDto
+            {
+                CurrentSellingPrice = details.CurrentSellingPrice,
+                GrossMarginPercentage = details.GrossMarginPercentage,
+                TotalStockAcrossWarehouses = details.TotalStockAcrossWarehouses,
+                HasLowStock = details.HasLowStock,
+                StockByWarehouse = details.StockByWarehouse,
+                RecentTransactions = [] // was never used; kept for shape compatibility
+            };
+        }
+
+        /// <summary>Thin wrapper — calls GetProductDetailsAsync and maps to the legacy shape.</summary>
+        public async Task<ProductTransactionHistoryDto> GetProductTransactionHistoryAsync(Guid productId)
+        {
+            ProductDetailsDto details = await GetProductDetailsAsync(productId);
+
+            return new ProductTransactionHistoryDto
+            {
+                Purchased = details.Purchased,
+                Sold = details.Sold
+            };
         }
 
         public async Task<ProductDto> CreateProductAsync(CreateProductDto createDto)
@@ -201,71 +241,6 @@
         public async Task<bool> DeleteProductAsync(Guid id)
         {
             return await productRepository.DeleteAsync(id);
-        }
-
-        private async Task PopulateStockAnalytics(Guid productId, ProductAnalyticsDto analytics)
-        {
-            try
-            {
-                IEnumerable<StockLevelDto> stockLevels = await inventoryService.GetStockByProductAsync(productId);
-                var stockList = stockLevels.ToList();
-
-                analytics.TotalStockAcrossWarehouses = stockList.Sum(sl => sl.Quantity);
-                analytics.HasLowStock = stockList.Any(sl => sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0);
-
-                analytics.StockByWarehouse = stockList.Select(sl => new WarehouseStockDto
-                {
-                    WarehouseId = sl.WarehouseId,
-                    WarehouseName = sl.WarehouseName ?? "",
-                    Quantity = sl.Quantity,
-                    ReservedQuantity = sl.ReservedQuantity,
-                    AvailableQuantity = sl.AvailableQuantity,
-                    MinimumQuantity = sl.MinimumQuantity,
-                    ReorderPoint = sl.ReorderPoint,
-                    LastRestockedAt = sl.LastRestockedAt
-                }).ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading stock analytics: {ex.Message}");
-            }
-        }
-
-        private async Task PopulateRecentTransactions(Guid productId, ProductAnalyticsDto analytics)
-        {
-            try
-            {
-                IEnumerable<InventoryTransactionDto> transactions = await inventoryService.GetTransactionsByProductAsync(productId);
-
-                var reversalSourceIds = transactions
-                    .Where(t => t.SourceDocumentType != null && t.SourceDocumentType.EndsWith(reversalString))
-                    .Select(t => t.SourceDocumentId)
-                    .ToHashSet();
-
-                var meaningfulTransactions = transactions
-                    .Where(t => t.SourceDocumentType == null
-                             || (!t.SourceDocumentType.EndsWith(reversalString)
-                                 && !reversalSourceIds.Contains(t.SourceDocumentId)))
-                    .ToList();
-
-                analytics.RecentTransactions = meaningfulTransactions
-                    .OrderByDescending(t => t.CreatedAt)
-                    .Take(10)
-                    .Select(t => new RecentTransactionDto
-                    {
-                        Date = t.CreatedAt,
-                        Type = t.Type.ToString(),
-                        WarehouseName = t.WarehouseName ?? "",
-                        Quantity = t.Quantity,
-                        SourceDocument = t.SourceDocumentType != null ? $"{t.SourceDocumentType}" : null,
-                        Note = t.Note
-                    })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading recent transactions: {ex.Message}");
-            }
         }
 
         private static ProductDto MapToDto(Product product)

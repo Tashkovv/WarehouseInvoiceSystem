@@ -6,7 +6,7 @@
     <button type="button"
             class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
             @onclick="Toggle"
-            style="min-width: 160px; justify-content: space-between; gap: 6px;">
+            style="min-width: 130px; justify-content: space-between; gap: 6px;">
 
         <span style="display: inline-flex; align-items: center; gap: 6px;">
             <MudIcon Icon="@Icons.Material.Filled.CalendarMonth"
@@ -52,7 +52,7 @@
         </div>
 
         @* ── Preset footer ── *@
-        <div class="wis-drf-footer">
+        <div class="wis-drf-footer justify-space-between">
             @foreach (var preset in _datePresets)
             {
                 bool isSelected = DatePreset != null && DatePreset == preset.Value;
