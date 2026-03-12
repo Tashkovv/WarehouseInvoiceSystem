@@ -21,7 +21,7 @@
                     @if (_productLocked)
                     {
                         <MudTextField Value="@_selectedProduct?.Name"
-                                      Label="@Localization.GetString("SelectProduct")"
+                                      Label="@Localization.GetString("Product")"
                                       Variant="Variant.Outlined"
                                       ReadOnly="true"
                                       FullWidth="true" />
@@ -33,7 +33,7 @@
                                          ValueChanged="OnProductSelected"
                                          SearchFunc="SearchProducts"
                                          ToStringFunc="@(p => p?.Name ?? string.Empty)"
-                                         Label="@Localization.GetString("SelectProduct")"
+                                         Label="@Localization.GetString("Product")"
                                          Variant="Variant.Outlined"
                                          Required="true"
                                          Clearable="true"
@@ -47,7 +47,7 @@
                     @if (_warehouseLocked)
                     {
                         <MudTextField Value="@(_warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name)"
-                                      Label="@Localization.GetString("SelectWarehouse")"
+                                      Label="@Localization.GetString("Warehouse")"
                                       Variant="Variant.Outlined"
                                       ReadOnly="true"
                                       FullWidth="true" />
@@ -57,7 +57,7 @@
                         <MudSelect T="Guid?"
                                    Value="_selectedWarehouseId"
                                    ValueChanged="OnWarehouseSelected"
-                                   Label="@Localization.GetString("SelectWarehouse")"
+                                   Label="@Localization.GetString("Warehouse")"
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    FullWidth="true"
