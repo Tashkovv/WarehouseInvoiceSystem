@@ -35,19 +35,19 @@ builder.Services.AddMudServices();
 builder.Services.AddScoped<MudBlazor.MudLocalizer, WarehouseInvoiceSystem.BlazorUI.Localization.CustomMudLocalizer>();
 
 // Add Database Context
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register Repositories
-builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
-builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IWarehouseRepository, WarehouseRepository>();
-builder.Services.AddScoped<IStockLevelRepository, StockLevelRepository>();
-builder.Services.AddScoped<IInventoryTransactionRepository, InventoryTransactionRepository>();
-builder.Services.AddScoped<IIndividualRepository, IndividualRepository>();
-builder.Services.AddScoped<IPurchaseNoteRepository, PurchaseNoteRepository>();
+builder.Services.AddTransient<ICompanyRepository, CompanyRepository>();
+builder.Services.AddTransient<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddTransient<IPaymentRepository, PaymentRepository>();
+builder.Services.AddTransient<IProductRepository, ProductRepository>();
+builder.Services.AddTransient<IWarehouseRepository, WarehouseRepository>();
+builder.Services.AddTransient<IStockLevelRepository, StockLevelRepository>();
+builder.Services.AddTransient<IInventoryTransactionRepository, InventoryTransactionRepository>();
+builder.Services.AddTransient<IIndividualRepository, IndividualRepository>();
+builder.Services.AddTransient<IPurchaseNoteRepository, PurchaseNoteRepository>();
 
 // Register Services
 builder.Services.AddScoped<ICompanyService, CompanyService>();

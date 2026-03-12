@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
+namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
@@ -7,110 +7,111 @@
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class WarehouseRepository(ApplicationDbContext context) : IWarehouseRepository
+    public class WarehouseRepository(IDbContextFactory<ApplicationDbContext> factory)
+        : BaseRepository(factory), IWarehouseRepository
     {
-        public async Task<IEnumerable<Warehouse>> GetAllAsync()
-        {
-            return await context.Warehouses
-                .Where(w => w.DeletedOn == null && w.IsActive)
-                .OrderBy(w => w.Name)
-                .ToListAsync();
-        }
+        public Task<IEnumerable<Warehouse>> GetAllAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Warehouse>)await All<Warehouse>(context)
+                    .Where(w => w.IsActive)
+                    .OrderBy(w => w.Name)
+                    .ToListAsync();
+            });
 
-        public async Task<PagedResult<Warehouse>> GetPagedAsync(GetWarehousesQuery query)
-        {
-            IQueryable<Warehouse> q = context.Warehouses
-                .Where(w => w.DeletedOn == null);
+        public Task<PagedResult<Warehouse>> GetPagedAsync(GetWarehousesQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Warehouse> q = ApplyFilters(All<Warehouse>(context), query);
+                q = ApplySort(q, query.SortBy, query.SortAscending);
 
+                int totalCount = await q.CountAsync();
+
+                List<Warehouse> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<Warehouse>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<bool> HasProductsAsync(Guid id) =>
+            WithContextAsync(context =>
+                context.StockLevels.AnyAsync(s => s.WarehouseId == id && s.Quantity > 0));
+
+        public Task<Warehouse?> GetByIdAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Warehouse>(context).FirstOrDefaultAsync(w => w.Id == id));
+
+        public Task<Warehouse?> GetDefaultWarehouseAsync() =>
+            WithContextAsync(context =>
+                All<Warehouse>(context)
+                    .Where(w => w.IsActive && w.IsDefault)
+                    .FirstOrDefaultAsync());
+
+        public Task<bool> ExistsAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Warehouse>(context).AnyAsync(w => w.Id == id));
+
+        public Task<Warehouse> CreateAsync(Warehouse warehouse) =>
+            WithContextAsync(async context =>
+            {
+                warehouse.CreatedAt = DateTime.UtcNow;
+                context.Warehouses.Add(warehouse);
+                await SaveAsync(context);
+                return warehouse;
+            });
+
+        public Task<Warehouse> UpdateAsync(Warehouse warehouse) =>
+            WithContextAsync(async context =>
+            {
+                context.Warehouses.Update(warehouse);
+                await SaveAsync(context);
+                return warehouse;
+            });
+
+        public Task<bool> SetActiveStatusAsync(Guid id, bool isActive) =>
+            WithContextAsync(async context =>
+            {
+                Warehouse? warehouse = await AllTracked<Warehouse>(context)
+                    .FirstOrDefaultAsync(w => w.Id == id);
+
+                if (warehouse == null)
+                    return false;
+
+                warehouse.IsActive = isActive;
+                await SaveAsync(context);
+                return true;
+            });
+
+        private static IQueryable<Warehouse> ApplyFilters(IQueryable<Warehouse> q, GetWarehousesQuery query)
+        {
             if (query.IsActive.HasValue)
                 q = q.Where(w => w.IsActive == query.IsActive.Value);
 
-            string search = query.Search?.ToLower() ?? string.Empty;
-
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(w => w.Name.ToLower().Contains(search) ||
-                                 (w.Address != null && w.Address.ToLower().Contains(search)));
-
-            q = query.SortBy switch
             {
-                "Name" => query.SortAscending ? q.OrderBy(w => w.Name) : q.OrderByDescending(w => w.Name),
-                "Address" => query.SortAscending ? q.OrderBy(w => w.Address) : q.OrderByDescending(w => w.Address),
+                string search = $"%{query.Search}%";
+                q = q.Where(w =>
+                    EF.Functions.ILike(w.Name, search) ||
+                    (w.Address != null && EF.Functions.ILike(w.Address, search)));
+            }
+
+            return q;
+        }
+
+        private static IQueryable<Warehouse> ApplySort(IQueryable<Warehouse> q, string? sortBy, bool ascending)
+            => sortBy switch
+            {
+                "Name" => ascending ? q.OrderBy(w => w.Name) : q.OrderByDescending(w => w.Name),
+                "Address" => ascending ? q.OrderBy(w => w.Address) : q.OrderByDescending(w => w.Address),
                 _ => q.OrderBy(w => w.Name)
             };
-
-            int totalCount = await q.CountAsync();
-
-            List<Warehouse> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<Warehouse>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
-        }
-
-        public async Task<bool> HasProductsAsync(Guid id)
-        {
-            return await context.StockLevels
-                .AnyAsync(s => s.WarehouseId == id && s.Quantity > 0);
-        }
-
-        public async Task<Warehouse?> GetByIdAsync(Guid id)
-        {
-            return await context.Warehouses
-                .Where(w => w.DeletedOn == null)
-                .FirstOrDefaultAsync(w => w.Id == id);
-        }
-
-        public async Task<Warehouse?> GetDefaultWarehouseAsync()
-        {
-            return await context.Warehouses
-                .Where(w => w.DeletedOn == null && w.IsActive && w.IsDefault)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<bool> ExistsAsync(Guid id)
-        {
-            return await context.Warehouses
-                .AnyAsync(w => w.Id == id && w.DeletedOn == null);
-        }
-
-        public async Task<Warehouse> CreateAsync(Warehouse warehouse)
-        {
-            warehouse.CreatedAt = DateTime.UtcNow;
-
-            context.Warehouses.Add(warehouse);
-            await context.SaveChangesAsync();
-
-            return warehouse;
-        }
-
-        public async Task<Warehouse> UpdateAsync(Warehouse warehouse)
-        {
-            context.Warehouses.Update(warehouse);
-            await context.SaveChangesAsync();
-
-            return warehouse;
-        }
-
-        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
-        {
-            Warehouse? warehouse = await context.Warehouses
-                .Where(w => w.DeletedOn == null)
-                .FirstOrDefaultAsync(w => w.Id == id);
-
-            if (warehouse == null)
-                return false;
-
-            warehouse.IsActive = isActive;
-            await context.SaveChangesAsync();
-
-            return true;
-        }
     }
 }

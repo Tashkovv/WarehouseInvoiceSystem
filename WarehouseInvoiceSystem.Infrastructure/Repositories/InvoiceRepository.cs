@@ -1,7 +1,6 @@
-﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
+namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
-    using System.Collections.Generic;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
@@ -9,27 +8,260 @@
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class InvoiceRepository(ApplicationDbContext context) : IInvoiceRepository
+    public class InvoiceRepository(IDbContextFactory<ApplicationDbContext> factory)
+        : BaseRepository(factory), IInvoiceRepository
     {
-        public async Task<IEnumerable<Invoice>> GetAllAsync()
-        {
-            return await context.Invoices
-                .Where(i => i.DeletedOn == null)
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
-        }
+        public Task<IEnumerable<Invoice>> GetAllAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .OrderByDescending(i => i.CreatedAt)
+                    .ToListAsync();
+            });
 
-        public async Task<PagedResult<Invoice>> GetPagedAsync(GetInvoicesQuery query)
-        {
-            IQueryable<Invoice> q = context.Invoices
-                .Where(i => i.DeletedOn == null)
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                    .ThenInclude(li => li.Product);
+        public Task<PagedResult<Invoice>> GetPagedAsync(GetInvoicesQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Invoice> q = ApplyFilters(
+                    All<Invoice>(context)
+                        .Include(i => i.Company)
+                        .Include(i => i.LineItems)
+                            .ThenInclude(li => li.Product),
+                    query);
 
+                q = ApplySort(q, query.SortBy, query.SortAscending);
+
+                int totalCount = await q.CountAsync();
+
+                List<Invoice> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<Invoice>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Where(i => i.CompanyId == companyId)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .OrderByDescending(i => i.CreatedAt)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<Invoice>> GetByTypeAsync(InvoiceType type) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Where(i => i.Type == type)
+                    .Include(i => i.Company)
+                    .OrderByDescending(i => i.CreatedAt)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<Invoice>> GetByStatusAsync(InvoiceStatus status) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Where(i => i.Status == status)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .OrderByDescending(i => i.CreatedAt)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<Invoice>> GetOverdueInvoicesAsync() =>
+            WithContextAsync(async context =>
+            {
+                DateTime today = DateTime.UtcNow.Date;
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Where(i => i.DueDate < today &&
+                                i.Status != InvoiceStatus.Paid &&
+                                i.Status != InvoiceStatus.Cancelled)
+                    .Include(i => i.Company)
+                    .OrderBy(i => i.DueDate)
+                    .ToListAsync();
+            });
+
+        public Task<Invoice?> GetByIdAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .Include(i => i.Payments)
+                    .FirstOrDefaultAsync(i => i.Id == id));
+
+        public Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber) =>
+            WithContextAsync(context =>
+                All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .Include(i => i.Payments)
+                    .FirstOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber));
+
+        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<InvoiceLine>)await All<InvoiceLine>(context)
+                    .Where(li => li.ProductId == productId &&
+                                 li.Invoice.DeletedOn == null &&
+                                 li.Invoice.Status != InvoiceStatus.Cancelled)
+                    .Include(li => li.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .Include(li => li.Invoice)
+                        .ThenInclude(i => i.Warehouse)
+                    .OrderByDescending(li => li.Invoice.IssueDate)
+                    .ToListAsync();
+            });
+
+        public Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InvoiceLine> q = ApplyLineItemFilters(
+                    All<InvoiceLine>(context)
+                        .Include(li => li.Invoice)
+                            .ThenInclude(i => i.Company)
+                        .Include(li => li.Invoice)
+                            .ThenInclude(i => i.Warehouse),
+                    query);
+
+                q = q.OrderByDescending(li => li.Invoice.IssueDate);
+
+                int totalCount = await q.CountAsync();
+
+                List<InvoiceLine> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<InvoiceLine>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<Invoice> CreateAsync(Invoice invoice) =>
+            WithContextAsync(async context =>
+            {
+                invoice.CreatedAt = DateTime.UtcNow;
+                context.Invoices.Add(invoice);
+                await SaveAsync(context);
+
+                return (await All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .Include(i => i.Payments)
+                    .FirstOrDefaultAsync(i => i.Id == invoice.Id))!;
+            });
+
+        public Task<Invoice> UpdateAsync(Invoice invoice) =>
+            WithContextAsync(async context =>
+            {
+                context.Invoices.Update(invoice);
+                await SaveAsync(context);
+
+                return (await All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Include(i => i.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .Include(i => i.Payments)
+                    .FirstOrDefaultAsync(i => i.Id == invoice.Id))!;
+            });
+
+        public Task<bool> DeleteAsync(Guid id) =>
+            WithContextAsync(async context =>
+            {
+                Invoice? invoice = await context.Invoices.FirstOrDefaultAsync(i => i.Id == id);
+                if (invoice == null)
+                    return false;
+
+                invoice.DeletedOn = DateTime.UtcNow;
+                await SaveAsync(context);
+                return true;
+            });
+
+        public Task<bool> ExistsAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Invoice>(context).AnyAsync(i => i.Id == id));
+
+        public Task<string> GenerateInvoiceNumberAsync(InvoiceType type) =>
+            WithContextAsync(async context =>
+            {
+                string prefix = type == InvoiceType.Receivable ? "INV" : "BILL";
+                int year = DateTime.UtcNow.Year;
+                int month = DateTime.UtcNow.Month;
+
+                Invoice? lastInvoice = await context.Invoices
+                    .Where(i => i.Type == type &&
+                                i.InvoiceNumber.StartsWith($"{prefix}-{year:D4}{month:D2}"))
+                    .OrderByDescending(i => i.InvoiceNumber)
+                    .FirstOrDefaultAsync();
+
+                int nextNumber = 1;
+                if (lastInvoice != null)
+                {
+                    string[] parts = lastInvoice.InvoiceNumber.Split('-');
+                    if (parts.Length == 2 && int.TryParse(parts[1].AsSpan(6), out int lastNumber))
+                        nextNumber = lastNumber + 1;
+                }
+
+                return $"{prefix}-{year:D4}{month:D2}{nextNumber:D4}";
+            });
+
+        public Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync() =>
+            WithContextAsync(async context =>
+            {
+                DateTime today = DateTime.UtcNow.Date;
+                IQueryable<Invoice> invoices = All<Invoice>(context);
+
+                int total = await invoices.CountAsync();
+                int paid = await invoices.CountAsync(i => i.Status == InvoiceStatus.Paid);
+                int unpaid = await invoices.CountAsync(i => i.Type == InvoiceType.Payable &&
+                                                              i.Status != InvoiceStatus.Paid &&
+                                                              i.Status != InvoiceStatus.Cancelled);
+                int overdue = await invoices.CountAsync(i => i.DueDate < today &&
+                                                              i.Status != InvoiceStatus.Paid &&
+                                                              i.Status != InvoiceStatus.Cancelled);
+
+                return (total, paid, unpaid, overdue);
+            });
+
+        public Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync() =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Invoice> invoices = All<Invoice>(context)
+                    .Where(i => i.Status != InvoiceStatus.Cancelled &&
+                                i.Type == InvoiceType.Payable);
+
+                decimal totalAmount = await invoices.SumAsync(i => i.TotalAmount);
+                decimal totalPaid = await invoices.SumAsync(i => i.AmountPaid);
+                decimal totalDue = await invoices.SumAsync(i => i.TotalAmount - i.AmountPaid);
+
+                return (totalAmount, totalPaid, totalDue);
+            });
+
+        private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)
+        {
             if (query.Statuses is { Count: > 0 })
                 q = q.Where(i => query.Statuses.Contains(i.Status));
             else if (query.Status.HasValue)
@@ -62,124 +294,25 @@
             if (query.DueDateTo.HasValue)
                 q = q.Where(i => i.DueDate <= query.DueDateTo.Value);
 
-            string search = query.Search?.ToLower() ?? string.Empty;
-
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(i => i.InvoiceNumber.ToLower().Contains(search) ||
-                                 i.Company.Name.ToLower().Contains(search));
-
-            q = ApplySort(q, query.SortBy, query.SortAscending);
-
-            int totalCount = await q.CountAsync();
-
-            List<Invoice> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<Invoice>
             {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
+                string search = $"%{query.Search}%";
+                q = q.Where(i =>
+                    EF.Functions.ILike(i.InvoiceNumber, search) ||
+                    EF.Functions.ILike(i.Company.Name, search));
+            }
+
+            return q;
         }
 
-        public async Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId)
-        {
-            return await context.Invoices
-                .Where(i => i.CompanyId == companyId && i.DeletedOn == null)
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Invoice>> GetByTypeAsync(InvoiceType type)
-        {
-            return await context.Invoices
-                .Where(i => i.Type == type && i.DeletedOn == null)
-                .Include(i => i.Company)
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Invoice>> GetByStatusAsync(InvoiceStatus status)
-        {
-            return await context.Invoices
-                .Where(i => i.DeletedOn == null && i.Status == status)
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Invoice>> GetOverdueInvoicesAsync()
-        {
-            DateTime today = DateTime.UtcNow.Date;
-            return await context.Invoices
-                .Where(i => i.DeletedOn == null &&
-                            i.DueDate < today &&
-                            i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled)
-                .Include(i => i.Company)
-                .OrderBy(i => i.DueDate)
-                .ToListAsync();
-        }
-
-        public async Task<Invoice?> GetByIdAsync(Guid id)
-        {
-            return await context.Invoices
-                .Where(i => i.DeletedOn == null)
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
-                .Include(i => i.Payments)
-                .FirstOrDefaultAsync(i => i.Id == id);
-        }
-
-        public async Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber)
-        {
-            return await context.Invoices
-                .Include(i => i.Company)
-                .Include(i => i.LineItems)
-                  .ThenInclude(li => li.Product)
-                .Include(i => i.Payments)
-                .FirstOrDefaultAsync(i => i.DeletedOn == null && i.InvoiceNumber == invoiceNumber);
-        }
-
-        public async Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId)
-        {
-            return await context.InvoiceLines
-                .Where(li => li.ProductId == productId &&
-                             li.DeletedOn == null &&
-                             li.Invoice.DeletedOn == null &&
-                             li.Invoice.Status != InvoiceStatus.Cancelled)
-                .Include(li => li.Invoice)
-                    .ThenInclude(i => i.Company)
-                .Include(li => li.Invoice)
-                    .ThenInclude(i => i.Warehouse)
-                .OrderByDescending(li => li.Invoice.IssueDate)
-                .ToListAsync();
-        }
-
-        public async Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query)
+        private static IQueryable<InvoiceLine> ApplyLineItemFilters(IQueryable<InvoiceLine> q, GetProductHistoryQuery query)
         {
             InvoiceType invoiceType = query.Purchased ? InvoiceType.Payable : InvoiceType.Receivable;
 
-            IQueryable<InvoiceLine> q = context.InvoiceLines
-                .Where(li => li.ProductId == query.ProductId &&
-                             li.DeletedOn == null &&
-                             li.Invoice.DeletedOn == null &&
-                             li.Invoice.Status != InvoiceStatus.Cancelled &&
-                             li.Invoice.Type == invoiceType)
-                .Include(li => li.Invoice)
-                    .ThenInclude(i => i.Company)
-                .Include(li => li.Invoice)
-                    .ThenInclude(i => i.Warehouse);
+            q = q.Where(li => li.ProductId == query.ProductId &&
+                               li.Invoice.DeletedOn == null &&
+                               li.Invoice.Status != InvoiceStatus.Cancelled &&
+                               li.Invoice.Type == invoiceType);
 
             if (query.WarehouseId.HasValue)
                 q = q.Where(li => li.Invoice.WarehouseId == query.WarehouseId.Value);
@@ -193,116 +326,7 @@
             if (query.DateTo.HasValue)
                 q = q.Where(li => li.Invoice.IssueDate < query.DateTo.Value.Date.AddDays(1));
 
-            q = q.OrderByDescending(li => li.Invoice.IssueDate);
-
-            int totalCount = await q.CountAsync();
-
-            List<InvoiceLine> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<InvoiceLine>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
-        }
-
-        public async Task<Invoice> CreateAsync(Invoice invoice)
-        {
-            invoice.CreatedAt = DateTime.UtcNow;
-            context.Invoices.Add(invoice);
-            await context.SaveChangesAsync();
-
-            // Reload with includes
-            return (await GetByIdAsync(invoice.Id))!;
-        }
-
-        public async Task<Invoice> UpdateAsync(Invoice invoice)
-        {
-            context.Invoices.Update(invoice);
-            await context.SaveChangesAsync();
-
-            // Reload with includes
-            return (await GetByIdAsync(invoice.Id))!;
-        }
-
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            Invoice? invoice = await context.Invoices.IgnoreQueryFilters()
-                                                     .FirstOrDefaultAsync(i => i.Id == id);
-            if (invoice == null)
-            {
-                return false;
-            }
-
-            invoice.DeletedOn = DateTime.UtcNow;
-            await context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> ExistsAsync(Guid id)
-        {
-            return await context.Invoices.AnyAsync(i => i.Id == id && i.DeletedOn == null);
-        }
-
-        public async Task<string> GenerateInvoiceNumberAsync(InvoiceType type)
-        {
-            string prefix = type == InvoiceType.Receivable ? "INV" : "BILL";
-            int year = DateTime.UtcNow.Year;
-            int month = DateTime.UtcNow.Month;
-
-            Invoice? lastInvoice = await context.Invoices
-                .Where(i => i.Type == type &&
-                            i.InvoiceNumber.StartsWith($"{prefix}-{year:D4}{month:D2}"))
-                .OrderByDescending(i => i.InvoiceNumber)
-                .FirstOrDefaultAsync();
-
-            int nextNumber = 1;
-            if (lastInvoice != null)
-            {
-                string[] parts = lastInvoice.InvoiceNumber.Split('-');
-                if (parts.Length == 2 && int.TryParse(parts[1].AsSpan(6), out int lastNumber))
-                {
-                    nextNumber = lastNumber + 1;
-                }
-            }
-
-            return $"{prefix}-{year:D4}{month:D2}{nextNumber:D4}";
-        }
-
-        public async Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync()
-        {
-            DateTime today = DateTime.UtcNow.Date;
-            IQueryable<Invoice> invoices = context.Invoices.Where(i => i.DeletedOn == null);
-
-            int total = await invoices.CountAsync();
-            int paid = await invoices.CountAsync(i => i.Status == InvoiceStatus.Paid);
-            int unpaid = await invoices.CountAsync(i => i.Type == InvoiceType.Payable &&
-                                                          i.Status != InvoiceStatus.Paid &&
-                                                          i.Status != InvoiceStatus.Cancelled);
-            int overdue = await invoices.CountAsync(i => i.DueDate < today &&
-                                                          i.Status != InvoiceStatus.Paid &&
-                                                          i.Status != InvoiceStatus.Cancelled);
-
-            return (total, paid, unpaid, overdue);
-        }
-
-        public async Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync()
-        {
-            IQueryable<Invoice> invoices = context.Invoices
-                .Where(i => i.Status != InvoiceStatus.Cancelled &&
-                            i.Type == InvoiceType.Payable &&
-                            i.DeletedOn == null);
-
-            decimal totalAmount = await invoices.SumAsync(i => i.TotalAmount);
-            decimal totalPaid = await invoices.SumAsync(i => i.AmountPaid);
-            decimal totalDue = await invoices.SumAsync(i => i.TotalAmount - i.AmountPaid);
-
-            return (totalAmount, totalPaid, totalDue);
+            return q;
         }
 
         private static IQueryable<Invoice> ApplySort(IQueryable<Invoice> q, string? sortBy, bool ascending)
