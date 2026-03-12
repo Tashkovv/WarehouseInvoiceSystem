@@ -1,44 +1,81 @@
-﻿@using WarehouseInvoiceSystem.Application.Interfaces
-@inject ILocalizationService Localization
+﻿@inject ILocalizationService Localization
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pb-3">
 
-        @* Row 1: Create + AdditionalActions + Search — all inline *@
-        <MudGrid AlignItems="AlignItems.Center" Spacing="2" Style="flex-wrap: nowrap; align-items: center;">
-            @if (CreateHref is not null || CreateAction.HasDelegate)
+        @* Single row: Button | Filters | Advanced toggle | Search | Clear *@
+        <div class="wis-toolbar-row">
+
+            @* Create / split button *@
+            @if (_primaryAction is not null)
             {
-                <MudItem xs="12" Style="flex: 0 0 auto; width: auto;">
-                    @if (CreateHref is not null)
-                    {
-                        <MudButton StartIcon="@CreateIcon"
-                                   Color="Color.Primary"
-                                   Variant="Variant.Filled"
-                                   Href="@CreateHref">
-                            @CreateLabel
-                        </MudButton>
-                    }
-                    else
-                    {
-                        <MudButton StartIcon="@CreateIcon"
-                                   Color="Color.Primary"
-                                   Variant="Variant.Filled"
-                                   OnClick="CreateAction">
-                            @CreateLabel
-                        </MudButton>
-                    }
-                </MudItem>
+                <div class="wis-toolbar-btn">
+                    <WisSplitButton PrimaryAction="@_primaryAction"
+                                    Actions="@CreateActions"
+                                    AnchorOrigin="Origin.BottomLeft"
+                                    TransformOrigin="Origin.TopLeft" />
+                </div>
             }
-            @if (AdditionalActions is not null)
+
+            @* Quick filters *@
+            @if (Filters is not null)
             {
-                <MudItem xs="12" Style="flex: 0 0 auto; width: auto;">
-                    @AdditionalActions
-                </MudItem>
+                @if (_primaryAction is not null)
+                {
+                    <div class="wis-toolbar-divider"></div>
+                }
+
+                <div class="wis-toolbar-filters-inline">
+                    @Filters
+                </div>
             }
-            <MudItem xs="12" Style="flex: 1 1 auto; min-width: 0;">
+
+            @* Advanced filters toggle *@
+            @if (AdvancedFilters is not null)
+            {
+                @if (Filters is not null)
+                {
+                    <div class="wis-toolbar-divider"></div>
+                }
+                <div class="d-flex align-center gap-1">
+                    <MudButton StartIcon="@Icons.Material.Filled.Tune"
+                               Variant="Variant.Text"
+                               Color="@(ActiveAdvancedFilterCount > 0 ? Color.Primary : Color.Default)"
+                               Size="Size.Small"
+                               Class="wis-toolbar-advanced-btn"
+                               OnClick="@(() => _showAdvancedFilters = !_showAdvancedFilters)">
+                        @Localization.GetString("AdvancedFilters")
+                    </MudButton>
+                    @if (ActiveAdvancedFilterCount > 0)
+                    {
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="Color.Primary"
+                                 Variant="Variant.Filled"
+                                 Class="wis-toolbar-advanced-badge">
+                            @ActiveAdvancedFilterCount
+                        </MudChip>
+                    }
+                </div>
+            }
+
+            @* Clear — shown when any filter OR search is active *@
+            @if (HasAnyActiveFilter || !string.IsNullOrEmpty(SearchValue))
+            {
+                <div class="wis-toolbar-divider"></div>
+                <button type="button"
+                        class="wis-filter-btn wis-filter-btn--clear"
+                        @onclick="HandleClearAll">
+                    <MudIcon Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Style="margin-right: 6px;" />
+                    @Localization.GetString("ClearFilters")
+                </button>
+            }
+
+            @* Search — grows to fill remaining space *@
+            <div class="wis-toolbar-search">
                 <MudTextField T="string"
                               Value="SearchValue"
-                              ValueChanged="SearchValueChanged"
+                              ValueChanged="OnSearchChanged"
                               Placeholder="@Localization.GetString("Search")"
                               Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search"
@@ -46,112 +83,81 @@
                               Immediate="true"
                               DebounceInterval="300"
                               Class="mt-0" />
-            </MudItem>
-        </MudGrid>
+            </div>
+        </div>
 
-        @* Row 2: Quick filters | Advanced toggle + Clear All *@
-        @if (Filters is not null || AdvancedFilters is not null)
+        @* Advanced filters panel — collapsible *@
+        @if (AdvancedFilters is not null && _showAdvancedFilters)
         {
             <MudDivider Class="mt-3 mb-2" />
-            <div class="wis-toolbar-filters">
-
-                @Filters
-
-                @if (Filters is not null && AdvancedFilters is not null)
-                {
-                    <div class="wis-toolbar-filter-divider"></div>
-                }
-
-                @if (AdvancedFilters is not null)
-                {
-                    <div style="display: inline-flex; align-items: center; gap: 4px;">
-                        <MudButton StartIcon="@(_showAdvancedFilters ? Icons.Material.Filled.ExpandLess
-                                                                     : Icons.Material.Filled.ExpandMore)"
-                           Variant="Variant.Text"
-                           Color="Color.Default"
-                           Size="Size.Small"
-                           Class="wis-toolbar-advanced-btn"
-                           OnClick="@(() => _showAdvancedFilters = !_showAdvancedFilters)">
-                    @Localization.GetString("AdvancedFilters")
-                </MudButton>
-                @if (ActiveAdvancedFilterCount > 0)
-                        {
-                            <MudChip T="string"
-                                     Size="Size.Small"
-                                     Color="Color.Primary"
-                                     Variant="Variant.Filled"
-                                     Class="wis-toolbar-advanced-badge">
-                                @ActiveAdvancedFilterCount
-                            </MudChip>
-                        }
-                    </div>
-                }
-
-                @if (HasAnyActiveFilter)
-                {
-                    <MudButton StartIcon="@Icons.Material.Filled.FilterAltOff"
-                               Variant="Variant.Text"
-                               Color="Color.Default"
-                               Size="Size.Small"
-                               Class="wis-toolbar-clearall-btn"
-                               OnClick="OnClearAll">
-                        @Localization.GetString("ClearFilters")
-                    </MudButton>
-                }
-
+            <div class="wis-toolbar-advanced-panel">
+                @AdvancedFilters
             </div>
-
-            @if (AdvancedFilters is not null && _showAdvancedFilters)
-            {
-                <div class="wis-toolbar-advanced-panel">
-                    @AdvancedFilters
-                </div>
-            }
         }
 
     </MudCardContent>
 </MudCard>
 
 @code {
-    [Parameter] public string? CreateHref { get; set; }
+    // ── Create button ──────────────────────────────────────────────────────────
     [Parameter] public EventCallback CreateAction { get; set; }
     [Parameter] public string CreateLabel { get; set; } = string.Empty;
     [Parameter] public string CreateIcon { get; set; } = Icons.Material.Filled.Add;
+
+    /// <summary>
+    /// Extra dropdown actions on the create button (e.g. Import).
+    /// When provided, the create button becomes a split button.
+    /// </summary>
+    [Parameter] public List<WisDetailActionItem>? CreateActions { get; set; }
+
+    // ── Filters ────────────────────────────────────────────────────────────────
     [Parameter] public string SearchValue { get; set; } = string.Empty;
     [Parameter] public EventCallback<string> SearchValueChanged { get; set; }
-
-    /// <summary>
-    /// Extra action buttons (e.g. Export) rendered inline on Row 1 between Create and Search.
-    /// </summary>
-    [Parameter] public RenderFragment? AdditionalActions { get; set; }
-
-    /// <summary>
-    /// Quick enum/boolean filters — Row 2, always visible.
-    /// Use FilterPopoverList with Label set.
-    /// </summary>
     [Parameter] public RenderFragment? Filters { get; set; }
-
-    /// <summary>
-    /// True when any quick filter is active. The toolbar shows "Clear All" when true.
-    /// Pass: _filterFoo != null || _filterBar != null etc.
-    /// </summary>
     [Parameter] public bool HasAnyActiveFilter { get; set; }
-
-    /// <summary>
-    /// Fires when the "Clear All" button is clicked.
-    /// The page component should reset all filter state and reload.
-    /// </summary>
     [Parameter] public EventCallback OnClearAll { get; set; }
-
-    /// <summary>
-    /// Complex filters — Row 3, collapsible.
-    /// </summary>
     [Parameter] public RenderFragment? AdvancedFilters { get; set; }
-
-    /// <summary>
-    /// Count of active advanced filters for the badge.
-    /// </summary>
     [Parameter] public int ActiveAdvancedFilterCount { get; set; }
 
-    private bool _showAdvancedFilters = false;
+    private bool _showAdvancedFilters;
+    private WisDetailActionItem? _primaryAction;
+    private EventCallback _lastCreateAction;
+    private string _lastCreateLabel = string.Empty;
+    private string _lastCreateIcon = string.Empty;
+
+    protected override void OnParametersSet()
+    {
+        // Only rebuild _primaryAction when the relevant parameters actually change,
+        // so unrelated parent re-renders don't recreate the object and cause
+        // WisSplitButton to re-render, which could reset internal toolbar state.
+        if (_lastCreateAction.Equals(CreateAction) &&
+            _lastCreateLabel == CreateLabel &&
+            _lastCreateIcon == CreateIcon)
+            return;
+
+        _lastCreateAction = CreateAction;
+        _lastCreateLabel = CreateLabel;
+        _lastCreateIcon = CreateIcon;
+
+        _primaryAction = CreateAction.HasDelegate
+            ? new WisDetailActionItem
+            {
+                Icon = CreateIcon,
+                Label = CreateLabel,
+                OnClick = CreateAction
+            }
+            : null;
+    }
+
+    private async Task OnSearchChanged(string value)
+    {
+        await SearchValueChanged.InvokeAsync(value);
+    }
+
+    private async Task HandleClearAll()
+    {
+        await SearchValueChanged.InvokeAsync(string.Empty);
+        if (OnClearAll.HasDelegate)
+            await OnClearAll.InvokeAsync();
+    }
 }

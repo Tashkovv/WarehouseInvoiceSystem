@@ -100,6 +100,19 @@
             return transactions.Select(MapTransactionToDto);
         }
 
+        public async Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query)
+        {
+            PagedResult<InventoryTransaction> result = await transactionRepository.GetPagedByProductAsync(query);
+
+            return new PagedResult<InventoryTransactionDto>
+            {
+                Items = [.. result.Items.Select(MapTransactionToDto)],
+                TotalCount = result.TotalCount,
+                Page = result.Page,
+                PageSize = result.PageSize
+            };
+        }
+
         public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId)
         {
             IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByWarehouseIdAsync(warehouseId);

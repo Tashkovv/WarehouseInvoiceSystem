@@ -1,27 +1,38 @@
 @page "/warehouses"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IWarehouseService WarehouseService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Warehouses") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Warehouses")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="OpenCreateDialog"
-                CreateLabel="@Localization.GetString("CreateWarehouse")"
+                CreateLabel="@Localization.GetString("Warehouse")"
                 SearchValue="@_searchString"
-                SearchValueChanged="OnSearch" />
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterIsActive.HasValue)"
+                OnClearAll="ClearAllFilters">
+    <Filters>
+        <FilterPopoverList TValue="bool?"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterIsActive"
+                           SelectedValueChanged="OnStatusFilterChanged" />
+    </Filters>
+</WisGridToolbar>
 
 <MudCard Elevation="2" Class="mb-4">
     <MudCardContent Class="pa-0">
@@ -32,7 +43,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"
@@ -46,7 +57,7 @@
                                 IsEditable="false">
                     <CellTemplate>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudText Typo="Typo.body2" Style="font-weight: 500;">
+                            <MudText Typo="Typo.body2" Class="wis-cell-primary">
                                 @context.Item.Name
                             </MudText>
                             @if (context.Item.IsDefault)
@@ -68,6 +79,20 @@
                     </CellTemplate>
                 </PropertyColumn>
 
+                <PropertyColumn Property="x => x.IsActive"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                            @(context.Item.IsActive ? Localization.GetString("ActiveWarehouse")
+                                                        : Localization.GetString("InactiveWarehouse"))
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+
                 <PropertyColumn Property="x => x.CreatedAt"
                                 Title="@Localization.GetString("Created")"
                                 Sortable="true"
@@ -80,9 +105,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="110"
-                                HeaderStyle="width: 110px;"
-                                CellStyle="width: 110px;">
+                                HeaderClass="wis-col-actions-3"
+                                CellClass="wis-col-actions-3">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -94,14 +118,26 @@
                                            Size="Size.Small"
                                            Color="@(context.Item.IsDefault ? Color.Warning : Color.Default)"
                                            Title="@Localization.GetString("SetAsDefault")"
-                                           Disabled="@context.Item.IsDefault"
+                                           Disabled="@(context.Item.IsDefault || !context.Item.IsActive)"
                                            OnClick="@(() => SetAsDefault(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           Disabled="@context.Item.IsDefault"
-                                           OnClick="@(() => DeleteWarehouse(context.Item.Id))" />
+                            @if (context.Item.IsActive)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew"
+                                               Size="Size.Small"
+                                               Color="Color.Warning"
+                                               Title="@(context.Item.HasProducts ? Localization.GetString("DeactivateWarehouseDisabledTooltip")
+                                                                                                                            : Localization.GetString("Deactivate"))"
+                                               Disabled="@(context.Item.IsDefault || context.Item.HasProducts)"
+                                               OnClick="@(() => SetActiveStatus(context.Item, false))" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew"
+                                               Size="Size.Small"
+                                               Color="Color.Success"
+                                               Title="@Localization.GetString("Activate")"
+                                               OnClick="@(() => SetActiveStatus(context.Item, true))" />
+                            }
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -109,21 +145,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Warehouse"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoWarehousesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Warehouse"
+                                     Message="@Localization.GetString("NoWarehousesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>
@@ -137,14 +164,29 @@
 @code {
     private MudDataGrid<WarehouseDto> _grid = null!;
     private string _searchString = string.Empty;
+    private bool? _filterIsActive = null;
+
+    private List<FilterPopoverItem<bool?>> _statusFilterItems = [];
 
     protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
+        BuildFilterItems();
+    }
+
+    private void BuildFilterItems()
+    {
+        _statusFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),               Value = null,  Color = Color.Info },
+            new() { Label = Localization.GetString("ActiveWarehouse"),   Value = true,  Color = Color.Success },
+            new() { Label = Localization.GetString("InactiveWarehouse"), Value = false, Color = Color.Default },
+    ];
     }
 
     private async void OnLanguageChanged()
     {
+        BuildFilterItems();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -156,6 +198,7 @@
         GetWarehousesQuery query = new()
         {
             Search = _searchString,
+            IsActive = _filterIsActive,
             Page = state.Page + 1,
             PageSize = state.PageSize,
             SortBy = sortBy,
@@ -171,9 +214,26 @@
         };
     }
 
+    private string GetRowClass(WarehouseDto item, int index) =>
+        item.IsActive
+            ? (item.IsDefault ? "row-status-success" : string.Empty)
+            : "row-status-default";
+
     private async Task OnSearch(string text)
     {
         _searchString = text;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnStatusFilterChanged(bool? value)
+    {
+        _filterIsActive = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task ClearAllFilters()
+    {
+        _filterIsActive = null;
         await _grid.ReloadServerData();
     }
 
@@ -255,37 +315,36 @@
         }
     }
 
-    private async Task DeleteWarehouse(Guid id)
+    private async Task SetActiveStatus(WarehouseDto warehouse, bool isActive)
     {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteWarehouseConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
+        bool confirmed = isActive;
 
-        if (result == true)
+        if (!isActive)
+        {
+            confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("ConfirmDeactivateWarehouse"),
+                Localization.GetString("DeactivateWarehouseConfirm"),
+                Localization.GetString("Yes"),
+                Localization.GetString("No"));
+        }
+
+        if (confirmed == true)
         {
             try
             {
-                bool deleted = await WarehouseService.DeleteWarehouseAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("WarehouseDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
+                await WarehouseService.SetActiveStatusAsync(warehouse.Id, isActive);
+                string successKey = isActive ? "WarehouseActivated" : "WarehouseDeactivated";
+                Snackbar.Add(Localization.GetString(successKey), Severity.Success);
+                await _grid.ReloadServerData();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error deleting warehouse: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingWarehouse"), Severity.Error);
+                Console.WriteLine($"Error changing warehouse status: {ex.Message}");
+                string errorKey = isActive ? "ErrorActivatingWarehouse" : "ErrorDeactivatingWarehouse";
+                Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
             }
         }
     }
-
-    private string GetRowClass(WarehouseDto item, int index) =>
-        item.IsDefault ? "row-status-active" : string.Empty;
 
     public void Dispose()
     {

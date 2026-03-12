@@ -1,0 +1,226 @@
+﻿@inject ILocalizationService Localization
+
+<div style="position: relative; display: inline-flex; align-items: center;">
+
+    @* Trigger pill *@
+    <button type="button"
+            class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
+            @onclick="Toggle"
+            style="min-width: 150px; justify-content: space-between; gap: 6px; padding: 0 10px;">
+
+        <span style="display: inline-flex; align-items: center; gap: 6px; overflow: hidden;">
+            <MudIcon Icon="@Icons.Material.Filled.AttachMoney"
+                     Size="Size.Small"
+                     Style="opacity: 0.7; flex-shrink: 0;" />
+            <span class="wis-filter-btn__label @(_isActive ? "wis-filter-btn__label--selected" : "")"
+                  style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                @_triggerLabel
+            </span>
+        </span>
+
+        <span class="wis-filter-btn__icon" style="flex-shrink: 0;">
+            <MudIcon Icon="@(_open? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
+                     Size="Size.Small" />
+        </span>
+    </button>
+
+    @* Overlay *@
+    @if (_open)
+    {
+        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
+    }
+
+    @* Popover *@
+    <MudPopover Open="_open"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="true"
+                Style="z-index: 1400; padding: 0; overflow: hidden;">
+
+        <div class="wis-arf-layout">
+
+            @* Left: min / max inputs *@
+            <div class="wis-arf-inputs">
+                <WisAmountInput Label="@Localization.GetString("Min")"
+                                Value="_localMin"
+                                ValueChanged="OnMinChanged"
+                                AdornmentText="@AdornmentText"
+                                OnApply="Close" />
+
+                <WisAmountInput Label="@Localization.GetString("Max")"
+                                Value="_localMax"
+                                ValueChanged="OnMaxChanged"
+                                AdornmentText="@AdornmentText"
+                                OnApply="Close" />
+            </div>
+
+            @* Vertical divider *@
+            <div style="width: 1px; background: var(--mud-palette-divider); align-self: stretch; flex-shrink: 0;"></div>
+
+            @* Right: presets *@
+            <div class="wis-arf-presets">
+                @foreach (var preset in _presets)
+                {
+                    bool isSelected = _localPreset == preset.Key;
+                    <button type="button"
+                            class="wis-arf-preset @(isSelected ? "wis-arf-preset--selected" : "")"
+                            @onclick="@(() => OnPresetClicked(preset.Key))">
+                        @if (isSelected)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check"
+                                     Size="Size.Small"
+                                     Class="wis-drf-preset__check" />
+                        }
+                        @preset.Label
+                    </button>
+                }
+            </div>
+
+        </div>
+
+    </MudPopover>
+
+</div>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public decimal? AmountMin { get; set; }
+
+    [Parameter]
+    public EventCallback<decimal?> AmountMinChanged { get; set; }
+
+    [Parameter]
+    public decimal? AmountMax { get; set; }
+
+    [Parameter]
+    public EventCallback<decimal?> AmountMaxChanged { get; set; }
+
+    [Parameter]
+    public string? AmountPreset { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> AmountPresetChanged { get; set; }
+
+    [Parameter]
+    public string AdornmentText { get; set; } = string.Empty;
+
+    // Shadow fields — same pattern as FilterPopoverList.
+    // OnParametersSet syncs all three unconditionally so external resets
+    // (ClearAllFilters) are always reflected in the UI.
+    private bool _open;
+    private decimal? _localMin;
+    private decimal? _localMax;
+    private string? _localPreset;
+
+    protected override void OnParametersSet()
+    {
+        _localMin = AmountMin;
+        _localMax = AmountMax;
+        _localPreset = AmountPreset;
+    }
+
+    private bool _isActive => _localPreset is not null || _localMin.HasValue || _localMax.HasValue;
+
+    private string _triggerLabel
+    {
+        get
+        {
+            if (_localPreset is not null)
+            {
+                var found = _presets.FirstOrDefault(p => p.Key == _localPreset);
+                return found is not null ? found.Label : Label;
+            }
+
+            if (_localMin.HasValue && _localMax.HasValue)
+                return $"{Fmt(_localMin.Value)} - {Fmt(_localMax.Value)}";
+
+            if (_localMin.HasValue)
+                return $">= {Fmt(_localMin.Value)}";
+
+            if (_localMax.HasValue)
+                return $"<= {Fmt(_localMax.Value)}";
+
+            return Label;
+        }
+    }
+
+    private static string Fmt(decimal v) =>
+        v.ToString("N0", System.Globalization.CultureInfo.CurrentCulture);
+
+    private record Preset(string Key, string Label, decimal? Min, decimal? Max);
+
+    private readonly List<Preset> _presets =
+    [
+        new("lt1000",        "< 1.000",           null,    999.99m),
+        new("1000to5000",    "1.000 - 5.000",     1000m,    5000m),
+        new("5000to10000",   "5.000 - 10.000",    5000m,   10000m),
+        new("10000to50000",  "10.000 - 50.000",  10000m,   50000m),
+        new("50000to100000", "50.000 - 100.000", 50000m,  100000m),
+        new("gt100000",      "> 100.000",        100000m,    null),
+    ];
+
+    private void Toggle() => _open = !_open;
+    private void Close() => _open = false;
+
+    private async Task OnMinChanged(decimal? value)
+    {
+        _localMin = value;
+        if (_localPreset is not null)
+        {
+            _localPreset = null;
+            await AmountPresetChanged.InvokeAsync(null);
+        }
+        await AmountMinChanged.InvokeAsync(value);
+    }
+
+    private async Task OnMaxChanged(decimal? value)
+    {
+        _localMax = value;
+        if (_localPreset is not null)
+        {
+            _localPreset = null;
+            await AmountPresetChanged.InvokeAsync(null);
+        }
+        await AmountMaxChanged.InvokeAsync(value);
+    }
+
+    private async Task OnPresetClicked(string key)
+    {
+        if (_localPreset == key)
+        {
+            _localPreset = null;
+            _localMin = null;
+            _localMax = null;
+            await AmountPresetChanged.InvokeAsync(null);
+            await AmountMinChanged.InvokeAsync(null);
+            await AmountMaxChanged.InvokeAsync(null);
+            _open = false;
+            return;
+        }
+
+        var p = _presets.First(x => x.Key == key);
+        _localPreset = key;
+        _localMin = p.Min;
+        _localMax = p.Max;
+
+        await AmountPresetChanged.InvokeAsync(key);
+        await AmountMinChanged.InvokeAsync(p.Min);
+        await AmountMaxChanged.InvokeAsync(p.Max);
+        _open = false;
+    }
+
+    public async Task ClearAsync()
+    {
+        _localPreset = null;
+        _localMin = null;
+        _localMax = null;
+        await AmountPresetChanged.InvokeAsync(null);
+        await AmountMinChanged.InvokeAsync(null);
+        await AmountMaxChanged.InvokeAsync(null);
+        _open = false;
+    }
+}

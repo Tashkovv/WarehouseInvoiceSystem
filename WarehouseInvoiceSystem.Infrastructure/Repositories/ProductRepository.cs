@@ -25,9 +25,11 @@
             if (query.IsActive.HasValue)
                 q = q.Where(p => p.IsActive == query.IsActive.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(p => p.Name.Contains(query.Search) ||
-                                 p.Code.Contains(query.Search));
+                q = q.Where(p => p.Name.ToLower().Contains(search) ||
+                                 p.Code.ToLower().Contains(search));
 
             q = query.SortBy switch
             {
@@ -128,6 +130,21 @@
             await context.SaveChangesAsync();
 
             return product;
+        }
+
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            Product? product = await context.Products
+                .Where(p => p.DeletedOn == null)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product is null)
+                return false;
+
+            product.IsActive = isActive;
+            await context.SaveChangesAsync();
+
+            return true;
         }
 
         public async Task<bool> DeleteAsync(Guid id)

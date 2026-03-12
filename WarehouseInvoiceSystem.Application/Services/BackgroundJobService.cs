@@ -32,7 +32,7 @@
                 {
                     try
                     {
-                        await invoiceService.UpdateInvoiceStatusAsync(invoice.Id, InvoiceStatus.Overdue);
+                        await invoiceService.MarkAsOverdueAsync(invoice.Id);
                         logger.LogInformation("Updated invoice {InvoiceId} ({InvoiceNumber}) to Overdue status",
                             invoice.Id, invoice.InvoiceNumber);
                     }

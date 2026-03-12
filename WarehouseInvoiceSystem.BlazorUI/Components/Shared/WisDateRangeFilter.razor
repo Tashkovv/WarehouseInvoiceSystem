@@ -1,0 +1,167 @@
+﻿@inject ILocalizationService Localization
+
+<div style="position: relative; display: inline-flex; align-items: center;">
+
+    @* ── Trigger pill ── *@
+    <button type="button"
+            class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
+            @onclick="Toggle"
+            style="min-width: 130px; justify-content: space-between; gap: 6px;">
+
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth"
+                     Size="Size.Small"
+                     Style="opacity: 0.7; flex-shrink: 0;" />
+            <span class="wis-filter-btn__label @(_isActive ? "wis-filter-btn__label--selected" : "")">
+                @_triggerLabel
+            </span>
+        </span>
+
+        <span class="wis-filter-btn__icon">
+            <MudIcon Icon="@(_open? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
+                     Size="Size.Small" />
+        </span>
+    </button>
+
+    @* ── Overlay ── *@
+    @if (_open)
+    {
+        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
+    }
+
+    @* ── Popover ── *@
+    <MudPopover Open="_open"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="true"
+                Style="z-index: 1400; padding: 0; overflow: hidden;">
+
+        @* Static inline calendar *@
+        <div class="wis-drf-calendar">
+            <MudDateRangePicker @ref="_picker"
+                                DateRange="DateRange"
+                                DateRangeChanged="OnRangeChanged"
+                                PickerVariant="PickerVariant.Static"
+                                Variant="Variant.Text"
+                                Margin="Margin.None"
+                                DateFormat="dd MMM yy"
+                                MaxDate="DateTime.Today"
+                                PickerMonth="@(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1))"
+                                Elevation="0"
+                                Class="wis-daterange-static" />
+        </div>
+
+        @* ── Preset footer ── *@
+        <div class="wis-drf-footer justify-space-between">
+            @foreach (var preset in _datePresets)
+            {
+                bool isSelected = DatePreset != null && DatePreset == preset.Value;
+                <button type="button"
+                        class="wis-drf-preset @(isSelected ? "wis-drf-preset--selected" : "")"
+                        @onclick="@(() => OnPresetClicked(preset.Value))">
+                    @if (isSelected)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="wis-drf-preset__check" />
+                    }
+                    @preset.Label
+                </button>
+            }
+        </div>
+
+    </MudPopover>
+
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public DateRange DateRange { get; set; } = new(null, null);
+
+    [Parameter, EditorRequired]
+    public EventCallback<DateRange> DateRangeChanged { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public int? DatePreset { get; set; }
+
+    [Parameter]
+    public EventCallback<int?> DatePresetChanged { get; set; }
+
+    private bool _open = false;
+    private MudDateRangePicker? _picker;
+
+    private bool _isActive => DatePreset != null || DateRange.Start != null || DateRange.End != null;
+
+    private string _triggerLabel
+    {
+        get
+        {
+            if (DatePreset != null)
+                return _datePresets.FirstOrDefault(p => p.Value == DatePreset)?.Label
+                       ?? Label ?? Localization.GetString("Period");
+
+            if (DateRange.Start != null && DateRange.End != null)
+                return $"{DateRange.Start.Value:dd MMM yy} – {DateRange.End.Value:dd MMM yy}";
+
+            if (DateRange.Start != null)
+                return $"{DateRange.Start.Value:dd MMM yy} – …";
+
+            return Label ?? Localization.GetString("Period");
+        }
+    }
+
+    private List<FilterPopoverItem<int?>> _datePresets => BuildDatePresets();
+
+    private List<FilterPopoverItem<int?>> BuildDatePresets() =>
+    [
+        new() { Label = Localization.GetString("PeriodToday"),      Value = 0,   Color = Color.Default },
+        new() { Label = Localization.GetString("PeriodLast7Days"),  Value = 7,   Color = Color.Default },
+        new() { Label = Localization.GetString("PeriodLast30Days"), Value = 30,  Color = Color.Default },
+        new() { Label = Localization.GetString("PeriodLast90Days"), Value = 90,  Color = Color.Default },
+        new() { Label = Localization.GetString("PeriodThisYear"),   Value = 365, Color = Color.Default },
+        new() { Label = Localization.GetString("PeriodLastYear"),   Value = 730, Color = Color.Default },
+    ];
+
+    private void Toggle() => _open = !_open;
+    private void Close() => _open = false;
+
+    private async Task OnPresetClicked(int? days)
+    {
+        if (DatePreset != null && DatePreset == days)
+        {
+            await DatePresetChanged.InvokeAsync(null);
+            await DateRangeChanged.InvokeAsync(new(null, null));
+            _open = false;
+            return;
+        }
+
+        DateRange range = days switch
+        {
+            null => new(null, null),
+            0 => new(DateTime.Today, DateTime.Today),
+            365 => new(new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today),
+            730 => new(new DateTime(DateTime.Today.Year - 1, 1, 1), new DateTime(DateTime.Today.Year - 1, 12, 31)),
+            int d => new(DateTime.Today.AddDays(-d), DateTime.Today)
+        };
+
+        await DatePresetChanged.InvokeAsync(days);
+        await DateRangeChanged.InvokeAsync(range);
+        _open = false;
+    }
+
+    private async Task OnRangeChanged(DateRange range)
+    {
+        await DatePresetChanged.InvokeAsync(null);
+        await DateRangeChanged.InvokeAsync(range);
+        if (range.Start != null && range.End != null)
+            _open = false;
+    }
+
+    public async Task ClearAsync()
+    {
+        await DatePresetChanged.InvokeAsync(null);
+        await DateRangeChanged.InvokeAsync(new(null, null));
+        _open = false;
+    }
+}

@@ -20,9 +20,25 @@
         Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createDto);
         Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
         Task<bool> DeleteInvoiceAsync(Guid id);
-        Task<InvoiceDto> UpdateInvoiceStatusAsync(Guid id, InvoiceStatus newStatus);
-        Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync();
+
+        // ── Status transitions ──────────────────────────────────────────────────
+
+        /// <summary>Draft → Sent. Receivable only. Creates outbound inventory transactions.</summary>
+        Task<InvoiceDto> SendAsync(Guid id);
+
+        /// <summary>Sent/PartiallyPaid/Overdue → Paid. Creates inventory transactions if not yet done (covers Overdue Payable Draft edge case).</summary>
+        Task<InvoiceDto> MarkAsPaidAsync(Guid id);
+
+        /// <summary>Draft/Sent/Overdue → Cancelled. Reverses inventory transactions if any exist.</summary>
+        Task<InvoiceDto> CancelAsync(Guid id);
+
+        /// <summary>Any non-terminal status → Overdue. Called exclusively by BackgroundJobService. No inventory changes.</summary>
+        Task<InvoiceDto> MarkAsOverdueAsync(Guid id);
+
+        // ── Inventory helpers (used internally and by tests) ────────────────────
+
         Task CreateInventoryTransactionsIfNeededAsync(Invoice invoice);
         Task CreateReverseTransactionsIfNeeded(Invoice invoice, string? reason = null);
+        Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync();
     }
 }

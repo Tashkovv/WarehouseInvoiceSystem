@@ -1,0 +1,20 @@
+﻿@* Shared empty-state for all WIS data grids.
+   Usage:
+   <NoRecordsContent>
+       <WisNoRecordsContent Icon="@Icons.Material.Filled.Business"
+                            Message="@Localization.GetString("NoCompaniesFound")" />
+   </NoRecordsContent>
+*@
+
+<div class="pa-8 d-flex flex-column align-center">
+    <MudIcon Icon="@Icon"
+             Size="Size.Large"
+             Color="Color.Secondary"
+             Class="mb-2" />
+    <MudText Color="Color.Secondary">@Message</MudText>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Icon    { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string Message { get; set; } = string.Empty;
+}

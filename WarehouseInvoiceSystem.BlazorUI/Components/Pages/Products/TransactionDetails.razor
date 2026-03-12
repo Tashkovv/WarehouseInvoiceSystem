@@ -1,0 +1,611 @@
+﻿@page "/products/{Id:guid}/transactions"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@inject IProductService ProductService
+@inject IInventoryService InventoryService
+@inject IWarehouseService WarehouseService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("TransactionHistory") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_product == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("ProductNotFound")</MudAlert>
+}
+else
+{
+    @* ── Back nav ── *@
+    <WisDetailHeader BackHref="@($"/inventory")"
+                     BackLabel="@Localization.GetString("Inventory")" />
+
+    <MudGrid>
+
+        @* ── Product context bar ── *@
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+
+                    <div class="wis-product-identity-row">
+                        <div class="wis-detail-identity">
+                            <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">
+                                @Localization.GetString("TransactionHistory")
+                            </MudText>
+                        </div>
+
+                        <WisAutocompleteFilter TValue="Guid"
+                                               Label="@Localization.GetString("AllWarehouses")"
+                                               AllLabel="@Localization.GetString("AllWarehouses")"
+                                               Icon="@Icons.Material.Filled.Warehouse"
+                                               LoadItems="LoadWarehouseItems"
+                                               PopoverAnchorOrigin="Origin.BottomRight"
+                                               PopoverTransformOrigin="Origin.TopRight"
+                                               SelectedValue="@(_selectedWarehouseId ?? default)"
+                                               SelectedValueChanged="@(async (Guid v) => await OnWarehouseChanged(v == default ? (Guid?)null : v))"
+                                               MinWidth="200px" />
+                    </div>
+
+                    @* ── Product meta row ── *@
+                    <div class="wis-detail-contact wis-product-meta-row">
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_product.Code — @_product.Name</MudText>
+                        </div>
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Scale" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_product.Unit</MudText>
+                        </div>
+                        @if (_currentStock.HasValue)
+                        {
+                            <div class="wis-detail-contact-item">
+                                <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                    @Localization.GetString("Stock"): @_currentStock.Value.ToString("N2") @_product.Unit
+                                    @if (!string.IsNullOrEmpty(_selectedWarehouseName))
+                                    {
+                                        <span class="ml-1">(@_selectedWarehouseName)</span>
+                                    }
+                                </MudText>
+                            </div>
+                        }
+                    </div>
+
+                    @* ── Tab toggle ── *@
+                    <div class="d-flex gap-2 pt-2">
+                        <button class="wis-pill-btn @(_activeTab == Tab.StockMovements ? "wis-pill-btn--active" : "")"
+                                type="button"
+                                @onclick="@(() => SetTab(Tab.StockMovements))">
+                            @Localization.GetString("StockMovements")
+                        </button>
+                        <button class="wis-pill-btn @(_activeTab == Tab.DocumentHistory ? "wis-pill-btn--sold-active" : "")"
+                                type="button"
+                                @onclick="@(() => SetTab(Tab.DocumentHistory))">
+                            @Localization.GetString("DocumentHistory")
+                        </button>
+                    </div>
+
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* ── Stock Movements tab ── *@
+        @if (_activeTab == Tab.StockMovements)
+        {
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+
+                    @* Filter bar *@
+                    <MudCardContent Class="pa-4" Style="border-bottom: 1px solid var(--mud-palette-divider);">
+                        <div class="d-flex align-center flex-wrap gap-3">
+
+                            @* Type filter — multi-select chips *@
+                            <FilterPopoverList TValue="InventoryTransactionType"
+                                               Label="@Localization.GetString("Type")"
+                                               Items="_transactionTypeItems"
+                                               Mode="FilterSelectionMode.Multiple"
+                                               SelectedValues="_movementTypeFilter"
+                                               SelectedValuesChanged="OnMovementTypeFilterChanged" />
+
+                            @* Date range *@
+                            <WisDateRangeFilter @ref="_movementDateRangeFilter"
+                                                DateRange="_movementDateRange"
+                                                DateRangeChanged="OnMovementDateRangeChanged"
+                                                DatePreset="_movementDatePreset"
+                                                DatePresetChanged="OnMovementDatePresetChanged" />
+
+                            @* Clear *@
+                            @if (_movementTypeFilter.Count > 0 || _movementDateRange.Start != null || _movementDateRange.End != null)
+                            {
+                                <button type="button"
+                                        class="wis-filter-btn wis-filter-btn--clear"
+                                        @onclick="ClearMovementFilters">
+                                    <MudIcon Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Style="margin-right: 6px;" />
+                                    @Localization.GetString("ClearFilters")
+                                </button>
+                            }
+
+                        </div>
+                    </MudCardContent>
+
+                    @* Table *@
+                    <MudCardContent Class="pa-0">
+                        <MudTable T="InventoryTransactionDto"
+                                  @ref="_movementsTable"
+                                  ServerData="LoadMovementsServerData"
+                                  Hover="true"
+                                  Elevation="0"
+                                  Breakpoint="Breakpoint.Sm"
+                                  Class="wis-secondary-list"
+                                  RowClassFunc="GetMovementRowClass">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh>@Localization.GetString("Type")</MudTh>
+                                <MudTh>@Localization.GetString("Warehouse")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh>@Localization.GetString("Note")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    <MudText Typo="Typo.body2"
+                                             Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
+                                        @context.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Type")">
+                                    <MudChip T="string"
+                                             Size="Size.Small"
+                                             Color="@GetMovementTypeColor(context)"
+                                             Variant="@(IsReversal(context) ? Variant.Text : Variant.Outlined)"
+                                             Icon="@GetMovementTypeIcon(context)">
+                                        @GetMovementTypeLabel(context)
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Warehouse")">
+                                    <MudText Typo="Typo.body2"
+                                             Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
+                                        @context.WarehouseName
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2"
+                                             Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
+                                        @context.Quantity.ToString("N2") @_product!.Unit
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Note")">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)
+                                    </MudText>
+                                </MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <WisNoRecordsContent Icon="@Icons.Material.Filled.SwapVert"
+                                                     Message="@Localization.GetString("NoRecentMovements")" />
+                            </NoRecordsContent>
+                            <PagerContent>
+                                <MudTablePager PageSizeOptions="new int[] { 25, 50, 100 }" />
+                            </PagerContent>
+                        </MudTable>
+                    </MudCardContent>
+
+                </MudCard>
+            </MudItem>
+        }
+
+        @* ── Document History tab ── *@
+        @if (_activeTab == Tab.DocumentHistory)
+        {
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+
+                    @* Header: Purchased / Sold toggle *@
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <div class="d-flex align-center gap-3">
+                                <MudText Typo="Typo.h6">@Localization.GetString("DocumentHistory")</MudText>
+                            </div>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <div class="d-flex gap-2 mr-4">
+                                <button class="wis-pill-btn @(_historyMode == HistoryMode.Purchased ? "wis-pill-btn--active" : "")"
+                                        type="button"
+                                        @onclick="@(() => SetHistoryMode(HistoryMode.Purchased))">
+                                    @Localization.GetString("Purchased")
+                                </button>
+                                <button class="wis-pill-btn @(_historyMode == HistoryMode.Sold ? "wis-pill-btn--sold-active" : "")"
+                                        type="button"
+                                        @onclick="@(() => SetHistoryMode(HistoryMode.Sold))">
+                                    @Localization.GetString("Sold")
+                                </button>
+                            </div>
+                        </CardHeaderActions>
+                    </MudCardHeader>
+
+                    @* Filter bar *@
+                    <MudCardContent Class="pa-4" Style="border-bottom: 1px solid var(--mud-palette-divider);">
+                        <div class="d-flex align-center flex-wrap gap-3">
+
+                            <WisDateRangeFilter @ref="_historyDateRangeFilter"
+                                                DateRange="_historyDateRange"
+                                                DateRangeChanged="OnHistoryDateRangeChanged"
+                                                DatePreset="_historyDatePreset"
+                                                DatePresetChanged="OnHistoryDatePresetChanged" />
+
+                            @if (_historyDateRange.Start != null || _historyDateRange.End != null)
+                            {
+                                <button type="button"
+                                        class="wis-filter-btn wis-filter-btn--clear"
+                                        @onclick="ClearHistoryFilters">
+                                    <MudIcon Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Style="margin-right: 6px;" />
+                                    @Localization.GetString("ClearFilters")
+                                </button>
+                            }
+
+                        </div>
+                    </MudCardContent>
+
+                    @* Table *@
+                    <MudCardContent Class="pa-0">
+                        <MudTable T="ProductTransactionRowDto"
+                                  @ref="_historyTable"
+                                  ServerData="LoadHistoryServerData"
+                                  Hover="true"
+                                  Elevation="0"
+                                  Breakpoint="Breakpoint.Sm"
+                                  RowClass="table-row-clickable"
+                                  Class="wis-secondary-list"
+                                  OnRowClick="@((TableRowClickEventArgs<ProductTransactionRowDto> args) => Navigation.NavigateTo(args.Item!.DocumentUrl))">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh>@Localization.GetString("DocumentNumber")</MudTh>
+                                <MudTh>@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))</MudTh>
+                                <MudTh>@Localization.GetString("Warehouse")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("UnitPrice")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Total")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    <MudText Typo="Typo.body2">@context.Date.ToString("dd MMM yyyy")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("DocumentNumber")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.DocumentNumber</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PartyName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Warehouse")">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@context.WarehouseName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2">@context.Quantity.ToString("N2") @_product!.Unit</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Total")" Style="text-align: right;">
+                                    <MudText Typo="Typo.body2"
+                                             Color="@(_historyMode == HistoryMode.Purchased ? Color.Info : Color.Success)">
+                                        @context.TotalPrice.ToString("C")
+                                    </MudText>
+                                </MudTd>
+                            </RowTemplate>
+                            <NoRecordsContent>
+                                <WisNoRecordsContent Icon="@(_historyMode == HistoryMode.Purchased ? Icons.Material.Filled.ShoppingCart : Icons.Material.Filled.PointOfSale)"
+                                                     Message="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("NoPurchaseData") : Localization.GetString("NoSalesData"))" />
+                            </NoRecordsContent>
+                            <PagerContent>
+                                <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+                            </PagerContent>
+                        </MudTable>
+                    </MudCardContent>
+
+                </MudCard>
+            </MudItem>
+        }
+
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    [SupplyParameterFromQuery(Name = "warehouse")]
+    public Guid? WarehouseQueryParam { get; set; }
+
+    private enum Tab { StockMovements, DocumentHistory }
+
+    private bool _loading = true;
+    private ProductDto? _product;
+    private ProductDetailsDto _details = new();
+    private Guid? _selectedWarehouseId;
+    private Tab _activeTab = Tab.StockMovements;
+
+    // ── Table refs ────────────────────────────────────────────────────────────
+
+    private MudTable<InventoryTransactionDto>? _movementsTable;
+    private MudTable<ProductTransactionRowDto>? _historyTable;
+
+    // ── Warehouse autocomplete data source ────────────────────────────────────
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(
+            new GetWarehousesQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                SortBy = "Name",
+                SortAscending = true
+            });
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+            {
+                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+                Value = w.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    // ── Computed stock summary (from _details, always in memory — bounded set) ─
+
+    private string _selectedWarehouseName => _selectedWarehouseId.HasValue
+        ? _details.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)?.WarehouseName ?? ""
+        : "";
+
+    private decimal? _currentStock => _selectedWarehouseId.HasValue
+        ? _details.StockByWarehouse.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
+        : _details.TotalStockAcrossWarehouses;
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (WarehouseQueryParam.HasValue && _selectedWarehouseId == null)
+            _selectedWarehouseId = WarehouseQueryParam;
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+
+        try
+        {
+            _product = await ProductService.GetProductByIdAsync(Id);
+            // GetProductDetailsAsync is used only for the stock summary header —
+            // document history and movements are loaded by the tables via ServerData.
+            _details = await ProductService.GetProductDetailsAsync(Id);
+
+            if (_product != null && WarehouseQueryParam.HasValue)
+                _selectedWarehouseId = WarehouseQueryParam;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading product transactions: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingProduct"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // ── Interactions ──────────────────────────────────────────────────────────
+
+    private async Task OnWarehouseChanged(Guid? warehouseId)
+    {
+        _selectedWarehouseId = warehouseId;
+        // Reload both tables — warehouse is a server-side filter
+        if (_movementsTable is not null)
+            await _movementsTable.ReloadServerData();
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
+
+    private void SetTab(Tab tab)
+    {
+        _activeTab = tab;
+        StateHasChanged();
+    }
+
+    // ── Stock Movements ───────────────────────────────────────────────────────
+
+    private IReadOnlyCollection<InventoryTransactionType> _movementTypeFilter = [];
+    private DateRange _movementDateRange = new(null, null);
+    private int? _movementDatePreset = null;
+    private WisDateRangeFilter? _movementDateRangeFilter;
+
+    private List<FilterPopoverItem<InventoryTransactionType>> _transactionTypeItems =>
+    [
+        new() { Label = Localization.GetString("Inbound"),     Value = InventoryTransactionType.Inbound,     Color = Color.Success },
+        new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Warning },
+        new() { Label = Localization.GetString("Adjustment"),  Value = InventoryTransactionType.Adjustment,  Color = Color.Info    },
+        new() { Label = Localization.GetString("TransferIn"),  Value = InventoryTransactionType.TransferIn,  Color = Color.Primary },
+        new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Default },
+    ];
+
+    private async Task<TableData<InventoryTransactionDto>> LoadMovementsServerData(TableState state, CancellationToken ct)
+    {
+        PagedResult<InventoryTransactionDto> result = await InventoryService.GetPagedTransactionsByProductAsync(
+            new GetInventoryTransactionsQuery
+            {
+                ProductId = Id,
+                WarehouseId = _selectedWarehouseId,
+                Types = _movementTypeFilter.Count > 0 ? [.. _movementTypeFilter] : null,
+                DateFrom = _movementDateRange.Start,
+                DateTo = _movementDateRange.End,
+                Page = state.Page + 1,
+                PageSize = state.PageSize
+            });
+
+        return new TableData<InventoryTransactionDto>
+        {
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
+    }
+
+    private async Task OnMovementTypeFilterChanged(IReadOnlyCollection<InventoryTransactionType> values)
+    {
+        _movementTypeFilter = values;
+        if (_movementsTable is not null)
+            await _movementsTable.ReloadServerData();
+    }
+
+    private async Task OnMovementDatePresetChanged(int? days)
+    {
+        _movementDatePreset = days;
+        if (_movementsTable is not null)
+            await _movementsTable.ReloadServerData();
+    }
+
+    private async Task OnMovementDateRangeChanged(DateRange range)
+    {
+        _movementDateRange = range;
+        if (_movementsTable is not null)
+            await _movementsTable.ReloadServerData();
+    }
+
+    private async Task ClearMovementFilters()
+    {
+        _movementTypeFilter = [];
+        if (_movementDateRangeFilter is not null)
+            await _movementDateRangeFilter.ClearAsync();
+        if (_movementsTable is not null)
+            await _movementsTable.ReloadServerData();
+    }
+
+    // ── Stock Movement helpers ────────────────────────────────────────────────
+
+    private static bool IsReversal(InventoryTransactionDto t) =>
+        t.SourceDocumentType != null && t.SourceDocumentType.EndsWith("_Reversal");
+
+    private string GetMovementRowClass(InventoryTransactionDto t, int _) =>
+        IsReversal(t) ? "row-status-default" : t.Type switch
+        {
+            InventoryTransactionType.Inbound => "row-status-success",
+            InventoryTransactionType.TransferIn => "row-status-success",
+            InventoryTransactionType.Outbound => "row-status-warning",
+            InventoryTransactionType.TransferOut => "row-status-warning",
+            InventoryTransactionType.Adjustment => "row-status-info",
+            _ => ""
+        };
+
+    private Color GetMovementTypeColor(InventoryTransactionDto t) =>
+        IsReversal(t) ? Color.Default : t.Type switch
+        {
+            InventoryTransactionType.Inbound => Color.Success,
+            InventoryTransactionType.TransferIn => Color.Success,
+            InventoryTransactionType.Outbound => Color.Warning,
+            InventoryTransactionType.TransferOut => Color.Warning,
+            InventoryTransactionType.Adjustment => Color.Info,
+            _ => Color.Default
+        };
+
+    private string GetMovementTypeIcon(InventoryTransactionDto t) =>
+        IsReversal(t) ? Icons.Material.Filled.Undo : t.Type switch
+        {
+            InventoryTransactionType.Inbound => Icons.Material.Filled.ArrowDownward,
+            InventoryTransactionType.Outbound => Icons.Material.Filled.ArrowUpward,
+            InventoryTransactionType.TransferIn => Icons.Material.Filled.CallReceived,
+            InventoryTransactionType.TransferOut => Icons.Material.Filled.CallMade,
+            InventoryTransactionType.Adjustment => Icons.Material.Filled.Tune,
+            _ => Icons.Material.Filled.SwapVert
+        };
+
+    private string GetMovementTypeLabel(InventoryTransactionDto t) =>
+        IsReversal(t)
+            ? Localization.GetString("Reversal")
+            : Localization.GetString(t.Type.ToString());
+
+    // ── Document History ──────────────────────────────────────────────────────
+
+    private enum HistoryMode { Purchased, Sold }
+
+    private HistoryMode _historyMode = HistoryMode.Purchased;
+    private DateRange _historyDateRange = new(null, null);
+    private int? _historyDatePreset = null;
+    private WisDateRangeFilter? _historyDateRangeFilter;
+
+    private async Task<TableData<ProductTransactionRowDto>> LoadHistoryServerData(TableState state, CancellationToken ct)
+    {
+        PagedResult<ProductTransactionRowDto> result = await ProductService.GetPagedProductHistoryAsync(
+            new GetProductHistoryQuery
+            {
+                ProductId = Id,
+                WarehouseId = _selectedWarehouseId,
+                Purchased = _historyMode == HistoryMode.Purchased,
+                DateFrom = _historyDateRange.Start,
+                DateTo = _historyDateRange.End,
+                Page = state.Page + 1,
+                PageSize = state.PageSize
+            });
+
+        return new TableData<ProductTransactionRowDto>
+        {
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
+    }
+
+    private async Task SetHistoryMode(HistoryMode mode)
+    {
+        _historyMode = mode;
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
+
+    private async Task OnHistoryDatePresetChanged(int? days)
+    {
+        _historyDatePreset = days;
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
+
+    private async Task OnHistoryDateRangeChanged(DateRange range)
+    {
+        _historyDateRange = range;
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
+
+    private async Task ClearHistoryFilters()
+    {
+        if (_historyDateRangeFilter is not null)
+            await _historyDateRangeFilter.ClearAsync();
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

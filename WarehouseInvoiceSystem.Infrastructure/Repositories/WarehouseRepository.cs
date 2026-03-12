@@ -12,7 +12,7 @@
         public async Task<IEnumerable<Warehouse>> GetAllAsync()
         {
             return await context.Warehouses
-                .Where(w => w.DeletedOn == null)
+                .Where(w => w.DeletedOn == null && w.IsActive)
                 .OrderBy(w => w.Name)
                 .ToListAsync();
         }
@@ -22,9 +22,14 @@
             IQueryable<Warehouse> q = context.Warehouses
                 .Where(w => w.DeletedOn == null);
 
+            if (query.IsActive.HasValue)
+                q = q.Where(w => w.IsActive == query.IsActive.Value);
+
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(w => w.Name.Contains(query.Search) ||
-                                 (w.Address != null && w.Address.Contains(query.Search)));
+                q = q.Where(w => w.Name.ToLower().Contains(search) ||
+                                 (w.Address != null && w.Address.ToLower().Contains(search)));
 
             q = query.SortBy switch
             {
@@ -49,6 +54,12 @@
             };
         }
 
+        public async Task<bool> HasProductsAsync(Guid id)
+        {
+            return await context.StockLevels
+                .AnyAsync(s => s.WarehouseId == id && s.Quantity > 0);
+        }
+
         public async Task<Warehouse?> GetByIdAsync(Guid id)
         {
             return await context.Warehouses
@@ -59,7 +70,7 @@
         public async Task<Warehouse?> GetDefaultWarehouseAsync()
         {
             return await context.Warehouses
-                .Where(w => w.DeletedOn == null && w.IsDefault)
+                .Where(w => w.DeletedOn == null && w.IsActive && w.IsDefault)
                 .FirstOrDefaultAsync();
         }
 
@@ -87,13 +98,16 @@
             return warehouse;
         }
 
-        public async Task<bool> DeleteAsync(Guid id)
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
         {
-            Warehouse? warehouse = await context.Warehouses.FindAsync(id);
+            Warehouse? warehouse = await context.Warehouses
+                .Where(w => w.DeletedOn == null)
+                .FirstOrDefaultAsync(w => w.Id == id);
+
             if (warehouse == null)
                 return false;
 
-            warehouse.DeletedOn = DateTime.UtcNow;
+            warehouse.IsActive = isActive;
             await context.SaveChangesAsync();
 
             return true;

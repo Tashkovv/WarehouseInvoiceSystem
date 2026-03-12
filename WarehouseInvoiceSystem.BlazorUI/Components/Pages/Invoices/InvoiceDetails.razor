@@ -3,12 +3,12 @@
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
-@using WarehouseInvoiceSystem.Application.Interfaces
+@using WarehouseInvoiceSystem.Domain.Enums
 @inject IInvoiceService InvoiceService
 @inject IPaymentService PaymentService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IExcelExportService ExcelExportService
@@ -25,181 +25,122 @@ else if (_invoice == null)
 }
 else
 {
-    <div class="d-flex justify-space-between align-center mb-4">
-        <div>
-            <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
-                       Variant="Variant.Text"
-                       Href="/invoices">
-                @Localization.GetString("BackToInvoices")
-            </MudButton>
-        </div>
-        <div>
-            @if (CanSendEmail())
-            {
-                <MudButton StartIcon="@Icons.Material.Filled.Email"
-                           Color="Color.Success"
-                           Variant="Variant.Filled"
-                           Class="mr-2"
-                           OnClick="OpenSendEmailDialog">
-                    @Localization.GetString("SendEmail")
-                </MudButton>
-            }
-            <MudButton StartIcon="@Icons.Material.Filled.Print"
-                       Style="width:125px"
-                       Color="Color.Secondary"
-                       Variant="Variant.Outlined"
-                       Class="mr-2"
-                       OnClick="ExportForPrinting">
-                @Localization.GetString("Export")
-            </MudButton>
-            <MudButton StartIcon="@Icons.Material.Filled.Edit"
-                       Style="width:125px"
-                       Color="Color.Primary"
-                       Variant="Variant.Filled"
-                       Class="mr-2"
-                       Href="@($"/invoices/edit/{Id}")">
-                @Localization.GetString("Edit")
-            </MudButton>
-            <MudButton StartIcon="@Icons.Material.Filled.Delete"
-                       Style="width:125px"
-                       Color="Color.Error"
-                       Variant="Variant.Outlined"
-                       OnClick="DeleteInvoice">
-                @Localization.GetString("Delete")
-            </MudButton>
-        </div>
-    </div>
+    <WisDetailHeader BackHref="/invoices"
+                     BackLabel="@Localization.GetString("Invoices")"
+                     PrimaryAction="@_primaryAction"
+                     Actions="@_actions" />
 
     <MudGrid>
-        <!-- Header Card -->
+
+        @* ── Header card ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
-                <MudCardContent Class="pa-6">
-                    <MudGrid Spacing="4">
-                        <!-- Left: Invoice Number + Status -->
-                        <MudItem xs="12" md="6">
-                            <MudStack Spacing="2">
-                                <div class="d-flex align-center gap-3">
-                                    <MudText Typo="Typo.h4" Class="mb-0">@_invoice.InvoiceNumber</MudText>
-                                    <MudChip T="string" Size="Size.Small" Color="GetStatusColor(_invoice.Status)">
-                                        @GetStatusText(_invoice.Status)
-                                    </MudChip>
+                <MudCardContent Class="pa-4">
+
+                    @* Top section: identity + pills (left 6) | notes (right 6) *@
+                    <div class="wis-contact-row mb-4">
+                        <div class="wis-contact-row-left">
+
+                            @* Row 1: invoice number + status chip *@
+                            <div class="wis-detail-identity mb-3">
+                                <MudText Typo="Typo.h4" Class="font-weight-bold mb-0" Style="font-family: monospace;">
+                                    @_invoice.InvoiceNumber
+                                </MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_invoice.Status)">
+                                    @GetStatusText(_invoice.Status)
+                                </MudChip>
+                            </div>
+
+                            @* Row 2: contact pills *@
+                            <div class="wis-detail-contact">
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2" Style="font-weight: 500;">@_invoice.CompanyName</MudText>
                                 </div>
-
-                                <MudDivider Class="my-2" />
-
-                                <div class="d-flex align-center">
-                                    <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
-                                    <MudText Typo="Typo.h6" Class="mb-0">@_invoice.CompanyName</MudText>
-                                </div>
-
-                                <div class="d-flex align-center">
+                                <div class="wis-detail-contact-item">
                                     <MudIcon Icon="@(_invoice.Type == InvoiceType.Receivable ? Icons.Material.Filled.ArrowUpward : Icons.Material.Filled.ArrowDownward)"
                                              Size="Size.Small"
-                                             Class="mr-2"
                                              Color="@(_invoice.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)" />
-                                    <MudChip T="string"
-                                             Size="Size.Small"
+                                    <MudChip T="string" Size="Size.Small"
                                              Color="@(_invoice.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
-                                        @(Localization.GetString(_invoice.Type.ToString()))
+                                        @Localization.GetString(_invoice.Type.ToString())
                                     </MudChip>
                                 </div>
-                            </MudStack>
-                        </MudItem>
+                                @if (!string.IsNullOrWhiteSpace(_invoice.WarehouseName))
+                                {
+                                    <div class="wis-detail-contact-item">
+                                        <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.body2">@_invoice.WarehouseName</MudText>
+                                    </div>
+                                }
+                            </div>
 
-                        <!-- Divider (visible on medium+ screens) -->
-                        <MudHidden Breakpoint="Breakpoint.SmAndDown">
-                            <MudItem md="1" Class="d-flex align-center justify-center">
-                                <MudDivider Vertical="true" />
-                            </MudItem>
-                        </MudHidden>
+                        </div>
 
-                        <!-- Right: Amount + Dates -->
-                        <MudItem xs="12" md="5">
-                            <MudStack Spacing="3">
-                                <!-- Total Amount -->
-                                <div>
-                                    <MudText Typo="Typo.h3" Color="Color.Primary" Class="mb-0">
-                                        @_invoice.TotalAmount.ToString("C")
-                                    </MudText>
+                        @if (!string.IsNullOrWhiteSpace(_invoice.Notes))
+                        {
+                            <div class="wis-contact-row-divider"></div>
+                            <div class="wis-contact-row-right">
+                                <div class="d-flex align-start gap-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" Class="mt-1" />
+                                    <div>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Notes")</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">@_invoice.Notes</MudText>
+                                    </div>
                                 </div>
+                            </div>
+                        }
+                    </div>
 
-                                <MudDivider />
+                    <MudDivider Class="mb-4" />
 
-                                <!-- Paid + Due -->
-                                <MudStack Row="true" Spacing="3">
-                                    <div style="flex: 1;">
-                                        <div class="d-flex align-center mb-1">
-                                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" Color="Color.Success" />
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("AmountPaid")</MudText>
-                                        </div>
-                                        <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-medium">
-                                            @_invoice.AmountPaid.ToString("C")
-                                        </MudText>
-                                    </div>
-                                    <div style="flex: 1;">
-                                        <div class="d-flex align-center mb-1">
-                                            <MudIcon Icon="@Icons.Material.Filled.PendingActions" Size="Size.Small" Class="mr-1"
-                                                     Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)" />
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("AmountDue")</MudText>
-                                        </div>
-                                        <MudText Typo="Typo.h6" Class="font-weight-medium"
-                                                 Color="@(_invoice.AmountDue > 0 ? Color.Error : Color.Success)">
-                                            @_invoice.AmountDue.ToString("C")
-                                        </MudText>
-                                    </div>
-                                </MudStack>
+                    @* Stats row: full width *@
+                    <MudGrid Spacing="4" Class="wis-detail-stats">
 
-                                <MudDivider />
-
-                                <!-- Dates -->
-                                <MudStack Row="true" Spacing="4">
-                                    <div style="flex: 1;">
-                                        <div class="d-flex align-center mb-1">
-                                            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" Class="mr-1" Color="Color.Secondary" />
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("IssueDate")</MudText>
-                                        </div>
-                                        <MudText Typo="Typo.body1" Class="font-weight-medium">
-                                            @_invoice.IssueDate.ToString("dd MMM yyyy")
-                                        </MudText>
-                                    </div>
-
-                                    <div style="flex: 1;">
-                                        <div class="d-flex align-start mb-1">
-                                            <MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" Class="mr-1"
-                                                     Color="@(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? Color.Error : Color.Secondary)" />
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("DueDate")</MudText>
-                                        </div>
-                                        <MudText Typo="Typo.body1"
-                                                 Class="font-weight-medium"
-                                                 Color="@(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? Color.Error : Color.Default)">
-                                            @_invoice.DueDate.ToString("dd MMM yyyy")
-                                        </MudText>
-                                    </div>
-                                </MudStack>
-                            </MudStack>
-                        </MudItem>
-                    </MudGrid>
-
-                    <!-- Notes Section (Full Width) -->
-                    @if (!string.IsNullOrWhiteSpace(_invoice.Notes))
-                    {
-                        <MudDivider Class="my-4" />
-                        <div class="d-flex align-start">
-                            <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Class="mr-2 mt-1" Color="Color.Secondary" />
-                            <div style="flex: 1;">
-                                <MudText Typo="Typo.caption" Color="Color.Dark" Class="mb-1">@Localization.GetString("Notes")</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">
-                                    @_invoice.Notes
+                        <MudItem xs="3">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Total")</MudText>
+                            <div class="wis-stat-value mud-primary-text">@_invoice.TotalAmount.ToString("C")</div>
+                            <div class="d-flex align-center gap-3 mt-1">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @Localization.GetString("Subtotal"): @_invoice.SubTotal.ToString("C")
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @Localization.GetString("Tax"): @_invoice.TaxAmount.ToString("C")
                                 </MudText>
                             </div>
-                        </div>
-                    }
+                        </MudItem>
+
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AmountPaid")</MudText>
+                            <div class="wis-stat-value mud-success-text">@_invoice.AmountPaid.ToString("C")</div>
+                        </MudItem>
+
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AmountDue")</MudText>
+                            <div class="wis-stat-value @(_invoice.AmountDue > 0 ? "mud-error-text" : "mud-success-text")">
+                                @_invoice.AmountDue.ToString("C")
+                            </div>
+                        </MudItem>
+
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("IssueDate")</MudText>
+                            <div class="wis-stat-value">@_invoice.IssueDate.ToString("dd MMM yyyy")</div>
+                        </MudItem>
+
+                        <MudItem xs="2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("DueDate")</MudText>
+                            <div class="wis-stat-value @(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? "mud-error-text" : "")">
+                                @_invoice.DueDate.ToString("dd MMM yyyy")
+                            </div>
+                        </MudItem>
+
+                    </MudGrid>
+
                 </MudCardContent>
             </MudCard>
         </MudItem>
 
-        <!-- Line Items -->
+        @* ── Line items ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -212,7 +153,7 @@ else
                               Hover="true"
                               Breakpoint="Breakpoint.Sm"
                               Elevation="0"
-                              Dense="false">
+                              Class="wis-secondary-list">
                         <HeaderContent>
                             <MudTh>@Localization.GetString("Product")</MudTh>
                             <MudTh>@Localization.GetString("Description")</MudTh>
@@ -223,28 +164,23 @@ else
                         </HeaderContent>
                         <RowTemplate>
                             <MudTd DataLabel="@Localization.GetString("Product")">
-                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Dark">@context.ProductName</MudText>
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode - @context.ProductName</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Description")">
-                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Description</MudText>
+                                <MudText Typo="Typo.body2">@context.Description</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
                                 <MudText Typo="Typo.body2" Class="font-weight-medium">
                                     @context.Quantity.ToString("N2")
-                                    <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">
-                                        @context.ProductUnit
-                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">@context.ProductUnit</MudText>
                                 </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
-                                <MudText Typo="Typo.body2" Color="Color.Dark">
-                                    @context.UnitPrice.ToString("C")
-                                </MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Dark">@context.UnitPrice.ToString("C")</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("TaxRate")" Style="text-align: right;">
                                 <MudText Typo="Typo.body2" Color="Color.Dark">
-                                    @context.TaxRate.ToString("0.00", _currentCultureKey)%
+                                    @context.TaxRate.ToString("0.00", CultureInfo.CurrentCulture)%
                                 </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Total")" Style="text-align: right;">
@@ -255,58 +191,17 @@ else
                         </RowTemplate>
                     </MudTable>
 
-                    <MudDivider />
-
-                    <!-- Totals footer -->
-                    <div class="d-flex justify-end pa-4">
-                        <MudStack Spacing="1" Style="min-width: 300px;">
-                            <!-- Subtotal -->
-                            <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.body2" Color="Color.Dark">@Localization.GetString("Subtotal")</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Dark" Class="font-weight-medium">
-                                    @_invoice.SubTotal.ToString("C")
-                                </MudText>
-                            </div>
-                            <!-- Tax -->
-                            <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.body2" Color="Color.Dark">@Localization.GetString("Tax")</MudText>
-                                <MudText Typo="Typo.body2" Color="Color.Dark" Class="font-weight-medium">
-                                    @_invoice.TaxAmount.ToString("C")
-                                </MudText>
-                            </div>
-                            <MudDivider Class="my-1" />
-                            <!-- Total -->
-                            <div class="d-flex justify-space-between align-center">
-                                <MudText Typo="Typo.h6" Class="font-weight-bold">@Localization.GetString("Total")</MudText>
-                                <MudText Typo="Typo.h5" Class="font-weight-bold" Color="Color.Primary">
-                                    @_invoice.TotalAmount.ToString("C")
-                                </MudText>
-                            </div>
-                        </MudStack>
-                    </div>
                 </MudCardContent>
             </MudCard>
         </MudItem>
 
-        <!-- Payment History -->
+        @* ── Payment history ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
                         <MudText Typo="Typo.h6">@Localization.GetString("PaymentHistory")</MudText>
                     </CardHeaderContent>
-                    <CardHeaderActions>
-                        @if (_invoice.Status != InvoiceStatus.Paid && _invoice.Status != InvoiceStatus.Cancelled)
-                        {
-                            <MudButton StartIcon="@Icons.Material.Filled.Payment"
-                                       Color="Color.Primary"
-                                       Variant="Variant.Filled"
-                                       Size="Size.Small"
-                                       OnClick="OpenPaymentDialog">
-                                @Localization.GetString("RecordPayment")
-                            </MudButton>
-                        }
-                    </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
                     @if (_payments == null || !_payments.Any())
@@ -338,17 +233,13 @@ else
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("PaymentDate")">
-                                    <MudText Typo="Typo.body2">
-                                        @context.PaymentDate.ToString("dd MMM yyyy")
-                                    </MudText>
+                                    <MudText Typo="Typo.body2">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
-                                    <MudText Typo="Typo.body2">
-                                        @(string.IsNullOrEmpty(context.ReferenceNumber) ? "-" : context.ReferenceNumber)
-                                    </MudText>
+                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(context.ReferenceNumber) ? "-" : context.ReferenceNumber)</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetMethodColor(context.PaymentMethod)">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@GetMethodColor(context.PaymentMethod)">
                                         @GetPaymentMethodText(context.PaymentMethod)
                                     </MudChip>
                                 </MudTd>
@@ -358,7 +249,7 @@ else
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("RecordedBy")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    <MudText Typo="Typo.body2">
                                         @(string.IsNullOrEmpty(context.RecordedBy) ? "-" : context.RecordedBy)
                                     </MudText>
                                 </MudTd>
@@ -368,16 +259,19 @@ else
                 </MudCardContent>
             </MudCard>
         </MudItem>
+
     </MudGrid>
 }
 
 @code {
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
+
     private bool _loading = true;
-    private readonly IFormatProvider _currentCultureKey = CultureInfo.CurrentCulture;
     private InvoiceDto? _invoice;
-    private List<PaymentDto> _payments = new();
+    private List<PaymentDto> _payments = [];
+
+    private WisDetailActionItem? _primaryAction;
+    private List<WisDetailActionItem> _actions = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -386,24 +280,19 @@ else
         await LoadPayments();
     }
 
-    protected override async Task OnParametersSetAsync()
+    private async void OnLanguageChanged() => await InvokeAsync(() =>
     {
-        await LoadInvoice();
-        await LoadPayments();
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
-    }
+        BuildActions();
+        StateHasChanged();
+    });
 
     private async Task LoadInvoice()
     {
         _loading = true;
-
         try
         {
             _invoice = await InvoiceService.GetInvoiceByIdAsync(Id);
+            BuildActions();
         }
         catch (Exception ex)
         {
@@ -429,6 +318,300 @@ else
         }
     }
 
+    private async Task Reload()
+    {
+        await LoadInvoice();
+        await LoadPayments();
+    }
+
+    // ── Action builder ────────────────────────────────────────────────────────
+
+    private void BuildActions()
+    {
+        if (_invoice is null) return;
+
+        _primaryAction = null;
+        _actions = [];
+
+        switch (_invoice.Status)
+        {
+            case InvoiceStatus.Draft:
+                // Receivable: primary = Send Email. Payable: primary = Record Payment (skip Sent).
+                if (_invoice.Type == InvoiceType.Receivable)
+                {
+                    _primaryAction = new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Email,
+                        Label = Localization.GetString("Send"),
+                        OnClick = EventCallback.Factory.Create(this, OpenSendEmailDialog)
+                    };
+                    _actions =
+                    [
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Payment,
+                            Label = Localization.GetString("Payment"),
+                            OnClick = EventCallback.Factory.Create(this, RecordPayment)
+                        },
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Edit,
+                            Label = Localization.GetString("Edit"),
+                            OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                        },
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Print,
+                            Label = Localization.GetString("Export"),
+                            OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
+                        },
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Cancel,
+                            Label = Localization.GetString("Cancel"),
+                            Color = Color.Error,
+                            IsDividerBefore = true,
+                            OnClick = EventCallback.Factory.Create(this, CancelInvoice)
+                        }
+                    ];
+                }
+                else
+                {
+                    _primaryAction = new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Payment,
+                        Label = Localization.GetString("Payment"),
+                        OnClick = EventCallback.Factory.Create(this, RecordPayment)
+                    };
+                    _actions =
+                    [
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Edit,
+                            Label = Localization.GetString("Edit"),
+                            OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                        },
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Print,
+                            Label = Localization.GetString("Export"),
+                            OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
+                        },
+                        new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Cancel,
+                            Label = Localization.GetString("Cancel"),
+                            Color = Color.Error,
+                            IsDividerBefore = true,
+                            OnClick = EventCallback.Factory.Create(this, CancelInvoice)
+                        }
+                    ];
+                }
+                break;
+
+            case InvoiceStatus.Sent:
+                _primaryAction = new WisDetailActionItem
+                {
+                    Icon = Icons.Material.Filled.Payment,
+                    Label = Localization.GetString("Payment"),
+                    OnClick = EventCallback.Factory.Create(this, RecordPayment)
+                };
+                _actions =
+                [
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Edit,
+                        Label = Localization.GetString("Edit"),
+                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                    },
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Print,
+                        Label = Localization.GetString("Export"),
+                        OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
+                    },
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Cancel,
+                        Label = Localization.GetString("Cancel"),
+                        Color = Color.Error,
+                        IsDividerBefore = true,
+                        OnClick = EventCallback.Factory.Create(this, CancelInvoice)
+                    }
+                ];
+                break;
+
+            case InvoiceStatus.PartiallyPaid:
+                _primaryAction = new WisDetailActionItem
+                {
+                    Icon = Icons.Material.Filled.Payment,
+                    Label = Localization.GetString("Payment"),
+                    OnClick = EventCallback.Factory.Create(this, RecordPayment)
+                };
+                _actions =
+                [
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Edit,
+                        Label = Localization.GetString("Edit"),
+                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                    },
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Print,
+                        Label = Localization.GetString("Export"),
+                        OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
+                    }
+                ];
+                break;
+
+            case InvoiceStatus.Overdue:
+                _primaryAction = new WisDetailActionItem
+                {
+                    Icon = Icons.Material.Filled.Payment,
+                    Label = Localization.GetString("Payment"),
+                    OnClick = EventCallback.Factory.Create(this, RecordPayment)
+                };
+                _actions =
+                [
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Edit,
+                        Label = Localization.GetString("Edit"),
+                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                    },
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Print,
+                        Label = Localization.GetString("Export"),
+                        OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
+                    },
+                    new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Cancel,
+                        Label = Localization.GetString("Cancel"),
+                        Color = Color.Error,
+                        IsDividerBefore = true,
+                        OnClick = EventCallback.Factory.Create(this, CancelInvoice)
+                    }
+                ];
+                break;
+
+            case InvoiceStatus.Paid:
+                _primaryAction = new WisDetailActionItem
+                {
+                    Icon = Icons.Material.Filled.Print,
+                    Label = Localization.GetString("Export"),
+                    OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
+                };
+                _actions = [];
+                break;
+
+            case InvoiceStatus.Cancelled:
+                _primaryAction = null;
+                _actions = [];
+                break;
+        }
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+
+    private void GoToEdit() => Navigation.NavigateTo($"/invoices/edit/{Id}");
+
+    private async Task RecordPayment()
+    {
+        try
+        {
+            bool paid = await WisDialog.ShowPaymentDialogAsync(Id);
+            if (paid)
+            {
+                Snackbar.Add(Localization.GetString("PaymentRecorded"), Severity.Success);
+                await Reload();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error recording payment: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
+        }
+    }
+
+    private async Task OpenSendEmailDialog()
+    {
+        if (_invoice is null) return;
+
+        bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
+            Localization.GetString("SendInvoiceEmail"),
+            p => p.Add(x => x.Invoice, _invoice));
+
+        if (sent != true) return;
+
+        // Email was sent — transition Draft → Sent and create inventory transactions
+        if (_invoice.Status == InvoiceStatus.Draft)
+        {
+            try
+            {
+                await InvoiceService.SendAsync(Id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error transitioning invoice to Sent: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+            }
+        }
+
+        await Reload();
+    }
+
+    private async Task CancelInvoice()
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("CancelInvoice"),
+            Localization.GetString("CancelInvoiceConfirm"),
+            Localization.GetString("Cancel"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await InvoiceService.CancelAsync(Id);
+            Snackbar.Add(Localization.GetString("InvoiceCancelled"), Severity.Success);
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+    }
+
+    private async Task ExportForPrinting()
+    {
+        try
+        {
+            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(Id);
+            string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+
+            await JSRuntime.InvokeVoidAsync(
+                "fileDownloadHelper.downloadFileFromStream",
+                fileName,
+                new DotNetStreamReference(new MemoryStream(fileBytes)));
+
+            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private bool CanPay(InvoiceStatus status) =>
+        status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
+
     private Color GetStatusColor(InvoiceStatus status) => status switch
     {
         InvoiceStatus.Draft => Color.Default,
@@ -436,7 +619,7 @@ else
         InvoiceStatus.PartiallyPaid => Color.Warning,
         InvoiceStatus.Paid => Color.Success,
         InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Default,
+        InvoiceStatus.Cancelled => Color.Dark,
         _ => Color.Default
     };
 
@@ -447,7 +630,7 @@ else
         InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
         InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
         InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-        InvoiceStatus.Cancelled => Localization.GetString("Cancelled"),
+        InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
         _ => status.ToString()
     };
 
@@ -468,92 +651,6 @@ else
         PaymentMethod.Other => Color.Default,
         _ => Color.Default
     };
-
-    private void OpenPaymentDialog()
-    {
-        // We'll implement this in the next step
-        Navigation.NavigateTo($"/payments/create?invoiceId={Id}");
-    }
-
-    private async Task DeleteInvoice()
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(
-            new MessageBoxOptions
-            {
-                Title = Localization.GetString("ConfirmDelete"),
-                Message = Localization.GetString("DeleteInvoiceConfirm"),
-                YesText = Localization.GetString("Yes"),
-                CancelText = Localization.GetString("No")
-            });
-
-        if (result == true)
-        {
-            try
-            {
-                bool deleted = await InvoiceService.DeleteInvoiceAsync(Id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
-                    Navigation.NavigateTo("/invoices");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting invoice: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingInvoice"), Severity.Error);
-            }
-        }
-    }
-
-    private async Task ExportForPrinting()
-    {
-        try
-        {
-            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(Id);
-            string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
-
-            await JSRuntime.InvokeVoidAsync(
-                "fileDownloadHelper.downloadFileFromStream",
-                fileName,
-                new DotNetStreamReference(new MemoryStream(fileBytes)));
-
-            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error exporting to Excel: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
-        }
-    }
-
-    private bool CanSendEmail() =>
-        _invoice?.Type == InvoiceType.Receivable &&
-        (_invoice.Status == InvoiceStatus.Draft ||
-         _invoice.Status == InvoiceStatus.PartiallyPaid ||
-         _invoice.Status == InvoiceStatus.Overdue);
-
-    private async Task OpenSendEmailDialog()
-    {
-        if (_invoice is null) return;
-
-        DialogParameters<SendInvoiceEmailDialog> parameters = new();
-        parameters.Add(x => x.Invoice, _invoice);
-
-        DialogOptions options = new()
-        {
-            CloseOnEscapeKey = true,
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<SendInvoiceEmailDialog>(
-            Localization.GetString("SendInvoiceEmail"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: true })
-            await LoadInvoice();
-    }
 
     public void Dispose()
     {

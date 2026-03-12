@@ -1,3 +1,4 @@
+using WarehouseInvoiceSystem.BlazorUI.Services;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using System.Globalization;
@@ -13,7 +14,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Culture setup 
 CultureInfo mkdCulture = new("mk-MK");
-mkdCulture.NumberFormat.CurrencySymbol = "MKD";
+mkdCulture.NumberFormat.CurrencySymbol = "ден.";
 mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
 mkdCulture.NumberFormat.CurrencyPositivePattern = 3;
 
@@ -60,6 +61,7 @@ builder.Services.AddScoped<IPurchaseNoteService, PurchaseNoteService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<WisDialogService>();
 
 // Add HttpClient
 builder.Services.AddScoped(sp =>

@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
@@ -49,32 +50,34 @@
 
         public async Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId)
         {
-            Individual? individual = await individualRepository.GetByIdAsync(individualId)
-                ?? throw new KeyNotFoundException($"Individual with ID {individualId} not found");
-
             var analytics = new IndividualAnalyticsDto();
 
             // Get all purchase notes for this individual
             IEnumerable<PurchaseNoteDto> allPurchaseNotes = await purchaseNoteService.GetPurchaseNotesByIndividualAsync(individualId);
             var purchaseNotesList = allPurchaseNotes.ToList();
 
-            if (!purchaseNotesList.Any())
+            if (purchaseNotesList.Count == 0)
             {
-                return analytics; // Return empty analytics
+                return analytics;
             }
 
-            // Overall statistics
-            analytics.TotalPurchaseNotes = purchaseNotesList.Count;
-            analytics.TotalAmount = purchaseNotesList.Sum(pn => pn.TotalAmount);
+            // Overall statistics — cancelled notes excluded from totals
+            var cancelledNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Cancelled).ToList();
+            analytics.CancelledCount = cancelledNotes.Count;
+            analytics.CancelledAmount = cancelledNotes.Sum(pn => pn.TotalAmount);
+
+            var activeNotes = purchaseNotesList.Where(pn => pn.Status != PurchaseNoteStatus.Cancelled).ToList();
+            analytics.TotalPurchaseNotes = activeNotes.Count;
+            analytics.TotalAmount = activeNotes.Sum(pn => pn.TotalAmount);
 
             // Payment status
-            var paidNotes = purchaseNotesList.Where(pn => pn.Status == Domain.Enums.PurchaseNoteStatus.Paid).ToList();
+            var paidNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Paid).ToList();
             analytics.PaidCount = paidNotes.Count;
             analytics.PaidAmount = paidNotes.Sum(pn => pn.TotalAmount);
 
             var unpaidNotes = purchaseNotesList.Where(pn =>
-                pn.Status == Domain.Enums.PurchaseNoteStatus.Draft ||
-                pn.Status == Domain.Enums.PurchaseNoteStatus.Completed).ToList();
+                pn.Status == PurchaseNoteStatus.Draft ||
+                pn.Status == PurchaseNoteStatus.Pending).ToList();
             analytics.UnpaidCount = unpaidNotes.Count;
             analytics.UnpaidAmount = unpaidNotes.Sum(pn => pn.TotalAmount);
 
@@ -85,14 +88,13 @@
             // Most purchased product
             var productStats = purchaseNotesList
                 .SelectMany(pn => pn.LineItems)
-                .GroupBy(li => new { li.ProductId, li.ProductName, li.ProductCode })
+                .GroupBy(li => new { li.ProductId, li.ProductName, li.ProductCode, li.ProductUnit })
                 .Select(g => new
                 {
                     g.Key.ProductName,
                     g.Key.ProductCode,
                     TotalQuantity = g.Sum(li => li.Quantity),
-                    // Extract unit from first line item (assuming consistent)
-                    Unit = g.First().Description?.Split(' ').LastOrDefault() ?? ""
+                    Unit = g.Key.ProductUnit
                 })
                 .OrderByDescending(p => p.TotalQuantity)
                 .FirstOrDefault();
@@ -107,14 +109,14 @@
             // Recent purchase notes
             analytics.RecentPurchaseNotes = purchaseNotesList
                 .OrderByDescending(pn => pn.PurchaseDate)
-                .Take(10)
+                .Take(5)
                 .Select(pn => new RecentPurchaseNoteDto
                 {
                     Id = pn.Id,
                     NoteNumber = pn.NoteNumber,
                     PurchaseDate = pn.PurchaseDate,
                     TotalAmount = pn.TotalAmount,
-                    Status = pn.Status.ToString()
+                    Status = pn.Status
                 })
                 .ToList();
 
@@ -166,6 +168,11 @@
         public async Task<bool> DeleteIndividualAsync(Guid id)
         {
             return await individualRepository.DeleteAsync(id);
+        }
+
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            return await individualRepository.SetActiveStatusAsync(id, isActive);
         }
 
         private static IndividualDto MapToDto(Individual individual)

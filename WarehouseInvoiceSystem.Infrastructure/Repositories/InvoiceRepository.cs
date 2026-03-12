@@ -41,6 +41,9 @@
             if (!string.IsNullOrWhiteSpace(query.CompanyName))
                 q = q.Where(i => i.Company.Name == query.CompanyName);
 
+            if (query.CompanyId.HasValue)
+                q = q.Where(i => i.CompanyId == query.CompanyId.Value);
+
             if (query.AmountMin.HasValue)
                 q = q.Where(i => i.TotalAmount >= query.AmountMin.Value);
 
@@ -59,9 +62,11 @@
             if (query.DueDateTo.HasValue)
                 q = q.Where(i => i.DueDate <= query.DueDateTo.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(i => i.InvoiceNumber.Contains(query.Search) ||
-                                 i.Company.Name.Contains(query.Search));
+                q = q.Where(i => i.InvoiceNumber.ToLower().Contains(search) ||
+                                 i.Company.Name.ToLower().Contains(search));
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
 
@@ -159,6 +164,51 @@
                     .ThenInclude(i => i.Warehouse)
                 .OrderByDescending(li => li.Invoice.IssueDate)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query)
+        {
+            InvoiceType invoiceType = query.Purchased ? InvoiceType.Payable : InvoiceType.Receivable;
+
+            IQueryable<InvoiceLine> q = context.InvoiceLines
+                .Where(li => li.ProductId == query.ProductId &&
+                             li.DeletedOn == null &&
+                             li.Invoice.DeletedOn == null &&
+                             li.Invoice.Status != InvoiceStatus.Cancelled &&
+                             li.Invoice.Type == invoiceType)
+                .Include(li => li.Invoice)
+                    .ThenInclude(i => i.Company)
+                .Include(li => li.Invoice)
+                    .ThenInclude(i => i.Warehouse);
+
+            if (query.WarehouseId.HasValue)
+                q = q.Where(li => li.Invoice.WarehouseId == query.WarehouseId.Value);
+
+            if (!string.IsNullOrWhiteSpace(query.PartyName))
+                q = q.Where(li => li.Invoice.Company.Name == query.PartyName);
+
+            if (query.DateFrom.HasValue)
+                q = q.Where(li => li.Invoice.IssueDate >= query.DateFrom.Value.Date);
+
+            if (query.DateTo.HasValue)
+                q = q.Where(li => li.Invoice.IssueDate < query.DateTo.Value.Date.AddDays(1));
+
+            q = q.OrderByDescending(li => li.Invoice.IssueDate);
+
+            int totalCount = await q.CountAsync();
+
+            List<InvoiceLine> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<InvoiceLine>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<Invoice> CreateAsync(Invoice invoice)

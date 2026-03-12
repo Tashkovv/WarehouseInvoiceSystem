@@ -50,13 +50,15 @@
             if (query.DateTo.HasValue)
                 q = q.Where(p => p.PurchaseDate <= query.DateTo.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                q = q.Where(p => p.NoteNumber.Contains(query.Search) ||
-                                 p.Individual.FirstName.Contains(query.Search) ||
-                                 p.Individual.LastName.Contains(query.Search) ||
-                                 (query.Search.Contains(p.Individual.FirstName) ||
-                                 query.Search.Contains(p.Individual.LastName)));
+                q = q.Where(p => p.NoteNumber.ToLower().Contains(search) ||
+                                 p.Individual.FirstName.ToLower().Contains(search) ||
+                                 p.Individual.LastName.ToLower().Contains(search) ||
+                                 (query.Search.Contains(p.Individual.FirstName.ToLower()) ||
+                                 query.Search.Contains(p.Individual.LastName.ToLower())));
             }
 
             q = ApplySort(q, query.SortBy, query.SortAscending);
@@ -145,6 +147,48 @@
                     .ThenInclude(pn => pn.Warehouse)
                 .OrderByDescending(li => li.PurchaseNote.PurchaseDate)
                 .ToListAsync();
+        }
+
+        public async Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query)
+        {
+            IQueryable<PurchaseNoteLine> q = context.PurchaseNoteLines
+                .Where(li => li.ProductId == query.ProductId &&
+                             li.DeletedOn == null &&
+                             li.PurchaseNote.DeletedOn == null)
+                .Include(li => li.PurchaseNote)
+                    .ThenInclude(pn => pn.Individual)
+                .Include(li => li.PurchaseNote)
+                    .ThenInclude(pn => pn.Warehouse);
+
+            if (query.WarehouseId.HasValue)
+                q = q.Where(li => li.PurchaseNote.WarehouseId == query.WarehouseId.Value);
+
+            // PartyName for purchase notes is Individual.FullName (FirstName + " " + LastName)
+            if (!string.IsNullOrWhiteSpace(query.PartyName))
+                q = q.Where(li => (li.PurchaseNote.Individual.FirstName + " " + li.PurchaseNote.Individual.LastName) == query.PartyName);
+
+            if (query.DateFrom.HasValue)
+                q = q.Where(li => li.PurchaseNote.PurchaseDate >= query.DateFrom.Value.Date);
+
+            if (query.DateTo.HasValue)
+                q = q.Where(li => li.PurchaseNote.PurchaseDate < query.DateTo.Value.Date.AddDays(1));
+
+            q = q.OrderByDescending(li => li.PurchaseNote.PurchaseDate);
+
+            int totalCount = await q.CountAsync();
+
+            List<PurchaseNoteLine> items = await q
+                .Skip((query.Page - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToListAsync();
+
+            return new PagedResult<PurchaseNoteLine>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = query.Page,
+                PageSize = query.PageSize
+            };
         }
 
         public async Task<string> GenerateNoteNumberAsync()

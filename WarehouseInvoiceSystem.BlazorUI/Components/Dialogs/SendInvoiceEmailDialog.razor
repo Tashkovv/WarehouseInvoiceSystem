@@ -1,5 +1,4 @@
-﻿@using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+﻿@using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @inject ILocalizationService Localization
 @inject IEmailService EmailService
 @inject ISnackbar Snackbar
@@ -57,13 +56,17 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel"
-                   Variant="Variant.Text"
+                   Variant="Variant.Outlined"
+                   Size="Size.Small"
+                   Style="border-radius: 16px;"
                    Disabled="_sending">
             @Localization.GetString("Cancel")
         </MudButton>
         <MudButton OnClick="Send"
                    Color="Color.Primary"
                    Variant="Variant.Filled"
+                   Size="Size.Small"
+                   Style="border-radius: 16px;"
                    StartIcon="@Icons.Material.Filled.Send"
                    Disabled="_sending">
             @if (_sending)

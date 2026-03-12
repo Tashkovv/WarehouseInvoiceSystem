@@ -4,35 +4,14 @@
     {
         // Stock Information
         public decimal TotalStockAcrossWarehouses { get; set; }
-        public decimal TotalStockValue { get; set; }
         public List<WarehouseStockDto> StockByWarehouse { get; set; } = [];
         public bool HasLowStock { get; set; }
-        public bool IsOutOfStock { get; set; }
-
-        // Sales Analytics (Receivable Invoices - Outbound)
-        public int TotalUnitsSold { get; set; }
-        public decimal TotalRevenue { get; set; }
-        public DateTime? LastSaleDate { get; set; }
-        public decimal AverageSaleQuantity { get; set; }
-        public string? TopCustomer { get; set; }
-        public decimal TopCustomerQuantity { get; set; }
-
-        // Purchase Analytics (Purchase Notes - Inbound)
-        public int TotalUnitsPurchased { get; set; }
-        public decimal TotalPurchaseCost { get; set; }
-        public DateTime? LastPurchaseDate { get; set; }
-        public decimal AveragePurchaseQuantity { get; set; }
-        public string? TopSupplier { get; set; }
-        public decimal TopSupplierQuantity { get; set; }
 
         // Profitability
-        public decimal AveragePurchasePrice { get; set; }
         public decimal CurrentSellingPrice { get; set; }
         public decimal GrossMarginPercentage { get; set; }
-        public decimal EstimatedProfitIfSoldAll { get; set; }
 
         // Movement
-        public int TotalTransactions { get; set; }
         public List<RecentTransactionDto> RecentTransactions { get; set; } = [];
     }
 

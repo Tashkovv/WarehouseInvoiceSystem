@@ -3,7 +3,6 @@
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
-    using WarehouseInvoiceSystem.Application.Models;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
@@ -11,7 +10,6 @@
     [ApiController]
     [Route("api/[controller]")]
     public class InvoicesController(IInvoiceService invoiceService,
-                                    IEmailService emailService,
                                     ILogger<InvoicesController> logger) : ControllerBase
     {
         /// <summary>
@@ -251,28 +249,6 @@
         }
 
         /// <summary>
-        /// Update invoice status
-        /// </summary>
-        [HttpPatch("{id}/status")]
-        public async Task<ActionResult<InvoiceDto>> UpdateStatus(Guid id, [FromBody] InvoiceStatus status)
-        {
-            try
-            {
-                InvoiceDto invoice = await invoiceService.UpdateInvoiceStatusAsync(id, status);
-                return Ok(invoice);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error updating invoice status {Id}", id);
-                return StatusCode(500, "An error occurred while updating invoice status");
-            }
-        }
-
-        /// <summary>
         /// Delete an invoice
         /// </summary>
         [HttpDelete("{id}")]
@@ -290,37 +266,6 @@
             {
                 logger.LogError(ex, "Error deleting invoice {Id}", id);
                 return StatusCode(500, "An error occurred while deleting the invoice");
-            }
-        }
-
-        /// <summary>
-        /// Send invoice via email
-        /// </summary>
-        [HttpPost("{id}/send-email")]
-        public async Task<ActionResult<InvoiceDto>> SendInvoiceEmail(Guid id, [FromBody] SendInvoiceEmailRequest request)
-        {
-            try
-            {
-                // Get the invoice to verify it exists
-                InvoiceDto? invoice = await invoiceService.GetInvoiceByIdAsync(id);
-                if (invoice == null)
-                    return NotFound($"Invoice with ID {id} not found");
-
-                // Send the email
-                bool result = await emailService.SendInvoiceEmailAsync(id, request.CustomMessage);
-
-                if (!result)
-                    return StatusCode(500, "Failed to send email. Please check your email configuration and try again.");
-
-                // Update invoice status to Sent
-                await invoiceService.UpdateInvoiceStatusAsync(invoice.Id, InvoiceStatus.Sent);
-
-                return Ok(new { message = "Invoice email sent successfully", invoiceId = id });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error sending invoice email for invoice {Id}", id);
-                return StatusCode(500, "An error occurred while sending the invoice email");
             }
         }
     }

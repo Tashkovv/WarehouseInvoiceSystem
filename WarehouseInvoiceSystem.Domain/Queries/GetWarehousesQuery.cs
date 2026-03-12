@@ -4,5 +4,6 @@
 
     public class GetWarehousesQuery : PagedQuery
     {
+        public bool? IsActive { get; set; }
     }
 }

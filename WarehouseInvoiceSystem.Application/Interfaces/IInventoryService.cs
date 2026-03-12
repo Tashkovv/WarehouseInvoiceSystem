@@ -19,6 +19,7 @@
         // Transactions
         Task<IEnumerable<InventoryTransactionDto>> GetAllTransactionsAsync();
         Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByProductAsync(Guid productId);
+        Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query);
         Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId);
         Task<InventoryTransactionDto> CreateTransactionAsync(CreateInventoryTransactionDto createDto);
 

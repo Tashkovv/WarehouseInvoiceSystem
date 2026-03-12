@@ -1,6 +1,5 @@
 ﻿@page "/companies"
 @implements IDisposable
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
@@ -13,28 +12,26 @@
 
 <PageTitle>@Localization.GetString("Companies") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Companies")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="OpenCreateDialog"
-                CreateLabel="@Localization.GetString("CreateCompany")"
+                CreateLabel="@Localization.GetString("Company")"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterType.HasValue || _filterIsActive.HasValue)"
                 OnClearAll="ClearAllFilters">
     <Filters>
         <FilterPopoverList TValue="CompanyType?"
-                           Title="@Localization.GetString("FilterByCompanyType")"
                            Label="@Localization.GetString("Type")"
                            Items="_typeFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterType"
                            SelectedValueChanged="OnTypeFilterChanged" />
         <FilterPopoverList TValue="bool?"
-                           Title="@Localization.GetString("FilterByStatus")"
                            Label="@Localization.GetString("Status")"
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Single"
@@ -53,7 +50,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"
@@ -65,7 +62,7 @@
                                 Title="@Localization.GetString("Name")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-weight: 600;" />
+                                CellClass="wis-cell-primary" />
 
                 <PropertyColumn Property="x => x.Type"
                                 Title="@Localization.GetString("Type")"
@@ -104,7 +101,7 @@
                                  Size="Size.Small"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ActiveCompany")
-                                                    : Localization.GetString("InactiveCompany"))
+                                                        : Localization.GetString("InactiveCompany"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -112,9 +109,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="120"
-                                HeaderStyle="width: 120px;"
-                                CellStyle="width: 120px;">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -127,11 +123,6 @@
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("ViewInvoices")"
                                            OnClick="@(() => ViewCompanyInvoices(context.Item.Id))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteCompany(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -139,21 +130,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Business"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoCompaniesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Business"
+                                     Message="@Localization.GetString("NoCompaniesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>
@@ -230,7 +212,7 @@
 
     private string GetRowClass(CompanyDto item, int index) => item.Type switch
     {
-        CompanyType.Client => "row-status-active",
+        CompanyType.Client => "row-status-success",
         CompanyType.Vendor => "row-status-warning",
         CompanyType.Both => "row-status-primary",
         _ => "row-status-default"
@@ -372,35 +354,6 @@
         {
             Console.WriteLine($"Error saving company: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
-        }
-    }
-
-    private async Task DeleteCompany(Guid id)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteCompanyConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
-
-        if (result == true)
-        {
-            try
-            {
-                bool deleted = await CompanyService.DeleteCompanyAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("CompanyDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting company: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingCompany"), Severity.Error);
-            }
         }
     }
 

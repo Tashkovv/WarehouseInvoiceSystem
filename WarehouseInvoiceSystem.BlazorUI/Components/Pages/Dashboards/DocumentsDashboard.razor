@@ -1,7 +1,6 @@
 ﻿@page "/documents-dashboard"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -10,6 +9,8 @@
 @inject ILocalizationService Localization
 @inject IPaymentService PaymentService
 @inject NavigationManager Navigation
+@inject WisDialogService WisDialog
+@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("DocumentsDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -79,7 +80,7 @@ else
             <div class="d-flex align-center flex-wrap gap-2 mb-4">
                 <MudText Typo="Typo.h6">
                     @Localization.GetString("FinancialSummary") — @_selectedMonth.ToString("MMMM yyyy")
-                </MudText>                
+                </MudText>
                 <div>
                     <MudDatePicker @bind-Date="_selectedMonthDate"
                                    Variant="Variant.Outlined"
@@ -191,8 +192,8 @@ else
                                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Status")">
-                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status.ToString())">
-                                            @GetPurchaseNoteStatusText(context.Status.ToString())
+                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)">
+                                            @GetPurchaseNoteStatusText(context.Status)
                                         </MudChip>
                                     </MudTd>
                                 </RowTemplate>
@@ -312,7 +313,7 @@ else
                                 </MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <MudButton Href="/payments/create"
+                                <MudButton OnClick="OpenPaymentDialog"
                                            Color="Color.Primary"
                                            Variant="Variant.Filled"
                                            Size="Size.Small"
@@ -498,19 +499,25 @@ else
         }
     }
 
-    private Color GetPurchaseNoteStatusColor(string status)
-    {
-        if (status == PurchaseNoteStatus.Paid.ToString()) return Color.Success;
-        if (status == PurchaseNoteStatus.Completed.ToString()) return Color.Info;
-        return Color.Default;
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private string GetPurchaseNoteStatusText(string status)
+    private Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
     {
-        if (status == PurchaseNoteStatus.Paid.ToString()) return Localization.GetString("Paid");
-        if (status == PurchaseNoteStatus.Completed.ToString()) return Localization.GetString("Completed");
-        return Localization.GetString("Draft");
-    }
+        PurchaseNoteStatus.Draft => Color.Default,
+        PurchaseNoteStatus.Pending => Color.Warning,
+        PurchaseNoteStatus.Paid => Color.Success,
+        PurchaseNoteStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
+    {
+        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
+        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
+        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
+        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
+        _ => status.ToString()
+    };
 
     private Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
     {
@@ -519,7 +526,7 @@ else
         InvoiceStatus.PartiallyPaid => Color.Warning,
         InvoiceStatus.Paid => Color.Success,
         InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Default,
+        InvoiceStatus.Cancelled => Color.Dark,
         _ => Color.Default
     };
 
@@ -551,6 +558,24 @@ else
         PaymentMethod.Other => Color.Default,
         _ => Color.Default
     };
+
+    private async Task OpenPaymentDialog()
+    {
+        try
+        {
+            bool paid = await WisDialog.ShowPaymentDialogAsync();
+            if (paid)
+            {
+                Snackbar.Add(Localization.GetString("PaymentRecorded"), Severity.Success);
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error recording payment: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
+        }
+    }
 
     public void Dispose()
     {

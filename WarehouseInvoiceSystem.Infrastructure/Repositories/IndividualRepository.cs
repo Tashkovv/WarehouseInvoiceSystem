@@ -26,10 +26,12 @@
             if (query.IsActive.HasValue)
                 q = q.Where(i => i.IsActive == query.IsActive.Value);
 
+            string search = query.Search?.ToLower() ?? string.Empty;
+
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(i => i.FirstName.Contains(query.Search) ||
-                                 i.LastName.Contains(query.Search) ||
-                                 i.IdentificationNumber.Contains(query.Search));
+                q = q.Where(i => i.FirstName.ToLower().Contains(search) ||
+                                 i.LastName.ToLower().Contains(search) ||
+                                 i.IdentificationNumber.Contains(search));
 
             q = query.SortBy switch
             {
@@ -122,6 +124,20 @@
                 return false;
 
             individual.DeletedOn = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+
+            return true;
+        }
+        public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
+        {
+            Individual? individual = await context.Individuals
+                .Where(i => i.DeletedOn == null)
+                .FirstOrDefaultAsync(i => i.Id == id);
+
+            if (individual is null)
+                return false;
+
+            individual.IsActive = isActive;
             await context.SaveChangesAsync();
 
             return true;

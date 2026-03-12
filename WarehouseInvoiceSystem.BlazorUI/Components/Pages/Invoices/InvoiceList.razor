@@ -2,7 +2,6 @@
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -10,125 +9,77 @@
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Invoices")
     </MudText>
 </div>
 
-<WisGridToolbar CreateHref="/invoices/create"
-                CreateLabel="@Localization.GetString("CreateInvoice")"
+<WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/invoices/create"))"
+                CreateLabel="@Localization.GetString("Invoice")"
+                CreateActions="@_createActions"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterStatuses.Count > 0 || _filterType.HasValue || _activeAdvancedFilterCount > 0)"
                 OnClearAll="ClearAllFilters"
                 ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
-    <AdditionalActions>
-        <MudButton StartIcon="@Icons.Material.Filled.Download"
-                   Color="Color.Secondary"
-                   Variant="Variant.Outlined"
-                   OnClick="PerformExport"
-                   Disabled="_exporting">
-            @Localization.GetString("ExportToExcel")
-        </MudButton>
-    </AdditionalActions>
     <Filters>
-        <FilterPopoverList TValue="InvoiceStatus"
-                           Title="@Localization.GetString("FilterByStatus")"
-                           Label="@Localization.GetString("Status")"
-                           Items="_statusFilterItems"
-                           Mode="FilterSelectionMode.Multiple"
-                           SelectedValues="_filterStatuses"
-                           SelectedValuesChanged="OnStatusFilterChanged" />
         <FilterPopoverList TValue="InvoiceType?"
-                           Title="@Localization.GetString("Type")"
                            Label="@Localization.GetString("Type")"
                            Items="_typeFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterType"
                            SelectedValueChanged="OnTypeFilterChanged" />
+        <FilterPopoverList TValue="InvoiceStatus"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Multiple"
+                           SelectedValues="_filterStatuses"
+                           SelectedValuesChanged="OnStatusFilterChanged" />
     </Filters>
     <AdvancedFilters>
-        <MudGrid Spacing="2" AlignItems="AlignItems.Start">
-            <MudItem xs="12" sm="6" md="3">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="visibility: hidden;">
-                    &nbsp;
-                </MudText>
-                <MudAutocomplete T="string"
-                                 Value="_filterCompanyName"
-                                 ValueChanged="OnCompanyFilterChanged"
-                                 Label="@Localization.GetString("Company")"
-                                 SearchFunc="SearchCompanyNames"
-                                 Variant="Variant.Outlined"
-                                 Dense="true"
-                                 Clearable="true"
-                                 OnClearedClick="@(() => OnCompanyFilterChanged(null))" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
-                    @Localization.GetString("IssueDate")
-                </MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudDatePicker @bind-Date="_filterIssueDateFrom"
-                                   @bind-Date:after="ReloadGrid"
-                                   Label="@Localization.GetString("From")"
-                                   Variant="Variant.Outlined"
-                                   Dense="true" />
-                    <MudDatePicker @bind-Date="_filterIssueDateTo"
-                                   @bind-Date:after="ReloadGrid"
-                                   Label="@Localization.GetString("To")"
-                                   Variant="Variant.Outlined"
-                                   Dense="true" />
-                </MudStack>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
-                    @Localization.GetString("DueDate")
-                </MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudDatePicker @bind-Date="_filterDueDateFrom"
-                                   @bind-Date:after="ReloadGrid"
-                                   Label="@Localization.GetString("From")"
-                                   Variant="Variant.Outlined"
-                                   Dense="true" />
-                    <MudDatePicker @bind-Date="_filterDueDateTo"
-                                   @bind-Date:after="ReloadGrid"
-                                   Label="@Localization.GetString("To")"
-                                   Variant="Variant.Outlined"
-                                   Dense="true" />
-                </MudStack>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
-                    @Localization.GetString("AmountRange")
-                </MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudNumericField T="decimal?"
-                                     @bind-Value="_filterAmountMin"
-                                     @bind-Value:after="ReloadGrid"
-                                     Label="@Localization.GetString("Min")"
-                                     Variant="Variant.Outlined"
-                                     HideSpinButtons="true"
-                                     Format="N2"
-                                     Dense="true" />
-                    <MudNumericField T="decimal?"
-                                     @bind-Value="_filterAmountMax"
-                                     @bind-Value:after="ReloadGrid"
-                                     Label="@Localization.GetString("Max")"
-                                     Variant="Variant.Outlined"
-                                     HideSpinButtons="true"
-                                     Format="N2"
-                                     Dense="true" />
-                </MudStack>
-            </MudItem>
-        </MudGrid>
+        <div class="d-flex align-center flex-wrap gap-3">
+
+            <WisAutocompleteFilter TValue="Guid"
+                                   Label="@Localization.GetString("Company")"
+                                   AllLabel="@Localization.GetString("AllCompanies")"
+                                   Icon="@Icons.Material.Filled.Business"
+                                   LoadItems="LoadCompanyItems"
+                                   SelectedValue="@(_filterCompanyId ?? default)"
+                                   SelectedValueChanged="OnCompanyFilterChanged"
+                                   MinWidth="200px" />
+
+            <WisDateRangeFilter @ref="_issueDateRangeFilter"
+                                Label="@Localization.GetString("IssueDate")"
+                                DateRange="_filterIssueDateRange"
+                                DateRangeChanged="OnIssueDateRangeChanged"
+                                DatePreset="_filterIssueDatePreset"
+                                DatePresetChanged="OnIssueDatePresetChanged" />
+
+            <WisDateRangeFilter @ref="_dueDateRangeFilter"
+                                Label="@Localization.GetString("DueDate")"
+                                DateRange="_filterDueDateRange"
+                                DateRangeChanged="OnDueDateRangeChanged"
+                                DatePreset="_filterDueDatePreset"
+                                DatePresetChanged="OnDueDatePresetChanged" />
+
+            <WisAmountRangeFilter @ref="_amountRangeFilter"
+                                  Label="@Localization.GetString("AmountRange")"
+                                  AmountMin="_filterAmountMin"
+                                  AmountMinChanged="OnAmountMinChanged"
+                                  AmountMax="_filterAmountMax"
+                                  AmountMaxChanged="OnAmountMaxChanged"
+                                  AmountPreset="@_filterAmountPreset"
+                                  AmountPresetChanged="OnAmountPresetChanged" />
+
+        </div>
     </AdvancedFilters>
 </WisGridToolbar>
 
@@ -142,7 +93,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"
@@ -154,7 +105,7 @@
                                 Title="@Localization.GetString("InvoiceNumber")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-family: monospace;" />
+                                CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.CompanyName"
                                 Title="@Localization.GetString("Company")"
@@ -211,8 +162,8 @@
                                 Sortable="true"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudText Typo="Typo.body2" Style="font-weight: 600;">
-                            @context.Item.TotalAmount.ToString("N2")
+                        <MudText Typo="Typo.body2" Class="wis-cell-amount">
+                            @context.Item.TotalAmount.ToString("C")
                         </MudText>
                     </CellTemplate>
                 </PropertyColumn>
@@ -232,9 +183,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="130"
-                                HeaderStyle="width: 130px;"
-                                CellStyle="width: 130px;">
+                                HeaderClass="wis-col-actions-3"
+                                CellClass="wis-col-actions-3">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -246,19 +196,14 @@
                                            Size="Size.Small"
                                            Color="Color.Success"
                                            Title="@Localization.GetString("RecordPayment")"
-                                           Disabled="@(context.Item.Status == InvoiceStatus.Paid || context.Item.Status == InvoiceStatus.Cancelled)"
-                                           OnClick="@(() => Navigation.NavigateTo($"/payments/create?invoiceId={context.Item.Id}"))" />
+                                           Disabled="@(!CanPay(context.Item.Status))"
+                                           OnClick="@(() => OpenPaymentDialog(context.Item))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Email"
                                            Size="Size.Small"
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("SendEmail")"
                                            Disabled="@(!CanSendEmail(context.Item.Type, context.Item.Status))"
                                            OnClick="@(() => OpenSendEmailDialog(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteInvoice(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -266,21 +211,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Receipt"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoInvoicesFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Receipt"
+                                     Message="@Localization.GetString("NoInvoicesFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>
@@ -309,32 +245,49 @@
     private InvoiceType? _filterType = null;
 
     // Advanced filters
-    private string? _filterCompanyName = null;
+    private Guid? _filterCompanyId = null;
     private decimal? _filterAmountMin = null;
     private decimal? _filterAmountMax = null;
-    private DateTime? _filterIssueDateFrom = null;
-    private DateTime? _filterIssueDateTo = null;
-    private DateTime? _filterDueDateFrom = null;
-    private DateTime? _filterDueDateTo = null;
+    private string? _filterAmountPreset = null;
+    private WisAmountRangeFilter? _amountRangeFilter;
 
-    // Company name suggestions cache
-    private List<string> _companyNames = [];
+    private DateRange _filterIssueDateRange = new(null, null);
+    private int? _filterIssueDatePreset = null;
+    private WisDateRangeFilter? _issueDateRangeFilter;
 
+    private DateRange _filterDueDateRange = new(null, null);
+    private int? _filterDueDatePreset = null;
+    private WisDateRangeFilter? _dueDateRangeFilter;
     private List<FilterPopoverItem<InvoiceStatus>> _statusFilterItems = [];
     private List<FilterPopoverItem<InvoiceType?>> _typeFilterItems = [];
+    private List<WisDetailActionItem> _createActions = [];
 
     private int _activeAdvancedFilterCount =>
-        (!string.IsNullOrWhiteSpace(_filterCompanyName) ? 1 : 0) +
-        (_filterIssueDateFrom.HasValue || _filterIssueDateTo.HasValue ? 1 : 0) +
-        (_filterDueDateFrom.HasValue || _filterDueDateTo.HasValue ? 1 : 0) +
+        (_filterCompanyId.HasValue ? 1 : 0) +
+        (_filterIssueDateRange.Start != null || _filterIssueDateRange.End != null ? 1 : 0) +
+        (_filterDueDateRange.Start != null || _filterDueDateRange.End != null ? 1 : 0) +
         (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0);
 
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
         BuildFilterItems();
-        await PreloadCompanyNames();
+        BuildCreateActions();
         ApplyQueryParams();
+    }
+
+    private void BuildCreateActions()
+    {
+        _createActions =
+        [
+            new WisDetailActionItem
+            {
+                Icon = Icons.Material.Filled.Print,
+                Label = Localization.GetString("Export"),
+                Disabled = _exporting,
+                OnClick = EventCallback.Factory.Create(this, PerformExport)
+            }
+        ];
     }
 
     private void ApplyQueryParams()
@@ -348,17 +301,19 @@
         if (!string.IsNullOrWhiteSpace(CompanyIdParam) &&
             Guid.TryParse(CompanyIdParam, out Guid companyId))
         {
-            // Resolve company name from preloaded names or leave for autocomplete
-            // The query will use CompanyId via CompanyName lookup on the server side
-            // For now store the raw id so LoadServerData can pass it
-            _pendingCompanyId = companyId;
+            _filterCompanyId = companyId;
         }
     }
 
-    private Guid? _pendingCompanyId = null;
-
     private void BuildFilterItems()
     {
+        _typeFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),        Value = null,                   Color = Color.Info    },
+            new() { Label = Localization.GetString("Receivable"), Value = InvoiceType.Receivable, Color = Color.Success },
+            new() { Label = Localization.GetString("Payable"),    Value = InvoiceType.Payable,    Color = Color.Warning },
+        ];
+
         _statusFilterItems =
         [
             new() { Label = Localization.GetString("Draft"),           Value = InvoiceStatus.Draft,         Color = Color.Default },
@@ -366,37 +321,8 @@
             new() { Label = Localization.GetString("PartiallyPaid"),   Value = InvoiceStatus.PartiallyPaid, Color = Color.Warning },
             new() { Label = Localization.GetString("PaidStatus"),      Value = InvoiceStatus.Paid,          Color = Color.Success },
             new() { Label = Localization.GetString("OverdueStatus"),   Value = InvoiceStatus.Overdue,       Color = Color.Error   },
-            new() { Label = Localization.GetString("CancelledStatus"), Value = InvoiceStatus.Cancelled,     Color = Color.Default },
-    ];
-
-        _typeFilterItems =
-        [
-            new() { Label = Localization.GetString("All"),        Value = null,                   Color = Color.Info },
-            new() { Label = Localization.GetString("Receivable"), Value = InvoiceType.Receivable, Color = Color.Success },
-            new() { Label = Localization.GetString("Payable"),    Value = InvoiceType.Payable,    Color = Color.Warning },
-    ];
-    }
-
-    private async Task PreloadCompanyNames()
-    {
-        try
-        {
-            IEnumerable<CompanyDto> companies = await CompanyService.GetActiveCompaniesAsync();
-            _companyNames = companies.Select(c => c.Name).OrderBy(n => n).ToList();
-
-            // Resolve pending company id to name
-            if (_pendingCompanyId.HasValue)
-            {
-                CompanyDto? match = companies.FirstOrDefault(c => c.Id == _pendingCompanyId.Value);
-                if (match is not null)
-                    _filterCompanyName = match.Name;
-                _pendingCompanyId = null;
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error preloading companies: {ex.Message}");
-        }
+            new() { Label = Localization.GetString("CancelledStatus"), Value = InvoiceStatus.Cancelled,     Color = Color.Dark    },
+        ];
     }
 
     private async void OnLanguageChanged()
@@ -430,13 +356,13 @@
         Search = _searchString,
         Statuses = _filterStatuses.Count > 0 ? _filterStatuses.ToList() : null,
         Type = _filterType,
-        CompanyName = _filterCompanyName,
+        CompanyId = _filterCompanyId,
         AmountMin = _filterAmountMin,
         AmountMax = _filterAmountMax,
-        IssueDateFrom = _filterIssueDateFrom,
-        IssueDateTo = _filterIssueDateTo,
-        DueDateFrom = _filterDueDateFrom,
-        DueDateTo = _filterDueDateTo,
+        IssueDateFrom = _filterIssueDateRange.Start,
+        IssueDateTo = _filterIssueDateRange.End,
+        DueDateFrom = _filterDueDateRange.Start,
+        DueDateTo = _filterDueDateRange.End,
     };
 
     private string GetRowClass(InvoiceDto item, int index) => item.Status switch
@@ -444,9 +370,9 @@
         InvoiceStatus.Draft => "row-status-default",
         InvoiceStatus.Sent => "row-status-info",
         InvoiceStatus.PartiallyPaid => "row-status-warning",
-        InvoiceStatus.Paid => "row-status-active",
+        InvoiceStatus.Paid => "row-status-success",
         InvoiceStatus.Overdue => "row-status-error",
-        InvoiceStatus.Cancelled => "row-status-inactive",
+        InvoiceStatus.Cancelled => "row-status-dark",
         _ => "row-status-default"
     };
 
@@ -457,7 +383,7 @@
         InvoiceStatus.PartiallyPaid => Color.Warning,
         InvoiceStatus.Paid => Color.Success,
         InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Default,
+        InvoiceStatus.Cancelled => Color.Dark,
         _ => Color.Default
     };
 
@@ -472,13 +398,60 @@
         _ => status.ToString()
     };
 
-    private async Task<IEnumerable<string>> SearchCompanyNames(string value, CancellationToken ct)
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadCompanyItems(
+        string search, int page, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return _companyNames;
+        PagedResult<CompanyDto> result = await CompanyService.GetPagedAsync(new GetCompaniesQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            SortBy = "Name",
+            SortAscending = true,
+            IsActive = true
+        });
 
-        string lower = value.ToLower();
-        return _companyNames.Where(n => n.ToLower().Contains(lower));
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(c => new WisAutocompleteItem<Guid>
+            {
+                Label = c.Name,
+                Value = c.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    private async Task OnCompanyFilterChanged(Guid value)
+    {
+        _filterCompanyId = value == default ? null : value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnIssueDatePresetChanged(int? days)
+    {
+        _filterIssueDatePreset = days;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnIssueDateRangeChanged(DateRange range)
+    {
+        _filterIssueDateRange = range;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnDueDatePresetChanged(int? days)
+    {
+        _filterDueDatePreset = days;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnDueDateRangeChanged(DateRange range)
+    {
+        _filterDueDateRange = range;
+        await _grid.ReloadServerData();
     }
 
     private async Task OnSearch(string text)
@@ -499,9 +472,21 @@
         await _grid.ReloadServerData();
     }
 
-    private async Task OnCompanyFilterChanged(string? value)
+    private async Task OnAmountMinChanged(decimal? value)
     {
-        _filterCompanyName = value;
+        _filterAmountMin = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnAmountMaxChanged(decimal? value)
+    {
+        _filterAmountMax = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnAmountPresetChanged(string? key)
+    {
+        _filterAmountPreset = key;
         await _grid.ReloadServerData();
     }
 
@@ -511,13 +496,15 @@
     {
         _filterStatuses = [];
         _filterType = null;
-        _filterCompanyName = null;
+        _filterCompanyId = null;
         _filterAmountMin = null;
         _filterAmountMax = null;
-        _filterIssueDateFrom = null;
-        _filterIssueDateTo = null;
-        _filterDueDateFrom = null;
-        _filterDueDateTo = null;
+        _filterAmountPreset = null;
+        _filterIssueDateRange = new(null, null);
+        _filterIssueDatePreset = null;
+        _filterDueDateRange = new(null, null);
+        _filterDueDatePreset = null;
+
         await _grid.ReloadServerData();
     }
 
@@ -527,54 +514,32 @@
             Navigation.NavigateTo($"/invoices/{args.Item.Id}");
     }
 
-    private async Task OpenSendEmailDialog(InvoiceDto invoice)
+    private async Task OpenPaymentDialog(InvoiceDto invoice)
     {
-        DialogParameters<SendInvoiceEmailDialog> parameters = new();
-        parameters.Add(x => x.Invoice, invoice);
-
-        DialogOptions options = new()
+        try
         {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<SendInvoiceEmailDialog>(
-            Localization.GetString("SendInvoiceEmail"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: true })
-            await _grid.ReloadServerData();
-    }
-
-    private async Task DeleteInvoice(Guid id)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
-        {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteInvoiceConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
-
-        if (result == true)
-        {
-            try
+            bool paid = await WisDialog.ShowPaymentDialogAsync(invoice.Id);
+            if (paid)
             {
-                bool deleted = await InvoiceService.DeleteInvoiceAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting invoice: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingInvoice"), Severity.Error);
+                Snackbar.Add(Localization.GetString("PaymentRecorded"), Severity.Success);
+                await _grid.ReloadServerData();
             }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error recording payment: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
+        }
+    }
+
+    private async Task OpenSendEmailDialog(InvoiceDto invoice)
+    {
+        bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
+            Localization.GetString("SendInvoiceEmail"),
+            p => p.Add(x => x.Invoice, invoice));
+
+        if (sent == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task PerformExport()
@@ -608,6 +573,9 @@
             StateHasChanged();
         }
     }
+
+    private bool CanPay(InvoiceStatus status) =>
+        status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
 
     private bool CanSendEmail(InvoiceType type, InvoiceStatus status) =>
         type == InvoiceType.Receivable &&

@@ -14,10 +14,10 @@
 </head>
 
 <body>
-    <Routes @rendermode="InteractiveServer" />
+    <Routes @rendermode="@(new InteractiveServerRenderMode(prerender: false))" />
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="js/fileDownload.js"></script>
+    <script src="js/javascript.js"></script>
 </body>
 
 </html>

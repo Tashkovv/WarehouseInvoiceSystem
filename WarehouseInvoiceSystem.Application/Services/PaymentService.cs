@@ -196,7 +196,7 @@
                     if (invoiceWasNeverSent)
                     {
                         // Reverse the stock movements — invoice never formally left Draft
-                        string reason = $"{localizationService.GetString("PaymentsRemovedFromInvoice")} {invoice.InvoiceNumber} — {localizationService.GetString("RevertToDraft")}";
+                        string reason = $"{localizationService.GetString("PaymentsRemovedFromInvoice")} {invoice.InvoiceNumber}";
                         await invoiceService.CreateReverseTransactionsIfNeeded(invoice, reason);
 
                         invoice.Status = InvoiceStatus.Draft;

@@ -6,6 +6,8 @@
         public string Name { get; set; } = string.Empty;
         public string? Address { get; set; }
         public bool IsDefault { get; set; }
+        public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+        public bool HasProducts { get; set; }
     }
 }

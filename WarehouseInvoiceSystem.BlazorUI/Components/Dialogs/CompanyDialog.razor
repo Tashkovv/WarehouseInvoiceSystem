@@ -1,17 +1,24 @@
-﻿@using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.Company
+﻿@using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject ILocalizationService Localization
 
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            <MudItem xs="12">
+
+            <!-- Identity -->
+            <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="_company.Name"
                               Label="@Localization.GetString("Name")"
                               Variant="Variant.Outlined"
                               Required="true"
                               RequiredError="@Localization.GetString("PleaseEnterCompanyName")"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_company.ContactPerson"
+                              Label="@Localization.GetString("ContactPerson")"
+                              Variant="Variant.Outlined"
                               FullWidth="true" />
             </MudItem>
             <MudItem xs="12" sm="6">
@@ -42,11 +49,13 @@
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_company.ContactPerson"
-                              Label="@Localization.GetString("ContactPerson")"
+                <MudTextField @bind-Value="_company.Address"
+                              Label="@Localization.GetString("Address")"
                               Variant="Variant.Outlined"
                               FullWidth="true" />
             </MudItem>
+
+            <!-- Contact -->
             <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="_company.Email"
                               Label="@Localization.GetString("Email")"
@@ -60,19 +69,15 @@
                               Variant="Variant.Outlined"
                               FullWidth="true" />
             </MudItem>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_company.Address"
-                              Label="@Localization.GetString("Address")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true" />
-            </MudItem>
-            <MudItem xs="12" sm="6">
+
+            <!-- Financial -->
+            <MudItem xs="12" sm="4">
                 <MudTextField @bind-Value="_company.TaxId"
                               Label="@Localization.GetString("TaxId")"
                               Variant="Variant.Outlined"
                               FullWidth="true" />
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <MudNumericField T="int"
                                  @bind-Value="_company.PaymentTermsDays"
                                  Label="@Localization.GetString("PaymentTerms")"
@@ -83,7 +88,7 @@
                                  Adornment="Adornment.End"
                                  AdornmentText="@Localization.GetString("Days")" />
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <MudNumericField T="decimal"
                                  @bind-Value="_company.CreditLimit"
                                  Label="@Localization.GetString("CreditLimit")"
@@ -95,24 +100,18 @@
                                  Adornment="Adornment.Start"
                                  AdornmentText="MKD" />
             </MudItem>
-            @if (IsEditMode)
-            {
-                <MudItem xs="12" sm="2">
-                    <MudSwitch T="bool"
-                               @bind-Value="_company.IsActive"
-                               Color="Color.Success"
-                               Label="@(_company.IsActive ? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))" />
-                </MudItem>
-            }
+
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Size="Size.Small" Style="border-radius: 16px;">
             @Localization.GetString("Cancel")
         </MudButton>
         <MudButton OnClick="Save"
                    Color="Color.Primary"
                    Variant="Variant.Filled"
+                   Size="Size.Small"
+                   Style="border-radius: 16px;"
                    Disabled="@(!IsValid)">
             @Localization.GetString("Save")
         </MudButton>

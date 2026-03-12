@@ -1,5 +1,4 @@
 ﻿@page "/purchase-notes/edit/{Id:guid}"
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Application.DTOs.Product
@@ -32,9 +31,19 @@ else if (_model == null)
 {
     <MudAlert Severity="Severity.Error">@Localization.GetString("PurchaseNoteNotFound")</MudAlert>
 }
+else if (_model.Status == PurchaseNoteStatus.Paid || _model.Status == PurchaseNoteStatus.Cancelled)
+{
+    <MudAlert Severity="Severity.Warning" Class="mb-4">
+        @Localization.GetString("PurchaseNoteNotEditable")
+    </MudAlert>
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+               Variant="Variant.Outlined"
+               OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/{Id}"))">
+        @Localization.GetString("BackToPurchaseNote")
+    </MudButton>
+}
 else
 {
-
     <MudCard Elevation="2" Class="mb-4">
         <MudCardContent>
             <MudForm @ref="_form" @bind-IsValid="@_isValid">
@@ -85,47 +94,6 @@ else
                                        Required="true" />
                     </MudItem>
 
-                    <!-- Status -->
-                    <MudItem xs="12" md="6">
-                        <MudSelect T="PurchaseNoteStatus"
-                                   @bind-Value="_status"
-                                   Label="@Localization.GetString("Status")"
-                                   Variant="Variant.Outlined"
-                                   Required="true">
-                            <MudSelectItem T="PurchaseNoteStatus" Value="@(PurchaseNoteStatus.Draft)">
-                                <MudChip T="PurchaseNoteStatus"
-                                         Size="Size.Small"
-                                         Color="Color.Default">
-                                    @Localization.GetString(PurchaseNoteStatus.Draft.ToString())
-                                </MudChip>
-                            </MudSelectItem>
-                            <MudSelectItem T="PurchaseNoteStatus" Value="@(PurchaseNoteStatus.Completed)">
-                                <MudChip T="PurchaseNoteStatus"
-                                         Size="Size.Small"
-                                         Color="Color.Info">
-                                    @Localization.GetString(PurchaseNoteStatus.Completed.ToString())
-                                </MudChip>
-                            </MudSelectItem>
-                            <MudSelectItem T="PurchaseNoteStatus" Value="@(PurchaseNoteStatus.Paid)">
-                                <MudChip T="PurchaseNoteStatus"
-                                         Size="Size.Small"
-                                         Color="Color.Success">
-                                    @Localization.GetString(PurchaseNoteStatus.Paid.ToString())
-                                </MudChip>
-                            </MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
-
-                    <!-- Paid Date (only if Paid) -->
-                    @if (_status == PurchaseNoteStatus.Paid)
-                    {
-                        <MudItem xs="12" md="6">
-                            <MudDatePicker @bind-Date="_paidDate"
-                                           Label="@Localization.GetString("PaidDate")"
-                                           Variant="Variant.Outlined" />
-                        </MudItem>
-                    }
-
                     <!-- Notes -->
                     <MudItem xs="12">
                         <MudTextField @bind-Value="_notes"
@@ -140,84 +108,103 @@ else
                 <MudDivider Class="my-6" />
                 <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("Products")</MudText>
 
-                @foreach (var item in _lineItems)
+                @if (_model.Status == PurchaseNoteStatus.Pending)
                 {
-                    <MudPaper Class="pa-4 mb-4" Elevation="1">
-                        <MudGrid>
-                            <MudItem xs="12" md="5">
-                                <MudAutocomplete T="ProductDto"
-                                                 Label="@Localization.GetString("Product")"
-                                                 Value="item.SelectedProduct"
-                                                 SearchFunc="@SearchProducts"
-                                                 ToStringFunc="@(p => p?.Name ?? "")"
-                                                 ValueChanged="@((ProductDto p) => OnProductSelected(item, p))"
-                                                 Required="true"
-                                                 ResetValueOnEmptyText="true"
-                                                 CoerceText="false"
-                                                 Variant="Variant.Outlined"
-                                                 RequiredError="@Localization.GetString("PleaseSelectProduct")"
-                                                 Clearable="true">
-                                    <ItemTemplate Context="product">
-                                        <MudText Typo="Typo.body2">
-                                            <strong>@product.Code</strong> - @product.Name
-                                        </MudText>
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                            @product.Unit | @product.DefaultPrice.ToString("C")
-                                        </MudText>
-                                    </ItemTemplate>
-                                </MudAutocomplete>
-                            </MudItem>
-
-                            <MudItem xs="6" md="2">
-                                <MudNumericField T="int" 
-                                                 @bind-Value="item.Quantity"
-                                                 @bind-Value:after="CalculateTotals"
-                                                 Label="@Localization.GetString("Quantity")"
-                                                 Min="1"
-                                                 Step="1"
-                                                 Required="true"
-                                                 RequiredError="@Localization.GetString("EnterQuantity")"
-                                                 Variant="Variant.Outlined" />
-                            </MudItem>
-
-                            <MudItem xs="6" md="2">
-                                <MudNumericField @bind-Value="item.UnitPrice"
-                                                 @bind-Value:after="CalculateTotals"
-                                                 Label="@Localization.GetString("UnitPrice")"
-                                                 Format="N2"
-                                                 Min="0m"
-                                                 Required="true"
-                                                 RequiredError="@Localization.GetString("EnterUnitPrice")"
-                                                 TextUpdateSuppression="false"
-                                                 Variant="Variant.Outlined"
-                                                 Adornment="Adornment.Start"
-                                                 AdornmentText="MKD" />
-                            </MudItem>
-
-                            <MudItem xs="10" md="2">
-                                <MudTextField Value="@((item.Quantity * item.UnitPrice).ToString("C"))"
-                                              Label="@Localization.GetString("Amount")"
-                                              Variant="Variant.Outlined"
-                                              ReadOnly="true" />
-                            </MudItem>
-
-                            <MudItem xs="2" md="1" Class="d-flex align-center justify-center">
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Color="Color.Error"
-                                               OnClick="@(() => RemoveLineItem(item))"
-                                               Size="Size.Small" />
-                            </MudItem>
-                        </MudGrid>
-                    </MudPaper>
+                    <MudAlert Severity="Severity.Info" Class="mb-4">
+                        @Localization.GetString("LineItemsLockedPending")
+                    </MudAlert>
+                    @foreach (var item in _lineItems)
+                    {
+                        <MudPaper Class="pa-3 mb-2" Elevation="0" Style="border: 1px solid rgba(0,0,0,0.12);">
+                            <MudText Typo="Typo.body2">
+                                <strong>@item.SelectedProduct?.Code</strong> — @item.SelectedProduct?.Name
+                                &nbsp;|&nbsp; @item.Quantity × @item.UnitPrice.ToString("C")
+                                &nbsp;= <strong>@((item.Quantity * item.UnitPrice).ToString("C"))</strong>
+                            </MudText>
+                        </MudPaper>
+                    }
                 }
+                else
+                {
+                    @foreach (var item in _lineItems)
+                    {
+                        <MudPaper Class="pa-4 mb-4" Elevation="1">
+                            <MudGrid>
+                                <MudItem xs="12" md="5">
+                                    <MudAutocomplete T="ProductDto"
+                                                     Label="@Localization.GetString("Product")"
+                                                     Value="item.SelectedProduct"
+                                                     SearchFunc="@SearchProducts"
+                                                     ToStringFunc="@(p => p?.Name ?? "")"
+                                                     ValueChanged="@((ProductDto p) => OnProductSelected(item, p))"
+                                                     Required="true"
+                                                     ResetValueOnEmptyText="true"
+                                                     CoerceText="false"
+                                                     Variant="Variant.Outlined"
+                                                     RequiredError="@Localization.GetString("PleaseSelectProduct")"
+                                                     Clearable="true">
+                                        <ItemTemplate Context="product">
+                                            <MudText Typo="Typo.body2">
+                                                <strong>@product.Code</strong> - @product.Name
+                                            </MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @product.Unit | @product.DefaultPrice.ToString("C")
+                                            </MudText>
+                                        </ItemTemplate>
+                                    </MudAutocomplete>
+                                </MudItem>
 
-                <MudButton StartIcon="@Icons.Material.Filled.Add"
-                           Color="Color.Info"
-                           Variant="Variant.Outlined"
-                           OnClick="AddLineItem"
-                           Class="mb-4">
-                    @Localization.GetString("AddProduct")
-                </MudButton>
+                                <MudItem xs="6" md="2">
+                                    <MudNumericField T="int"
+                                                     @bind-Value="item.Quantity"
+                                                     @bind-Value:after="CalculateTotals"
+                                                     Label="@Localization.GetString("Quantity")"
+                                                     Min="1"
+                                                     Step="1"
+                                                     Required="true"
+                                                     RequiredError="@Localization.GetString("EnterQuantity")"
+                                                     Variant="Variant.Outlined" />
+                                </MudItem>
+
+                                <MudItem xs="6" md="2">
+                                    <MudNumericField @bind-Value="item.UnitPrice"
+                                                     @bind-Value:after="CalculateTotals"
+                                                     Label="@Localization.GetString("UnitPrice")"
+                                                     Format="N2"
+                                                     Min="0m"
+                                                     Required="true"
+                                                     RequiredError="@Localization.GetString("EnterUnitPrice")"
+                                                     TextUpdateSuppression="false"
+                                                     Variant="Variant.Outlined"
+                                                     Adornment="Adornment.Start"
+                                                     AdornmentText="MKD" />
+                                </MudItem>
+
+                                <MudItem xs="10" md="2">
+                                    <MudTextField Value="@((item.Quantity * item.UnitPrice).ToString("C"))"
+                                                  Label="@Localization.GetString("Amount")"
+                                                  Variant="Variant.Outlined"
+                                                  ReadOnly="true" />
+                                </MudItem>
+
+                                <MudItem xs="2" md="1" Class="d-flex align-center justify-center">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => RemoveLineItem(item))"
+                                                   Size="Size.Small" />
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    }
+
+                    <MudButton StartIcon="@Icons.Material.Filled.Add"
+                               Color="Color.Info"
+                               Variant="Variant.Outlined"
+                               OnClick="AddLineItem"
+                               Class="mb-4">
+                        @Localization.GetString("AddProduct")
+                    </MudButton>
+                }
 
                 <!-- Totals -->
                 <MudDivider Class="my-6" />
@@ -271,8 +258,6 @@ else
     private IndividualDto? _selectedIndividual;
     private WarehouseDto? _selectedWarehouse;
     private DateTime? _purchaseDate;
-    private PurchaseNoteStatus _status;
-    private DateTime? _paidDate;
     private string? _notes;
     private decimal _total = 0;
 
@@ -325,8 +310,6 @@ else
                 _selectedIndividual = _individuals.FirstOrDefault(i => i.Id == _model.IndividualId);
                 _selectedWarehouse = _warehouses.FirstOrDefault(w => w.Id == _model.WarehouseId);
                 _purchaseDate = _model.PurchaseDate;
-                _status = _model.Status;
-                _paidDate = _model.PaidDate;
                 _notes = _model.Notes;
 
                 // Load line items
@@ -429,8 +412,6 @@ else
                 IndividualId = _selectedIndividual.Id,
                 WarehouseId = _selectedWarehouse.Id,
                 PurchaseDate = _purchaseDate?.Date ?? DateTime.Today,
-                Status = _status,
-                PaidDate = _status == PurchaseNoteStatus.Paid ? (_paidDate ?? DateTime.UtcNow) : null,
                 Notes = _notes,
                 LineItems = _lineItems
                     .Where(li => li.SelectedProduct != null)

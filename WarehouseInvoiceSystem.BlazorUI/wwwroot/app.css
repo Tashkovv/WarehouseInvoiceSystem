@@ -45,7 +45,7 @@
 }
 
 html {
-    font-size: 110%;
+    font-size: 115%;
 }
 
 .gap-3 {
@@ -56,12 +56,27 @@ html {
     gap: 16px;
 }
 
+.gap-8 {
+    gap: 32px;
+}
+
+/* Page title wrapper — consistent spacing above every list page */
+.wis-page-header {
+    margin-bottom: 15px;
+    padding: 4px 0;
+}
+
 .text-secondary {
     color: var(--mud-palette-text-secondary);
 }
 
 .table-row-clickable td:not(:last-child) {
     cursor: pointer;
+}
+
+/* ── MudChip text size ── */
+.mud-chip .mud-chip-content {
+    font-size: 0.75rem !important;
 }
 
 /* =============================================
@@ -109,8 +124,8 @@ html {
    ============================================= */
 
 /* Pillar — smooth right edge shared by all status variants */
-.row-status-active td:first-child,
-.row-status-inactive td:first-child,
+.row-status-success td:first-child,
+.row-status-dark td:first-child,
 .row-status-warning td:first-child,
 .row-status-error td:first-child,
 .row-status-info td:first-child,
@@ -121,12 +136,12 @@ html {
 }
 
 /* Pillar colors */
-.row-status-active td:first-child {
+.row-status-success td:first-child {
     border-left: 5px solid var(--mud-palette-success) !important;
 }
 
-.row-status-inactive td:first-child {
-    border-left: 5px solid var(--mud-palette-action-disabled) !important;
+.row-status-dark td:first-child {
+    border-left: 5px solid var(--mud-palette-dark) !important;
 }
 
 .row-status-warning td:first-child {
@@ -154,12 +169,13 @@ html {
 }
 
 /* Subtle background tints per status */
-.row-status-active {
+.row-status-success {
     background-color: rgba(76, 175, 80, 0.07) !important;
     cursor: pointer;
 }
 
-.row-status-inactive {
+.row-status-dark {
+    background-color: rgba(30, 30, 30, 0.07) !important;
     cursor: pointer;
 }
 
@@ -208,18 +224,50 @@ html {
     border-bottom: 2px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
     font-weight: 600;
     position: relative;
+    overflow: hidden;
 }
 
     .wis-data-grid .mud-table-head .mud-table-cell:last-child {
         border-right: none;
     }
 
-/* Toolbar filter strip — quick enum filters */
-.wis-toolbar-filters {
+/* ── Toolbar single-row layout ── */
+.wis-toolbar-row {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+}
+
+/* Vertical divider between toolbar sections */
+.wis-toolbar-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.12);
+    flex-shrink: 0;
+    margin: 0 12px;
+    align-self: center;
+}
+
+/* Create button slot */
+.wis-toolbar-btn {
+    flex-shrink: 0;
+}
+
+/* Inline filters slot */
+.wis-toolbar-filters-inline {
+    display: flex;
     align-items: center;
     gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Search — fixed width, anchored to the right end of the toolbar */
+.wis-toolbar-search {
+    flex: 0 0 auto;
+    width: 300px;
+    margin-left: auto;
+    padding-left: 8px;
 }
 
 /* Clear All button in the filter strip */
@@ -304,6 +352,188 @@ html {
         background: rgba(var(--mud-palette-error-rgb), 0.14);
     }
 
+/* Color variants for selected Single filter state */
+.wis-filter-btn--success {
+    border-color: var(--mud-palette-success);
+    color: var(--mud-palette-success);
+    background: rgba(var(--mud-palette-success-rgb), 0.08);
+}
+
+    .wis-filter-btn--success:hover {
+        background: rgba(var(--mud-palette-success-rgb), 0.14);
+    }
+
+.wis-filter-btn--warning {
+    border-color: var(--mud-palette-warning);
+    color: var(--mud-palette-warning);
+    background: rgba(var(--mud-palette-warning-rgb), 0.08);
+}
+
+    .wis-filter-btn--warning:hover {
+        background: rgba(var(--mud-palette-warning-rgb), 0.14);
+    }
+
+.wis-filter-btn--info {
+    border-color: var(--mud-palette-info);
+    color: var(--mud-palette-info);
+    background: rgba(var(--mud-palette-info-rgb), 0.08);
+}
+
+    .wis-filter-btn--info:hover {
+        background: rgba(var(--mud-palette-info-rgb), 0.14);
+    }
+
+.wis-filter-btn--primary {
+    border-color: var(--mud-palette-primary);
+    color: var(--mud-palette-primary);
+    background: rgba(var(--mud-palette-primary-rgb), 0.08);
+}
+
+    .wis-filter-btn--primary:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.14);
+    }
+
+/* Selected value label — slightly bolder */
+.wis-filter-btn__label--selected {
+    font-weight: 600;
+}
+
+/* Clear filters pill — neutral by default, red on hover */
+.wis-filter-btn--clear {
+    color: var(--mud-palette-text-secondary);
+}
+
+    .wis-filter-btn--clear:hover {
+        border-color: var(--mud-palette-error);
+        color: var(--mud-palette-error);
+        background: rgba(var(--mud-palette-error-rgb), 0.07);
+    }
+
+/* WisDateRangeFilter — static picker chrome reset */
+.wis-daterange-static {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+    .wis-daterange-static .mud-picker-static {
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .wis-daterange-static .mud-picker-content {
+        padding: 0 !important;
+    }
+
+    /* Hide the big date header banner — trigger button already shows the range */
+    .wis-daterange-static .mud-picker-date-header,
+    .wis-daterange-static .mud-picker-datepicker-toolbar,
+    .wis-daterange-static .mud-toolbar,
+    .wis-daterange-static .mud-picker-toolbar {
+        display: none !important;
+    }
+
+    /* Tighten month navigation row */
+    .wis-daterange-static .mud-picker-calendar-header,
+    .wis-daterange-static .mud-daterangepicker-month-year {
+        padding-top: 4px !important;
+        padding-bottom: 0 !important;
+        min-height: unset !important;
+    }
+
+    /* Remove padding around the calendar grid */
+    .wis-daterange-static .mud-picker-calendar-content,
+    .wis-daterange-static .mud-daterange-calendar-content {
+        padding: 0 6px 4px 6px !important;
+    }
+
+    /* Compact day-of-week header */
+    .wis-daterange-static .mud-day-of-week,
+    .wis-daterange-static th {
+        padding: 2px 0 !important;
+        height: 28px !important;
+    }
+
+    /* Smaller day cells */
+    .wis-daterange-static .mud-button-date,
+    .wis-daterange-static .mud-picker-calendar-day {
+        height: 34px !important;
+        width: 34px !important;
+        min-width: 34px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Remove gap between the two month columns */
+    .wis-daterange-static .mud-picker-calendar-container,
+    .wis-daterange-static .mud-daterange-calendar-container {
+        gap: 0 !important;
+        padding: 0 !important;
+        justify-content: center !important;
+    }
+
+/* Calendar wrapper */
+.wis-drf-calendar {
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Preset footer row */
+.wis-drf-footer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 12px 10px;
+    border-top: 1px solid var(--mud-palette-divider);
+    flex-wrap: wrap;
+}
+
+/* Individual preset pill */
+.wis-drf-preset {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 28px;
+    padding: 0 12px;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
+    border-radius: 14px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--mud-palette-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+    .wis-drf-preset:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+        background: rgba(var(--mud-palette-primary-rgb), 0.06);
+    }
+
+/* Selected state — filled, primary colored, with checkmark */
+.wis-drf-preset--selected {
+    border-color: var(--mud-palette-primary);
+    background: rgba(var(--mud-palette-primary-rgb), 0.1);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+    padding-left: 8px;
+}
+
+    .wis-drf-preset--selected:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.16);
+    }
+
+.wis-drf-preset__check {
+    font-size: 0.9rem !important;
+    width: 14px !important;
+    height: 14px !important;
+    flex-shrink: 0;
+}
+
 /* Advanced filter toggle row */
 .wis-toolbar-filter-divider {
     width: 1px;
@@ -341,25 +571,30 @@ html {
 /* Body cursor — prevent col-resize cursor leaking from header resizer */
 .wis-data-grid .mud-table-body .mud-table-cell {
     cursor: pointer !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: var(--wis-row-h);
+    box-sizing: border-box;
 }
 
-/* Row hover — lift effect */
 .wis-data-grid .mud-table-body tr {
+    height: var(--wis-row-h);
     transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
+    /* Row hover — lift effect */
     .wis-data-grid .mud-table-body tr:hover td {
         background-color: rgba(var(--mud-palette-text-primary-rgb), 0.07);
         box-shadow: inset 0 -1px 0 rgba(var(--mud-palette-text-primary-rgb), 0.08);
     }
 
     /* Re-assert pillar borders on hover — hover background-color would otherwise override them */
-    .wis-data-grid .mud-table-body tr.row-status-active:hover td:first-child {
+    .wis-data-grid .mud-table-body tr.row-status-success:hover td:first-child {
         border-left: 5px solid var(--mud-palette-success) !important;
     }
 
-    .wis-data-grid .mud-table-body tr.row-status-inactive:hover td:first-child {
-        border-left: 5px solid var(--mud-palette-action-disabled) !important;
+    .wis-data-grid .mud-table-body tr.row-status-dark:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-dark) !important;
     }
 
     .wis-data-grid .mud-table-body tr.row-status-warning:hover td:first-child {
@@ -385,6 +620,84 @@ html {
     .wis-data-grid .mud-table-body tr.row-status-default:hover td:first-child {
         border-left: 5px solid var(--mud-palette-action-disabled) !important;
     }
+
+/* =============================================
+   WIS Cell style classes — replace all inline CellStyle/style strings
+   ============================================= */
+
+/* Primary text column — name, title, main identifier */
+.wis-cell-primary {
+    font-weight: 600;
+}
+
+/* Mono column — codes, invoice numbers, IDs */
+.wis-cell-mono {
+    font-family: monospace;
+}
+
+/* Mono + medium weight — product codes with label weight */
+.wis-cell-mono-medium {
+    font-family: monospace;
+    font-weight: 500;
+}
+
+/* Amount column — bold monetary value */
+.wis-cell-amount {
+    font-weight: 600;
+}
+
+/* Amount column — bold + success color (e.g. payments) */
+.wis-cell-amount-success {
+    font-weight: 600;
+    color: var(--mud-palette-success);
+}
+
+/* Secondary weight — medium, e.g. warehouse name in a stack */
+.wis-cell-semibold {
+    font-weight: 500;
+}
+
+/* =============================================
+   WIS Grid empty state — NoRecordsContent
+   ============================================= */
+.wis-no-records {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    gap: 8px;
+    color: var(--mud-palette-text-secondary);
+}
+
+/* =============================================
+   WIS Actions column — standardized widths
+   Three sizes: 1, 2, or 3 icon buttons
+   ============================================= */
+:root {
+    --wis-row-h: 50px;
+    --wis-actions-1: 48px; /* 1 icon button  */
+    --wis-actions-2: 84px; /* 2 icon buttons */
+    --wis-actions-3: 120px; /* 3 icon buttons */
+}
+
+.wis-col-actions-1 {
+    width: var(--wis-actions-1) !important;
+    min-width: var(--wis-actions-1) !important;
+    max-width: var(--wis-actions-1) !important;
+    text-align: center !important;
+}
+
+.wis-col-actions-2 {
+    width: var(--wis-actions-2) !important;
+    min-width: var(--wis-actions-2) !important;
+    max-width: var(--wis-actions-2) !important;
+}
+
+.wis-col-actions-3 {
+    width: var(--wis-actions-3) !important;
+    min-width: var(--wis-actions-3) !important;
+    max-width: var(--wis-actions-3) !important;
+}
 
 /* Force MudAlert inner content wrapper to stretch full width */
 .wis-alert-fullwidth .mud-alert-message {
@@ -452,3 +765,680 @@ html {
         padding: 6px 0 !important;
         font-size: 0.9375rem !important;
     }
+
+/* ── WisDetailHeader — back button & split button ── */
+
+
+/* ── Pill toggle buttons (e.g. Purchased / Sold in Transaction History) ──────────────────── */
+.wis-pill-btn {
+    height: 30px;
+    padding: 0 14px;
+    border-radius: 15px;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
+    background: transparent;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+
+    .wis-pill-btn:hover {
+        background: rgba(var(--mud-palette-text-primary-rgb), 0.06);
+        color: var(--mud-palette-text-primary);
+    }
+
+/* Active: Purchased — primary colour */
+.wis-pill-btn--active {
+    background: var(--mud-palette-info);
+    border-color: var(--mud-palette-info);
+    color: var(--mud-palette-info-text);
+}
+
+    .wis-pill-btn--active:hover {
+        background: var(--mud-palette-primary-darken);
+        border-color: var(--mud-palette-primary-darken);
+    }
+
+/* Active: Sold — success colour */
+.wis-pill-btn--sold-active {
+    background: var(--mud-palette-success);
+    border-color: var(--mud-palette-success);
+    color: var(--mud-palette-success-text);
+}
+
+    .wis-pill-btn--sold-active:hover {
+        background: var(--mud-palette-success-darken);
+        border-color: var(--mud-palette-success-darken);
+    }
+
+/* ── Rounded filter inputs (MudSelect / MudDatePicker in filter bars) ────────────────────── */
+.wis-filter-input .mud-input-outlined .mud-input-outlined-border {
+    border-radius: 20px;
+}
+
+.wis-filter-input .mud-input-outlined input,
+.wis-filter-input .mud-input-outlined .mud-input-adornment {
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+/* Back button — matches pill height & rounding of WisSplitButton */
+.wis-back-btn.mud-button-root {
+    height: 32px;
+    min-height: 32px;
+    border-radius: 16px;
+    padding: 0 12px 0 8px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1;
+    text-transform: none;
+}
+
+/* ── WisSplitButton ── */
+.wis-split-btn {
+    display: inline-flex;
+    align-items: stretch;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12);
+    height: 32px;
+}
+
+/* Round the left corners of the first real child (the primary button) */
+.wis-split-btn__primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 100%;
+    padding: 0 12px 0 12px;
+    background: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    border: none;
+    border-radius: 16px 0 0 16px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+    .wis-split-btn__primary:hover:not(:disabled) {
+        background: var(--mud-palette-primary-darken);
+    }
+
+.wis-split-btn__primary--solo {
+    border-radius: 16px;
+    padding: 0 16px 0 12px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    height: 32px;
+}
+
+    .wis-split-btn__primary--solo .wis-split-btn__icon .mud-icon-root {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+.wis-split-btn__primary--disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.wis-split-btn__icon {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+}
+
+    .wis-split-btn__icon .mud-icon-root {
+        font-size: 18px !important;
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+.wis-split-btn__divider {
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    align-self: stretch;
+}
+
+/* Round the right corners of the arrow button */
+.wis-split-btn__arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 100%;
+    padding: 0;
+    background: var(--mud-palette-primary);
+    color: var(--mud-palette-primary-text);
+    border: none;
+    border-radius: 0 16px 16px 0;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex-shrink: 0;
+}
+
+    .wis-split-btn__arrow:hover {
+        background: var(--mud-palette-primary-darken);
+    }
+
+    .wis-split-btn__arrow svg {
+        display: block;
+        flex-shrink: 0;
+    }
+
+/* ── Dropdown popover ── */
+.wis-split-btn__popover {
+    padding: 4px 0;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+    .wis-split-btn__popover .mud-popover-paper {
+        padding: 0 !important;
+        overflow: hidden;
+    }
+
+.wis-split-btn__menu-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    color: var(--mud-palette-text-primary);
+    text-align: left;
+    transition: background 0.12s ease;
+    white-space: nowrap;
+}
+
+    .wis-split-btn__menu-item:hover:not(:disabled) {
+        background: rgba(var(--mud-palette-text-primary-rgb), 0.06);
+    }
+
+.wis-split-btn__menu-item--disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.wis-split-btn__menu-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+    .wis-split-btn__menu-icon .mud-icon-root {
+        font-size: 16px !important;
+        width: 16px !important;
+        height: 16px !important;
+    }
+
+/* Text color helpers for menu items */
+.wis-text-error {
+    color: var(--mud-palette-error) !important;
+}
+
+.wis-text-success {
+    color: var(--mud-palette-success) !important;
+}
+
+.wis-text-warning {
+    color: var(--mud-palette-warning) !important;
+}
+
+.wis-text-info {
+    color: var(--mud-palette-info) !important;
+}
+
+/* ── Detail page horizontal card layout (shared by all detail pages) ── */
+
+/* Identity row: name + chip inline */
+.wis-detail-identity {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Contact row: id / phone / email / address pills inline */
+.wis-detail-contact {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+}
+
+.wis-detail-contact-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ── ProductDetails header: 5-column grid (1fr 1fr | 1px | 1fr 1fr) × 2 rows ──────────────
+   The 1px centre column is the shared vertical divider — spans both rows.
+   Row 1: product identity (cols 1-2) | warehouse selector (cols 4-5)
+   Row 2: stat cells fill all four 1fr columns evenly, separated by the same vertical line.
+   A ::before pseudo-element on row 2 draws the horizontal divider across the full width.
+──────────────────────────────────────────────────────────────────────────────────────────── */
+/* ── Product header: identity row ── */
+.wis-product-identity-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 8px;
+}
+
+/* ── Product header: meta row (code, unit, description) ── */
+.wis-product-meta-row {
+    padding-bottom: 16px;
+}
+
+/* ── Product header: stats bar ── */
+.wis-product-stats-bar {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding-top: 14px;
+    border-top: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+.wis-product-stats-bar__stat {
+    flex: 1;
+    min-width: 120px;
+    padding: 0 20px;
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+    .wis-product-stats-bar__stat:first-child {
+        padding-left: 0;
+    }
+
+    .wis-product-stats-bar__stat:last-child {
+        border-right: none;
+    }
+
+/* ── wis-contact-row ─────────────────────────────────────────────────────────────────────── */
+.wis-contact-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 0;
+}
+
+.wis-contact-row-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding-right: 24px;
+}
+
+.wis-contact-row-divider {
+    width: 1px;
+    align-self: stretch;
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.12);
+}
+
+.wis-contact-row-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 32px;
+    padding-left: 24px;
+}
+
+.wis-contact-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Stats row: columns stretching full card width with subtle separators */
+.wis-detail-stats > .mud-grid-item {
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+    .wis-detail-stats > .mud-grid-item:last-child {
+        border-right: none;
+    }
+
+/* ── Two-column analytics layout ──────────────────────────────────────────
+   Outer: CSS grid, 1fr left (stacked stat rows) | 1fr right (history/summary)
+   Used by CompanyDetails analytics section.
+──────────────────────────────────────────────────────────────────────────── */
+.wis-ca-outer {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 0;
+    align-items: stretch;
+}
+
+/* Left column: stack receivables and payables rows vertically */
+.wis-ca-left {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+    padding-right: 24px;
+}
+
+/* Thin divider between the two rows */
+.wis-ca-divider {
+    height: 1px;
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.08);
+    margin: 16px 0;
+}
+
+/* Each row (receivables / payables): stat columns side by side */
+.wis-ca-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    flex: 1;
+}
+
+/* Each stat cell: equal width, right border separator */
+.wis-ca-stat {
+    flex: 1;
+    padding: 0 16px;
+    border-right: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+    .wis-ca-stat:last-child {
+        border-right: none;
+    }
+
+/* Right column: history block, vertically centred */
+.wis-ca-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 24px;
+}
+
+/* Stat value — main number */
+.wis-detail-stats .wis-stat-value,
+.wis-ca-stat .wis-stat-value {
+    font-size: 1.25rem;
+    line-height: 1.3;
+    margin: 2px 0;
+}
+
+/* History column: dates side by side, product to the right */
+.wis-detail-history {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+}
+
+.wis-detail-history-dates {
+    display: flex;
+    gap: 28px;
+    flex-shrink: 0;
+}
+
+.wis-detail-history-product {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    padding-left: 8px;
+    border-left: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+/* ── Secondary list — generic subordinate table style ─────────────────────
+   Use on any MudTable/MudDataGrid that is the "second thing" on a detail page
+   (line items, payment history, recent invoices, etc.)
+──────────────────────────────────────────────────────────────────────────── */
+.wis-secondary-list .mud-table-head th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mud-palette-text-secondary);
+    font-weight: 600;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.02);
+}
+
+.wis-secondary-list .mud-table-body tr {
+    height: 48px;
+}
+
+.wis-secondary-list .mud-table-body td {
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.06);
+    font-size: 0.875rem;
+}
+
+.wis-secondary-list .mud-table-body tr:last-child td {
+    border-bottom: none;
+}
+
+
+.wis-section-label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem !important;
+}
+
+.wis-capitalize {
+    text-transform: capitalize;
+}
+
+/* ── WisAutocompleteFilter ──────────────────────────────────────────────── */
+
+.wis-autocomplete-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-size: 0.875rem;
+}
+
+    .wis-autocomplete-item:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.07);
+    }
+
+.wis-autocomplete-item--selected {
+    background: rgba(var(--mud-palette-primary-rgb), 0.10);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+}
+
+.wis-autocomplete-item__label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wis-autocomplete-item__sublabel {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    flex-shrink: 0;
+}
+
+/* ── Global: disable MudBlazor's default uppercase on all buttons ── */
+.mud-button-root span.mud-button-label {
+    text-transform: none;
+}
+
+/* ── Dialog actions: cancel left, confirm right ── */
+.mud-dialog-actions {
+    justify-content: space-between !important;
+    padding: 8px 24px !important;
+}
+
+/* ── WisAmountRangeFilter ── */
+.wis-arf-layout {
+    display: flex;
+    align-items: center;
+}
+
+.wis-arf-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 12px 12px;
+    flex-shrink: 0;
+}
+
+.wis-arf-presets {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 12px 10px 10px;
+    border-left: 1px solid var(--mud-palette-divider);
+}
+
+/* Preset pill — vertical variant (right column) */
+.wis-arf-preset {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 26px;
+    padding: 0 10px;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.18);
+    border-radius: 13px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.78rem;
+    color: var(--mud-palette-text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+    user-select: none;
+    text-align: left;
+}
+
+    .wis-arf-preset:hover {
+        border-color: var(--mud-palette-primary);
+        color: var(--mud-palette-primary);
+        background: rgba(var(--mud-palette-primary-rgb), 0.06);
+    }
+
+.wis-arf-preset--selected {
+    border-color: var(--mud-palette-primary);
+    background: rgba(var(--mud-palette-primary-rgb), 0.1);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+    padding-left: 6px;
+}
+
+    .wis-arf-preset--selected:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.16);
+    }
+
+/* =============================================
+   WisAmountInput — outlined + dense, matches
+   MudBlazor Variant.Outlined / Margin.Dense
+   ============================================= */
+
+/* Outer wrapper — positions the floating label */
+.wis-amt-field {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    max-width: 200px;
+    width: 200px;
+}
+
+/* The border box that wraps input + adornment */
+.wis-amt-field__inner {
+    display: flex;
+    align-items: center;
+    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
+    border-radius: 4px;
+    height: 40px;
+    padding: 0 12px;
+    transition: border-color 0.15s ease;
+    background: transparent;
+}
+
+.wis-amt-field:focus-within .wis-amt-field__inner,
+.wis-amt-field--focused .wis-amt-field__inner {
+    border-color: var(--mud-palette-primary);
+    border-width: 2px;
+    padding: 0 11px; /* compensate for extra border px */
+}
+
+/* Floating label */
+.wis-amt-field__label {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.6);
+    pointer-events: none;
+    transition: top 0.15s ease, font-size 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    background: var(--mud-palette-surface);
+    padding: 0 3px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.wis-amt-field__label--float {
+    top: 0;
+    transform: translateY(-50%);
+    font-size: 0.72rem;
+}
+
+.wis-amt-field:focus-within .wis-amt-field__label,
+.wis-amt-field--focused .wis-amt-field__label {
+    color: var(--mud-palette-primary);
+}
+
+/* The actual <input> */
+.wis-amt-field__input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+    min-width: 0;
+    /* hide browser spin buttons just in case */
+    -moz-appearance: textfield;
+}
+
+    .wis-amt-field__input::-webkit-outer-spin-button,
+    .wis-amt-field__input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+/* Currency adornment on the right */
+.wis-amt-field__adornment {
+    font-size: 0.8125rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.5);
+    margin-left: 4px;
+    flex-shrink: 0;
+    user-select: none;
+}

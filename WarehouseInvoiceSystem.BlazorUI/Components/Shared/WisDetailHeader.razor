@@ -1,0 +1,24 @@
+﻿@inject ILocalizationService Localization
+
+<div class="d-flex justify-space-between align-center mb-4">
+
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
+               Variant="Variant.Outlined"
+               Class="wis-back-btn"
+               Href="@BackHref">
+        @BackLabel
+    </MudButton>
+
+    <WisSplitButton PrimaryAction="@PrimaryAction"
+                    Actions="@Actions"
+                    AnchorOrigin="Origin.BottomRight"
+                    TransformOrigin="Origin.TopRight" />
+
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string BackHref { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public string BackLabel { get; set; } = string.Empty;
+    [Parameter] public WisDetailActionItem? PrimaryAction { get; set; }
+    [Parameter] public List<WisDetailActionItem>? Actions { get; set; }
+}

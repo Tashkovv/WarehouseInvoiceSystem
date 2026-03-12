@@ -1,32 +1,30 @@
 ﻿@page "/individuals"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
-@using WarehouseInvoiceSystem.Application.Interfaces
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IIndividualService IndividualService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Individuals") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div style="margin-bottom: 24px; padding: 4px 0;">
+<div class="wis-page-header">
     <MudText Typo="Typo.h3" Class="wis-page-title">
         @Localization.GetString("Individuals")
     </MudText>
 </div>
 
 <WisGridToolbar CreateAction="OpenCreateDialog"
-                CreateLabel="@Localization.GetString("CreateIndividual")"
+                CreateLabel="@Localization.GetString("Individual")"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterIsActive.HasValue)"
                 OnClearAll="ClearAllFilters">
     <Filters>
         <FilterPopoverList TValue="bool?"
-                           Title="@Localization.GetString("FilterByStatus")"
                            Label="@Localization.GetString("Status")"
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Single"
@@ -45,7 +43,7 @@
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
-                     Height="710px"
+                     Height="100%"
                      Filterable="false"
                      ShowColumnOptions="false"
                      ColumnResizeMode="ResizeMode.Column"
@@ -56,19 +54,14 @@
                 <PropertyColumn Property="x => x.FullName"
                                 Title="@Localization.GetString("FullName")"
                                 Sortable="true"
-                                IsEditable="false">
-                    <CellTemplate>
-                        <MudText Typo="Typo.body2" Style="font-weight: 600;">
-                            @context.Item.FullName
-                        </MudText>
-                    </CellTemplate>
-                </PropertyColumn>
+                                IsEditable="false"
+                                CellClass="wis-cell-primary" />
 
                 <PropertyColumn Property="x => x.IdentificationNumber"
                                 Title="@Localization.GetString("IdentificationNumber")"
                                 Sortable="true"
                                 IsEditable="false"
-                                CellStyle="font-family: monospace;" />
+                                CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.Phone"
                                 Title="@Localization.GetString("Phone")"
@@ -89,7 +82,7 @@
                                  Size="Size.Small"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ActiveIndividual")
-                                                    : Localization.GetString("InactiveIndividual"))
+                                                        : Localization.GetString("InactiveIndividual"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -97,9 +90,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                MinWidth="100"
-                                HeaderStyle="width: 100px;"
-                                CellStyle="width: 100px;">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -112,11 +104,6 @@
                                            Color="Color.Secondary"
                                            Title="@Localization.GetString("PurchaseNotes")"
                                            OnClick="@(() => Navigation.NavigateTo($"/purchase-notes?individualId={context.Item.Id}"))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeleteIndividual(context.Item.Id))" />
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -124,21 +111,12 @@
             </Columns>
 
             <NoRecordsContent>
-                <div class="pa-8 d-flex flex-column align-center">
-                    <MudIcon Icon="@Icons.Material.Filled.Person"
-                             Size="Size.Large"
-                             Color="Color.Secondary"
-                             Class="mb-2" />
-                    <MudText Color="Color.Secondary">
-                        @Localization.GetString("NoIndividualsFound")
-                    </MudText>
-                </div>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.Person"
+                                     Message="@Localization.GetString("NoIndividualsFound")" />
             </NoRecordsContent>
 
             <LoadingContent>
-                <div class="pa-6">
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
-                </div>
+                <WisLoadingContent />
             </LoadingContent>
 
             <PagerContent>
@@ -203,7 +181,7 @@
     }
 
     private string GetRowClass(IndividualDto item, int index) =>
-        item.IsActive ? "row-status-active" : "row-status-inactive";
+        item.IsActive ? "row-status-success" : "row-status-default";
 
     private async Task OnSearch(string text)
     {
@@ -231,123 +209,72 @@
 
     private async Task OpenCreateDialog()
     {
-        DialogOptions options = new()
+        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
+            Localization.GetString("CreateIndividual"));
+
+        if (dto is null) return;
+
+        try
         {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+            CreateIndividualDto createDto = new()
+            {
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                IdentificationNumber = dto.IdentificationNumber,
+                Phone = dto.Phone,
+                Email = dto.Email,
+                Address = dto.Address,
+                IsActive = dto.IsActive,
+            };
 
-        IDialogReference dialog = await DialogService.ShowAsync<IndividualDialog>(
-            Localization.GetString("CreateIndividual"), options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: IndividualDto dto })
+            await IndividualService.CreateIndividualAsync(createDto);
+            Snackbar.Add(Localization.GetString("IndividualCreated"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (InvalidOperationException ex)
         {
-            try
-            {
-                CreateIndividualDto createDto = new()
-                {
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    IdentificationNumber = dto.IdentificationNumber,
-                    Phone = dto.Phone,
-                    Email = dto.Email,
-                    Address = dto.Address,
-                    IsActive = dto.IsActive,
-                };
-
-                await IndividualService.CreateIndividualAsync(createDto);
-                Snackbar.Add(Localization.GetString("IndividualCreated"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (InvalidOperationException ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error creating individual: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorCreatingIndividual"), Severity.Error);
-            }
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating individual: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingIndividual"), Severity.Error);
         }
     }
 
     private async Task OpenEditDialog(IndividualDto individual)
     {
-        DialogParameters<IndividualDialog> parameters = new();
-        parameters.Add(x => x.Individual, individual);
+        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
+            Localization.GetString("EditIndividual"),
+            p => p.Add(x => x.Individual, individual));
 
-        DialogOptions options = new()
+        if (dto is null) return;
+
+        try
         {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<IndividualDialog>(
-            Localization.GetString("EditIndividual"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: IndividualDto dto })
-        {
-            try
+            UpdateIndividualDto updateDto = new()
             {
-                UpdateIndividualDto updateDto = new()
-                {
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    IdentificationNumber = dto.IdentificationNumber,
-                    Phone = dto.Phone,
-                    Email = dto.Email,
-                    Address = dto.Address,
-                    IsActive = dto.IsActive,
-                };
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                IdentificationNumber = dto.IdentificationNumber,
+                Phone = dto.Phone,
+                Email = dto.Email,
+                Address = dto.Address,
+                IsActive = dto.IsActive,
+            };
 
-                await IndividualService.UpdateIndividualAsync(dto.Id, updateDto);
-                Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (InvalidOperationException ex)
-            {
-                Snackbar.Add(ex.Message, Severity.Error);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating individual: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
-            }
+            await IndividualService.UpdateIndividualAsync(dto.Id, updateDto);
+            Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
+            await _grid.ReloadServerData();
         }
-    }
-
-    private async Task DeleteIndividual(Guid id)
-    {
-        bool? result = await DialogService.ShowMessageBoxAsync(new MessageBoxOptions
+        catch (InvalidOperationException ex)
         {
-            Title = Localization.GetString("ConfirmDelete"),
-            Message = Localization.GetString("DeleteIndividualConfirm"),
-            YesText = Localization.GetString("Yes"),
-            CancelText = Localization.GetString("No")
-        });
-
-        if (result == true)
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
         {
-            try
-            {
-                bool deleted = await IndividualService.DeleteIndividualAsync(id);
-                if (deleted)
-                {
-                    Snackbar.Add(Localization.GetString("IndividualDeleted"), Severity.Success);
-                    await _grid.ReloadServerData();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error deleting individual: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorDeletingIndividual"), Severity.Error);
-            }
+            Console.WriteLine($"Error updating individual: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
         }
     }
 

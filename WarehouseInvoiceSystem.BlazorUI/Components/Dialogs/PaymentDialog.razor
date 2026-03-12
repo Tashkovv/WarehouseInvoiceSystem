@@ -1,5 +1,4 @@
-﻿@using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.Payment
+﻿@using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject ILocalizationService Localization
@@ -165,12 +164,14 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Size="Size.Small" Style="border-radius: 16px;">
             @Localization.GetString("Cancel")
         </MudButton>
         <MudButton OnClick="Save"
                    Color="Color.Primary"
                    Variant="Variant.Filled"
+                   Size="Size.Small"
+                   Style="border-radius: 16px;"
                    Disabled="@(!IsValid || _loadingInvoices)">
             @Localization.GetString("Save")
         </MudButton>

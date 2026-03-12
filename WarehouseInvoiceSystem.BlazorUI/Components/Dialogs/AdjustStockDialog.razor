@@ -1,5 +1,4 @@
-﻿@using WarehouseInvoiceSystem.Application.Interfaces
-@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+﻿@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @inject ILocalizationService Localization
@@ -153,12 +152,14 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text">
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Size="Size.Small" Style="border-radius: 16px;">
             @Localization.GetString("Cancel")
         </MudButton>
         <MudButton OnClick="Save"
                    Color="Color.Primary"
                    Variant="Variant.Filled"
+                   Size="Size.Small"
+                   Style="border-radius: 16px;"
                    Disabled="@(!IsValid || _loading)">
             @Localization.GetString("Adjust")
         </MudButton>
