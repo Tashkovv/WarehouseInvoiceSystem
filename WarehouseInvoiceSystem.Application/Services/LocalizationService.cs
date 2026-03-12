@@ -1175,7 +1175,7 @@
                 ["LastRestocked"] = "Последно Пополнување",
                 ["LowStock"] = "Ниска Залиха",
                 ["InStock"] = "На Залиха",
-                ["OutOfStock"] = "Нема на Залиха",
+                ["OutOfStock"] = "Нема Залиха",
                 ["SelectWarehouse"] = "Избери Магацин",
                 ["AdjustStock"] = "Прилагоди Залиха",
                 ["Adjust"] = "Прилагоди",
