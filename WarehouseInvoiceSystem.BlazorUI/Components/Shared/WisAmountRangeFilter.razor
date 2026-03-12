@@ -108,6 +108,14 @@
     [Parameter]
     public string AdornmentText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Fires once after any filter change (preset click, min/max input, or clear),
+    /// so the parent can reload data with a single call instead of handling
+    /// AmountMinChanged, AmountMaxChanged, and AmountPresetChanged separately.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
     private bool _open;
     private decimal? _localMin;
     private decimal? _localMax;
@@ -156,12 +164,11 @@
 
     private readonly List<Preset> _presets =
     [
-        new("lt1000",        "< 1.000",           null,    999.99m),
-        new("1000to5000",    "1.000 - 5.000",     1000m,    5000m),
-        new("5000to10000",   "5.000 - 10.000",    5000m,   10000m),
-        new("10000to50000",  "10.000 - 50.000",  10000m,   50000m),
-        new("50000to100000", "50.000 - 100.000", 50000m,  100000m),
-        new("gt100000",      "> 100.000",        100000m,    null),
+        new("lte10000",        "≤ 10.000",            null,    10000m),
+        new("10000to50000",    "10.000 – 50.000",   10000m,   50000m),
+        new("50000to100000",   "50.000 – 100.000",  50000m,  100000m),
+        new("100000to500000",  "100.000 – 500.000", 100000m, 500000m),
+        new("gt500000",        "> 500.000",         500000m,    null),
     ];
 
     private void Toggle() => _open = !_open;
@@ -176,6 +183,7 @@
             await AmountPresetChanged.InvokeAsync(null);
         }
         await AmountMinChanged.InvokeAsync(value);
+        await OnChanged.InvokeAsync();
     }
 
     private async Task OnMaxChanged(decimal? value)
@@ -187,6 +195,7 @@
             await AmountPresetChanged.InvokeAsync(null);
         }
         await AmountMaxChanged.InvokeAsync(value);
+        await OnChanged.InvokeAsync();
     }
 
     private async Task OnPresetClicked(string key)
@@ -200,6 +209,7 @@
             await AmountMinChanged.InvokeAsync(null);
             await AmountMaxChanged.InvokeAsync(null);
             _open = false;
+            await OnChanged.InvokeAsync();
             return;
         }
 
@@ -212,6 +222,7 @@
         await AmountMinChanged.InvokeAsync(p.Min);
         await AmountMaxChanged.InvokeAsync(p.Max);
         _open = false;
+        await OnChanged.InvokeAsync();
     }
 
     public Task ClearAsync()

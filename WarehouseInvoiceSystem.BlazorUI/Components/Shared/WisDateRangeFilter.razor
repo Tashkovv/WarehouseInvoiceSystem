@@ -88,6 +88,14 @@
     public EventCallback<int?> DatePresetChanged { get; set; }
 
     /// <summary>
+    /// Fires once after any filter change (preset click, calendar pick, or clear),
+    /// so the parent can reload data with a single call instead of handling
+    /// both DateRangeChanged and DatePresetChanged separately.
+    /// </summary>
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+    /// <summary>
     /// Upper bound for the calendar. Defaults to null (no restriction).
     /// Pass DateTime.Today to restrict to past/present dates only.
     /// </summary>
@@ -174,6 +182,7 @@
             await DateRangeChanged.InvokeAsync(new(null, null));
             _suppressRangeChanged = false;
             _open = false;
+            await OnChanged.InvokeAsync();
             return;
         }
 
@@ -202,6 +211,7 @@
         await DateRangeChanged.InvokeAsync(range);
         _suppressRangeChanged = false;
         _open = false;
+        await OnChanged.InvokeAsync();
     }
 
     private bool _suppressRangeChanged = false;
@@ -216,7 +226,10 @@
         await DatePresetChanged.InvokeAsync(null);
         await DateRangeChanged.InvokeAsync(range);
         if (range.Start != null && range.End != null)
+        {
             _open = false;
+            await OnChanged.InvokeAsync();
+        }
     }
 
     public Task ClearAsync()

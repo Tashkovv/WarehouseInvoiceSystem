@@ -120,7 +120,8 @@ else
                                                 DateRange="_movementDateRange"
                                                 DateRangeChanged="OnMovementDateRangeChanged"
                                                 DatePreset="_movementDatePreset"
-                                                DatePresetChanged="OnMovementDatePresetChanged" />
+                                                DatePresetChanged="OnMovementDatePresetChanged"
+                                                OnChanged="ReloadMovements" />
 
                             @* Clear *@
                             @if (_movementTypeFilter.Count > 0 || _movementDateRange.Start != null || _movementDateRange.End != null)
@@ -238,7 +239,8 @@ else
                                                 DateRange="_historyDateRange"
                                                 DateRangeChanged="OnHistoryDateRangeChanged"
                                                 DatePreset="_historyDatePreset"
-                                                DatePresetChanged="OnHistoryDatePresetChanged" />
+                                                DatePresetChanged="OnHistoryDatePresetChanged"
+                                                OnChanged="ReloadHistory" />
 
                             @if (_historyDateRange.Start != null || _historyDateRange.End != null)
                             {
@@ -479,16 +481,20 @@ else
             await _movementsTable.ReloadServerData();
     }
 
-    private async Task OnMovementDatePresetChanged(int? days)
+    private Task OnMovementDatePresetChanged(int? days)
     {
         _movementDatePreset = days;
-        if (_movementsTable is not null)
-            await _movementsTable.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnMovementDateRangeChanged(DateRange range)
+    private Task OnMovementDateRangeChanged(DateRange range)
     {
         _movementDateRange = range;
+        return Task.CompletedTask;
+    }
+
+    private async Task ReloadMovements()
+    {
         if (_movementsTable is not null)
             await _movementsTable.ReloadServerData();
     }
@@ -496,6 +502,8 @@ else
     private async Task ClearMovementFilters()
     {
         _movementTypeFilter = [];
+        _movementDateRange = new(null, null);
+        _movementDatePreset = null;
         if (_movementDateRangeFilter is not null)
             await _movementDateRangeFilter.ClearAsync();
         if (_movementsTable is not null)
@@ -582,22 +590,28 @@ else
             await _historyTable.ReloadServerData();
     }
 
-    private async Task OnHistoryDatePresetChanged(int? days)
+    private Task OnHistoryDatePresetChanged(int? days)
     {
         _historyDatePreset = days;
-        if (_historyTable is not null)
-            await _historyTable.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnHistoryDateRangeChanged(DateRange range)
+    private Task OnHistoryDateRangeChanged(DateRange range)
     {
         _historyDateRange = range;
+        return Task.CompletedTask;
+    }
+
+    private async Task ReloadHistory()
+    {
         if (_historyTable is not null)
             await _historyTable.ReloadServerData();
     }
 
     private async Task ClearHistoryFilters()
     {
+        _historyDateRange = new(null, null);
+        _historyDatePreset = null;
         if (_historyDateRangeFilter is not null)
             await _historyDateRangeFilter.ClearAsync();
         if (_historyTable is not null)

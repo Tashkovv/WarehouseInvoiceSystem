@@ -54,6 +54,7 @@
                                    LoadItems="LoadCompanyItems"
                                    SelectedValue="@(_filterCompanyId ?? default)"
                                    SelectedValueChanged="OnCompanyFilterChanged"
+                                   InitialLabel="@_filterCompanyInitialLabel"
                                    MinWidth="200px" />
 
             <WisDateRangeFilter @ref="_issueDateRangeFilter"
@@ -62,6 +63,7 @@
                                 DateRangeChanged="OnIssueDateRangeChanged"
                                 DatePreset="_filterIssueDatePreset"
                                 DatePresetChanged="OnIssueDatePresetChanged"
+                                OnChanged="ReloadGrid"
                                 MaxDate="DateTime.Today" />
 
             <WisDateRangeFilter @ref="_dueDateRangeFilter"
@@ -70,7 +72,8 @@
                                 DateRangeChanged="OnDueDateRangeChanged"
                                 DatePreset="_filterDueDatePreset"
                                 FuturePresets="true"
-                                DatePresetChanged="OnDueDatePresetChanged" />
+                                DatePresetChanged="OnDueDatePresetChanged"
+                                OnChanged="ReloadGrid" />
 
             <WisAmountRangeFilter @ref="_amountRangeFilter"
                                   Label="@Localization.GetString("AmountRange")"
@@ -79,7 +82,8 @@
                                   AmountMax="_filterAmountMax"
                                   AmountMaxChanged="OnAmountMaxChanged"
                                   AmountPreset="@_filterAmountPreset"
-                                  AmountPresetChanged="OnAmountPresetChanged" />
+                                  AmountPresetChanged="OnAmountPresetChanged"
+                                  OnChanged="ReloadGrid" />
 
         </div>
     </AdvancedFilters>
@@ -248,6 +252,7 @@
 
     // Advanced filters
     private Guid? _filterCompanyId = null;
+    private string? _filterCompanyInitialLabel = null;
     private decimal? _filterAmountMin = null;
     private decimal? _filterAmountMax = null;
     private string? _filterAmountPreset = null;
@@ -276,6 +281,21 @@
         BuildFilterItems();
         BuildCreateActions();
         ApplyQueryParams();
+
+        // Resolve company name for InitialLabel so filter button shows active state
+        if (_filterCompanyId.HasValue)
+        {
+            try
+            {
+                CompanyDto? company = await CompanyService.GetCompanyByIdAsync(_filterCompanyId.Value);
+                if (company is not null)
+                    _filterCompanyInitialLabel = company.Name;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error resolving company param: {ex.Message}");
+            }
+        }
     }
 
     private void BuildCreateActions()
@@ -429,31 +449,32 @@
     private async Task OnCompanyFilterChanged(Guid value)
     {
         _filterCompanyId = value == default ? null : value;
+        _filterCompanyInitialLabel = null; // user changed the filter, no longer need the initial label
         await _grid.ReloadServerData();
     }
 
-    private async Task OnIssueDatePresetChanged(int? days)
+    private Task OnIssueDatePresetChanged(int? days)
     {
         _filterIssueDatePreset = days;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnIssueDateRangeChanged(DateRange range)
+    private Task OnIssueDateRangeChanged(DateRange range)
     {
         _filterIssueDateRange = range;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnDueDatePresetChanged(int? days)
+    private Task OnDueDatePresetChanged(int? days)
     {
         _filterDueDatePreset = days;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnDueDateRangeChanged(DateRange range)
+    private Task OnDueDateRangeChanged(DateRange range)
     {
         _filterDueDateRange = range;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
     private async Task OnSearch(string text)
@@ -474,22 +495,22 @@
         await _grid.ReloadServerData();
     }
 
-    private async Task OnAmountMinChanged(decimal? value)
+    private Task OnAmountMinChanged(decimal? value)
     {
         _filterAmountMin = value;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnAmountMaxChanged(decimal? value)
+    private Task OnAmountMaxChanged(decimal? value)
     {
         _filterAmountMax = value;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnAmountPresetChanged(string? key)
+    private Task OnAmountPresetChanged(string? key)
     {
         _filterAmountPreset = key;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
     private async Task ReloadGrid() => await _grid.ReloadServerData();
@@ -499,6 +520,7 @@
         _filterStatuses = [];
         _filterType = null;
         _filterCompanyId = null;
+        _filterCompanyInitialLabel = null;
         _filterAmountMin = null;
         _filterAmountMax = null;
         _filterAmountPreset = null;

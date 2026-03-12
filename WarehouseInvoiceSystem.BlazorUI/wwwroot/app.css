@@ -270,6 +270,41 @@ html {
     padding-left: 8px;
 }
 
+/* Rounded outlined search field — pill style matching filter buttons */
+.wis-search-field .mud-input-outlined .mud-input-outlined-border {
+    border-radius: 20px !important;
+    border-color: rgba(var(--mud-palette-text-primary-rgb), 0.23) !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.wis-search-field .mud-input-outlined:focus-within .mud-input-outlined-border,
+.wis-search-field .mud-input-outlined.mud-input-outlined-focused .mud-input-outlined-border {
+    border-color: var(--mud-palette-primary) !important;
+    border-width: 2px !important;
+    box-shadow: 0 0 0 3px rgba(var(--mud-palette-primary-rgb), 0.10) !important;
+}
+
+.wis-search-field .mud-input-outlined input {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    font-size: 0.875rem !important;
+}
+
+.wis-search-field .mud-input-adornment-start {
+    margin-right: 2px;
+    opacity: 0.55;
+}
+
+.wis-search-field .mud-input-outlined .mud-input-label-outlined {
+    display: none; /* no floating label needed on a search field */
+}
+
+/* Tighten the overall height to match the toolbar row */
+.wis-search-field .mud-input-control {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
 /* Clear All button in the filter strip */
 .wis-toolbar-clearall-btn {
     text-transform: none !important;
@@ -1355,8 +1390,8 @@ html {
     }
 
 /* =============================================
-   WisAmountInput — outlined + dense, matches
-   MudBlazor Variant.Outlined / Margin.Dense
+   WisAmountInput — rounded pill, medium size,
+   consistent with the filter button design language
    ============================================= */
 
 /* Outer wrapper — positions the floating label */
@@ -1372,11 +1407,11 @@ html {
 .wis-amt-field__inner {
     display: flex;
     align-items: center;
-    border: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
-    border-radius: 4px;
+    border: 1.5px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
+    border-radius: 20px;
     height: 40px;
-    padding: 0 12px;
-    transition: border-color 0.15s ease;
+    padding: 0 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
     background: transparent;
 }
 
@@ -1384,29 +1419,33 @@ html {
 .wis-amt-field--focused .wis-amt-field__inner {
     border-color: var(--mud-palette-primary);
     border-width: 2px;
-    padding: 0 11px; /* compensate for extra border px */
+    box-shadow: 0 0 0 3px rgba(var(--mud-palette-primary-rgb), 0.10);
+    padding: 0 13px; /* compensate for extra border px */
 }
 
-/* Floating label */
+/* Floating label — tucked into the pill border */
 .wis-amt-field__label {
     position: absolute;
-    left: 12px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 1rem;
-    color: rgba(var(--mud-palette-text-primary-rgb), 0.6);
+    font-size: 0.875rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.55);
     pointer-events: none;
-    transition: top 0.15s ease, font-size 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    transition: top 0.15s ease, font-size 0.15s ease, color 0.15s ease, transform 0.15s ease, left 0.15s ease;
     background: var(--mud-palette-surface);
-    padding: 0 3px;
+    padding: 0 4px;
     line-height: 1;
     white-space: nowrap;
+    border-radius: 4px;
 }
 
 .wis-amt-field__label--float {
     top: 0;
+    left: 12px;
     transform: translateY(-50%);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
 }
 
 .wis-amt-field:focus-within .wis-amt-field__label,
@@ -1424,7 +1463,6 @@ html {
     font-size: 0.875rem;
     color: var(--mud-palette-text-primary);
     min-width: 0;
-    /* hide browser spin buttons just in case */
     -moz-appearance: textfield;
 }
 
@@ -1437,8 +1475,8 @@ html {
 /* Currency adornment on the right */
 .wis-amt-field__adornment {
     font-size: 0.8125rem;
-    color: rgba(var(--mud-palette-text-primary-rgb), 0.5);
-    margin-left: 4px;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.45);
+    margin-left: 5px;
     flex-shrink: 0;
     user-select: none;
 }

@@ -168,6 +168,15 @@
     [Parameter]
     public EventCallback<TValue?> SelectedValueChanged { get; set; }
 
+    /// <summary>
+    /// Optional display label to show on the trigger button when SelectedValue is
+    /// pre-set from outside (e.g. from a URL query param) before the user ever
+    /// opens the dropdown. Without this, the button would show no active state
+    /// because _selectedItem has not been populated yet by a fetch.
+    /// </summary>
+    [Parameter]
+    public string? InitialLabel { get; set; }
+
     [Parameter]
     public Origin PopoverAnchorOrigin { get; set; } = Origin.BottomLeft;
 
@@ -199,10 +208,53 @@
 
     // ── Parameter sync ────────────────────────────────────────────────────────
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (SelectedValue is null || SelectedValue.Equals(default(TValue)))
+        {
             _selectedItem = null;
+        }
+        else if (_selectedItem is null)
+        {
+            if (!string.IsNullOrEmpty(InitialLabel))
+            {
+                // Caller supplied a label hint — use it immediately.
+                _selectedItem = new WisAutocompleteItem<TValue>
+                {
+                    Value = SelectedValue,
+                    Label = InitialLabel
+                };
+            }
+            else
+            {
+                // No hint supplied — fetch the first page silently so the button
+                // can show the correct label and active state right away
+                // (e.g. when the value comes from a URL query parameter).
+                await FetchLabelAsync(SelectedValue);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fetches just enough items to resolve the label for a pre-set value,
+    /// without opening the popover.
+    /// </summary>
+    private async Task FetchLabelAsync(TValue value)
+    {
+        if (LoadItems is null) return;
+
+        try
+        {
+            var cts = new CancellationTokenSource();
+            PagedResult<WisAutocompleteItem<TValue>> result =
+                await LoadItems("", 1, cts.Token);
+
+            _selectedItem = result.Items.FirstOrDefault(i => Equals(i.Value, value));
+        }
+        catch
+        {
+            // Non-critical — button will just show the fallback label until opened.
+        }
     }
 
     // ── Open / Close ──────────────────────────────────────────────────────────

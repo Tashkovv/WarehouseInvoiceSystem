@@ -43,6 +43,7 @@
                                 DateRangeChanged="OnDateRangeChanged"
                                 DatePreset="_filterDatePreset"
                                 DatePresetChanged="OnDatePresetChanged"
+                                OnChanged="ReloadGrid"
                                 MaxDate="DateTime.Today" />
 
             <WisAmountRangeFilter @ref="_amountRangeFilter"
@@ -52,7 +53,8 @@
                                   AmountMax="_filterAmountMax"
                                   AmountMaxChanged="OnAmountMaxChanged"
                                   AmountPreset="@_filterAmountPreset"
-                                  AmountPresetChanged="OnAmountPresetChanged" />
+                                  AmountPresetChanged="OnAmountPresetChanged"
+                                  OnChanged="ReloadGrid" />
 
         </div>
     </AdvancedFilters>
@@ -264,34 +266,34 @@
 
     private async Task ReloadGrid() => await _grid.ReloadServerData();
 
-    private async Task OnDatePresetChanged(int? days)
+    private Task OnDatePresetChanged(int? days)
     {
         _filterDatePreset = days;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnDateRangeChanged(DateRange range)
+    private Task OnDateRangeChanged(DateRange range)
     {
         _filterDateRange = range;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnAmountMinChanged(decimal? value)
+    private Task OnAmountMinChanged(decimal? value)
     {
         _filterAmountMin = value;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnAmountMaxChanged(decimal? value)
+    private Task OnAmountMaxChanged(decimal? value)
     {
         _filterAmountMax = value;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
-    private async Task OnAmountPresetChanged(string? key)
+    private Task OnAmountPresetChanged(string? key)
     {
         _filterAmountPreset = key;
-        await _grid.ReloadServerData();
+        return Task.CompletedTask;
     }
 
     private async Task ClearAllFilters()
