@@ -108,19 +108,20 @@
     [Parameter]
     public string AdornmentText { get; set; } = string.Empty;
 
-    // Shadow fields — same pattern as FilterPopoverList.
-    // OnParametersSet syncs all three unconditionally so external resets
-    // (ClearAllFilters) are always reflected in the UI.
     private bool _open;
     private decimal? _localMin;
     private decimal? _localMax;
     private string? _localPreset;
 
+    private decimal? _lastSeenMin;
+    private decimal? _lastSeenMax;
+    private string? _lastSeenPreset;
+
     protected override void OnParametersSet()
     {
-        _localMin = AmountMin;
-        _localMax = AmountMax;
-        _localPreset = AmountPreset;
+        if (AmountMin != _lastSeenMin) { _lastSeenMin = AmountMin; _localMin = AmountMin; }
+        if (AmountMax != _lastSeenMax) { _lastSeenMax = AmountMax; _localMax = AmountMax; }
+        if (AmountPreset != _lastSeenPreset) { _lastSeenPreset = AmountPreset; _localPreset = AmountPreset; }
     }
 
     private bool _isActive => _localPreset is not null || _localMin.HasValue || _localMax.HasValue;
@@ -215,9 +216,9 @@
 
     public async Task ClearAsync()
     {
-        _localPreset = null;
-        _localMin = null;
-        _localMax = null;
+        _localPreset = null; _lastSeenPreset = null;
+        _localMin = null; _lastSeenMin = null;
+        _localMax = null; _lastSeenMax = null;
         await AmountPresetChanged.InvokeAsync(null);
         await AmountMinChanged.InvokeAsync(null);
         await AmountMaxChanged.InvokeAsync(null);

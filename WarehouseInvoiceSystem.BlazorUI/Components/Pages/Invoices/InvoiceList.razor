@@ -61,13 +61,15 @@
                                 DateRange="_filterIssueDateRange"
                                 DateRangeChanged="OnIssueDateRangeChanged"
                                 DatePreset="_filterIssueDatePreset"
-                                DatePresetChanged="OnIssueDatePresetChanged" />
+                                DatePresetChanged="OnIssueDatePresetChanged"
+                                MaxDate="DateTime.Today" />
 
             <WisDateRangeFilter @ref="_dueDateRangeFilter"
                                 Label="@Localization.GetString("DueDate")"
                                 DateRange="_filterDueDateRange"
                                 DateRangeChanged="OnDueDateRangeChanged"
                                 DatePreset="_filterDueDatePreset"
+                                FuturePresets="true"
                                 DatePresetChanged="OnDueDatePresetChanged" />
 
             <WisAmountRangeFilter @ref="_amountRangeFilter"
