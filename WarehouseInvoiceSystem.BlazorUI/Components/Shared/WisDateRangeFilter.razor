@@ -38,14 +38,13 @@
 
         @* Static inline calendar *@
         <div class="wis-drf-calendar">
-            <MudDateRangePicker @ref="_picker"
-                                DateRange="DateRange"
+            <MudDateRangePicker DateRange="_localRange"
                                 DateRangeChanged="OnRangeChanged"
                                 PickerVariant="PickerVariant.Static"
                                 Variant="Variant.Text"
                                 Margin="Margin.None"
                                 DateFormat="dd MMM yy"
-                                MaxDate="DateTime.Today"
+                                MaxDate="@MaxDate"
                                 PickerMonth="@(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1))"
                                 Elevation="0"
                                 Class="wis-daterange-static" />
@@ -55,7 +54,7 @@
         <div class="wis-drf-footer justify-space-between">
             @foreach (var preset in _datePresets)
             {
-                bool isSelected = DatePreset != null && DatePreset == preset.Value;
+                bool isSelected = _localPreset != null && _localPreset == preset.Value;
                 <button type="button"
                         class="wis-drf-preset @(isSelected ? "wis-drf-preset--selected" : "")"
                         @onclick="@(() => OnPresetClicked(preset.Value))">
@@ -88,24 +87,62 @@
     [Parameter]
     public EventCallback<int?> DatePresetChanged { get; set; }
 
-    private bool _open = false;
-    private MudDateRangePicker? _picker;
+    /// <summary>
+    /// Upper bound for the calendar. Defaults to null (no restriction).
+    /// Pass DateTime.Today to restrict to past/present dates only.
+    /// </summary>
+    [Parameter]
+    public DateTime? MaxDate { get; set; } = null;
 
-    private bool _isActive => DatePreset != null || DateRange.Start != null || DateRange.End != null;
+    /// <summary>
+    /// When true, presets project into the future (Next 7 Days, Next 30 Days, …).
+    /// When false (default), presets project into the past (Last 7 Days, Last 30 Days, …).
+    /// </summary>
+    [Parameter]
+    public bool FuturePresets { get; set; } = false;
+
+    // Shadow fields — synced in OnParametersSet so external resets
+    // (e.g. ClearAllFilters) are always reflected in the UI,
+    // matching the same pattern used by WisAmountRangeFilter.
+    private bool _open;
+    private int? _localPreset;
+    private DateRange _localRange = new(null, null);
+    // Track last-seen parameter values so OnParametersSet only syncs
+    // when the parent actually pushes a new value — not on every render
+    // triggered by local state changes (preset clicks, calendar picks).
+    private int? _lastSeenPreset = default;
+    private DateRange _lastSeenRange = new(null, null);
+
+    protected override void OnParametersSet()
+    {
+        if (DatePreset != _lastSeenPreset)
+        {
+            _lastSeenPreset = DatePreset;
+            _localPreset = DatePreset;
+        }
+
+        if (DateRange.Start != _lastSeenRange.Start || DateRange.End != _lastSeenRange.End)
+        {
+            _lastSeenRange = DateRange;
+            _localRange = DateRange;
+        }
+    }
+
+    private bool _isActive => _localPreset != null || _localRange.Start != null || _localRange.End != null;
 
     private string _triggerLabel
     {
         get
         {
-            if (DatePreset != null)
-                return _datePresets.FirstOrDefault(p => p.Value == DatePreset)?.Label
+            if (_localPreset != null)
+                return _datePresets.FirstOrDefault(p => p.Value == _localPreset)?.Label
                        ?? Label ?? Localization.GetString("Period");
 
-            if (DateRange.Start != null && DateRange.End != null)
-                return $"{DateRange.Start.Value:dd MMM yy} – {DateRange.End.Value:dd MMM yy}";
+            if (_localRange.Start != null && _localRange.End != null)
+                return $"{_localRange.Start.Value:dd MMM yy} – {_localRange.End.Value:dd MMM yy}";
 
-            if (DateRange.Start != null)
-                return $"{DateRange.Start.Value:dd MMM yy} – …";
+            if (_localRange.Start != null)
+                return $"{_localRange.Start.Value:dd MMM yy} – …";
 
             return Label ?? Localization.GetString("Period");
         }
@@ -115,12 +152,12 @@
 
     private List<FilterPopoverItem<int?>> BuildDatePresets() =>
     [
-        new() { Label = Localization.GetString("PeriodToday"),      Value = 0,   Color = Color.Default },
-        new() { Label = Localization.GetString("PeriodLast7Days"),  Value = 7,   Color = Color.Default },
-        new() { Label = Localization.GetString("PeriodLast30Days"), Value = 30,  Color = Color.Default },
-        new() { Label = Localization.GetString("PeriodLast90Days"), Value = 90,  Color = Color.Default },
-        new() { Label = Localization.GetString("PeriodThisYear"),   Value = 365, Color = Color.Default },
-        new() { Label = Localization.GetString("PeriodLastYear"),   Value = 730, Color = Color.Default },
+        new() { Label = Localization.GetString("PeriodToday"),     Value = 0 },
+        new() { Label = Localization.GetString("Period7Days"),     Value = 7 },
+        new() { Label = Localization.GetString("Period30Days"),    Value = 30 },
+        new() { Label = Localization.GetString("Period90Days"),    Value = 90 },
+        new() { Label = Localization.GetString("PeriodThisYear"),  Value = 365 },
+        new() { Label = Localization.GetString(FuturePresets ? "PeriodNextYear" : "PeriodLastYear"), Value = 730 },
     ];
 
     private void Toggle() => _open = !_open;
@@ -128,40 +165,68 @@
 
     private async Task OnPresetClicked(int? days)
     {
-        if (DatePreset != null && DatePreset == days)
+        if (_localPreset != null && _localPreset == days)
         {
+            _localPreset = null;
+            _localRange = new(null, null);
+            _suppressRangeChanged = true;
             await DatePresetChanged.InvokeAsync(null);
             await DateRangeChanged.InvokeAsync(new(null, null));
+            _suppressRangeChanged = false;
             _open = false;
             return;
         }
 
-        DateRange range = days switch
-        {
-            null => new(null, null),
-            0 => new(DateTime.Today, DateTime.Today),
-            365 => new(new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today),
-            730 => new(new DateTime(DateTime.Today.Year - 1, 1, 1), new DateTime(DateTime.Today.Year - 1, 12, 31)),
-            int d => new(DateTime.Today.AddDays(-d), DateTime.Today)
-        };
+        DateRange range = FuturePresets
+            ? days switch
+            {
+                null => new(null, null),
+                0 => new(DateTime.Today, DateTime.Today),
+                365 => new(DateTime.Today, new DateTime(DateTime.Today.Year, 12, 31)),
+                730 => new(DateTime.Today, new DateTime(DateTime.Today.Year + 1, 12, 31)),
+                int d => new(DateTime.Today, DateTime.Today.AddDays(d))
+            }
+            : days switch
+            {
+                null => new(null, null),
+                0 => new(DateTime.Today, DateTime.Today),
+                365 => new(new DateTime(DateTime.Today.Year, 1, 1), DateTime.Today),
+                730 => new(new DateTime(DateTime.Today.Year - 1, 1, 1), new DateTime(DateTime.Today.Year - 1, 12, 31)),
+                int d => new(DateTime.Today.AddDays(-d), DateTime.Today)
+            };
 
+        _localPreset = days;
+        _localRange = range;
+        _suppressRangeChanged = true;
         await DatePresetChanged.InvokeAsync(days);
         await DateRangeChanged.InvokeAsync(range);
+        _suppressRangeChanged = false;
         _open = false;
     }
 
+    private bool _suppressRangeChanged = false;
+
     private async Task OnRangeChanged(DateRange range)
     {
+        if (_suppressRangeChanged)
+            return;
+
+        _localPreset = null;
+        _localRange = range;
         await DatePresetChanged.InvokeAsync(null);
         await DateRangeChanged.InvokeAsync(range);
         if (range.Start != null && range.End != null)
             _open = false;
     }
 
-    public async Task ClearAsync()
+    public Task ClearAsync()
     {
-        await DatePresetChanged.InvokeAsync(null);
-        await DateRangeChanged.InvokeAsync(new(null, null));
+        _localPreset = null;
+        _localRange = new(null, null);
+        _lastSeenPreset = null;
+        _lastSeenRange = new(null, null);
         _open = false;
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 }

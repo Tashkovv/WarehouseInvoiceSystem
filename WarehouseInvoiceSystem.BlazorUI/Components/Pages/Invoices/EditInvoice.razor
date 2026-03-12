@@ -459,16 +459,24 @@ else
                     _paymentTermsDays = (_dueDate.Value - _issueDate.Value).Days;
                 }
 
-                // Load line items
-                _lineItems = _invoice.LineItems.Select(li => new LineItemModel
+                // Load line items — fall back to a direct lookup for any product
+                // that has been deactivated since the invoice was created
+                List<LineItemModel> lineItems = [];
+                foreach (InvoiceLineDto li in _invoice.LineItems)
                 {
-                    Id = li.Id,
-                    SelectedProduct = _products.First(p => p.Id == li.ProductId),
-                    Description = li.Description,
-                    Quantity = li.Quantity,
-                    UnitPrice = li.UnitPrice,
-                    TaxRate = li.TaxRate
-                }).ToList();
+                    ProductDto? product = _products.FirstOrDefault(p => p.Id == li.ProductId)
+                        ?? await ProductService.GetProductByIdAsync(li.ProductId);
+                    lineItems.Add(new LineItemModel
+                    {
+                        Id = li.Id,
+                        SelectedProduct = product!,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TaxRate = li.TaxRate
+                    });
+                }
+                _lineItems = lineItems;
 
                 CalculateTotals();
             }

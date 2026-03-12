@@ -1,6 +1,7 @@
 ﻿@using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Domain.Enums
+@using WarehouseInvoiceSystem.Domain.Queries
 @inject ILocalizationService Localization
 @inject IInvoiceService InvoiceService
 
@@ -30,7 +31,7 @@
                         <MudSelect T="Guid?"
                                    Value="_selectedInvoiceId"
                                    ValueChanged="OnInvoiceSelected"
-                                   Label="@Localization.GetString("SelectInvoice")"
+                                   Label="@Localization.GetString("Invoice")"
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    ReadOnly="_invoiceReadonly"
@@ -253,11 +254,14 @@
         _loadingInvoices = true;
         try
         {
-            IEnumerable<InvoiceDto> all = await InvoiceService.GetAllInvoicesAsync();
+            IEnumerable<InvoiceDto> all = await InvoiceService.GetAllFilteredAsync(new GetInvoicesQuery
+            {
+                Statuses = [InvoiceStatus.Draft, InvoiceStatus.Sent, InvoiceStatus.PartiallyPaid, InvoiceStatus.Overdue],
+                SortBy = "DueDate",
+                SortAscending = true
+            });
             _unpaidInvoices = all
-                .Where(i => i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled &&
-                            i.AmountDue > 0)
+                .Where(i => i.AmountDue > 0)
                 .OrderByDescending(i => i.DueDate)
                 .ToList();
         }

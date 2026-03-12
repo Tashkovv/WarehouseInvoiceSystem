@@ -80,17 +80,23 @@
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    // "N0" — plain number with thousand separators, no currency symbol, no decimals.
+    // This must be parseable by Parse() below, so never use "C" here.
     private static string FormatDisplay(decimal v) =>
-        v.ToString("C", CultureInfo.CurrentCulture);
+        v.ToString("N0", CultureInfo.CurrentCulture);
 
     private static decimal? Parse(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw)) return null;
 
-        // Strip thousand separators so "1.000" and "1000" both parse fine.
+        var nf = CultureInfo.CurrentCulture.NumberFormat;
+
+        // Strip thousand separators and any stray currency symbol so that
+        // both typed input ("1500") and formatted display ("1.500") parse fine.
         string clean = raw
-            .Replace(CultureInfo.CurrentCulture.NumberFormat.NumberGroupSeparator, "")
-            .Replace(CultureInfo.CurrentCulture.NumberFormat.CurrencyGroupSeparator, "")
+            .Replace(nf.NumberGroupSeparator, "")
+            .Replace(nf.CurrencyGroupSeparator, "")
+            .Replace(nf.CurrencySymbol, "")
             .Trim();
 
         return decimal.TryParse(clean,

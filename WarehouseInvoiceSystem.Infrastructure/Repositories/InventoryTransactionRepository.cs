@@ -1,39 +1,124 @@
-﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
+namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
-    using WarehouseInvoiceSystem.Infrastructure.Data;
-
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class InventoryTransactionRepository(ApplicationDbContext context) : IInventoryTransactionRepository
+    public class InventoryTransactionRepository(IDbContextFactory<ApplicationDbContext> factory)
+        : BaseRepository(factory), IInventoryTransactionRepository
     {
-        public async Task<IEnumerable<InventoryTransaction>> GetAllAsync()
-        {
-            return await context.InventoryTransactions
-                .Where(t => t.DeletedOn == null)
-                .Include(t => t.Product)
-                .Include(t => t.Warehouse)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-        }
+        public Task<IEnumerable<InventoryTransaction>> GetAllAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
+                    .Include(t => t.Product)
+                    .Include(t => t.Warehouse)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .ToListAsync();
+            });
 
-        public async Task<IEnumerable<InventoryTransaction>> GetByProductIdAsync(Guid productId)
-        {
-            return await context.InventoryTransactions
-                .Where(t => t.DeletedOn == null && t.ProductId == productId)
-                .Include(t => t.Warehouse)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-        }
+        public Task<IEnumerable<InventoryTransaction>> GetByProductIdAsync(Guid productId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
+                    .Where(t => t.ProductId == productId)
+                    .Include(t => t.Warehouse)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .ToListAsync();
+            });
 
-        public async Task<PagedResult<InventoryTransaction>> GetPagedByProductAsync(GetInventoryTransactionsQuery query)
+        public Task<PagedResult<InventoryTransaction>> GetPagedByProductAsync(GetInventoryTransactionsQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InventoryTransaction> q = ApplyFilters(
+                    All<InventoryTransaction>(context)
+                        .Include(t => t.Warehouse),
+                    query);
+
+                q = q.OrderByDescending(t => t.CreatedAt);
+
+                int totalCount = await q.CountAsync();
+
+                List<InventoryTransaction> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<InventoryTransaction>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<IEnumerable<InventoryTransaction>> GetByWarehouseIdAsync(Guid warehouseId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
+                    .Where(t => t.WarehouseId == warehouseId)
+                    .Include(t => t.Product)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<InventoryTransaction>> GetBySourceDocumentAsync(Guid sourceDocumentId, string sourceDocumentType) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
+                    .Where(t => t.SourceDocumentId == sourceDocumentId &&
+                                t.SourceDocumentType == sourceDocumentType)
+                    .Include(t => t.Product)
+                    .Include(t => t.Warehouse)
+                    .ToListAsync();
+            });
+
+        public Task<InventoryTransaction?> GetByIdAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<InventoryTransaction>(context)
+                    .Include(t => t.Product)
+                    .Include(t => t.Warehouse)
+                    .FirstOrDefaultAsync(t => t.Id == id));
+
+        public Task<bool> HasTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType) =>
+            WithContextAsync(context =>
+                All<InventoryTransaction>(context)
+                    .AnyAsync(t => t.SourceDocumentId == sourceDocumentId &&
+                                   t.SourceDocumentType == sourceDocumentType));
+
+        public Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType) =>
+            WithContextAsync(async context =>
+            {
+                string reversalType = $"{sourceDocumentType}_Reversal";
+
+                List<InventoryTransaction> reversals = await AllTracked<InventoryTransaction>(context)
+                    .Where(t => t.SourceDocumentId == sourceDocumentId &&
+                                t.SourceDocumentType == reversalType)
+                    .ToListAsync();
+
+                foreach (InventoryTransaction reversal in reversals)
+                    reversal.DeletedOn = DateTime.UtcNow;
+
+                await SaveAsync(context);
+                return (IEnumerable<InventoryTransaction>)reversals;
+            });
+
+        public Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction) =>
+            WithContextAsync(async context =>
+            {
+                transaction.CreatedAt = DateTime.UtcNow;
+                context.InventoryTransactions.Add(transaction);
+                await SaveAsync(context);
+                return transaction;
+            });
+
+        private static IQueryable<InventoryTransaction> ApplyFilters(IQueryable<InventoryTransaction> q, GetInventoryTransactionsQuery query)
         {
-            IQueryable<InventoryTransaction> q = context.InventoryTransactions
-                .Where(t => t.DeletedOn == null && t.ProductId == query.ProductId)
-                .Include(t => t.Warehouse);
+            q = q.Where(t => t.ProductId == query.ProductId);
 
             if (query.WarehouseId.HasValue)
                 q = q.Where(t => t.WarehouseId == query.WarehouseId.Value);
@@ -52,86 +137,7 @@
             if (query.DateTo.HasValue)
                 q = q.Where(t => t.CreatedAt < query.DateTo.Value.Date.AddDays(1));
 
-            q = q.OrderByDescending(t => t.CreatedAt);
-
-            int totalCount = await q.CountAsync();
-
-            List<InventoryTransaction> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<InventoryTransaction>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
-        }
-
-        public async Task<IEnumerable<InventoryTransaction>> GetByWarehouseIdAsync(Guid warehouseId)
-        {
-            return await context.InventoryTransactions
-                .Where(t => t.DeletedOn == null && t.WarehouseId == warehouseId)
-                .Include(t => t.Product)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<InventoryTransaction>> GetBySourceDocumentAsync(Guid sourceDocumentId, string sourceDocumentType)
-        {
-            return await context.InventoryTransactions
-                .Where(t => t.DeletedOn == null &&
-                            t.SourceDocumentId == sourceDocumentId &&
-                            t.SourceDocumentType == sourceDocumentType)
-                .Include(t => t.Product)
-                .Include(t => t.Warehouse)
-                .ToListAsync();
-        }
-
-        public async Task<InventoryTransaction?> GetByIdAsync(Guid id)
-        {
-            return await context.InventoryTransactions
-                .Where(t => t.DeletedOn == null)
-                .Include(t => t.Product)
-                .Include(t => t.Warehouse)
-                .FirstOrDefaultAsync(t => t.Id == id);
-        }
-
-        public async Task<bool> HasTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType)
-        {
-            return await context.InventoryTransactions
-                .AnyAsync(t => t.SourceDocumentId == sourceDocumentId &&
-                               t.SourceDocumentType == sourceDocumentType &&
-                               t.DeletedOn == null);
-        }
-
-        public async Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType)
-        {
-            string reversalType = $"{sourceDocumentType}_Reversal";
-
-            List<InventoryTransaction> reversals = await context.InventoryTransactions
-                .Where(t => t.DeletedOn == null &&
-                            t.SourceDocumentId == sourceDocumentId &&
-                            t.SourceDocumentType == reversalType)
-                .ToListAsync();
-
-            foreach (InventoryTransaction reversal in reversals)
-                reversal.DeletedOn = DateTime.UtcNow;
-
-            await context.SaveChangesAsync();
-            return reversals;
-        }
-
-        public async Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction)
-        {
-            transaction.CreatedAt = DateTime.UtcNow;
-
-            context.InventoryTransactions.Add(transaction);
-            await context.SaveChangesAsync();
-
-            return transaction;
+            return q;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
+namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
@@ -8,35 +8,212 @@
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class PurchaseNoteRepository(ApplicationDbContext context) : IPurchaseNoteRepository
+    public class PurchaseNoteRepository(IDbContextFactory<ApplicationDbContext> factory)
+        : BaseRepository(factory), IPurchaseNoteRepository
     {
-        public async Task<IEnumerable<PurchaseNote>> GetAllAsync()
-        {
-            return await context.PurchaseNotes
-                .Where(pn => pn.DeletedOn == null)
-                .Include(pn => pn.Individual)
-                .Include(pn => pn.Warehouse)
-                .Include(pn => pn.LineItems)
-                    .ThenInclude(li => li.Product)
-                .OrderByDescending(pn => pn.PurchaseDate)
-                .ToListAsync();
-        }
+        public Task<IEnumerable<PurchaseNote>> GetAllAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .Include(pn => pn.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .ToListAsync();
+            });
 
-        public async Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query)
-        {
-            IQueryable<PurchaseNote> q = context.PurchaseNotes
-                .Where(p => p.DeletedOn == null)
-                .Include(p => p.Individual)
-                .Include(p => p.Warehouse)
-                .Include(p => p.LineItems)
-                    .ThenInclude(li => li.Product);
+        public Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<PurchaseNote> q = ApplyFilters(
+                    All<PurchaseNote>(context)
+                        .Include(p => p.Individual)
+                        .Include(p => p.Warehouse)
+                        .Include(p => p.LineItems)
+                            .ThenInclude(li => li.Product),
+                    query);
 
+                q = ApplySort(q, query.SortBy, query.SortAscending);
+
+                int totalCount = await q.CountAsync();
+
+                List<PurchaseNote> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<PurchaseNote>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<PurchaseNote?> GetByIdAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<PurchaseNote>(context)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .Include(pn => pn.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .FirstOrDefaultAsync(pn => pn.Id == id));
+
+        public Task<PurchaseNote?> GetByNoteNumberAsync(string noteNumber) =>
+            WithContextAsync(context =>
+                All<PurchaseNote>(context)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .Include(pn => pn.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .FirstOrDefaultAsync(pn => pn.NoteNumber == noteNumber));
+
+        public Task<IEnumerable<PurchaseNote>> GetByIndividualIdAsync(Guid individualId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.IndividualId == individualId)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<PurchaseNote>> GetByDateRangeAsync(DateTime startDate, DateTime endDate) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Date >= startDate.Date &&
+                                 pn.PurchaseDate.Date <= endDate.Date)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.Status == status)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.LineItems)
+                        .ThenInclude(li => li.Product)
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNoteLine>)await All<PurchaseNoteLine>(context)
+                    .Where(li => li.ProductId == productId &&
+                                 li.PurchaseNote.DeletedOn == null &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled)
+                    .Include(li => li.PurchaseNote)
+                        .ThenInclude(pn => pn.Individual)
+                    .Include(li => li.PurchaseNote)
+                        .ThenInclude(pn => pn.Warehouse)
+                    .OrderByDescending(li => li.PurchaseNote.PurchaseDate)
+                    .ToListAsync();
+            });
+
+        public Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<PurchaseNoteLine> q = ApplyLineItemFilters(
+                    All<PurchaseNoteLine>(context)
+                        .Include(li => li.PurchaseNote)
+                            .ThenInclude(pn => pn.Individual)
+                        .Include(li => li.PurchaseNote)
+                            .ThenInclude(pn => pn.Warehouse),
+                    query);
+
+                q = q.OrderByDescending(li => li.PurchaseNote.PurchaseDate);
+
+                int totalCount = await q.CountAsync();
+
+                List<PurchaseNoteLine> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<PurchaseNoteLine>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<string> GenerateNoteNumberAsync() =>
+            WithContextAsync(async context =>
+            {
+                string? lastNoteNumber = await context.PurchaseNotes
+                    .Where(pn => pn.NoteNumber.StartsWith("OB-"))
+                    .OrderByDescending(pn => pn.NoteNumber)
+                    .Select(pn => pn.NoteNumber)
+                    .FirstOrDefaultAsync();
+
+                if (string.IsNullOrEmpty(lastNoteNumber))
+                    return "OB-000001";
+
+                string numberPart = lastNoteNumber.Replace("OB-", "");
+                if (int.TryParse(numberPart, out int lastNumber))
+                    return $"OB-{(lastNumber + 1):D6}";
+
+                return "OB-000001";
+            });
+
+        public Task<bool> ExistsAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<PurchaseNote>(context).AnyAsync(pn => pn.Id == id));
+
+        public Task<PurchaseNote> CreateAsync(PurchaseNote purchaseNote) =>
+            WithContextAsync(async context =>
+            {
+                purchaseNote.CreatedAt = DateTime.UtcNow;
+                context.PurchaseNotes.Add(purchaseNote);
+                await SaveAsync(context);
+                return purchaseNote;
+            });
+
+        public Task<PurchaseNote> UpdateAsync(PurchaseNote purchaseNote) =>
+            WithContextAsync(async context =>
+            {
+                context.PurchaseNotes.Update(purchaseNote);
+                await SaveAsync(context);
+                return purchaseNote;
+            });
+
+        public Task<bool> DeleteAsync(Guid id) =>
+            WithContextAsync(async context =>
+            {
+                PurchaseNote? purchaseNote = await context.PurchaseNotes.FindAsync(id);
+                if (purchaseNote == null)
+                    return false;
+
+                purchaseNote.DeletedOn = DateTime.UtcNow;
+                await SaveAsync(context);
+                return true;
+            });
+
+        private static IQueryable<PurchaseNote> ApplyFilters(IQueryable<PurchaseNote> q, GetPurchaseNotesQuery query)
+        {
             if (query.Status.HasValue)
                 q = q.Where(p => p.Status == query.Status.Value);
 
-            if (!string.IsNullOrWhiteSpace(query.IndividualName))
-                q = q.Where(p => query.IndividualName.Contains(p.Individual.FirstName) ||
-                                 query.IndividualName.Contains(p.Individual.LastName));
+            if (query.IndividualId.HasValue)
+                q = q.Where(p => p.IndividualId == query.IndividualId.Value);
+
+            else if (!string.IsNullOrWhiteSpace(query.IndividualName))
+                q = q.Where(p =>
+                    EF.Functions.ILike(p.Individual.FirstName, $"%{query.IndividualName}%") ||
+                    EF.Functions.ILike(p.Individual.LastName, $"%{query.IndividualName}%"));
 
             if (query.AmountMin.HasValue)
                 q = q.Where(p => p.TotalAmount >= query.AmountMin.Value);
@@ -50,120 +227,27 @@
             if (query.DateTo.HasValue)
                 q = q.Where(p => p.PurchaseDate <= query.DateTo.Value);
 
-            string search = query.Search?.ToLower() ?? string.Empty;
-
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
-                q = q.Where(p => p.NoteNumber.ToLower().Contains(search) ||
-                                 p.Individual.FirstName.ToLower().Contains(search) ||
-                                 p.Individual.LastName.ToLower().Contains(search) ||
-                                 (query.Search.Contains(p.Individual.FirstName.ToLower()) ||
-                                 query.Search.Contains(p.Individual.LastName.ToLower())));
+                string search = $"%{query.Search}%";
+                q = q.Where(p =>
+                    EF.Functions.ILike(p.NoteNumber, search) ||
+                    EF.Functions.ILike(p.Individual.FirstName, search) ||
+                    EF.Functions.ILike(p.Individual.LastName, search));
             }
 
-            q = ApplySort(q, query.SortBy, query.SortAscending);
-
-            int totalCount = await q.CountAsync();
-
-            List<PurchaseNote> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<PurchaseNote>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
+            return q;
         }
 
-        public async Task<PurchaseNote?> GetByIdAsync(Guid id)
+        private static IQueryable<PurchaseNoteLine> ApplyLineItemFilters(IQueryable<PurchaseNoteLine> q, GetProductHistoryQuery query)
         {
-            return await context.PurchaseNotes
-                .Where(pn => pn.DeletedOn == null)
-                .Include(pn => pn.Individual)
-                .Include(pn => pn.Warehouse)
-                .Include(pn => pn.LineItems)
-                    .ThenInclude(li => li.Product)
-                .FirstOrDefaultAsync(pn => pn.Id == id);
-        }
-
-        public async Task<PurchaseNote?> GetByNoteNumberAsync(string noteNumber)
-        {
-            return await context.PurchaseNotes
-                .Where(pn => pn.DeletedOn == null)
-                .Include(pn => pn.Individual)
-                .Include(pn => pn.Warehouse)
-                .Include(pn => pn.LineItems)
-                    .ThenInclude(li => li.Product)
-                .FirstOrDefaultAsync(pn => pn.NoteNumber == noteNumber);
-        }
-
-        public async Task<IEnumerable<PurchaseNote>> GetByIndividualIdAsync(Guid individualId)
-        {
-            return await context.PurchaseNotes
-                .Where(pn => pn.DeletedOn == null && pn.IndividualId == individualId)
-                .Include(pn => pn.Individual)
-                .Include(pn => pn.LineItems)
-                    .ThenInclude(li => li.Product)
-                .OrderByDescending(pn => pn.PurchaseDate)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<PurchaseNote>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
-        {
-            return await context.PurchaseNotes
-                .Where(pn => pn.DeletedOn == null &&
-                            pn.PurchaseDate.Date >= startDate.Date &&
-                            pn.PurchaseDate.Date <= endDate.Date)
-                .Include(pn => pn.Individual)
-                .Include(pn => pn.Warehouse)
-                .OrderByDescending(pn => pn.PurchaseDate)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status)
-        {
-            return await context.PurchaseNotes
-                .Where(pn => pn.DeletedOn == null && pn.Status == status)
-                .Include(pn => pn.Individual)
-                .Include(pn => pn.LineItems)
-                    .ThenInclude(li => li.Product)
-                .OrderByDescending(pn => pn.PurchaseDate)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId)
-        {
-            return await context.PurchaseNoteLines
-                .Where(li => li.ProductId == productId &&
-                             li.DeletedOn == null &&
-                             li.PurchaseNote.DeletedOn == null)
-                .Include(li => li.PurchaseNote)
-                    .ThenInclude(pn => pn.Individual)
-                .Include(li => li.PurchaseNote)
-                    .ThenInclude(pn => pn.Warehouse)
-                .OrderByDescending(li => li.PurchaseNote.PurchaseDate)
-                .ToListAsync();
-        }
-
-        public async Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query)
-        {
-            IQueryable<PurchaseNoteLine> q = context.PurchaseNoteLines
-                .Where(li => li.ProductId == query.ProductId &&
-                             li.DeletedOn == null &&
-                             li.PurchaseNote.DeletedOn == null)
-                .Include(li => li.PurchaseNote)
-                    .ThenInclude(pn => pn.Individual)
-                .Include(li => li.PurchaseNote)
-                    .ThenInclude(pn => pn.Warehouse);
+            q = q.Where(li => li.ProductId == query.ProductId &&
+                               li.PurchaseNote.DeletedOn == null &&
+                               li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
 
             if (query.WarehouseId.HasValue)
                 q = q.Where(li => li.PurchaseNote.WarehouseId == query.WarehouseId.Value);
 
-            // PartyName for purchase notes is Individual.FullName (FirstName + " " + LastName)
             if (!string.IsNullOrWhiteSpace(query.PartyName))
                 q = q.Where(li => (li.PurchaseNote.Individual.FirstName + " " + li.PurchaseNote.Individual.LastName) == query.PartyName);
 
@@ -173,80 +257,7 @@
             if (query.DateTo.HasValue)
                 q = q.Where(li => li.PurchaseNote.PurchaseDate < query.DateTo.Value.Date.AddDays(1));
 
-            q = q.OrderByDescending(li => li.PurchaseNote.PurchaseDate);
-
-            int totalCount = await q.CountAsync();
-
-            List<PurchaseNoteLine> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<PurchaseNoteLine>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
-        }
-
-        public async Task<string> GenerateNoteNumberAsync()
-        {
-            string? lastNoteNumber = await context.PurchaseNotes
-                .Where(pn => pn.NoteNumber.StartsWith("OB-"))
-                .OrderByDescending(pn => pn.NoteNumber)
-                .Select(pn => pn.NoteNumber)
-                .FirstOrDefaultAsync();
-
-            if (string.IsNullOrEmpty(lastNoteNumber))
-            {
-                return "OB-000001";
-            }
-
-            string numberPart = lastNoteNumber.Replace("OB-", "");
-            if (int.TryParse(numberPart, out int lastNumber))
-            {
-                return $"OB-{(lastNumber + 1):D6}";
-            }
-
-            return "OB-000001";
-        }
-
-        public async Task<bool> ExistsAsync(Guid id)
-        {
-            return await context.PurchaseNotes
-                .AnyAsync(pn => pn.Id == id && pn.DeletedOn == null);
-        }
-
-        public async Task<PurchaseNote> CreateAsync(PurchaseNote purchaseNote)
-        {
-            purchaseNote.CreatedAt = DateTime.UtcNow;
-
-            context.PurchaseNotes.Add(purchaseNote);
-            await context.SaveChangesAsync();
-
-            return purchaseNote;
-        }
-
-        public async Task<PurchaseNote> UpdateAsync(PurchaseNote purchaseNote)
-        {
-            context.PurchaseNotes.Update(purchaseNote);
-            await context.SaveChangesAsync();
-
-            return purchaseNote;
-        }
-
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            PurchaseNote? purchaseNote = await context.PurchaseNotes.FindAsync(id);
-            if (purchaseNote == null)
-                return false;
-
-            purchaseNote.DeletedOn = DateTime.UtcNow;
-            await context.SaveChangesAsync();
-
-            return true;
+            return q;
         }
 
         private static IQueryable<PurchaseNote> ApplySort(IQueryable<PurchaseNote> q, string? sortBy, bool ascending)

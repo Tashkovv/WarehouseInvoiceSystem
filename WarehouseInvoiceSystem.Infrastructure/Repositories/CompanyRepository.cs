@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
+namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
@@ -8,140 +8,143 @@
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class CompanyRepository(ApplicationDbContext context) : ICompanyRepository
+    public class CompanyRepository(IDbContextFactory<ApplicationDbContext> factory)
+        : BaseRepository(factory), ICompanyRepository
     {
-        public async Task<IEnumerable<Company>> GetAllAsync()
-        {
-            return await context.Companies
-                .Where(c => c.DeletedOn == null)
-                .OrderBy(c => c.Name)
-                .ToListAsync();
-        }
+        public Task<IEnumerable<Company>> GetAllAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Company>)await All<Company>(context)
+                    .OrderBy(c => c.Name)
+                    .ToListAsync();
+            });
 
-        public async Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query)
-        {
-            IQueryable<Company> q = context.Companies
-                .Where(c => c.DeletedOn == null);
+        public Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Company> q = ApplyFilters(All<Company>(context), query);
+                q = ApplySort(q, query.SortBy, query.SortAscending);
 
+                int totalCount = await q.CountAsync();
+
+                List<Company> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<Company>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<IEnumerable<Company>> GetActiveCompaniesAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Company>)await All<Company>(context)
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.Name)
+                    .ToListAsync();
+            });
+
+        public Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Company>)await All<Company>(context)
+                    .Where(c => c.IsActive && (c.Type == type || c.Type == CompanyType.Both))
+                    .OrderBy(c => c.Name)
+                    .ToListAsync();
+            });
+
+        public Task<Company?> GetByIdAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Company>(context).FirstOrDefaultAsync(c => c.Id == id));
+
+        public Task<Company> CreateAsync(Company company) =>
+            WithContextAsync(async context =>
+            {
+                company.CreatedAt = DateTime.UtcNow;
+                context.Companies.Add(company);
+                await SaveAsync(context);
+                return company;
+            });
+
+        public Task<Company> UpdateAsync(Company company) =>
+            WithContextAsync(async context =>
+            {
+                context.Companies.Update(company);
+                await SaveAsync(context);
+                return company;
+            });
+
+        public Task<bool> DeleteAsync(Guid id) =>
+            WithContextAsync(async context =>
+            {
+                Company? company = await context.Companies
+                    .Where(x => x.Id == id)
+                    .SingleOrDefaultAsync();
+
+                if (company == null)
+                    return false;
+
+                company.IsActive = false;
+                company.DeletedOn = DateTime.UtcNow;
+                await SaveAsync(context);
+                return true;
+            });
+
+        public Task<bool> ExistsAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Company>(context).AnyAsync(c => c.Id == id && c.IsActive));
+
+        public Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId) =>
+            WithContextAsync(context =>
+                All<Invoice>(context)
+                    .Where(i => i.CompanyId == companyId &&
+                                i.Type == InvoiceType.Payable &&
+                                i.Status != InvoiceStatus.Paid &&
+                                i.Status != InvoiceStatus.Cancelled)
+                    .SumAsync(i => i.TotalAmount - i.AmountPaid));
+
+        public Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId) =>
+            WithContextAsync(context =>
+                All<Invoice>(context)
+                    .Where(i => i.CompanyId == companyId &&
+                                i.Type == InvoiceType.Receivable &&
+                                i.Status != InvoiceStatus.Paid &&
+                                i.Status != InvoiceStatus.Cancelled)
+                    .SumAsync(i => i.TotalAmount - i.AmountPaid));
+
+        private static IQueryable<Company> ApplyFilters(IQueryable<Company> q, GetCompaniesQuery query)
+        {
             if (query.Type.HasValue)
                 q = q.Where(c => c.Type == query.Type.Value || c.Type == CompanyType.Both);
 
             if (query.IsActive.HasValue)
                 q = q.Where(c => c.IsActive == query.IsActive.Value);
 
-            string search = query.Search?.ToLower() ?? string.Empty;
-
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(c => c.Name.ToLower().Contains(search) ||
-                                 (c.ContactPerson != null && c.ContactPerson.ToLower().Contains(search)) ||
-                                 (c.Email != null && c.Email.ToLower().Contains(search)));
-
-            q = query.SortBy switch
             {
-                "Name" => query.SortAscending ? q.OrderBy(c => c.Name) : q.OrderByDescending(c => c.Name),
-                "ContactPerson" => query.SortAscending ? q.OrderBy(c => c.ContactPerson) : q.OrderByDescending(c => c.ContactPerson),
-                "Email" => query.SortAscending ? q.OrderBy(c => c.Email) : q.OrderByDescending(c => c.Email),
-                _ => q.OrderBy(c => c.Name)
-            };
-
-            int totalCount = await q.CountAsync();
-
-            List<Company> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<Company>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
-        }
-
-        public async Task<IEnumerable<Company>> GetActiveCompaniesAsync()
-        {
-            return await context.Companies
-                .Where(c => c.DeletedOn == null && c.IsActive)
-                .OrderBy(c => c.Name)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type)
-        {
-            return await context.Companies
-                .Where(c => c.IsActive && (c.Type == type || c.Type == CompanyType.Both) && c.DeletedOn == null)
-                .OrderBy(c => c.Name)
-                .ToListAsync();
-        }
-
-        public async Task<Company?> GetByIdAsync(Guid id)
-        {
-            return await context.Companies
-                .FirstOrDefaultAsync(c => c.Id == id && c.DeletedOn == null);
-        }
-
-        public async Task<Company> CreateAsync(Company company)
-        {
-            company.CreatedAt = DateTime.UtcNow;
-            context.Companies.Add(company);
-
-            await context.SaveChangesAsync();
-            return company;
-        }
-
-        public async Task<Company> UpdateAsync(Company company)
-        {
-            context.Companies.Update(company);
-
-            await context.SaveChangesAsync();
-            return company;
-        }
-
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            Company? company = await context.Companies
-                .Where(x => x.Id == id)
-                .SingleOrDefaultAsync();
-            if (company == null)
-            {
-                return false;
+                string search = $"%{query.Search}%";
+                q = q.Where(c =>
+                    EF.Functions.ILike(c.Name, search) ||
+                    (c.ContactPerson != null && EF.Functions.ILike(c.ContactPerson, search)) ||
+                    (c.Email != null && EF.Functions.ILike(c.Email, search)));
             }
 
-            // Soft delete
-            company.IsActive = false;
-            company.DeletedOn = DateTime.UtcNow;
-
-            await context.SaveChangesAsync();
-            return true;
+            return q;
         }
 
-        public async Task<bool> ExistsAsync(Guid id)
-        {
-            return await context.Companies.AnyAsync(c => c.Id == id && c.IsActive && c.DeletedOn == null);
-        }
-
-        public async Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId)
-        {
-            return await context.Invoices
-                .Where(i => i.CompanyId == companyId &&
-                            i.Type == InvoiceType.Payable &&
-                            i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled &&
-                            i.DeletedOn == null)
-                .SumAsync(i => i.TotalAmount - i.AmountPaid);
-        }
-
-        public async Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId)
-        {
-            return await context.Invoices
-                .Where(i => i.CompanyId == companyId &&
-                            i.Type == InvoiceType.Receivable &&
-                            i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled &&
-                            i.DeletedOn == null)
-                .SumAsync(i => i.TotalAmount - i.AmountPaid);
-        }
+        private static IQueryable<Company> ApplySort(IQueryable<Company> q, string? sortBy, bool ascending)
+            => sortBy switch
+            {
+                "Name" => ascending ? q.OrderBy(c => c.Name) : q.OrderByDescending(c => c.Name),
+                "ContactPerson" => ascending ? q.OrderBy(c => c.ContactPerson) : q.OrderByDescending(c => c.ContactPerson),
+                "Email" => ascending ? q.OrderBy(c => c.Email) : q.OrderByDescending(c => c.Email),
+                _ => q.OrderByDescending(c => c.CreatedAt)
+            };
     }
 }

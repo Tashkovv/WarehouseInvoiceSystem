@@ -26,7 +26,7 @@
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudAutocomplete T="ProductDto"
-                                     Label="@Localization.GetString("SelectProduct")"
+                                     Label="@Localization.GetString("Product")"
                                      SearchFunc="SearchProducts"
                                      ValueChanged="@(p => _selectedProduct = p)"
                                      ToStringFunc="@(p => p?.Name ?? string.Empty)"
@@ -34,16 +34,14 @@
                                      Required="true"
                                      ResetValueOnEmptyText="true"
                                      Clearable="true"
-                                     RequiredError="@Localization.GetString("SelectProduct")"
                                      Variant="Variant.Outlined" />
                 </MudItem>
 
                 <MudItem xs="12" md="6">
                     <MudSelect T="Guid?"
                                @bind-Value="_selectedWarehouseId"
-                               Label="@Localization.GetString("SelectWarehouse")"
+                               Label="@Localization.GetString("Warehouse")"
                                Required="true"
-                               RequiredError="@Localization.GetString("PleaseSelectWarehouse")"
                                Variant="Variant.Outlined">
                         @foreach (var w in _warehouses)
                         {

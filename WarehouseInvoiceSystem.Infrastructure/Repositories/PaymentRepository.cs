@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
+namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
@@ -7,27 +7,108 @@
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class PaymentRepository(ApplicationDbContext context) : IPaymentRepository
+    public class PaymentRepository(IDbContextFactory<ApplicationDbContext> factory)
+        : BaseRepository(factory), IPaymentRepository
     {
-        public async Task<IEnumerable<Payment>> GetAllAsync()
+        public Task<IEnumerable<Payment>> GetAllAsync() =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Payment>)await All<Payment>(context)
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .OrderByDescending(p => p.PaymentDate)
+                    .ToListAsync();
+            });
+
+        public Task<PagedResult<Payment>> GetPagedAsync(GetPaymentsQuery query) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Payment> q = ApplyFilters(
+                    All<Payment>(context)
+                        .Include(p => p.Invoice)
+                            .ThenInclude(i => i.Company),
+                    query);
+
+                q = ApplySort(q, query.SortBy, query.SortAscending);
+
+                int totalCount = await q.CountAsync();
+
+                List<Payment> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync();
+
+                return new PagedResult<Payment>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
+        public Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Payment>)await All<Payment>(context)
+                    .Where(p => p.InvoiceId == invoiceId)
+                    .Include(p => p.Invoice)
+                    .OrderByDescending(p => p.PaymentDate)
+                    .ToListAsync();
+            });
+
+        public Task<Payment?> GetByIdAsync(Guid id) =>
+            WithContextAsync(context =>
+                All<Payment>(context)
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .FirstOrDefaultAsync(p => p.Id == id));
+
+        public Task<Payment> CreateAsync(Payment payment) =>
+            WithContextAsync(async context =>
+            {
+                payment.CreatedAt = DateTime.UtcNow;
+                context.Payments.Add(payment);
+                await SaveAsync(context);
+
+                return (await All<Payment>(context)
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .FirstOrDefaultAsync(p => p.Id == payment.Id))!;
+            });
+
+        public Task<Payment> UpdateAsync(Payment payment) =>
+            WithContextAsync(async context =>
+            {
+                context.Payments.Update(payment);
+                await SaveAsync(context);
+
+                return (await All<Payment>(context)
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .FirstOrDefaultAsync(p => p.Id == payment.Id))!;
+            });
+
+        public Task<bool> DeleteAsync(Guid id) =>
+            WithContextAsync(async context =>
+            {
+                Payment? payment = await context.Payments.FirstOrDefaultAsync(p => p.Id == id);
+                if (payment == null)
+                    return false;
+
+                payment.DeletedOn = DateTime.UtcNow;
+                await SaveAsync(context);
+                return true;
+            });
+
+        public Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId) =>
+            WithContextAsync(context =>
+                All<Payment>(context)
+                    .Where(p => p.InvoiceId == invoiceId)
+                    .SumAsync(p => p.Amount));
+
+        private static IQueryable<Payment> ApplyFilters(IQueryable<Payment> q, GetPaymentsQuery query)
         {
-            IEnumerable<Payment> payments = await context.Payments
-                .Where(p => p.DeletedOn == null)
-                .Include(p => p.Invoice)
-                    .ThenInclude(i => i.Company)
-                .OrderByDescending(p => p.PaymentDate)
-                .ToListAsync();
-
-            return payments;
-        }
-
-        public async Task<PagedResult<Payment>> GetPagedAsync(GetPaymentsQuery query)
-        {
-            IQueryable<Payment> q = context.Payments
-                .Where(p => p.DeletedOn == null)
-                .Include(p => p.Invoice)
-                    .ThenInclude(i => i.Company);
-
             if (query.InvoiceId.HasValue)
                 q = q.Where(p => p.InvoiceId == query.InvoiceId.Value);
 
@@ -46,90 +127,16 @@
             if (query.AmountMax.HasValue)
                 q = q.Where(p => p.Amount <= query.AmountMax.Value);
 
-            string search = query.Search?.ToLower() ?? string.Empty;
-
             if (!string.IsNullOrWhiteSpace(query.Search))
-                q = q.Where(p => (p.ReferenceNumber != null && p.ReferenceNumber.Contains(search)) ||
-                                  p.Invoice.InvoiceNumber.ToLower().Contains(search) ||
-                                  p.Invoice.Company.Name.ToLower().Contains(search));
-
-            q = ApplySort(q, query.SortBy, query.SortAscending);
-
-            int totalCount = await q.CountAsync();
-
-            List<Payment> items = await q
-                .Skip((query.Page - 1) * query.PageSize)
-                .Take(query.PageSize)
-                .ToListAsync();
-
-            return new PagedResult<Payment>
             {
-                Items = items,
-                TotalCount = totalCount,
-                Page = query.Page,
-                PageSize = query.PageSize
-            };
-        }
+                string search = $"%{query.Search}%";
+                q = q.Where(p =>
+                    (p.ReferenceNumber != null && EF.Functions.ILike(p.ReferenceNumber, search)) ||
+                    EF.Functions.ILike(p.Invoice.InvoiceNumber, search) ||
+                    EF.Functions.ILike(p.Invoice.Company.Name, search));
+            }
 
-        public async Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId)
-        {
-            IEnumerable<Payment> payments = await context.Payments
-                .Include(p => p.Invoice)
-                .Where(p => p.InvoiceId == invoiceId && p.DeletedOn == null)
-                .OrderByDescending(p => p.PaymentDate)
-                .ToListAsync();
-
-            return payments;
-        }
-
-        public async Task<Payment?> GetByIdAsync(Guid id)
-        {
-            return await context.Payments
-                .Include(p => p.Invoice)
-                    .ThenInclude(i => i.Company)
-                .FirstOrDefaultAsync(p => p.Id == id && p.DeletedOn == null);
-        }
-
-        public async Task<Payment> CreateAsync(Payment payment)
-        {
-            payment.CreatedAt = DateTime.UtcNow;
-            context.Payments.Add(payment);
-            await context.SaveChangesAsync();
-
-            // Reload with includes
-            Payment? created = await GetByIdAsync(payment.Id);
-            return created!;
-        }
-
-        public async Task<Payment> UpdateAsync(Payment payment)
-        {
-            context.Payments.Update(payment);
-            await context.SaveChangesAsync();
-
-            // Reload with includes
-            Payment? updated = await GetByIdAsync(payment.Id);
-            return updated!;
-        }
-
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            Payment? payment = await context.Payments.IgnoreQueryFilters()
-                                                     .FirstOrDefaultAsync(p => p.Id == id);
-            if (payment == null)
-                return false;
-
-            payment.DeletedOn = DateTime.UtcNow;
-            await context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId)
-        {
-            decimal total = await context.Payments
-                .Where(p => p.InvoiceId == invoiceId && p.DeletedOn == null)
-                .SumAsync(p => p.Amount);
-
-            return total;
+            return q;
         }
 
         private static IQueryable<Payment> ApplySort(IQueryable<Payment> q, string? sortBy, bool ascending)
