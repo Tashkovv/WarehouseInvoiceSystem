@@ -72,9 +72,11 @@
 
             <WisAmountRangeFilter @ref="_amountRangeFilter"
                                   Label="@Localization.GetString("AmountRange")"
+                                  AmountMin="_filterAmountMin"
                                   AmountMinChanged="OnAmountMinChanged"
+                                  AmountMax="_filterAmountMax"
                                   AmountMaxChanged="OnAmountMaxChanged"
-                                  AmountPreset="_filterAmountPreset"
+                                  AmountPreset="@_filterAmountPreset"
                                   AmountPresetChanged="OnAmountPresetChanged" />
 
         </div>
@@ -264,7 +266,7 @@
         (_filterCompanyId.HasValue ? 1 : 0) +
         (_filterIssueDateRange.Start != null || _filterIssueDateRange.End != null ? 1 : 0) +
         (_filterDueDateRange.Start != null || _filterDueDateRange.End != null ? 1 : 0) +
-        (_filterAmountPreset is not null || _filterAmountMin > 0 || _filterAmountMax > 0 ? 1 : 0);
+        (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0);
 
     protected override async Task OnInitializedAsync()
     {
@@ -502,12 +504,6 @@
         _filterIssueDatePreset = null;
         _filterDueDateRange = new(null, null);
         _filterDueDatePreset = null;
-
-        // Reset the amount filter component's internal state via its public API.
-        // We do NOT pass min/max back as parameters, so ClearAsync() is the only
-        // way to reset the component's local display state from the outside.
-        if (_amountRangeFilter is not null)
-            await _amountRangeFilter.ClearAsync();
 
         await _grid.ReloadServerData();
     }

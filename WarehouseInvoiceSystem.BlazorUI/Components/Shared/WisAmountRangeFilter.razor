@@ -84,56 +84,44 @@
 
 @code {
 
-    // ── Parameters ─────────────────────────────────────────────────────────────
-
-    /// <summary>Text shown on the trigger button when nothing is selected.</summary>
     [Parameter, EditorRequired]
     public string Label { get; set; } = string.Empty;
 
-    // NOTE: AmountMin and AmountMax are NOT received as parameters.
-    // This component owns its display state internally to avoid the circular
-    // parent → component → parent data flow that caused spurious active states.
-    // The parent receives values via callbacks and stores them for querying,
-    // but does NOT pass them back down. Use ClearAsync() to reset from the outside.
+    [Parameter]
+    public decimal? AmountMin { get; set; }
 
     [Parameter]
     public EventCallback<decimal?> AmountMinChanged { get; set; }
 
     [Parameter]
+    public decimal? AmountMax { get; set; }
+
+    [Parameter]
     public EventCallback<decimal?> AmountMaxChanged { get; set; }
 
-    /// <summary>Key of the currently selected preset. Used only to restore
-    /// preset selection if the parent holds navigation state.</summary>
     [Parameter]
     public string? AmountPreset { get; set; }
 
     [Parameter]
     public EventCallback<string?> AmountPresetChanged { get; set; }
 
-    /// <summary>Currency/unit symbol shown as right adornment on the inputs.</summary>
     [Parameter]
     public string AdornmentText { get; set; } = string.Empty;
 
-    // ── Internal state (owned by this component) ──────────────────────────────
-    //
-    // _localMin / _localMax / _localPreset are the single source of truth.
-    // Nothing inside this component reads from parent parameters for display
-    // or active-state purposes — that was the root cause of the always-active bug.
-
+    // Shadow fields — same pattern as FilterPopoverList.
+    // OnParametersSet syncs all three unconditionally so external resets
+    // (ClearAllFilters) are always reflected in the UI.
     private bool _open;
     private decimal? _localMin;
     private decimal? _localMax;
     private string? _localPreset;
 
-    // Sync preset-only from the outside so external navigation/query-param
-    // restoration works, without touching min/max which caused the bug.
     protected override void OnParametersSet()
     {
-        // Only sync preset from parent (read-only, avoids circular min/max flow)
+        _localMin = AmountMin;
+        _localMax = AmountMax;
         _localPreset = AmountPreset;
     }
-
-    // ── Active state & label ───────────────────────────────────────────────────
 
     private bool _isActive => _localPreset is not null || _localMin.HasValue || _localMax.HasValue;
 
@@ -163,8 +151,6 @@
     private static string Fmt(decimal v) =>
         v.ToString("N0", System.Globalization.CultureInfo.CurrentCulture);
 
-    // ── Preset definitions ─────────────────────────────────────────────────────
-
     private record Preset(string Key, string Label, decimal? Min, decimal? Max);
 
     private readonly List<Preset> _presets =
@@ -177,45 +163,33 @@
         new("gt100000",      "> 100.000",        100000m,    null),
     ];
 
-    // ── Open / Close ───────────────────────────────────────────────────────────
-
     private void Toggle() => _open = !_open;
     private void Close() => _open = false;
-
-    // ── Input handlers ─────────────────────────────────────────────────────────
 
     private async Task OnMinChanged(decimal? value)
     {
         _localMin = value;
-
-        // Manual input clears any active preset
         if (_localPreset is not null)
         {
             _localPreset = null;
             await AmountPresetChanged.InvokeAsync(null);
         }
-
         await AmountMinChanged.InvokeAsync(value);
     }
 
     private async Task OnMaxChanged(decimal? value)
     {
         _localMax = value;
-
         if (_localPreset is not null)
         {
             _localPreset = null;
             await AmountPresetChanged.InvokeAsync(null);
         }
-
         await AmountMaxChanged.InvokeAsync(value);
     }
 
-    // ── Preset handler ─────────────────────────────────────────────────────────
-
     private async Task OnPresetClicked(string key)
     {
-        // Clicking the active preset toggles it off
         if (_localPreset == key)
         {
             _localPreset = null;
@@ -239,11 +213,6 @@
         _open = false;
     }
 
-    // ── Public API ─────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Resets the filter. Called from the parent's ClearAllFilters via @ref.
-    /// </summary>
     public async Task ClearAsync()
     {
         _localPreset = null;
