@@ -201,7 +201,7 @@
 
     protected override void OnParametersSet()
     {
-        if (SelectedValue is null)
+        if (SelectedValue is null || SelectedValue.Equals(default(TValue)))
             _selectedItem = null;
     }
 

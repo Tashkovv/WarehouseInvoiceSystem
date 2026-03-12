@@ -36,71 +36,35 @@
                            SelectedValueChanged="OnStatusFilterChanged" />
     </Filters>
     <AdvancedFilters>
-        <MudGrid Spacing="2" AlignItems="AlignItems.Start">
+        <div class="d-flex align-center flex-wrap gap-3">
 
-            @* Individual autocomplete *@
-            <MudItem xs="12" sm="6" md="4">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
-                    &nbsp
-                </MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudAutocomplete T="string"
-                                     Value="_filterIndividualName"
-                                     ValueChanged="OnIndividualFilterChanged"
-                                     SearchFunc="SearchIndividuals"
-                                     Label="@Localization.GetString("Individual")"
-                                     Variant="Variant.Outlined"
-                                     Dense="true"
-                                     Clearable="true"
-                                     OnClearedClick="@(() => OnIndividualFilterChanged(null))" />
-                </MudStack>
-            </MudItem>
+            <WisAutocompleteFilter TValue="string"
+                                   Label="@Localization.GetString("Individual")"
+                                   AllLabel="@Localization.GetString("AllIndividuals")"
+                                   Icon="@Icons.Material.Filled.Person"
+                                   LoadItems="LoadIndividualItems"
+                                   SelectedValue="@(_filterIndividualName ?? string.Empty)"
+                                   SelectedValueChanged="OnIndividualFilterChanged"
+                                   MinWidth="200px" />
 
-            @* Purchase date range *@
-            <MudItem xs="12" sm="6" md="4">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
-                    @Localization.GetString("PurchaseDate")
-                </MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudDatePicker @bind-Date="_filterDateFrom"
-                                   @bind-Date:after="ReloadGrid"
-                                   Label="@Localization.GetString("From")"
-                                   Variant="Variant.Outlined"
-                                   Dense="true" />
-                    <MudDatePicker @bind-Date="_filterDateTo"
-                                   @bind-Date:after="ReloadGrid"
-                                   Label="@Localization.GetString("To")"
-                                   Variant="Variant.Outlined"
-                                   Dense="true" />
-                </MudStack>
-            </MudItem>
+            <WisDateRangeFilter @ref="_dateRangeFilter"
+                                Label="@Localization.GetString("PurchaseDate")"
+                                DateRange="_filterDateRange"
+                                DateRangeChanged="OnDateRangeChanged"
+                                DatePreset="_filterDatePreset"
+                                DatePresetChanged="OnDatePresetChanged"
+                                MaxDate="DateTime.Today" />
 
-            @* Amount range *@
-            <MudItem xs="12" sm="6" md="4">
-                <MudText Typo="Typo.caption" Class="mb-1 d-block" Style="color: var(--mud-palette-text-secondary);">
-                    @Localization.GetString("AmountRange")
-                </MudText>
-                <MudStack Row="true" Spacing="1">
-                    <MudNumericField T="decimal?"
-                                     @bind-Value="_filterAmountMin"
-                                     @bind-Value:after="ReloadGrid"
-                                     Label="@Localization.GetString("Min")"
-                                     Variant="Variant.Outlined"
-                                     HideSpinButtons="true"
-                                     Format="N2"
-                                     Dense="true" />
-                    <MudNumericField T="decimal?"
-                                     @bind-Value="_filterAmountMax"
-                                     @bind-Value:after="ReloadGrid"
-                                     Label="@Localization.GetString("Max")"
-                                     Variant="Variant.Outlined"
-                                     HideSpinButtons="true"
-                                     Format="N2"
-                                     Dense="true" />
-                </MudStack>
-            </MudItem>
+            <WisAmountRangeFilter @ref="_amountRangeFilter"
+                                  Label="@Localization.GetString("AmountRange")"
+                                  AmountMin="_filterAmountMin"
+                                  AmountMinChanged="OnAmountMinChanged"
+                                  AmountMax="_filterAmountMax"
+                                  AmountMaxChanged="OnAmountMaxChanged"
+                                  AmountPreset="@_filterAmountPreset"
+                                  AmountPresetChanged="OnAmountPresetChanged" />
 
-        </MudGrid>
+        </div>
     </AdvancedFilters>
 </WisGridToolbar>
 
@@ -239,18 +203,18 @@
 
     // Advanced filters
     private string? _filterIndividualName = null;
-    private DateTime? _filterDateFrom = null;
-    private DateTime? _filterDateTo = null;
+    private DateRange _filterDateRange = new(null, null);
+    private int? _filterDatePreset = null;
+    private WisDateRangeFilter? _dateRangeFilter;
     private decimal? _filterAmountMin = null;
     private decimal? _filterAmountMax = null;
+    private string? _filterAmountPreset = null;
+    private WisAmountRangeFilter? _amountRangeFilter;
 
     private int _activeAdvancedFilterCount =>
         (!string.IsNullOrWhiteSpace(_filterIndividualName) ? 1 : 0) +
-        (_filterDateFrom.HasValue || _filterDateTo.HasValue ? 1 : 0) +
+        (_filterDateRange.Start != null || _filterDateRange.End != null ? 1 : 0) +
         (_filterAmountMin.HasValue || _filterAmountMax.HasValue ? 1 : 0);
-
-    // Individuals cache for autocomplete
-    private List<IndividualDto> _individuals = [];
 
     private List<FilterPopoverItem<PurchaseNoteStatus?>> _statusFilterItems = [];
 
@@ -259,23 +223,19 @@
         Localization.OnLanguageChanged += OnLanguageChanged;
         BuildFilterItems();
 
-        // Pre-load individuals for autocomplete
-        try
-        {
-            IEnumerable<IndividualDto> all = await IndividualService.GetAllIndividualsAsync();
-            _individuals = all.Where(i => i.IsActive).OrderBy(i => i.FullName).ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading individuals: {ex.Message}");
-        }
-
         // Resolve ?individualId= param to a name for the filter
         if (IndividualIdParam.HasValue)
         {
-            IndividualDto? match = _individuals.FirstOrDefault(i => i.Id == IndividualIdParam.Value);
-            if (match is not null)
-                _filterIndividualName = match.FullName;
+            try
+            {
+                IndividualDto? match = await IndividualService.GetIndividualByIdAsync(IndividualIdParam.Value);
+                if (match is not null)
+                    _filterIndividualName = match.FullName;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error resolving individual param: {ex.Message}");
+            }
         }
     }
 
@@ -307,8 +267,8 @@
             Search = _searchString,
             Status = _filterStatus,
             IndividualName = _filterIndividualName,
-            DateFrom = _filterDateFrom,
-            DateTo = _filterDateTo,
+            DateFrom = _filterDateRange.Start,
+            DateTo = _filterDateRange.End,
             AmountMin = _filterAmountMin,
             AmountMax = _filterAmountMax,
             Page = state.Page + 1,
@@ -326,17 +286,6 @@
         };
     }
 
-    private async Task<IEnumerable<string>> SearchIndividuals(string value, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return _individuals.Select(i => i.FullName);
-
-        return _individuals
-            .Where(i => i.FullName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-                        i.IdentificationNumber.Contains(value, StringComparison.OrdinalIgnoreCase))
-            .Select(i => i.FullName);
-    }
-
     private async Task OnSearch(string text)
     {
         _searchString = text;
@@ -349,22 +298,86 @@
         await _grid.ReloadServerData();
     }
 
+    private async Task ReloadGrid() => await _grid.ReloadServerData();
+
+    private async Task<PagedResult<WisAutocompleteItem<string>>> LoadIndividualItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<IndividualDto> result = await IndividualService.GetPagedAsync(new GetIndividualsQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            SortBy = "LastName",
+            SortAscending = true,
+            IsActive = true
+        });
+
+        return new PagedResult<WisAutocompleteItem<string>>
+        {
+            Items = result.Items.Select(i => new WisAutocompleteItem<string>
+            {
+                Label = i.FullName,
+                SubLabel = i.IdentificationNumber,
+                Value = i.FullName
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
     private async Task OnIndividualFilterChanged(string? value)
     {
-        _filterIndividualName = value;
+        _filterIndividualName = string.IsNullOrEmpty(value) ? null : value;
         await _grid.ReloadServerData();
     }
 
-    private async Task ReloadGrid() => await _grid.ReloadServerData();
+    private async Task OnDatePresetChanged(int? days)
+    {
+        _filterDatePreset = days;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnDateRangeChanged(DateRange range)
+    {
+        _filterDateRange = range;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnAmountMinChanged(decimal? value)
+    {
+        _filterAmountMin = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnAmountMaxChanged(decimal? value)
+    {
+        _filterAmountMax = value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnAmountPresetChanged(string? key)
+    {
+        _filterAmountPreset = key;
+        await _grid.ReloadServerData();
+    }
 
     private async Task ClearAllFilters()
     {
         _filterStatus = null;
         _filterIndividualName = null;
-        _filterDateFrom = null;
-        _filterDateTo = null;
         _filterAmountMin = null;
         _filterAmountMax = null;
+        _filterAmountPreset = null;
+        _filterDateRange = new(null, null);
+        _filterDatePreset = null;
+
+        if (_dateRangeFilter is not null)
+            await _dateRangeFilter.ClearAsync();
+        if (_amountRangeFilter is not null)
+            await _amountRangeFilter.ClearAsync();
+
         await _grid.ReloadServerData();
     }
 

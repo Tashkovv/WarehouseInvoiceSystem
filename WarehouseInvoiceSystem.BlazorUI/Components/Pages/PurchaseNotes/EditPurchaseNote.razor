@@ -312,14 +312,22 @@ else
                 _purchaseDate = _model.PurchaseDate;
                 _notes = _model.Notes;
 
-                // Load line items
-                _lineItems = _model.LineItems.Select(li => new LineItemModel
+                // Load line items — fall back to a direct lookup for any product
+                // that has been deactivated since the purchase note was created
+                List<LineItemModel> lineItems = [];
+                foreach (PurchaseNoteLineDto li in _model.LineItems)
                 {
-                    SelectedProduct = _products.FirstOrDefault(p => p.Id == li.ProductId),
-                    Description = li.Description,
-                    Quantity = li.Quantity,
-                    UnitPrice = li.UnitPrice
-                }).ToList();
+                    ProductDto? product = _products.FirstOrDefault(p => p.Id == li.ProductId)
+                        ?? await ProductService.GetProductByIdAsync(li.ProductId);
+                    lineItems.Add(new LineItemModel
+                    {
+                        SelectedProduct = product!,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice
+                    });
+                }
+                _lineItems = lineItems;
 
                 CalculateTotals();
             }

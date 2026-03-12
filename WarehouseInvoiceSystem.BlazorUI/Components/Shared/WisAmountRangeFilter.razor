@@ -214,14 +214,13 @@
         _open = false;
     }
 
-    public async Task ClearAsync()
+    public Task ClearAsync()
     {
         _localPreset = null; _lastSeenPreset = null;
         _localMin = null; _lastSeenMin = null;
         _localMax = null; _lastSeenMax = null;
-        await AmountPresetChanged.InvokeAsync(null);
-        await AmountMinChanged.InvokeAsync(null);
-        await AmountMaxChanged.InvokeAsync(null);
         _open = false;
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 }

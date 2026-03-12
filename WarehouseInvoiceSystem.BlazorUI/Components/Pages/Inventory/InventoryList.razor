@@ -26,7 +26,7 @@
                 CreateIcon="@Icons.Material.Filled.Inventory2"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
-                HasAnyActiveFilter="@(_filterIsLowStock == true)"
+                HasAnyActiveFilter="@(_filterIsLowStock == true || _activeAdvancedFilterCount > 0)"
                 OnClearAll="ClearAllFilters"
                 ActiveAdvancedFilterCount="@_activeAdvancedFilterCount">
     <Filters>
@@ -40,51 +40,27 @@
         </button>
     </Filters>
     <AdvancedFilters>
-        <MudGrid Spacing="2" AlignItems="AlignItems.Start">
+        <div class="d-flex align-center flex-wrap gap-3">
 
-            @* Warehouse select *@
-            <MudItem xs="12" sm="6" md="4">
-                <MudSelect T="Guid?"
-                           Value="_filterWarehouseId"
-                           ValueChanged="OnWarehouseFilterChanged"
-                           Label="@Localization.GetString("Warehouse")"
-                           Variant="Variant.Outlined"
-                           Dense="true"
-                           AnchorOrigin="Origin.BottomLeft">
-                    <MudSelectItem Value="@((Guid?)null)">
-                        @Localization.GetString("AllWarehouses")
-                    </MudSelectItem>
-                    @foreach (WarehouseDto w in _warehouses)
-                    {
-                        <MudSelectItem Value="@((Guid?)w.Id)">
-                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                                @w.Name
-                                @if (w.IsDefault)
-                                {
-                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Class="ml-1">
-                                        @Localization.GetString("Default")
-                                    </MudChip>
-                                }
-                            </MudStack>
-                        </MudSelectItem>
-                    }
-                </MudSelect>
-            </MudItem>
+            <WisAutocompleteFilter TValue="Guid"
+                                   Label="@Localization.GetString("Warehouse")"
+                                   AllLabel="@Localization.GetString("AllWarehouses")"
+                                   Icon="@Icons.Material.Filled.Warehouse"
+                                   LoadItems="LoadWarehouseItems"
+                                   SelectedValue="@(_filterWarehouseId ?? default)"
+                                   SelectedValueChanged="OnWarehouseFilterChanged"
+                                   MinWidth="200px" />
 
-            @* Product autocomplete *@
-            <MudItem xs="12" sm="6" md="4">
-                <MudAutocomplete T="string"
-                                 Value="_filterProductName"
-                                 ValueChanged="OnProductFilterChanged"
-                                 SearchFunc="SearchProducts"
-                                 Label="@Localization.GetString("SelectProduct")"
-                                 Variant="Variant.Outlined"
-                                 Dense="true"
-                                 Clearable="true"
-                                 OnClearedClick="@(() => OnProductFilterChanged(null))" />
-            </MudItem>
+            <WisAutocompleteFilter TValue="Guid"
+                                   Label="@Localization.GetString("SelectProduct")"
+                                   AllLabel="@Localization.GetString("AllProducts")"
+                                   Icon="@Icons.Material.Filled.Inventory2"
+                                   LoadItems="LoadProductItems"
+                                   SelectedValue="@(_filterProductId ?? default)"
+                                   SelectedValueChanged="OnProductFilterChanged"
+                                   MinWidth="200px" />
 
-        </MudGrid>
+        </div>
     </AdvancedFilters>
 </WisGridToolbar>
 
@@ -214,35 +190,15 @@
 
     // Advanced filters
     private Guid? _filterWarehouseId = null;
-    private string? _filterProductName = null;
+    private Guid? _filterProductId = null;
 
     private int _activeAdvancedFilterCount =>
         (_filterWarehouseId.HasValue ? 1 : 0) +
-        (!string.IsNullOrWhiteSpace(_filterProductName) ? 1 : 0);
+        (_filterProductId.HasValue ? 1 : 0);
 
-    // Caches for filter controls
-    private List<WarehouseDto> _warehouses = [];
-    private List<ProductDto> _products = [];
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-
-        try
-        {
-            _warehouses = (await WarehouseService.GetAllWarehousesAsync())
-                .OrderByDescending(w => w.IsDefault)
-                .ThenBy(w => w.Name)
-                .ToList();
-
-            _products = (await ProductService.GetActiveProductsAsync())
-                .OrderBy(p => p.Name)
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading filter data: {ex.Message}");
-        }
     }
 
     private async void OnLanguageChanged()
@@ -255,20 +211,11 @@
         string? sortBy = state.SortDefinitions.FirstOrDefault()?.SortBy;
         bool ascending = state.SortDefinitions.FirstOrDefault()?.Descending == false;
 
-        // Resolve product name to ID for the query
-        Guid? productId = null;
-        if (!string.IsNullOrWhiteSpace(_filterProductName))
-        {
-            ProductDto? match = _products.FirstOrDefault(p =>
-                p.Name.Equals(_filterProductName, StringComparison.OrdinalIgnoreCase));
-            productId = match?.Id;
-        }
-
         GetStockQuery query = new()
         {
             Search = _searchString,
             WarehouseId = _filterWarehouseId,
-            ProductId = productId,
+            ProductId = _filterProductId,
             IsLowStock = _filterIsLowStock,
             Page = state.Page + 1,
             PageSize = state.PageSize,
@@ -285,17 +232,6 @@
         };
     }
 
-    private async Task<IEnumerable<string>> SearchProducts(string value, CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return _products.Select(p => p.Name);
-
-        return _products
-            .Where(p => p.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-                        p.Code.Contains(value, StringComparison.OrdinalIgnoreCase))
-            .Select(p => p.Name);
-    }
-
     private async Task OnSearch(string text)
     {
         _searchString = text;
@@ -308,25 +244,78 @@
         await _grid.ReloadServerData();
     }
 
-    private async Task OnWarehouseFilterChanged(Guid? id)
-    {
-        _filterWarehouseId = id;
-        await _grid.ReloadServerData();
-    }
-
-    private async Task OnProductFilterChanged(string? value)
-    {
-        _filterProductName = value;
-        await _grid.ReloadServerData();
-    }
-
     private async Task ReloadGrid() => await _grid.ReloadServerData();
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(new GetWarehousesQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            SortBy = "Name",
+            SortAscending = true,
+            IsActive = true
+        });
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+            {
+                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+                Value = w.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadProductItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<ProductDto> result = await ProductService.GetPagedAsync(new GetProductsQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            SortBy = "Name",
+            SortAscending = true,
+            IsActive = true
+        });
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(p => new WisAutocompleteItem<Guid>
+            {
+                Label = p.Name,
+                SubLabel = p.Code,
+                Value = p.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    private async Task OnWarehouseFilterChanged(Guid value)
+    {
+        _filterWarehouseId = value == default ? null : value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnProductFilterChanged(Guid value)
+    {
+        _filterProductId = value == default ? null : value;
+        await _grid.ReloadServerData();
+    }
 
     private async Task ClearAllFilters()
     {
         _filterIsLowStock = null;
         _filterWarehouseId = null;
-        _filterProductName = null;
+        _filterProductId = null;
         await _grid.ReloadServerData();
     }
 

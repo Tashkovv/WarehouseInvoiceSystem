@@ -219,14 +219,14 @@
             _open = false;
     }
 
-    public async Task ClearAsync()
+    public Task ClearAsync()
     {
         _localPreset = null;
         _localRange = new(null, null);
         _lastSeenPreset = null;
         _lastSeenRange = new(null, null);
-        await DatePresetChanged.InvokeAsync(null);
-        await DateRangeChanged.InvokeAsync(new(null, null));
         _open = false;
+        StateHasChanged();
+        return Task.CompletedTask;
     }
 }

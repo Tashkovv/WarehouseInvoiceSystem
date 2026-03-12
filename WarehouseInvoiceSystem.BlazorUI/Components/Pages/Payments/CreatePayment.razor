@@ -3,6 +3,7 @@
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
+@using WarehouseInvoiceSystem.Domain.Queries
 @inject IPaymentService PaymentService
 @inject IInvoiceService InvoiceService
 @inject ILocalizationService Localization
@@ -36,7 +37,7 @@ else
             <MudCardContent>
                 <MudGrid>
                     <MudItem xs="12" md="4">
-                        <MudSelect T="Guid?"
+                        <MudSelect T="Guid ?"
                                    @bind-Value="_selectedInvoiceId"
                                    @bind-Value:after="OnInvoiceSelected"
                                    Label="@Localization.GetString("SelectInvoice")"
@@ -234,11 +235,14 @@ else
 
         try
         {
-            IEnumerable<InvoiceDto> allInvoices = await InvoiceService.GetAllInvoicesAsync();
+            IEnumerable<InvoiceDto> allInvoices = await InvoiceService.GetAllFilteredAsync(new GetInvoicesQuery
+            {
+                Statuses = [InvoiceStatus.Draft, InvoiceStatus.Sent, InvoiceStatus.PartiallyPaid, InvoiceStatus.Overdue],
+                SortBy = "DueDate",
+                SortAscending = true
+            });
             _unpaidInvoices = allInvoices
-                .Where(i => i.Status != InvoiceStatus.Paid &&
-                            i.Status != InvoiceStatus.Cancelled &&
-                            i.AmountDue > 0)
+                .Where(i => i.AmountDue > 0)
                 .OrderByDescending(i => i.DueDate)
                 .ToList();
         }

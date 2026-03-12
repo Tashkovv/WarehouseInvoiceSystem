@@ -7,6 +7,7 @@
     {
         public PurchaseNoteStatus? Status { get; set; }
         public string? IndividualName { get; set; }
+        public Guid? IndividualId { get; set; }
         public DateTime? DateFrom { get; set; }
         public DateTime? DateTo { get; set; }
         public decimal? AmountMin { get; set; }

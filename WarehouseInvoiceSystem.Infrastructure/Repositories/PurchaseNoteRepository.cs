@@ -207,7 +207,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             if (query.Status.HasValue)
                 q = q.Where(p => p.Status == query.Status.Value);
 
-            if (!string.IsNullOrWhiteSpace(query.IndividualName))
+            if (query.IndividualId.HasValue)
+                q = q.Where(p => p.IndividualId == query.IndividualId.Value);
+
+            else if (!string.IsNullOrWhiteSpace(query.IndividualName))
                 q = q.Where(p =>
                     EF.Functions.ILike(p.Individual.FirstName, $"%{query.IndividualName}%") ||
                     EF.Functions.ILike(p.Individual.LastName, $"%{query.IndividualName}%"));
