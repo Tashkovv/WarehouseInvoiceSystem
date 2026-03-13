@@ -8,6 +8,7 @@
         private string _currentLanguage = "mk";
 
         public string CurrentLanguage => _currentLanguage;
+        public string CurrencySymbol => _currentLanguage == "mk" ? "ден." : "MKD";
 
         public event Action? OnLanguageChanged;
 
