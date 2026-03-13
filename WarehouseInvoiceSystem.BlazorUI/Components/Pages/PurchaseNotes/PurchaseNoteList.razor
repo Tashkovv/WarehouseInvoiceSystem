@@ -164,12 +164,22 @@
                                            Title="@Localization.GetString("Edit")"
                                            Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid || context.Item.Status == PurchaseNoteStatus.Cancelled)"
                                            OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/edit/{context.Item.Id}"))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Payment"
-                                           Size="Size.Small"
-                                           Color="Color.Success"
-                                           Title="@Localization.GetString("MarkAsPaid")"
-                                           Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid || context.Item.Status == PurchaseNoteStatus.Cancelled)"
-                                           OnClick="@(() => MarkAsPaid(context.Item))" />
+                            @if (context.Item.Status == PurchaseNoteStatus.Draft)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.MoveToInbox"
+                                               Size="Size.Small"
+                                               Color="Color.Warning"
+                                               Title="@Localization.GetString("ReceiveGoods")"
+                                               OnClick="@(() => ReceiveGoods(context.Item))" />
+                            }
+                            else if (context.Item.Status == PurchaseNoteStatus.Pending)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Payment"
+                                               Size="Size.Small"
+                                               Color="Color.Success"
+                                               Title="@Localization.GetString("MarkAsPaid")"
+                                               OnClick="@(() => MarkAsPaid(context.Item))" />
+                            }
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>
@@ -392,6 +402,30 @@
     {
         if (args.MouseEventArgs.Detail == 2)
             Navigation.NavigateTo($"/purchase-notes/{args.Item.Id}");
+    }
+
+    private async Task ReceiveGoods(PurchaseNoteDto note)
+    {
+        bool confirm = await WisDialog.ConfirmAsync(
+            Localization.GetString("ReceiveGoods"),
+            $"{note.NoteNumber} — {note.IndividualFullName}",
+            Localization.GetString("ReceiveGoods"),
+            Localization.GetString("Cancel"));
+
+        if (confirm)
+        {
+            try
+            {
+                await PurchaseNoteService.ReceiveAsync(note.Id);
+                Snackbar.Add(Localization.GetString("PurchaseNoteReceived"), Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error receiving purchase note: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+            }
+        }
     }
 
     private async Task MarkAsPaid(PurchaseNoteDto note)

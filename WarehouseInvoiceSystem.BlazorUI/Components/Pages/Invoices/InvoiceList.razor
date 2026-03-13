@@ -189,8 +189,8 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                HeaderClass="wis-col-actions-3"
-                                CellClass="wis-col-actions-3">
+                                HeaderClass="wis-col-actions-2"
+                                CellClass="wis-col-actions-2">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
@@ -198,18 +198,22 @@
                                            Color="Color.Primary"
                                            Title="@Localization.GetString("Edit")"
                                            OnClick="@(() => Navigation.NavigateTo($"/invoices/edit/{context.Item.Id}"))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Payment"
-                                           Size="Size.Small"
-                                           Color="Color.Success"
-                                           Title="@Localization.GetString("RecordPayment")"
-                                           Disabled="@(!CanPay(context.Item.Status))"
-                                           OnClick="@(() => OpenPaymentDialog(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Email"
-                                           Size="Size.Small"
-                                           Color="Color.Secondary"
-                                           Title="@Localization.GetString("SendEmail")"
-                                           Disabled="@(!CanSendEmail(context.Item.Type, context.Item.Status))"
-                                           OnClick="@(() => OpenSendEmailDialog(context.Item))" />
+                            @if (CanSendEmail(context.Item.Type, context.Item.Status))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Email"
+                                               Size="Size.Small"
+                                               Color="Color.Secondary"
+                                               Title="@Localization.GetString("SendEmail")"
+                                               OnClick="@(() => OpenSendEmailDialog(context.Item))" />
+                            }
+                            else if (CanPay(context.Item.Status))
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Payment"
+                                               Size="Size.Small"
+                                               Color="Color.Success"
+                                               Title="@Localization.GetString("RecordPayment")"
+                                               OnClick="@(() => OpenPaymentDialog(context.Item))" />
+                            }
                         </MudStack>
                     </CellTemplate>
                 </TemplateColumn>

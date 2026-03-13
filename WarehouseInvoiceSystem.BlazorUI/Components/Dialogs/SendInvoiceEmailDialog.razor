@@ -1,6 +1,8 @@
 ﻿@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Domain.Enums
 @inject ILocalizationService Localization
 @inject IEmailService EmailService
+@inject IInvoiceService InvoiceService
 @inject ISnackbar Snackbar
 
 <MudDialog Class="wis-email-dialog">
@@ -112,6 +114,14 @@
 
             if (success)
             {
+                // Transition Draft → Sent (creates inventory transactions) right here,
+                // so the status update happens regardless of whether the caller is the
+                // list page or the details page.
+                if (_invoice.Status == InvoiceStatus.Draft)
+                {
+                    await InvoiceService.SendAsync(_invoice.Id);
+                }
+
                 Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));
             }

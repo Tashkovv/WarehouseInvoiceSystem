@@ -547,20 +547,6 @@ else
 
         if (sent != true) return;
 
-        // Email was sent — transition Draft → Sent and create inventory transactions
-        if (_invoice.Status == InvoiceStatus.Draft)
-        {
-            try
-            {
-                await InvoiceService.SendAsync(Id);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error transitioning invoice to Sent: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
-            }
-        }
-
         await Reload();
     }
 
