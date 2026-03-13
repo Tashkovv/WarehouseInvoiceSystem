@@ -157,6 +157,10 @@
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} cannot be edited (current: {invoice.Status}). Only Draft invoices can be edited.");
+
             if (!await companyRepository.ExistsAsync(updateDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {updateDto.CompanyId} not found");
 
@@ -174,20 +178,62 @@
             invoice.DueDate = updateDto.DueDate;
             invoice.Notes = updateDto.Notes;
 
-            invoice.LineItems.Clear();
-            List<InvoiceLine> newLineItems = [.. updateDto.LineItems.Select(li => new InvoiceLine
-            {
-                ProductId = li.ProductId,
-                Description = li.Description,
-                Quantity = li.Quantity,
-                UnitPrice = li.UnitPrice,
-                TaxRate = li.TaxRate
-            })];
+            // ── 3-way line item merge ─────────────────────────────────────────────
+            // Update existing lines, remove deleted ones, insert new ones
+            DateTime now = DateTime.UtcNow;
+            HashSet<Guid> incomingIds = updateDto.LineItems
+                .Where(li => li.Id != Guid.Empty)
+                .Select(li => li.Id)
+                .ToHashSet();
 
-            invoice.LineItems = newLineItems;
-            invoice.SubTotal = newLineItems.Sum(li => li.Amount);
-            invoice.TaxAmount = newLineItems.Sum(li => li.TaxAmount);
-            invoice.TotalAmount = newLineItems.Sum(li => li.TotalAmount);
+            // Lines absent from the incoming DTO were removed by the user — soft-delete them
+            foreach (InvoiceLine existing in invoice.LineItems)
+            {
+                if (!incomingIds.Contains(existing.Id))
+                    existing.DeletedOn = now;
+            }
+
+            // Update existing or insert new
+            Dictionary<Guid, InvoiceLine> existingById = invoice.LineItems
+                .ToDictionary(li => li.Id);
+
+            List<InvoiceLine> newLineItems = [];
+            foreach (UpdateInvoiceLineDto li in updateDto.LineItems)
+            {
+                if (li.Id != Guid.Empty && existingById.TryGetValue(li.Id, out InvoiceLine? existing))
+                {
+                    // Update in place
+                    existing.ProductId = li.ProductId;
+                    existing.Description = li.Description;
+                    existing.Quantity = li.Quantity;
+                    existing.UnitPrice = li.UnitPrice;
+                    existing.TaxRate = li.TaxRate;
+                }
+                else
+                {
+                    // New line
+                    newLineItems.Add(new InvoiceLine
+                    {
+                        ProductId = li.ProductId,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TaxRate = li.TaxRate
+                    });
+                }
+            }
+
+            foreach (InvoiceLine newLine in newLineItems)
+                invoice.LineItems.Add(newLine);
+
+            // Recalculate totals from active lines only
+            List<InvoiceLine> activeLines = invoice.LineItems
+                .Where(li => li.DeletedOn == null)
+                .ToList();
+
+            invoice.SubTotal = activeLines.Sum(li => li.Amount);
+            invoice.TaxAmount = activeLines.Sum(li => li.TaxAmount);
+            invoice.TotalAmount = activeLines.Sum(li => li.TotalAmount);
 
             await invoiceRepository.UpdateAsync(invoice);
         }
@@ -233,6 +279,34 @@
                 // Inventory creation failed — roll back the status change so the invoice
                 // doesn't appear as Sent with no stock movement recorded.
                 invoice.Status = InvoiceStatus.Draft;
+                await invoiceRepository.UpdateAsync(invoice);
+                throw;
+            }
+
+            return MapToDto(updated);
+        }
+
+        /// <summary>Sent/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
+        public async Task<InvoiceDto> RevertToDraftAsync(Guid id)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status != InvoiceStatus.Sent && invoice.Status != InvoiceStatus.Overdue)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} cannot be reverted to Draft (current: {invoice.Status}). Only Sent or Overdue invoices can be reverted.");
+
+            InvoiceStatus previousStatus = invoice.Status;
+            invoice.Status = InvoiceStatus.Draft;
+            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
+
+            try
+            {
+                await CreateReverseTransactionsIfNeeded(updated);
+            }
+            catch (Exception)
+            {
+                invoice.Status = previousStatus;
                 await invoiceRepository.UpdateAsync(invoice);
                 throw;
             }

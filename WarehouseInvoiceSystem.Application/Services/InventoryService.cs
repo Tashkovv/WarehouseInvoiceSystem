@@ -1,6 +1,5 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
-    using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -209,50 +208,16 @@
                 _ => 0
             };
 
-        /// <summary>
-        /// Applies a transaction's quantity delta to the corresponding StockLevel row.
-        ///
-        /// ApplyDeltaAsync performs the read and write inside a single DbContext so the
-        /// xmin concurrency token is always valid when EF issues the UPDATE.  A genuine
-        /// concurrent write will still cause DbUpdateConcurrencyException; the retry loop
-        /// handles that by re-entering ApplyDeltaAsync with a fresh context and a fresh
-        /// xmin read.
-        ///
-        /// Max 5 attempts before giving up; each retry back-offs slightly to reduce
-        /// thundering-herd contention when many invoices confirm at the same instant.
-        /// </summary>
-        private async Task UpdateStockFromTransactionAsync(InventoryTransaction transaction)
+        private Task UpdateStockFromTransactionAsync(InventoryTransaction transaction)
         {
-            const int MaxRetries = 5;
-
             decimal delta = ComputeStockChange(transaction);
             bool updateRestockDate = transaction.Type is InventoryTransactionType.Inbound
                                                       or InventoryTransactionType.TransferIn;
-
-            for (int attempt = 1; attempt <= MaxRetries; attempt++)
-            {
-                try
-                {
-                    await stockLevelRepository.ApplyDeltaAsync(
-                        transaction.ProductId,
-                        transaction.WarehouseId,
-                        delta,
-                        updateRestockDate);
-
-                    return;
-                }
-                catch (DbUpdateConcurrencyException) when (attempt < MaxRetries)
-                {
-                    // A genuine concurrent write advanced xmin between our SELECT and UPDATE.
-                    // Re-enter ApplyDeltaAsync — it will read the fresh xmin on the next attempt.
-                    await Task.Delay(TimeSpan.FromMilliseconds(20 * attempt));
-                }
-            }
-
-            throw new InvalidOperationException(
-                $"Failed to update stock for product {transaction.ProductId} in warehouse " +
-                $"{transaction.WarehouseId} after {MaxRetries} attempts due to concurrent modifications. " +
-                "Please retry the operation.");
+            return stockLevelRepository.ApplyDeltaAsync(
+                transaction.ProductId,
+                transaction.WarehouseId,
+                delta,
+                updateRestockDate);
         }
 
         public async Task ReverseTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, string reason)

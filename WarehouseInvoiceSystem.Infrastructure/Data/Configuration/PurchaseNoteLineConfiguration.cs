@@ -16,6 +16,9 @@
             builder.Property(e => e.UpdatedAt);
             builder.Property(e => e.DeletedOn);
 
+            // Soft-delete filter — applied automatically on all queries including .Include()
+            builder.HasQueryFilter(e => e.DeletedOn == null);
+
             builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
             builder.Property(e => e.Quantity).IsRequired();
             builder.Property(e => e.UnitPrice).HasPrecision(18, 2).IsRequired();

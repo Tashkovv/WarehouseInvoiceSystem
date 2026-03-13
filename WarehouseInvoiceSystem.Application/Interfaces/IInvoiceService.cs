@@ -26,6 +26,9 @@
         /// <summary>Draft → Sent. Receivable only. Creates outbound inventory transactions.</summary>
         Task<InvoiceDto> SendAsync(Guid id);
 
+        /// <summary>Sent/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
+        Task<InvoiceDto> RevertToDraftAsync(Guid id);
+
         /// <summary>Sent/PartiallyPaid/Overdue → Paid. Creates inventory transactions if not yet done (covers Overdue Payable Draft edge case).</summary>
         Task<InvoiceDto> MarkAsPaidAsync(Guid id);
 

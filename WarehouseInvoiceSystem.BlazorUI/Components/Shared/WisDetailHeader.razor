@@ -1,13 +1,9 @@
 ﻿@inject ILocalizationService Localization
+@inject NavigationManager Navigation
 
 <div class="d-flex justify-space-between align-center mb-4">
 
-    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
-               Variant="Variant.Outlined"
-               Class="wis-back-btn"
-               Href="@BackHref">
-        @BackLabel
-    </MudButton>
+    <WisSplitButton PrimaryAction="@_backAction" />
 
     <WisSplitButton PrimaryAction="@PrimaryAction"
                     Actions="@Actions"
@@ -21,4 +17,12 @@
     [Parameter, EditorRequired] public string BackLabel { get; set; } = string.Empty;
     [Parameter] public WisDetailActionItem? PrimaryAction { get; set; }
     [Parameter] public List<WisDetailActionItem>? Actions { get; set; }
+
+    private WisDetailActionItem _backAction => new()
+    {
+        Icon = Icons.Material.Filled.ArrowBack,
+        Label = BackLabel,
+        Color = Color.Secondary,
+        OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo(BackHref))
+    };
 }

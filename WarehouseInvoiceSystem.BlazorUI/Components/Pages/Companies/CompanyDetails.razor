@@ -128,7 +128,7 @@ else
                     {
                         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
                     }
-                    else if (_analytics.ReceivableTotalCount > 0 || _analytics.PayableTotalCount > 0)
+                    else if (_analytics.ReceivableTotalCount > 0 || _analytics.PayableTotalCount > 0 || _analytics.PayableCancelledCount > 0 || _analytics.ReceivableCancelledCount > 0)
                     {
                         <div class="wis-ca-outer">
 
@@ -270,14 +270,7 @@ else
                         <MudText Typo="Typo.h6">@Localization.GetString("RecentInvoices")</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Href="@($"/invoices?companyId={Id}")"
-                                   Color="Color.Primary"
-                                   Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward"
-                                   Class="wis-back-btn">
-                            @Localization.GetString("Invoices")
-                        </MudButton>
+                        <WisSplitButton PrimaryAction="@_invoicesAction" />
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -294,14 +287,14 @@ else
                                   Dense="false"
                                   Elevation="0"
                                   T="RecentInvoiceDto"
-                                  RowClass="table-row-clickable"
+                                  Class="wis-secondary-list"
                                   OnRowClick="@ViewInvoice">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
                                 <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
                                 <MudTh>@Localization.GetString("DueDate")</MudTh>
-                                <MudTh>@Localization.GetString("Amount")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -324,7 +317,7 @@ else
                                         @context.DueDate.ToString("dd MMM yyyy")
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Amount")">
+                                <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
@@ -364,6 +357,7 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisDetailActionItem? _invoicesAction;
 
     protected override async Task OnInitializedAsync()
     {
@@ -444,6 +438,14 @@ else
                 OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
             }
         ];
+
+        _invoicesAction = new WisDetailActionItem
+        {
+            Icon = Icons.Material.Filled.RequestQuote,
+            Label = Localization.GetString("Invoices"),
+            Color = Color.Secondary,
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices?companyId={Id}"))
+        };
     }
 
     private async Task OpenEditDialog()

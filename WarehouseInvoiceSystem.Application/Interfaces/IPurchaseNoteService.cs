@@ -29,5 +29,8 @@
 
         /// <summary>Cancel: Draft or Pending → Cancelled. Reverses stock if was Pending.</summary>
         Task<PurchaseNoteDto> CancelAsync(Guid id);
+
+        /// <summary>Soft-deletes a Cancelled purchase note.</summary>
+        Task<bool> DeletePurchaseNoteAsync(Guid id);
     }
 }

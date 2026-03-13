@@ -179,19 +179,58 @@
                 if (!await productRepository.AllExistAsync(productIds))
                     throw new KeyNotFoundException("One or more products in the line items were not found");
 
-                purchaseNote.LineItems.Clear();
-                foreach (UpdatePurchaseNoteLineDto lineDto in updateDto.LineItems)
+                // ── 3-way line item merge ─────────────────────────────────────────
+                // Update existing lines, remove deleted ones, insert new ones
+                DateTime now = DateTime.UtcNow;
+                HashSet<Guid> incomingIds = updateDto.LineItems
+                    .Where(li => li.Id != Guid.Empty)
+                    .Select(li => li.Id)
+                    .ToHashSet();
+
+                // Lines absent from the incoming DTO were removed by the user — soft-delete them
+                foreach (PurchaseNoteLine existing in purchaseNote.LineItems)
                 {
-                    purchaseNote.LineItems.Add(new PurchaseNoteLine
-                    {
-                        ProductId = lineDto.ProductId,
-                        Description = lineDto.Description,
-                        Quantity = lineDto.Quantity,
-                        UnitPrice = lineDto.UnitPrice
-                    });
+                    if (!incomingIds.Contains(existing.Id))
+                        existing.DeletedOn = now;
                 }
 
-                purchaseNote.SubTotal = purchaseNote.LineItems.Sum(li => li.Amount);
+                // Update existing or insert new
+                Dictionary<Guid, PurchaseNoteLine> existingById = purchaseNote.LineItems
+                    .ToDictionary(li => li.Id);
+
+                List<PurchaseNoteLine> newLineItems = [];
+                foreach (UpdatePurchaseNoteLineDto li in updateDto.LineItems)
+                {
+                    if (li.Id != Guid.Empty && existingById.TryGetValue(li.Id, out PurchaseNoteLine? existing))
+                    {
+                        // Update in place
+                        existing.ProductId = li.ProductId;
+                        existing.Description = li.Description;
+                        existing.Quantity = li.Quantity;
+                        existing.UnitPrice = li.UnitPrice;
+                    }
+                    else
+                    {
+                        // New line
+                        newLineItems.Add(new PurchaseNoteLine
+                        {
+                            ProductId = li.ProductId,
+                            Description = li.Description,
+                            Quantity = li.Quantity,
+                            UnitPrice = li.UnitPrice
+                        });
+                    }
+                }
+
+                foreach (PurchaseNoteLine newLine in newLineItems)
+                    purchaseNote.LineItems.Add(newLine);
+
+                // Recalculate totals from active lines only
+                List<PurchaseNoteLine> activeLines = purchaseNote.LineItems
+                    .Where(li => li.DeletedOn == null)
+                    .ToList();
+
+                purchaseNote.SubTotal = activeLines.Sum(li => li.Amount);
                 purchaseNote.TotalAmount = purchaseNote.SubTotal;
             }
 
@@ -291,6 +330,21 @@
             }
 
             return MapToDto(note);
+        }
+
+        // ── Delete ────────────────────────────────────────────────────────────────────
+
+        /// <summary>Soft-deletes a Cancelled purchase note.</summary>
+        public async Task<bool> DeletePurchaseNoteAsync(Guid id)
+        {
+            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id);
+            if (note == null) return false;
+
+            if (note.Status != PurchaseNoteStatus.Cancelled)
+                throw new InvalidOperationException(
+                    $"Purchase note {note.NoteNumber} can only be deleted when Cancelled (current: {note.Status}).");
+
+            return await purchaseNoteRepository.DeleteAsync(id);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────────

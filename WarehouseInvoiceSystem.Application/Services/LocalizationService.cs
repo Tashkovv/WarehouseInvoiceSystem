@@ -363,6 +363,9 @@
                 ["InvoiceIsDeleted"] = "Deleted invoice",
                 ["CancelInvoice"] = "Cancel Invoice",
                 ["CancelInvoiceConfirm"] = "Are you sure you want to cancel this invoice? This action cannot be undone.",
+                ["RevertInvoiceToDraft"] = "Revert to Draft",
+                ["RevertInvoiceToDraftConfirm"] = "This will reverse all inventory transactions for this invoice. It will return to Draft and can be edited again.",
+                ["InvoiceRevertedToDraft"] = "Invoice reverted to Draft",
                 ["PaymentRecorded"] = "Payment recorded successfully",
                 ["ErrorRecordingPayment"] = "Error recording payment",
 
@@ -927,7 +930,7 @@
                 ["OpenPayables"] = "Отворени обврски",
                 ["OverdueReceivables"] = "Задоцнети побарувања",
                 ["OverduePayables"] = "Задоцнети обврски",
-                ["AllReceivablesPaid"] = "Сите побарувања наплатени ✓",
+                ["AllReceivablesPaid"] = "Сите побарувања платени ✓",
                 ["FullyPaidInvoices"] = "Целосно платени",
                 ["AllPayablesPaid"] = "Сите обврски платени ✓",
                 ["Invoice"] = "Фактура",
@@ -1014,6 +1017,9 @@
                 ["InvoiceIsDeleted"] = "Избришена фактура",
                 ["CancelInvoice"] = "Откажи Фактура",
                 ["CancelInvoiceConfirm"] = "Дали сте сигурни дека сакате да ја откажете оваа фактура? Оваа акција не може да се поврати.",
+                ["RevertInvoiceToDraft"] = "Врати на Нацрт",
+                ["RevertInvoiceToDraftConfirm"] = "Ова ќе ги поништи сите промени на залихата. Фактурата ќе се врати на Нацрт и може повторно да се уредува.",
+                ["InvoiceRevertedToDraft"] = "Фактурата е вратена на Нацрт",
                 ["PaymentRecorded"] = "Уплатата е успешно евидентирана",
                 ["ErrorRecordingPayment"] = "Грешка при евидентирање на уплата",
 

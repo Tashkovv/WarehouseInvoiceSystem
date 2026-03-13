@@ -321,6 +321,7 @@ else
                         ?? await ProductService.GetProductByIdAsync(li.ProductId);
                     lineItems.Add(new LineItemModel
                     {
+                        Id = li.Id,
                         SelectedProduct = product!,
                         Description = li.Description,
                         Quantity = li.Quantity,
@@ -425,6 +426,7 @@ else
                     .Where(li => li.SelectedProduct != null)
                     .Select(li => new UpdatePurchaseNoteLineDto
                     {
+                        Id = li.Id,
                         ProductId = li.SelectedProduct!.Id,
                         Description = li.Description,
                         Quantity = li.Quantity,
@@ -454,6 +456,7 @@ else
 
     private class LineItemModel
     {
+        public Guid Id { get; set; }
         public ProductDto? SelectedProduct { get; set; }
         public string Description { get; set; } = string.Empty;
         public int Quantity { get; set; } = 1;

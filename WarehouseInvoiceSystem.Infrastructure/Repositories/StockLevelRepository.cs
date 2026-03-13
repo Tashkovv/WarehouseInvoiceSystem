@@ -55,39 +55,60 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId, ct));
 
         /// <summary>
-        /// Reads and writes the StockLevel row inside the same DbContext so the xmin
-        /// concurrency token captured on the SELECT is still valid when EF issues the
-        /// UPDATE — this is the fix for the split-context DbUpdateConcurrencyException.
+        /// Atomically applies a quantity delta to the StockLevel row, retrying up to 5 times
+        /// on DbUpdateConcurrencyException (concurrent xmin advance on the PostgreSQL row).
+        /// Read and write share the same DbContext so the captured xmin is valid on UPDATE.
+        /// ChangeTracker is cleared between retries to force a fresh SELECT and xmin read.
         /// Creates the row if it does not yet exist.
         /// </summary>
         public Task ApplyDeltaAsync(Guid productId, Guid warehouseId, decimal delta, bool updateRestockDate) =>
             WithContextAsync(async context =>
             {
-                StockLevel? stockLevel = await AllTracked<StockLevel>(context)
-                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId);
+                const int MaxRetries = 5;
 
-                if (stockLevel == null)
+                for (int attempt = 1; attempt <= MaxRetries; attempt++)
                 {
-                    stockLevel = new StockLevel
+                    try
                     {
-                        ProductId = productId,
-                        WarehouseId = warehouseId,
-                        Quantity = delta,
-                        MinimumQuantity = 0,
-                        ReorderPoint = 0,
-                        LastRestockedAt = DateTime.UtcNow
-                    };
-                    context.StockLevels.Add(stockLevel);
-                }
-                else
-                {
-                    stockLevel.Quantity += delta;
-                    if (updateRestockDate)
-                        stockLevel.LastRestockedAt = DateTime.UtcNow;
-                    context.StockLevels.Update(stockLevel);
+                        StockLevel? stockLevel = await AllTracked<StockLevel>(context)
+                            .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId);
+
+                        if (stockLevel == null)
+                        {
+                            stockLevel = new StockLevel
+                            {
+                                ProductId = productId,
+                                WarehouseId = warehouseId,
+                                Quantity = delta,
+                                MinimumQuantity = 0,
+                                ReorderPoint = 0,
+                                LastRestockedAt = DateTime.UtcNow
+                            };
+                            context.StockLevels.Add(stockLevel);
+                        }
+                        else
+                        {
+                            stockLevel.Quantity += delta;
+                            if (updateRestockDate)
+                                stockLevel.LastRestockedAt = DateTime.UtcNow;
+                            context.StockLevels.Update(stockLevel);
+                        }
+
+                        await SaveAsync(context);
+                        return;
+                    }
+                    catch (DbUpdateConcurrencyException) when (attempt < MaxRetries)
+                    {
+                        // A concurrent write advanced xmin between SELECT and UPDATE.
+                        // Clear stale tracked state so the next iteration re-reads a fresh xmin.
+                        context.ChangeTracker.Clear();
+                        await Task.Delay(TimeSpan.FromMilliseconds(20 * attempt));
+                    }
                 }
 
-                await SaveAsync(context);
+                throw new InvalidOperationException(
+                    $"Failed to update stock for product {productId} in warehouse {warehouseId} " +
+                    $"after {MaxRetries} attempts due to concurrent modifications. Please retry the operation.");
             });
 
         public Task<IEnumerable<StockLevel>> GetByProductIdAsync(Guid productId, CancellationToken ct = default) =>

@@ -342,8 +342,9 @@ else
                 {
                     _primaryAction = new WisDetailActionItem
                     {
-                        Icon = Icons.Material.Filled.Email,
+                        Icon = Icons.Material.Filled.Send,
                         Label = Localization.GetString("Send"),
+                        Color = Color.Info,
                         OnClick = EventCallback.Factory.Create(this, OpenSendEmailDialog)
                     };
                     _actions =
@@ -364,6 +365,7 @@ else
                         {
                             Icon = Icons.Material.Filled.Print,
                             Label = Localization.GetString("Export"),
+                            Color = Color.Secondary,
                             OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
                         },
                         new WisDetailActionItem
@@ -382,6 +384,7 @@ else
                     {
                         Icon = Icons.Material.Filled.Payment,
                         Label = Localization.GetString("Payment"),
+                        Color = Color.Success,
                         OnClick = EventCallback.Factory.Create(this, RecordPayment)
                     };
                     _actions =
@@ -396,6 +399,7 @@ else
                         {
                             Icon = Icons.Material.Filled.Print,
                             Label = Localization.GetString("Export"),
+                            Color = Color.Secondary,
                             OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
                         },
                         new WisDetailActionItem
@@ -415,15 +419,16 @@ else
                 {
                     Icon = Icons.Material.Filled.Payment,
                     Label = Localization.GetString("Payment"),
+                    Color = Color.Success,
                     OnClick = EventCallback.Factory.Create(this, RecordPayment)
                 };
                 _actions =
                 [
                     new WisDetailActionItem
                     {
-                        Icon = Icons.Material.Filled.Edit,
-                        Label = Localization.GetString("Edit"),
-                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                        Icon = Icons.Material.Filled.Undo,
+                        Label = Localization.GetString("Draft"),
+                        OnClick = EventCallback.Factory.Create(this, RevertToDraft)
                     },
                     new WisDetailActionItem
                     {
@@ -447,16 +452,11 @@ else
                 {
                     Icon = Icons.Material.Filled.Payment,
                     Label = Localization.GetString("Payment"),
+                    Color = Color.Success,
                     OnClick = EventCallback.Factory.Create(this, RecordPayment)
                 };
                 _actions =
                 [
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Edit,
-                        Label = Localization.GetString("Edit"),
-                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
-                    },
                     new WisDetailActionItem
                     {
                         Icon = Icons.Material.Filled.Print,
@@ -471,15 +471,16 @@ else
                 {
                     Icon = Icons.Material.Filled.Payment,
                     Label = Localization.GetString("Payment"),
+                    Color = Color.Success,
                     OnClick = EventCallback.Factory.Create(this, RecordPayment)
                 };
                 _actions =
                 [
                     new WisDetailActionItem
                     {
-                        Icon = Icons.Material.Filled.Edit,
-                        Label = Localization.GetString("Edit"),
-                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
+                        Icon = Icons.Material.Filled.Undo,
+                        Label = Localization.GetString("Draft"),
+                        OnClick = EventCallback.Factory.Create(this, RevertToDraft)
                     },
                     new WisDetailActionItem
                     {
@@ -503,13 +504,20 @@ else
                 {
                     Icon = Icons.Material.Filled.Print,
                     Label = Localization.GetString("Export"),
+                    Color = Color.Secondary,
                     OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
                 };
                 _actions = [];
                 break;
 
             case InvoiceStatus.Cancelled:
-                _primaryAction = null;
+                _primaryAction = new WisDetailActionItem
+                {
+                    Icon = Icons.Material.Filled.Delete,
+                    Label = Localization.GetString("Delete"),
+                    Color = Color.Error,
+                    OnClick = EventCallback.Factory.Create(this, DeleteInvoice)
+                };
                 _actions = [];
                 break;
         }
@@ -548,6 +556,54 @@ else
         if (sent != true) return;
 
         await Reload();
+    }
+
+    private async Task RevertToDraft()
+    {
+        if (_invoice is null) return;
+
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("RevertInvoiceToDraft"),
+            Localization.GetString("RevertInvoiceToDraftConfirm"),
+            Localization.GetString("RevertInvoiceToDraft"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await InvoiceService.RevertToDraftAsync(Id);
+            Snackbar.Add(Localization.GetString("InvoiceRevertedToDraft"), Severity.Success);
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reverting invoice to draft: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+    }
+
+    private async Task DeleteInvoice()
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteInvoiceConfirm"),
+            Localization.GetString("Delete"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await InvoiceService.DeleteInvoiceAsync(Id);
+            Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
+            Navigation.NavigateTo("/invoices");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
     }
 
     private async Task CancelInvoice()

@@ -191,11 +191,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<bool> DeleteAsync(Guid id) =>
             WithContextAsync(async context =>
             {
-                PurchaseNote? purchaseNote = await context.PurchaseNotes.FindAsync(id);
+                PurchaseNote? purchaseNote = await context.PurchaseNotes
+                    .Include(pn => pn.LineItems)
+                    .FirstOrDefaultAsync(pn => pn.Id == id);
                 if (purchaseNote == null)
                     return false;
 
-                purchaseNote.DeletedOn = DateTime.UtcNow;
+                DateTime now = DateTime.UtcNow;
+                purchaseNote.DeletedOn = now;
+                foreach (PurchaseNoteLine line in purchaseNote.LineItems)
+                    line.DeletedOn = now;
+
                 await SaveAsync(context);
                 return true;
             });

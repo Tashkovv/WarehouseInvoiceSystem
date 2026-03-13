@@ -186,11 +186,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<bool> DeleteAsync(Guid id) =>
             WithContextAsync(async context =>
             {
-                Invoice? invoice = await context.Invoices.FirstOrDefaultAsync(i => i.Id == id);
+                Invoice? invoice = await context.Invoices
+                    .Include(i => i.LineItems)
+                    .FirstOrDefaultAsync(i => i.Id == id);
                 if (invoice == null)
                     return false;
 
-                invoice.DeletedOn = DateTime.UtcNow;
+                DateTime now = DateTime.UtcNow;
+                invoice.DeletedOn = now;
+                foreach (InvoiceLine line in invoice.LineItems)
+                    line.DeletedOn = now;
+
                 await SaveAsync(context);
                 return true;
             });

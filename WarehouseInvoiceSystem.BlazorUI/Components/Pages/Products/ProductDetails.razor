@@ -215,14 +215,7 @@ else
                         <MudText Typo="Typo.h6">@Localization.GetString("TransactionHistory")</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   Color="Color.Primary"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward"
-                                   Href="@($"/products/{Id}/transactions{(_selectedWarehouseId.HasValue ? $"?warehouse={_selectedWarehouseId}" : "")}")"
-                                   Class="wis-back-btn">
-                            @Localization.GetString("Transactions")
-                        </MudButton>
+                        <WisSplitButton PrimaryAction="@_transactionsAction" />
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-4">
@@ -281,6 +274,7 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisDetailActionItem? _transactionsAction;
 
     // ── Warehouse autocomplete data source ────────────────────────────────────
 
@@ -464,6 +458,14 @@ else
                 OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
             }
         ];
+
+        _transactionsAction = new WisDetailActionItem
+        {
+            Icon = Icons.Material.Filled.SyncAlt,
+            Label = Localization.GetString("Transactions"),
+            Color = Color.Secondary,
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/products/{Id}/transactions{(_selectedWarehouseId.HasValue ? $"?warehouse={_selectedWarehouseId}" : "")}"))
+        };
     }
 
     private async Task OpenEditDialog()

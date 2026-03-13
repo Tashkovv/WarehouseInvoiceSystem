@@ -710,29 +710,41 @@ html {
    ============================================= */
 :root {
     --wis-row-h: 50px;
-    --wis-actions-1: 48px; /* 1 icon button  */
-    --wis-actions-2: 84px; /* 2 icon buttons */
-    --wis-actions-3: 120px; /* 3 icon buttons */
+    --wis-actions-1: 36px; /* 1 icon button  */
+    --wis-actions-2: 72px; /* 2 icon buttons */
+    --wis-actions-3: 108px; /* 3 icon buttons */
 }
 
 .wis-col-actions-1 {
     width: var(--wis-actions-1) !important;
     min-width: var(--wis-actions-1) !important;
     max-width: var(--wis-actions-1) !important;
-    text-align: center !important;
+    padding: 0 !important;
 }
 
 .wis-col-actions-2 {
     width: var(--wis-actions-2) !important;
     min-width: var(--wis-actions-2) !important;
     max-width: var(--wis-actions-2) !important;
+    padding: 0 !important;
 }
 
 .wis-col-actions-3 {
     width: var(--wis-actions-3) !important;
     min-width: var(--wis-actions-3) !important;
     max-width: var(--wis-actions-3) !important;
+    padding: 0 !important;
 }
+
+    /* Center and distribute action buttons within their cell.
+   MudStack Row=true renders as div[role="group"] with d-flex flex-row. */
+    .wis-col-actions-1 div[role="group"],
+    .wis-col-actions-2 div[role="group"],
+    .wis-col-actions-3 div[role="group"] {
+        width: 100% !important;
+        justify-content: space-evenly !important;
+        align-items: center !important;
+    }
 
 /* Force MudAlert inner content wrapper to stretch full width */
 .wis-alert-fullwidth .mud-alert-message {
@@ -860,39 +872,69 @@ html {
     padding-right: 14px;
 }
 
-/* Back button — matches pill height & rounding of WisSplitButton */
-.wis-back-btn.mud-button-root {
-    height: 32px;
-    min-height: 32px;
-    border-radius: 16px;
-    padding: 0 12px 0 8px;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    line-height: 1;
-    text-transform: none;
+/* ── WisSplitButton ── */
+
+/* Color token classes — applied to the outer wrapper; cascade via CSS custom properties */
+.wis-btn-color--primary {
+    --wis-btn-clr: var(--mud-palette-primary);
+    --wis-btn-clr-rgb: var(--mud-palette-primary-rgb);
 }
 
-/* ── WisSplitButton ── */
+.wis-btn-color--secondary {
+    --wis-btn-clr: var(--mud-palette-secondary);
+    --wis-btn-clr-rgb: var(--mud-palette-secondary-rgb);
+}
+
+.wis-btn-color--success {
+    --wis-btn-clr: var(--mud-palette-success);
+    --wis-btn-clr-rgb: var(--mud-palette-success-rgb);
+}
+
+.wis-btn-color--error {
+    --wis-btn-clr: var(--mud-palette-error);
+    --wis-btn-clr-rgb: var(--mud-palette-error-rgb);
+}
+
+.wis-btn-color--warning {
+    --wis-btn-clr: var(--mud-palette-warning);
+    --wis-btn-clr-rgb: var(--mud-palette-warning-rgb);
+}
+
+.wis-btn-color--info {
+    --wis-btn-clr: var(--mud-palette-info);
+    --wis-btn-clr-rgb: var(--mud-palette-info-rgb);
+}
+
+/* Split pill container — outline only, no fill */
 .wis-split-btn {
     display: inline-flex;
     align-items: stretch;
     border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12);
+    border: 2.5px solid transparent;
+    outline: 1.5px solid var(--wis-btn-clr);
+    outline-offset: -2.5px;
     height: 32px;
+    transition: outline-width 0.15s ease;
 }
 
-/* Round the left corners of the first real child (the primary button) */
+    /* Thicken the outline inward on any child hover — no layout shift */
+    .wis-split-btn:has(.wis-split-btn__primary:hover:not(:disabled)),
+    .wis-split-btn:has(.wis-split-btn__arrow:hover) {
+        outline-width: 2.5px;
+    }
+
+/* Primary section (left side of split, or the whole button when solo) */
 .wis-split-btn__primary {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     height: 100%;
-    padding: 0 12px 0 12px;
-    background: var(--mud-palette-primary);
-    color: var(--mud-palette-primary-text);
+    padding: 0 12px;
+    background: transparent;
+    color: var(--mud-palette-text-primary);
     border: none;
-    border-radius: 16px 0 0 16px;
+    border-radius: 0;
     cursor: pointer;
     font-family: inherit;
     font-size: 0.8125rem;
@@ -904,16 +946,25 @@ html {
 }
 
     .wis-split-btn__primary:hover:not(:disabled) {
-        background: var(--mud-palette-primary-darken);
+        background: rgb(var(--wis-btn-clr-rgb));
     }
 
+/* Solo variant — adds its own border and full radius */
 .wis-split-btn__primary--solo {
     border-radius: 16px;
+    border: 2.5px solid transparent;
+    outline: 1.5px solid var(--wis-btn-clr);
+    outline-offset: -2.5px;
     padding: 0 16px 0 12px;
-    font-size: 0.8125rem;
-    font-weight: 500;
     height: 32px;
+    color: var(--mud-palette-text-primary);
+    transition: background 0.15s ease, outline-width 0.15s ease;
 }
+
+    .wis-split-btn__primary--solo:hover:not(:disabled) {
+        background: rgb(var(--wis-btn-clr-rgb));
+        outline-width: 2.5px;
+    }
 
     .wis-split-btn__primary--solo .wis-split-btn__icon .mud-icon-root {
         font-size: 18px !important;
@@ -938,14 +989,16 @@ html {
         height: 18px !important;
     }
 
+/* Thin divider between primary and arrow — uses the button color at low opacity */
 .wis-split-btn__divider {
     width: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--wis-btn-clr);
+    opacity: 0.35;
     flex-shrink: 0;
     align-self: stretch;
 }
 
-/* Round the right corners of the arrow button */
+/* Arrow/chevron button (right side of split) */
 .wis-split-btn__arrow {
     display: inline-flex;
     align-items: center;
@@ -953,17 +1006,16 @@ html {
     width: 30px;
     height: 100%;
     padding: 0;
-    background: var(--mud-palette-primary);
-    color: var(--mud-palette-primary-text);
+    background: transparent;
+    color: var(--mud-palette-text-primary);
     border: none;
-    border-radius: 0 16px 16px 0;
     cursor: pointer;
     transition: background 0.15s ease;
     flex-shrink: 0;
 }
 
     .wis-split-btn__arrow:hover {
-        background: var(--mud-palette-primary-darken);
+        background: rgb(var(--wis-btn-clr-rgb));
     }
 
     .wis-split-btn__arrow svg {
@@ -1023,7 +1075,7 @@ html {
         height: 16px !important;
     }
 
-/* Text color helpers for menu items */
+/* Text color helpers for dropdown menu items */
 .wis-text-error {
     color: var(--mud-palette-error) !important;
 }

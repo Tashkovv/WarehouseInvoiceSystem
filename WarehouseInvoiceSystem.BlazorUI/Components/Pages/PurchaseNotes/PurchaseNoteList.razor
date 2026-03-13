@@ -154,16 +154,18 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                HeaderClass="wis-col-actions-2"
-                                CellClass="wis-col-actions-2">
+                                HeaderClass="@_actionsColClass"
+                                CellClass="@_actionsColClass">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("Edit")"
-                                           Disabled="@(context.Item.Status == PurchaseNoteStatus.Paid || context.Item.Status == PurchaseNoteStatus.Cancelled)"
-                                           OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/edit/{context.Item.Id}"))" />
+                            @if (context.Item.Status == PurchaseNoteStatus.Draft)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               Title="@Localization.GetString("Edit")"
+                                               OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/edit/{context.Item.Id}"))" />
+                            }
                             @if (context.Item.Status == PurchaseNoteStatus.Draft)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.MoveToInbox"
@@ -179,6 +181,14 @@
                                                Color="Color.Success"
                                                Title="@Localization.GetString("MarkAsPaid")"
                                                OnClick="@(() => MarkAsPaid(context.Item))" />
+                            }
+                            else if (context.Item.Status == PurchaseNoteStatus.Cancelled)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               Title="@Localization.GetString("Delete")"
+                                               OnClick="@(() => DeleteNote(context.Item))" />
                             }
                         </MudStack>
                     </CellTemplate>
@@ -211,6 +221,7 @@
 
     private MudDataGrid<PurchaseNoteDto> _grid = null!;
     private string _searchString = string.Empty;
+    private string _actionsColClass = "wis-col-actions-2";
 
     // Quick filter
     private PurchaseNoteStatus? _filterStatus = null;
@@ -294,6 +305,9 @@
         };
 
         PagedResult<PurchaseNoteDto> result = await PurchaseNoteService.GetPagedAsync(query, ct);
+
+        int maxActions = result.Items.Any() ? result.Items.Max(GetActionCount) : 0;
+        _actionsColClass = maxActions >= 2 ? "wis-col-actions-2" : "wis-col-actions-1";
 
         return new GridData<PurchaseNoteDto>
         {
@@ -452,6 +466,29 @@
         }
     }
 
+    private async Task DeleteNote(PurchaseNoteDto note)
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeletePurchaseNoteConfirm"),
+            Localization.GetString("Delete"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await PurchaseNoteService.DeletePurchaseNoteAsync(note.Id);
+            Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+        }
+    }
+
     private string GetRowClass(PurchaseNoteDto item, int index) => item.Status switch
     {
         PurchaseNoteStatus.Draft => "row-status-default",
@@ -469,6 +506,10 @@
         PurchaseNoteStatus.Cancelled => Color.Error,
         _ => Color.Default
     };
+
+    private static int GetActionCount(PurchaseNoteDto item) =>
+        item.Status == PurchaseNoteStatus.Draft ? 2 :
+        item.Status == PurchaseNoteStatus.Pending || item.Status == PurchaseNoteStatus.Cancelled ? 1 : 0;
 
     private string GetStatusText(PurchaseNoteStatus status) => status switch
     {

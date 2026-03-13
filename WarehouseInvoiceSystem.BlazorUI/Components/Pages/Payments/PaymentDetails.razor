@@ -39,7 +39,7 @@ else
                         <div class="d-flex align-center gap-3">
                             <MudText Typo="Typo.h3" Color="Color.Success">@_payment.Amount.ToString("C")</MudText>
                             <MudChip T="string"
-                                     Size="Size.Medium"
+                                     Size="Size.Small"
                                      Color="@GetMethodColor(_payment.PaymentMethod)"
                                      Variant="Variant.Filled">
                                 @GetPaymentMethodText(_payment.PaymentMethod)
@@ -95,12 +95,7 @@ else
             <!-- Related Invoice section - full width -->
             <div class="d-flex justify-space-between align-center mb-4">
                 <MudText Typo="Typo.subtitle1" Class="wis-section-label">@Localization.GetString("RelatedInvoice")</MudText>
-                <MudButton Variant="Variant.Outlined"
-                           Class="wis-back-btn"
-                           EndIcon="@Icons.Material.Filled.ArrowForward"
-                           Href="@($"/invoices/{_payment.InvoiceId}")">
-                    @_payment.InvoiceNumber
-                </MudButton>
+                <WisSplitButton PrimaryAction="@_invoiceAction" />
             </div>
 
             @if (_loadingInvoice)
@@ -158,6 +153,7 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisDetailActionItem? _invoiceAction;
 
     protected override async Task OnInitializedAsync()
     {
@@ -237,6 +233,14 @@ else
                 OnClick = EventCallback.Factory.Create(this, DeletePayment)
             }
         ];
+
+        _invoiceAction = new WisDetailActionItem
+        {
+            Icon = Icons.Material.Filled.RequestQuote,
+            Label = _payment.InvoiceNumber,
+            Color = Color.Secondary,
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/{_payment.InvoiceId}"))
+        };
     }
 
     private async Task OpenEditDialog()

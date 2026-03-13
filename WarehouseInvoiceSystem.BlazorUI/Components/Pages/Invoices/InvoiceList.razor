@@ -189,20 +189,23 @@
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
-                                HeaderClass="wis-col-actions-2"
-                                CellClass="wis-col-actions-2">
+                                HeaderClass="@_actionsColClass"
+                                CellClass="@_actionsColClass">
                     <CellTemplate>
                         <MudStack Row="true" Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("Edit")"
-                                           OnClick="@(() => Navigation.NavigateTo($"/invoices/edit/{context.Item.Id}"))" />
+                            @if (context.Item.Status == InvoiceStatus.Draft)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               Title="@Localization.GetString("Edit")"
+                                               OnClick="@(() => Navigation.NavigateTo($"/invoices/edit/{context.Item.Id}"))" />
+                            }
                             @if (CanSendEmail(context.Item.Type, context.Item.Status))
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Email"
+                                <MudIconButton Icon="@Icons.Material.Filled.Send"
                                                Size="Size.Small"
-                                               Color="Color.Secondary"
+                                               Color="Color.Info"
                                                Title="@Localization.GetString("SendEmail")"
                                                OnClick="@(() => OpenSendEmailDialog(context.Item))" />
                             }
@@ -213,6 +216,14 @@
                                                Color="Color.Success"
                                                Title="@Localization.GetString("RecordPayment")"
                                                OnClick="@(() => OpenPaymentDialog(context.Item))" />
+                            }
+                            else if (context.Item.Status == InvoiceStatus.Cancelled)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Size="Size.Small"
+                                               Color="Color.Error"
+                                               Title="@Localization.GetString("Delete")"
+                                               OnClick="@(() => DeleteInvoice(context.Item))" />
                             }
                         </MudStack>
                     </CellTemplate>
@@ -249,6 +260,7 @@
 
     private MudDataGrid<InvoiceDto> _grid = null!;
     private bool _exporting = false;
+    private string _actionsColClass = "wis-col-actions-2";
     private string _searchString = string.Empty;
 
     // Quick filters
@@ -370,6 +382,9 @@
         query.SortAscending = ascending;
 
         PagedResult<InvoiceDto> result = await InvoiceService.GetPagedAsync(query, ct);
+
+        int maxActions = result.Items.Any() ? result.Items.Max(GetActionCount) : 0;
+        _actionsColClass = maxActions >= 2 ? "wis-col-actions-2" : "wis-col-actions-1";
 
         return new GridData<InvoiceDto>
         {
@@ -603,6 +618,29 @@
         }
     }
 
+    private async Task DeleteInvoice(InvoiceDto invoice)
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("ConfirmDelete"),
+            Localization.GetString("DeleteInvoiceConfirm"),
+            Localization.GetString("Delete"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await InvoiceService.DeleteInvoiceAsync(invoice.Id);
+            Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+    }
+
     private bool CanPay(InvoiceStatus status) =>
         status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
 
@@ -611,6 +649,15 @@
         (status == InvoiceStatus.Draft ||
          status == InvoiceStatus.PartiallyPaid ||
          status == InvoiceStatus.Overdue);
+
+    private static int GetActionCount(InvoiceDto item)
+    {
+        bool canSendEmail = item.Type == InvoiceType.Receivable &&
+            (item.Status == InvoiceStatus.Draft || item.Status == InvoiceStatus.PartiallyPaid || item.Status == InvoiceStatus.Overdue);
+        bool canPay = item.Status != InvoiceStatus.Paid && item.Status != InvoiceStatus.Cancelled;
+        bool canDelete = item.Status == InvoiceStatus.Cancelled;
+        return (item.Status == InvoiceStatus.Draft ? 1 : 0) + (canSendEmail || canPay || canDelete ? 1 : 0);
+    }
 
     public void Dispose()
     {

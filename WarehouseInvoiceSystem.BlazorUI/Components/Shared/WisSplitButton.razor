@@ -8,7 +8,7 @@
         @* ── Split button: primary + arrow ── *@
         @if (PrimaryAction is not null && Actions is not null && Actions.Count > 0)
         {
-            <div class="wis-split-btn" data-wis-split-btn="true">
+            <div class="wis-split-btn @GetColorClass(PrimaryAction.Color)" data-wis-split-btn="true">
                 <button class="wis-split-btn__primary @(PrimaryAction.Disabled ? "wis-split-btn__primary--disabled" : "")"
                         type="button"
                         disabled="@PrimaryAction.Disabled"
@@ -35,7 +35,7 @@
         {
             <MudTooltip Text="@(PrimaryAction.Disabled? PrimaryAction.DisabledReason ?? string.Empty : string.Empty)"
                         Disabled="@(!PrimaryAction.Disabled || string.IsNullOrEmpty(PrimaryAction.DisabledReason))">
-                <button class="wis-split-btn__primary wis-split-btn__primary--solo @(PrimaryAction.Disabled ? "wis-split-btn__primary--disabled" : "")"
+                <button class="wis-split-btn__primary wis-split-btn__primary--solo @GetColorClass(PrimaryAction.Color) @(PrimaryAction.Disabled ? "wis-split-btn__primary--disabled" : "")"
                         type="button"
                         disabled="@PrimaryAction.Disabled"
                         @onclick="PrimaryAction.OnClick">
@@ -156,7 +156,7 @@
             try
             {
                 double w = await JS.InvokeAsync<double>(
-                    "eval", "document.querySelector('[data-wis-split-btn]')?.offsetWidth ?? 180");
+                "eval", "document.querySelector('[data-wis-split-btn]')?.offsetWidth ?? 180");
                 if (w > 0) _buttonWidth = w;
             }
             catch { /* fallback */ }
@@ -170,6 +170,16 @@
         _open = false;
         await item.OnClick.InvokeAsync();
     }
+    
+    private static string GetColorClass(Color color) => color switch
+    {
+        Color.Success   => "wis-btn-color--success",
+        Color.Error     => "wis-btn-color--error",
+        Color.Warning   => "wis-btn-color--warning",
+        Color.Info      => "wis-btn-color--info",
+        Color.Secondary => "wis-btn-color--secondary",
+        _               => "wis-btn-color--primary"
+    };
     
     private static string GetTextColorClass(Color color) => color switch
     {

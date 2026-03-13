@@ -157,14 +157,7 @@ else
                         <MudText Typo="Typo.h6">@Localization.GetString("RecentPurchaseNotes")</MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Href="@($"/purchase-notes?individualId={Id}")"
-                                   Color="Color.Primary"
-                                   Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   EndIcon="@Icons.Material.Filled.ArrowForward"
-                                   Class="wis-back-btn">
-                            @Localization.GetString("PurchaseNotes")
-                        </MudButton>
+                        <WisSplitButton PrimaryAction="@_purchaseNotesAction" />
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -175,12 +168,12 @@ else
                                   Dense="false"
                                   Elevation="0"
                                   T="RecentPurchaseNoteDto"
-                                  RowClass="table-row-clickable"
+                                  Class="wis-secondary-list"
                                   OnRowClick="@ViewPurchaseNote">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Number")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
-                                <MudTh>@Localization.GetString("Amount")</MudTh>
+                                <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -190,7 +183,7 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Date")">
                                     <MudText Typo="Typo.body2">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Amount")">
+                                <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
@@ -225,6 +218,7 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisDetailActionItem? _purchaseNotesAction;
 
     protected override async Task OnInitializedAsync()
     {
@@ -287,6 +281,14 @@ else
                 OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
             }
         ];
+
+        _purchaseNotesAction = new WisDetailActionItem
+        {
+            Icon = Icons.Material.Filled.Receipt,
+            Label = Localization.GetString("PurchaseNotes"),
+            Color = Color.Secondary,
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes?individualId={Id}"))
+        };
     }
 
     private async Task OpenEditDialog()
