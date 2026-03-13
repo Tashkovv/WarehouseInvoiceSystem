@@ -170,9 +170,11 @@ else
     private PurchaseNoteDto? _note;
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
 
     protected override async Task OnInitializedAsync()
     {
+        _act = new WisActionItem(this);
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadNote();
     }
@@ -206,89 +208,43 @@ else
     {
         if (_note == null) return;
 
+        _primaryAction = null;
+        _actions = [];
+
         switch (_note.Status)
         {
             case PurchaseNoteStatus.Draft:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.MoveToInbox,
-                    Label = Localization.GetString("ReceiveGoods"),
-                    Color = Color.Warning,
-                    OnClick = EventCallback.Factory.Create(this, ReceiveGoods)
-                };
+                _primaryAction = _act.Warning(Icons.Material.Filled.MoveToInbox, Localization.GetString("ReceiveGoods"), ReceiveGoods);
                 _actions =
                 [
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Edit,
-                        Label = Localization.GetString("Edit"),
-                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Cancel,
-                        Label = Localization.GetString("Cancel"),
-                        Color = Color.Error,
-                        IsDividerBefore = true,
-                        OnClick = EventCallback.Factory.Create(this, CancelNote)
-                    }
+                    _act.Primary(Icons.Material.Filled.Edit,   Localization.GetString("Edit"),   GoToEdit),
+                    _act.Error(Icons.Material.Filled.Cancel,   Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
                 break;
 
             case PurchaseNoteStatus.Pending:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Payment,
-                    Label = Localization.GetString("MarkAsPaid"),
-                    Color = Color.Success,
-                    OnClick = EventCallback.Factory.Create(this, MarkAsPaid)
-                };
+                _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("MarkAsPaid"), MarkAsPaid);
                 _actions =
                 [
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Edit,
-                        Label = Localization.GetString("Edit"),
-                        OnClick = EventCallback.Factory.Create(this, GoToEdit)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Undo,
-                        Label = Localization.GetString("Draft"),
-                        OnClick = EventCallback.Factory.Create(this, RevertToDraft)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Cancel,
-                        Label = Localization.GetString("Cancel"),
-                        Color = Color.Error,
-                        IsDividerBefore = true,
-                        OnClick = EventCallback.Factory.Create(this, CancelNote)
-                    }
+                    _act.Primary(Icons.Material.Filled.Edit,   Localization.GetString("Edit"),   GoToEdit),
+                    _act.Primary(Icons.Material.Filled.Undo,   Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Error(Icons.Material.Filled.Cancel,   Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
                 break;
 
             case PurchaseNoteStatus.Paid:
-                _primaryAction = null;
-                _actions = [];
+                // No actions available for a paid note
                 break;
 
             case PurchaseNoteStatus.Cancelled:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Delete,
-                    Label = Localization.GetString("Delete"),
-                    Color = Color.Error,
-                    OnClick = EventCallback.Factory.Create(this, DeleteNote)
-                };
-                _actions = [];
+                _primaryAction = _act.Error(Icons.Material.Filled.Delete, Localization.GetString("Delete"), DeleteNote);
                 break;
         }
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
-    private void GoToEdit() => Navigation.NavigateTo($"/purchase-notes/edit/{Id}");
+    private void GoToEdit() => Navigation.NavigateTo($"/purchase-notes/edit/{Id}"); // kept as void; _act.Primary accepts Action overload
 
     private async Task ReceiveGoods()
     {

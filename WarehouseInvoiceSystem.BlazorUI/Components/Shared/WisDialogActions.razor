@@ -1,0 +1,45 @@
+﻿@* Shared dialog action footer — Cancel (left) then Save/Confirm (right). *@
+@* Both use WisButton so all button styling stays in one place. *@
+
+@inject ILocalizationService Localization
+
+<WisButton Action="@_cancelAction" />
+<WisButton Action="@_saveAction" />
+
+@code {
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+
+    /// <summary>Label for the confirm button. Defaults to "Save".</summary>
+    [Parameter] public string? SaveLabel { get; set; }
+
+    /// <summary>Icon for the confirm button. Optional.</summary>
+    [Parameter] public string? SaveIcon { get; set; }
+
+    /// <summary>Color for the confirm button. Defaults to Primary.</summary>
+    [Parameter] public Color SaveColor { get; set; } = Color.Primary;
+
+    /// <summary>Disables the confirm button when true (e.g. form is invalid or loading).</summary>
+    [Parameter] public bool SaveDisabled { get; set; }
+
+    /// <summary>Reason shown in a tooltip when the confirm button is disabled.</summary>
+    [Parameter] public string? SaveDisabledReason { get; set; }
+
+    private WisDetailActionItem _cancelAction => new()
+    {
+        Icon = Icons.Material.Filled.Close,
+        Label = Localization.GetString("Cancel"),
+        Color = Color.Secondary,
+        OnClick = OnCancel
+    };
+
+    private WisDetailActionItem _saveAction => new()
+    {
+        Icon = SaveIcon ?? string.Empty,
+        Label = SaveLabel ?? Localization.GetString("Save"),
+        Color = SaveColor,
+        Disabled = SaveDisabled,
+        DisabledReason = SaveDisabledReason,
+        OnClick = OnSave
+    };
+}

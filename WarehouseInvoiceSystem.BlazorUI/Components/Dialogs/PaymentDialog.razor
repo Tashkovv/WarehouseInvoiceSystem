@@ -165,17 +165,9 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Size="Size.Small" Style="border-radius: 16px;">
-            @Localization.GetString("Cancel")
-        </MudButton>
-        <MudButton OnClick="Save"
-                   Color="Color.Primary"
-                   Variant="Variant.Filled"
-                   Size="Size.Small"
-                   Style="border-radius: 16px;"
-                   Disabled="@(!IsValid || _loadingInvoices)">
-            @Localization.GetString("Save")
-        </MudButton>
+        <WisDialogActions OnCancel="Cancel"
+                          OnSave="Save"
+                          SaveDisabled="@(!IsValid || _loadingInvoices)" />
     </DialogActions>
 </MudDialog>
 

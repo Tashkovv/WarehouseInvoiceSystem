@@ -1,0 +1,32 @@
+﻿@* Single outlined pill button — the primitive used by WisSplitButton and WisDialogActions. *@
+@* Apply Color via the wis-btn-color--* class on the wrapper so CSS vars cascade correctly. *@
+
+<MudTooltip Text="@(Action.Disabled? Action.DisabledReason ?? string.Empty : string.Empty)"
+            Disabled="@(!Action.Disabled || string.IsNullOrEmpty(Action.DisabledReason))">
+    <button class="wis-split-btn__primary wis-split-btn__primary--solo @GetColorClass(Action.Color) @(Action.Disabled ? "wis-split-btn__primary--disabled" : "")"
+            type="button"
+            disabled="@Action.Disabled"
+            @onclick="Action.OnClick">
+        @if (!string.IsNullOrEmpty(Action.Icon))
+        {
+            <span class="wis-split-btn__icon">
+                <MudIcon Icon="@Action.Icon" Size="Size.Small" />
+            </span>
+        }
+        <span>@Action.Label</span>
+    </button>
+</MudTooltip>
+
+@code {
+    [Parameter, EditorRequired] public WisDetailActionItem Action { get; set; } = null!;
+
+    private static string GetColorClass(Color color) => color switch
+    {
+        Color.Success => "wis-btn-color--success",
+        Color.Error => "wis-btn-color--error",
+        Color.Warning => "wis-btn-color--warning",
+        Color.Info => "wis-btn-color--info",
+        Color.Secondary => "wis-btn-color--secondary",
+        _ => "wis-btn-color--primary"
+    };
+}

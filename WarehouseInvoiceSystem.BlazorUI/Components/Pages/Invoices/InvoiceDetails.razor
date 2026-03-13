@@ -273,9 +273,11 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
 
     protected override async Task OnInitializedAsync()
     {
+        _act = new WisActionItem(this);
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadInvoice();
         await LoadPayments();
@@ -336,196 +338,68 @@ else
 
         switch (_invoice.Status)
         {
+            case InvoiceStatus.Draft when _invoice.Type == InvoiceType.Receivable:
+                _primaryAction = _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog);
+                _actions =
+                [
+                    _act.Success(Icons.Material.Filled.Payment,  Localization.GetString("Payment"), RecordPayment),
+                    _act.Primary(Icons.Material.Filled.Edit,     Localization.GetString("Edit"),    GoToEdit),
+                    _act.Secondary(Icons.Material.Filled.Print,  Localization.GetString("Export"),  ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,     Localization.GetString("Cancel"),  CancelInvoice, dividerBefore: true),
+                ];
+                break;
+
             case InvoiceStatus.Draft:
-                // Receivable: primary = Send Email. Payable: primary = Record Payment (skip Sent).
-                if (_invoice.Type == InvoiceType.Receivable)
-                {
-                    _primaryAction = new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Send,
-                        Label = Localization.GetString("Send"),
-                        Color = Color.Info,
-                        OnClick = EventCallback.Factory.Create(this, OpenSendEmailDialog)
-                    };
-                    _actions =
-                    [
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Payment,
-                            Label = Localization.GetString("Payment"),
-                            OnClick = EventCallback.Factory.Create(this, RecordPayment)
-                        },
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Edit,
-                            Label = Localization.GetString("Edit"),
-                            OnClick = EventCallback.Factory.Create(this, GoToEdit)
-                        },
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Print,
-                            Label = Localization.GetString("Export"),
-                            Color = Color.Secondary,
-                            OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
-                        },
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Cancel,
-                            Label = Localization.GetString("Cancel"),
-                            Color = Color.Error,
-                            IsDividerBefore = true,
-                            OnClick = EventCallback.Factory.Create(this, CancelInvoice)
-                        }
-                    ];
-                }
-                else
-                {
-                    _primaryAction = new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Payment,
-                        Label = Localization.GetString("Payment"),
-                        Color = Color.Success,
-                        OnClick = EventCallback.Factory.Create(this, RecordPayment)
-                    };
-                    _actions =
-                    [
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Edit,
-                            Label = Localization.GetString("Edit"),
-                            OnClick = EventCallback.Factory.Create(this, GoToEdit)
-                        },
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Print,
-                            Label = Localization.GetString("Export"),
-                            Color = Color.Secondary,
-                            OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
-                        },
-                        new WisDetailActionItem
-                        {
-                            Icon = Icons.Material.Filled.Cancel,
-                            Label = Localization.GetString("Cancel"),
-                            Color = Color.Error,
-                            IsDividerBefore = true,
-                            OnClick = EventCallback.Factory.Create(this, CancelInvoice)
-                        }
-                    ];
-                }
+                _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
+                _actions =
+                [
+                    _act.Primary(Icons.Material.Filled.Edit,    Localization.GetString("Edit"),   GoToEdit),
+                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,    Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
+                ];
                 break;
 
             case InvoiceStatus.Sent:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Payment,
-                    Label = Localization.GetString("Payment"),
-                    Color = Color.Success,
-                    OnClick = EventCallback.Factory.Create(this, RecordPayment)
-                };
+                _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Undo,
-                        Label = Localization.GetString("Draft"),
-                        OnClick = EventCallback.Factory.Create(this, RevertToDraft)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Print,
-                        Label = Localization.GetString("Export"),
-                        OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Cancel,
-                        Label = Localization.GetString("Cancel"),
-                        Color = Color.Error,
-                        IsDividerBefore = true,
-                        OnClick = EventCallback.Factory.Create(this, CancelInvoice)
-                    }
+                    _act.Primary(Icons.Material.Filled.Undo,    Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,    Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
             case InvoiceStatus.PartiallyPaid:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Payment,
-                    Label = Localization.GetString("Payment"),
-                    Color = Color.Success,
-                    OnClick = EventCallback.Factory.Create(this, RecordPayment)
-                };
+                _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Print,
-                        Label = Localization.GetString("Export"),
-                        OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
-                    }
+                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
                 ];
                 break;
 
             case InvoiceStatus.Overdue:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Payment,
-                    Label = Localization.GetString("Payment"),
-                    Color = Color.Success,
-                    OnClick = EventCallback.Factory.Create(this, RecordPayment)
-                };
+                _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Undo,
-                        Label = Localization.GetString("Draft"),
-                        OnClick = EventCallback.Factory.Create(this, RevertToDraft)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Print,
-                        Label = Localization.GetString("Export"),
-                        OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
-                    },
-                    new WisDetailActionItem
-                    {
-                        Icon = Icons.Material.Filled.Cancel,
-                        Label = Localization.GetString("Cancel"),
-                        Color = Color.Error,
-                        IsDividerBefore = true,
-                        OnClick = EventCallback.Factory.Create(this, CancelInvoice)
-                    }
+                    _act.Primary(Icons.Material.Filled.Undo,    Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,    Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
             case InvoiceStatus.Paid:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Print,
-                    Label = Localization.GetString("Export"),
-                    Color = Color.Secondary,
-                    OnClick = EventCallback.Factory.Create(this, ExportForPrinting)
-                };
-                _actions = [];
+                _primaryAction = _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting);
                 break;
 
             case InvoiceStatus.Cancelled:
-                _primaryAction = new WisDetailActionItem
-                {
-                    Icon = Icons.Material.Filled.Delete,
-                    Label = Localization.GetString("Delete"),
-                    Color = Color.Error,
-                    OnClick = EventCallback.Factory.Create(this, DeleteInvoice)
-                };
-                _actions = [];
+                _primaryAction = _act.Error(Icons.Material.Filled.Delete, Localization.GetString("Delete"), DeleteInvoice);
                 break;
         }
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
-    private void GoToEdit() => Navigation.NavigateTo($"/invoices/edit/{Id}");
+    private void GoToEdit() => Navigation.NavigateTo($"/invoices/edit/{Id}"); // kept as void; _act.Primary accepts Action overload
 
     private async Task RecordPayment()
     {

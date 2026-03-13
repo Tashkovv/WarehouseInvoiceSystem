@@ -357,10 +357,12 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
     private WisDetailActionItem? _invoicesAction;
 
     protected override async Task OnInitializedAsync()
     {
+        _act = new WisActionItem(this);
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadCompany();
         await LoadAnalytics();
@@ -417,35 +419,16 @@ else
     {
         if (_company is null) return;
 
-        _primaryAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.Edit,
-            Label = Localization.GetString("Edit"),
-            OnClick = EventCallback.Factory.Create(this, OpenEditDialog)
-        };
+        _primaryAction = _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog);
 
         _actions =
         [
-            new WisDetailActionItem
-            {
-                Icon = _company.IsActive
-                    ? Icons.Material.Filled.DoNotDisturbOn
-                    : Icons.Material.Filled.CheckCircle,
-                Label = _company.IsActive
-                    ? Localization.GetString("Deactivate")
-                    : Localization.GetString("Activate"),
-                Color = _company.IsActive ? Color.Error : Color.Success,
-                OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
-            }
+            _company.IsActive
+                ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus)
+                : _act.Success(Icons.Material.Filled.CheckCircle,  Localization.GetString("Activate"),   ToggleActiveStatus),
         ];
 
-        _invoicesAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.RequestQuote,
-            Label = Localization.GetString("Invoices"),
-            Color = Color.Secondary,
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices?companyId={Id}"))
-        };
+        _invoicesAction = _act.Secondary(Icons.Material.Filled.RequestQuote, Localization.GetString("Invoices"), () => Navigation.NavigateTo($"/invoices?companyId={Id}"));
     }
 
     private async Task OpenEditDialog()

@@ -153,10 +153,12 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
     private WisDetailActionItem? _invoiceAction;
 
     protected override async Task OnInitializedAsync()
     {
+        _act = new WisActionItem(this);
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadPayment();
         await LoadInvoice();
@@ -216,31 +218,14 @@ else
     {
         if (_payment is null) return;
 
-        _primaryAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.Edit,
-            Label = Localization.GetString("Edit"),
-            OnClick = EventCallback.Factory.Create(this, OpenEditDialog)
-        };
+        _primaryAction = _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog);
 
         _actions =
         [
-            new WisDetailActionItem
-            {
-                Icon = Icons.Material.Filled.Delete,
-                Label = Localization.GetString("Delete"),
-                Color = Color.Error,
-                OnClick = EventCallback.Factory.Create(this, DeletePayment)
-            }
+            _act.Error(Icons.Material.Filled.Delete, Localization.GetString("Delete"), DeletePayment),
         ];
 
-        _invoiceAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.RequestQuote,
-            Label = _payment.InvoiceNumber,
-            Color = Color.Secondary,
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/{_payment.InvoiceId}"))
-        };
+        _invoiceAction = _act.Secondary(Icons.Material.Filled.RequestQuote, _payment.InvoiceNumber, () => Navigation.NavigateTo($"/invoices/{_payment.InvoiceId}"));
     }
 
     private async Task OpenEditDialog()

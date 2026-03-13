@@ -218,10 +218,12 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
     private WisDetailActionItem? _purchaseNotesAction;
 
     protected override async Task OnInitializedAsync()
     {
+        _act = new WisActionItem(this);
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadIndividual();
     }
@@ -260,35 +262,16 @@ else
     {
         if (_individual is null) return;
 
-        _primaryAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.Edit,
-            Label = Localization.GetString("Edit"),
-            OnClick = EventCallback.Factory.Create(this, OpenEditDialog)
-        };
+        _primaryAction = _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog);
 
         _actions =
         [
-            new WisDetailActionItem
-            {
-                Icon = _individual.IsActive
-                    ? Icons.Material.Filled.DoNotDisturbOn
-                    : Icons.Material.Filled.CheckCircle,
-                Label = _individual.IsActive
-                    ? Localization.GetString("Deactivate")
-                    : Localization.GetString("Activate"),
-                Color = _individual.IsActive ? Color.Error : Color.Success,
-                OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
-            }
+            _individual.IsActive
+                ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus)
+                : _act.Success(Icons.Material.Filled.CheckCircle,  Localization.GetString("Activate"),   ToggleActiveStatus),
         ];
 
-        _purchaseNotesAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.Receipt,
-            Label = Localization.GetString("PurchaseNotes"),
-            Color = Color.Secondary,
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes?individualId={Id}"))
-        };
+        _purchaseNotesAction = _act.Secondary(Icons.Material.Filled.Receipt, Localization.GetString("PurchaseNotes"), () => Navigation.NavigateTo($"/purchase-notes?individualId={Id}"));
     }
 
     private async Task OpenEditDialog()

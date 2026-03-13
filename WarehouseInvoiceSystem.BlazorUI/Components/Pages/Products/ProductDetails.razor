@@ -274,6 +274,7 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
     private WisDetailActionItem? _transactionsAction;
 
     // ── Warehouse autocomplete data source ────────────────────────────────────
@@ -388,6 +389,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _act = new WisActionItem(this);
         Localization.OnLanguageChanged += OnLanguageChanged;
         await LoadProduct();
     }
@@ -430,42 +432,17 @@ else
     {
         if (_product is null) return;
 
-        _primaryAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.Inventory2,
-            Label = Localization.GetString("AdjustStock"),
-            OnClick = EventCallback.Factory.Create(this, OpenAdjustDialog)
-        };
+        _primaryAction = _act.Primary(Icons.Material.Filled.Inventory2, Localization.GetString("AdjustStock"), OpenAdjustDialog);
 
         _actions =
         [
-            new WisDetailActionItem
-            {
-                Icon = Icons.Material.Filled.Edit,
-                Label = Localization.GetString("Edit"),
-                OnClick = EventCallback.Factory.Create(this, OpenEditDialog)
-            },
-            new WisDetailActionItem
-            {
-                Icon = _product.IsActive
-                    ? Icons.Material.Filled.DoNotDisturbOn
-                    : Icons.Material.Filled.CheckCircle,
-                Label = _product.IsActive
-                    ? Localization.GetString("Deactivate")
-                    : Localization.GetString("Activate"),
-                Color = _product.IsActive ? Color.Error : Color.Success,
-                IsDividerBefore = true,
-                OnClick = EventCallback.Factory.Create(this, ToggleActiveStatus)
-            }
+            _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog),
+            _product.IsActive
+                ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus, dividerBefore: true)
+                : _act.Success(Icons.Material.Filled.CheckCircle,  Localization.GetString("Activate"),   ToggleActiveStatus, dividerBefore: true),
         ];
 
-        _transactionsAction = new WisDetailActionItem
-        {
-            Icon = Icons.Material.Filled.SyncAlt,
-            Label = Localization.GetString("Transactions"),
-            Color = Color.Secondary,
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/products/{Id}/transactions{(_selectedWarehouseId.HasValue ? $"?warehouse={_selectedWarehouseId}" : "")}"))
-        };
+        _transactionsAction = _act.Secondary(Icons.Material.Filled.SyncAlt, Localization.GetString("Transactions"), () => Navigation.NavigateTo($"/products/{Id}/transactions{(_selectedWarehouseId.HasValue ? $"?warehouse={_selectedWarehouseId}" : "")}"));
     }
 
     private async Task OpenEditDialog()
