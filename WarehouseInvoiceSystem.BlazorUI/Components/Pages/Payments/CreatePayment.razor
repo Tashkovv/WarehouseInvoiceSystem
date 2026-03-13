@@ -308,7 +308,7 @@ else
             _createDto.Notes = _notes;
             _createDto.RecordedBy = _recordedBy;
 
-            PaymentDto created = await PaymentService.CreatePaymentAsync(_createDto);
+            await PaymentService.CreatePaymentAsync(_createDto);
 
             Snackbar.Add(Localization.GetString("PaymentCreated"), Severity.Success);
             Navigation.NavigateTo($"/invoices/{_selectedInvoiceId}");

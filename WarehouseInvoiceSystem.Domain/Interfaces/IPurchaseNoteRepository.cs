@@ -18,8 +18,8 @@
         Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query);
         Task<string> GenerateNoteNumberAsync();
         Task<bool> ExistsAsync(Guid id);
-        Task<PurchaseNote> CreateAsync(PurchaseNote purchaseNote);
-        Task<PurchaseNote> UpdateAsync(PurchaseNote purchaseNote);
+        Task CreateAsync(PurchaseNote purchaseNote);
+        Task UpdateAsync(PurchaseNote purchaseNote);
         Task<bool> DeleteAsync(Guid id);
     }
 }

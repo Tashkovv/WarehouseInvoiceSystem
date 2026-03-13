@@ -64,29 +64,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         .ThenInclude(i => i.Company)
                     .FirstOrDefaultAsync(p => p.Id == id));
 
-        public Task<Payment> CreateAsync(Payment payment) =>
+        public Task CreateAsync(Payment payment) =>
             WithContextAsync(async context =>
             {
                 payment.CreatedAt = DateTime.UtcNow;
                 context.Payments.Add(payment);
                 await SaveAsync(context);
-
-                return (await All<Payment>(context)
-                    .Include(p => p.Invoice)
-                        .ThenInclude(i => i.Company)
-                    .FirstOrDefaultAsync(p => p.Id == payment.Id))!;
             });
 
-        public Task<Payment> UpdateAsync(Payment payment) =>
+        public Task UpdateAsync(Payment payment) =>
             WithContextAsync(async context =>
             {
                 context.Payments.Update(payment);
                 await SaveAsync(context);
-
-                return (await All<Payment>(context)
-                    .Include(p => p.Invoice)
-                        .ThenInclude(i => i.Company)
-                    .FirstOrDefaultAsync(p => p.Id == payment.Id))!;
             });
 
         public Task<bool> DeleteAsync(Guid id) =>

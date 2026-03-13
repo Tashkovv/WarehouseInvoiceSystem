@@ -10,7 +10,7 @@
 
 <div class="d-flex justify-space-between align-center mb-4">
     <MudText Typo="Typo.h4">@Localization.GetString("EditCompany")</MudText>
-    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                Variant="Variant.Text"
                Href="@($"/companies")">
         @Localization.GetString("BackToCompanies")
@@ -37,7 +37,7 @@ else
             <MudCardContent>
                 <MudGrid>
                     <MudItem xs="12" md="6">
-                    <MudTextField T="string"
+                        <MudTextField T="string"
                                       @bind-Value="_name"
                                       Label="@Localization.GetString("CompanyName")"
                                       Variant="Variant.Outlined"
@@ -55,17 +55,17 @@ else
                                    RequiredError="@Localization.GetString("PleaseEnterCompanyType")"
                                    AnchorOrigin="Origin.BottomLeft"
                                    Placeholder="@Localization.GetString("ChooseCompanyType")">
-                            <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Client)">
+                            <MudSelectItem T="CompanyType?" Value="@(CompanyType.Client)">
                                 <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Success">
                                     @Localization.GetString("Client")
                                 </MudChip>
                             </MudSelectItem>
-                            <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Vendor)">
+                            <MudSelectItem T="CompanyType?" Value="@(CompanyType.Vendor)">
                                 <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Warning">
                                     @Localization.GetString("Vendor")
                                 </MudChip>
                             </MudSelectItem>
-                            <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Both)">
+                            <MudSelectItem T="CompanyType?" Value="@(CompanyType.Both)">
                                 <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Info">
                                     @Localization.GetString("ClientAndVendor")
                                 </MudChip>
@@ -209,11 +209,11 @@ else
     private async Task LoadCompany()
     {
         _loading = true;
-        
+
         try
         {
             _company = await CompanyService.GetCompanyByIdAsync(Id);
-            
+
             if (_company != null)
             {
                 _name = _company.Name;
@@ -268,8 +268,8 @@ else
             _updateDto.CreditLimit = _creditLimit;
             _updateDto.IsActive = _isActive;
 
-            CompanyDto updated = await CompanyService.UpdateCompanyAsync(Id, _updateDto);
-            
+            await CompanyService.UpdateCompanyAsync(Id, _updateDto);
+
             Snackbar.Add(Localization.GetString("CompanyUpdated"), Severity.Success);
             Navigation.NavigateTo($"/companies/{Id}");
         }

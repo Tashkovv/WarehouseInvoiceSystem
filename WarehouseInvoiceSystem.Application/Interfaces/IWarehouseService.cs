@@ -12,8 +12,8 @@
         Task<WarehouseDto?> GetDefaultWarehouseAsync();
         Task<bool> SetDefaultWarehouseAsync(Guid id);
         Task<bool> HasProductsAsync(Guid id);
-        Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto createDto);
-        Task<WarehouseDto> UpdateWarehouseAsync(Guid id, UpdateWarehouseDto updateDto);
+        Task CreateWarehouseAsync(CreateWarehouseDto createDto);
+        Task UpdateWarehouseAsync(Guid id, UpdateWarehouseDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
     }
 }

@@ -75,21 +75,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return q.AnyAsync();
             });
 
-        public Task<Individual> CreateAsync(Individual individual) =>
+        public Task CreateAsync(Individual individual) =>
             WithContextAsync(async context =>
             {
                 individual.CreatedAt = DateTime.UtcNow;
                 context.Individuals.Add(individual);
                 await SaveAsync(context);
-                return individual;
             });
 
-        public Task<Individual> UpdateAsync(Individual individual) =>
+        public Task UpdateAsync(Individual individual) =>
             WithContextAsync(async context =>
             {
                 context.Individuals.Update(individual);
                 await SaveAsync(context);
-                return individual;
             });
 
         public Task<bool> DeleteAsync(Guid id) =>

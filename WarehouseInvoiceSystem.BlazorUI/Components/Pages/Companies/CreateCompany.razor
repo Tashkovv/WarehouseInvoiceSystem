@@ -32,11 +32,11 @@
                                   Variant="Variant.Outlined"
                                   Required="true"
                                   RequiredError="@Localization.GetString("PleaseEnterCompanyName")"
-                                  Placeholder="@Localization.GetString("EnterCompanyName")"/>
+                                  Placeholder="@Localization.GetString("EnterCompanyName")" />
                 </MudItem>
 
                 <MudItem xs="12" md="6">
-                    <MudSelect T="CompanyType?"
+                    <MudSelect T="CompanyType ?"
                                @bind-Value="_type"
                                Label="@Localization.GetString("Type")"
                                Variant="Variant.Outlined"
@@ -49,12 +49,12 @@
                                 @Localization.GetString("Client")
                             </MudChip>
                         </MudSelectItem>
-                        <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Vendor)">
+                        <MudSelectItem T="CompanyType?" Value="@(CompanyType.Vendor)">
                             <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Warning">
                                 @Localization.GetString("Vendor")
                             </MudChip>
                         </MudSelectItem>
-                        <MudSelectItem T="CompanyType ?" Value="@(CompanyType.Both)">
+                        <MudSelectItem T="CompanyType?" Value="@(CompanyType.Both)">
                             <MudChip T="CompanyType" Size="Size.Medium" Color="Color.Info">
                                 @Localization.GetString("ClientAndVendor")
                             </MudChip>
@@ -112,7 +112,7 @@
                                      Variant="Variant.Outlined"
                                      Adornment="Adornment.End"
                                      AdornmentText="@Localization.GetString("Days")"
-                                     Min="0"/>
+                                     Min="0" />
                 </MudItem>
                 <MudItem xs="12" sm="6" md="6">
                     <MudNumericField T="decimal"
@@ -207,10 +207,10 @@
             _createDto.PaymentTermsDays = _paymentTermsDays;
             _createDto.CreditLimit = _creditLimit;
 
-            CompanyDto created = await CompanyService.CreateCompanyAsync(_createDto);
+            await CompanyService.CreateCompanyAsync(_createDto);
 
             Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
-            Navigation.NavigateTo($"/companies/{created.Id}");
+            Navigation.NavigateTo($"/companies");
         }
         catch (Exception ex)
         {

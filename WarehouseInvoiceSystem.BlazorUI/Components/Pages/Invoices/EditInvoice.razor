@@ -577,7 +577,7 @@ else
                     TaxRate = i.TaxRate
                 }).ToList();
 
-            InvoiceDto updated = await InvoiceService.UpdateInvoiceAsync(Id, _updateDto);
+            await InvoiceService.UpdateInvoiceAsync(Id, _updateDto);
 
             Snackbar.Add(Localization.GetString("InvoiceUpdated"), Severity.Success);
             Navigation.NavigateTo($"/invoices/{Id}");

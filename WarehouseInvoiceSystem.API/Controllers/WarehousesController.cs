@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.API.Controllers
 {
+    using Microsoft.AspNetCore.Http.HttpResults;
     using Microsoft.AspNetCore.Mvc;
     using WarehouseInvoiceSystem.Application.DTOs.Warehouse;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -96,8 +97,8 @@
         {
             try
             {
-                WarehouseDto warehouse = await warehouseService.CreateWarehouseAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = warehouse.Id }, warehouse);
+                await warehouseService.CreateWarehouseAsync(createDto);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -114,8 +115,8 @@
         {
             try
             {
-                WarehouseDto warehouse = await warehouseService.UpdateWarehouseAsync(id, updateDto);
-                return Ok(warehouse);
+                await warehouseService.UpdateWarehouseAsync(id, updateDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {

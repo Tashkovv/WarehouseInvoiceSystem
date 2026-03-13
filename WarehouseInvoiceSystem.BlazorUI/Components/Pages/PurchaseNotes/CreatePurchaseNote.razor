@@ -59,6 +59,8 @@
                                      ToStringFunc="@(w => w?.Name ?? "")"
                                      ResetValueOnEmptyText="true"
                                      Variant="Variant.Outlined"
+                                     Required="true"
+                                     RequiredError="@Localization.GetString("WarehouseRequired")"
                                      CoerceText="false"
                                      Clearable="true">
                     </MudAutocomplete>

@@ -47,7 +47,7 @@
             return paymentDto;
         }
 
-        public async Task<PaymentDto> CreatePaymentAsync(CreatePaymentDto createDto)
+        public async Task CreatePaymentAsync(CreatePaymentDto createDto)
         {
             // Validate invoice exists
             Invoice? invoice = await invoiceRepository.GetByIdAsync(createDto.InvoiceId)
@@ -71,35 +71,35 @@
                 RecordedBy = createDto.RecordedBy
             };
 
-            Payment created = await paymentRepository.CreateAsync(payment);
+            await paymentRepository.CreateAsync(payment);
 
             // Update invoice paid amount and status
-            invoice.AmountPaid += created.Amount;
+            bool wasDraft = invoice.Status == InvoiceStatus.Draft;
 
-            InvoiceStatus oldStatus = invoice.Status;
+            invoice.AmountPaid += createDto.Amount;
 
-            // Update status based on payment
             if (invoice.AmountPaid >= invoice.TotalAmount)
-            {
                 invoice.Status = InvoiceStatus.Paid;
-            }
             else if (invoice.AmountPaid > 0)
-            {
                 invoice.Status = InvoiceStatus.PartiallyPaid;
-            }
 
-            await invoiceRepository.UpdateAsync(invoice);
-
-            if (oldStatus == InvoiceStatus.Draft)
+            try
             {
-                await invoiceService.CreateInventoryTransactionsIfNeededAsync(invoice);
-            }
+                await invoiceRepository.UpdateAsync(invoice);
 
-            PaymentDto paymentDto = MapToDto(created);
-            return paymentDto;
+                if (wasDraft)
+                    await invoiceService.CreateInventoryTransactionsIfNeededAsync(invoice);
+            }
+            catch (Exception)
+            {
+                // Invoice update or inventory creation failed — delete the payment record
+                // so the DB doesn't have an orphaned payment with no corresponding invoice change.
+                await paymentRepository.DeleteAsync(payment.Id);
+                throw;
+            }
         }
 
-        public async Task<PaymentDto> UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto)
+        public async Task UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto)
         {
             Payment? payment = await paymentRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Payment with ID {id} not found");
@@ -124,7 +124,7 @@
             payment.ReferenceNumber = updateDto.ReferenceNumber;
             payment.Notes = updateDto.Notes;
 
-            Payment updated = await paymentRepository.UpdateAsync(payment);
+            await paymentRepository.UpdateAsync(payment);
 
             // Update invoice paid amount and status
             invoice.AmountPaid = newTotalPaid;
@@ -143,9 +143,6 @@
             }
 
             await invoiceRepository.UpdateAsync(invoice);
-
-            PaymentDto paymentDto = MapToDto(updated);
-            return paymentDto;
         }
 
         public async Task<bool> DeletePaymentAsync(Guid id)

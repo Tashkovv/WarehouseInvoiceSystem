@@ -12,8 +12,8 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260305111034_WarehouseInInvoice")]
-    partial class WarehouseInInvoice
+    [Migration("20260312233741_ConcurrencySequenceAudit")]
+    partial class ConcurrencySequenceAudit
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -77,6 +77,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeletedOn");
@@ -134,11 +137,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeletedOn");
 
                     b.HasIndex("IdentificationNumber");
+
+                    b.HasIndex("IsActive");
 
                     b.HasIndex("LastName");
 
@@ -178,6 +186,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid");
 
@@ -189,9 +200,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.HasIndex("SourceDocumentId");
-
                     b.HasIndex("WarehouseId");
+
+                    b.HasIndex("SourceDocumentId", "SourceDocumentType");
 
                     b.ToTable("InventoryTransaction", (string)null);
                 });
@@ -262,6 +273,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid");
 
@@ -276,9 +290,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasIndex("IssueDate");
 
+                    b.HasIndex("Type");
+
                     b.HasIndex("WarehouseId");
 
                     b.HasIndex("Status", "DueDate");
+
+                    b.HasIndex("Type", "Status", "DeletedOn");
 
                     b.ToTable("Invoice", (string)null);
                 });
@@ -303,7 +321,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<Guid>("InvoiceId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProductId")
+                    b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("Quantity")
@@ -318,6 +336,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -367,15 +388,18 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeletedOn");
 
-                    b.HasIndex("InvoiceId");
-
                     b.HasIndex("PaymentDate");
 
                     b.HasIndex("ReferenceNumber");
+
+                    b.HasIndex("InvoiceId", "DeletedOn");
 
                     b.ToTable("Payment", (string)null);
                 });
@@ -420,7 +444,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("Name");
 
                     b.ToTable("Product", (string)null);
                 });
@@ -465,6 +501,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid");
@@ -517,6 +556,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeletedOn");
@@ -564,8 +606,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasDefaultValue(0m);
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -616,6 +667,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasDefaultValue("Viewer");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -652,6 +706,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedOn")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean");
 
@@ -659,6 +716,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
@@ -714,7 +774,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasOne("WarehouseInvoiceSystem.Domain.Entities.Product", "Product")
                         .WithMany("InvoiceLines")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Invoice");
 

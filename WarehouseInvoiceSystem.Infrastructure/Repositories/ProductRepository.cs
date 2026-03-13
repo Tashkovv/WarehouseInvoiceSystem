@@ -92,21 +92,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return q.AnyAsync();
             });
 
-        public Task<Product> CreateAsync(Product product) =>
+        public Task CreateAsync(Product product) =>
             WithContextAsync(async context =>
             {
                 product.CreatedAt = DateTime.UtcNow;
                 context.Products.Add(product);
                 await SaveAsync(context);
-                return product;
             });
 
-        public Task<Product> UpdateAsync(Product product) =>
+        public Task UpdateAsync(Product product) =>
             WithContextAsync(async context =>
             {
                 context.Products.Update(product);
                 await SaveAsync(context);
-                return product;
             });
 
         public Task<bool> SetActiveStatusAsync(Guid id, bool isActive) =>

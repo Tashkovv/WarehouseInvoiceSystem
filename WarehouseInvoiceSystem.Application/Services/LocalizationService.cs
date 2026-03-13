@@ -1223,6 +1223,7 @@
                 ["DeactivateWarehouseConfirm"] = "Дали сте сигурни дека сакате да го деактивирате овој магацин?",
                 ["WarehouseActivated"] = "Магацинот е успешно активиран",
                 ["WarehouseDeactivated"] = "Магацинот е успешно деактивиран",
+                ["WarehouseRequired"] = "Магацинот е задолжителен",
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",

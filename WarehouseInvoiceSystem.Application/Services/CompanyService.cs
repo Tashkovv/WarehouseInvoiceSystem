@@ -48,7 +48,7 @@
             return company == null ? null : MapToDto(company);
         }
 
-        public async Task<CompanyDto> CreateCompanyAsync(CreateCompanyDto createDto)
+        public async Task CreateCompanyAsync(CreateCompanyDto createDto)
         {
             Company company = new()
             {
@@ -64,11 +64,10 @@
                 IsActive = true
             };
 
-            Company created = await companyRepository.CreateAsync(company);
-            return MapToDto(created);
+            await companyRepository.CreateAsync(company);
         }
 
-        public async Task<CompanyDto> UpdateCompanyAsync(Guid id, UpdateCompanyDto updateDto)
+        public async Task UpdateCompanyAsync(Guid id, UpdateCompanyDto updateDto)
         {
             Company company = await companyRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Company with ID {id} not found");
 
@@ -83,8 +82,7 @@
             company.CreditLimit = updateDto.CreditLimit;
             company.IsActive = updateDto.IsActive;
 
-            Company updated = await companyRepository.UpdateAsync(company);
-            return MapToDto(updated);
+            await companyRepository.UpdateAsync(company);
         }
 
         public async Task<bool> DeleteCompanyAsync(Guid id)

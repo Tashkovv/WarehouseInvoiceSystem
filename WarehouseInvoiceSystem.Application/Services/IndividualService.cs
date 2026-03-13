@@ -123,7 +123,7 @@
             return analytics;
         }
 
-        public async Task<IndividualDto> CreateIndividualAsync(CreateIndividualDto createDto)
+        public async Task CreateIndividualAsync(CreateIndividualDto createDto)
         {
             // Validate unique identification number
             if (await individualRepository.IdentificationNumberExistsAsync(createDto.IdentificationNumber))
@@ -140,11 +140,10 @@
                 IsActive = createDto.IsActive
             };
 
-            Individual created = await individualRepository.CreateAsync(individual);
-            return MapToDto(created);
+            await individualRepository.CreateAsync(individual);
         }
 
-        public async Task<IndividualDto> UpdateIndividualAsync(Guid id, UpdateIndividualDto updateDto)
+        public async Task UpdateIndividualAsync(Guid id, UpdateIndividualDto updateDto)
         {
             Individual? individual = await individualRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Individual with ID {id} not found");
@@ -161,8 +160,7 @@
             individual.Email = updateDto.Email;
             individual.IsActive = updateDto.IsActive;
 
-            Individual updated = await individualRepository.UpdateAsync(individual);
-            return MapToDto(updated);
+            await individualRepository.UpdateAsync(individual);
         }
 
         public async Task<bool> DeleteIndividualAsync(Guid id)

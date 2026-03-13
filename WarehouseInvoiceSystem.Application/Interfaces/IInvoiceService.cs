@@ -17,8 +17,8 @@
         Task<IEnumerable<InvoiceDto>> GetOverdueInvoicesAsync();
         Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id);
         Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber);
-        Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createDto);
-        Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
+        Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto);
+        Task UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
         Task<bool> DeleteInvoiceAsync(Guid id);
 
         // ── Status transitions ──────────────────────────────────────────────────

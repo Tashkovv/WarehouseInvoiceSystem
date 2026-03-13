@@ -13,7 +13,16 @@
             builder.HasKey(e => e.Id);
             builder.Property(e => e.Id).ValueGeneratedOnAdd();
             builder.Property(e => e.CreatedAt).IsRequired();
+            builder.Property(e => e.UpdatedAt);
             builder.Property(e => e.DeletedOn);
+
+            // xmin is a PostgreSQL system column — automatically incremented on every UPDATE.
+            // Mapping it as a row-version gives EF Core optimistic concurrency for free:
+            // no schema change required, the column already exists on every table.
+            builder.Property<uint>("xmin")
+                   .IsRowVersion()
+                   .HasColumnName("xmin")
+                   .HasColumnType("xid");
 
             builder.Property(e => e.Quantity).HasPrecision(18, 2).IsRequired();
             builder.Property(e => e.ReservedQuantity).HasPrecision(18, 2).IsRequired().HasDefaultValue(0);

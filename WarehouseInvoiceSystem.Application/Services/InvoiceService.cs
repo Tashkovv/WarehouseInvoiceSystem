@@ -100,7 +100,7 @@
 
         // ── Create ────────────────────────────────────────────────────────────────────
 
-        public async Task<InvoiceDto> CreateInvoiceAsync(CreateInvoiceDto createDto)
+        public async Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto)
         {
             if (!await companyRepository.ExistsAsync(createDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
@@ -145,13 +145,13 @@
                 LineItems = lineItems
             };
 
-            Invoice created = await invoiceRepository.CreateAsync(invoice);
-            return MapToDto(created);
+            Guid createdId = await invoiceRepository.CreateAsync(invoice);
+            return createdId;
         }
 
         // ── Update ────────────────────────────────────────────────────────────────────
 
-        public async Task<InvoiceDto> UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto)
+        public async Task UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
@@ -188,8 +188,7 @@
             invoice.TaxAmount = newLineItems.Sum(li => li.TaxAmount);
             invoice.TotalAmount = newLineItems.Sum(li => li.TotalAmount);
 
-            Invoice updated = await invoiceRepository.UpdateAsync(invoice);
-            return MapToDto(updated);
+            await invoiceRepository.UpdateAsync(invoice);
         }
 
         // ── Delete ────────────────────────────────────────────────────────────────────
@@ -223,7 +222,19 @@
 
             invoice.Status = InvoiceStatus.Sent;
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
-            await CreateInventoryTransactionsIfNeededAsync(updated);
+
+            try
+            {
+                await CreateInventoryTransactionsIfNeededAsync(updated);
+            }
+            catch (Exception)
+            {
+                // Inventory creation failed — roll back the status change so the invoice
+                // doesn't appear as Sent with no stock movement recorded.
+                invoice.Status = InvoiceStatus.Draft;
+                await invoiceRepository.UpdateAsync(invoice);
+                throw;
+            }
 
             return MapToDto(updated);
         }
@@ -245,12 +256,22 @@
                 throw new InvalidOperationException(
                     $"Invoice {invoice.InvoiceNumber} cannot be marked as paid (current: {invoice.Status}).");
 
+            InvoiceStatus previousStatus = invoice.Status;
             invoice.Status = InvoiceStatus.Paid;
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
 
-            // Covers the Payable Draft → Overdue → Paid edge case where stock was never moved.
-            // No-op for invoices that already had transactions created (e.g. normal Sent → Paid flow).
-            await CreateInventoryTransactionsIfNeededAsync(updated);
+            try
+            {
+                // Covers the Payable Draft → Overdue → Paid edge case where stock was never moved.
+                // No-op for invoices that already had transactions created (e.g. normal Sent → Paid flow).
+                await CreateInventoryTransactionsIfNeededAsync(updated);
+            }
+            catch (Exception)
+            {
+                invoice.Status = previousStatus;
+                await invoiceRepository.UpdateAsync(invoice);
+                throw;
+            }
 
             return MapToDto(updated);
         }
@@ -276,11 +297,21 @@
                 throw new InvalidOperationException(
                     $"Invoice {invoice.InvoiceNumber} is already cancelled.");
 
+            InvoiceStatus previousStatus = invoice.Status;
             invoice.Status = InvoiceStatus.Cancelled;
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
 
-            // No-op for Draft since no transactions exist yet. Reverses for Sent/Overdue.
-            await CreateReverseTransactionsIfNeeded(updated);
+            try
+            {
+                // No-op for Draft since no transactions exist yet. Reverses for Sent/Overdue.
+                await CreateReverseTransactionsIfNeeded(updated);
+            }
+            catch (Exception)
+            {
+                invoice.Status = previousStatus;
+                await invoiceRepository.UpdateAsync(invoice);
+                throw;
+            }
 
             return MapToDto(updated);
         }

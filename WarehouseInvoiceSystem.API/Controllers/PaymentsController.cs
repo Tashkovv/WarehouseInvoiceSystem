@@ -98,8 +98,8 @@
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                PaymentDto payment = await paymentService.CreatePaymentAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = payment.Id }, payment);
+                await paymentService.CreatePaymentAsync(createDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {
@@ -127,8 +127,8 @@
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                PaymentDto payment = await paymentService.UpdatePaymentAsync(id, updateDto);
-                return Ok(payment);
+                await paymentService.UpdatePaymentAsync(id, updateDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {

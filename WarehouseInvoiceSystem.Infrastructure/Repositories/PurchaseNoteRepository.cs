@@ -173,21 +173,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(context =>
                 All<PurchaseNote>(context).AnyAsync(pn => pn.Id == id));
 
-        public Task<PurchaseNote> CreateAsync(PurchaseNote purchaseNote) =>
+        public Task CreateAsync(PurchaseNote purchaseNote) =>
             WithContextAsync(async context =>
             {
                 purchaseNote.CreatedAt = DateTime.UtcNow;
                 context.PurchaseNotes.Add(purchaseNote);
                 await SaveAsync(context);
-                return purchaseNote;
             });
 
-        public Task<PurchaseNote> UpdateAsync(PurchaseNote purchaseNote) =>
+        public Task UpdateAsync(PurchaseNote purchaseNote) =>
             WithContextAsync(async context =>
             {
                 context.PurchaseNotes.Update(purchaseNote);
                 await SaveAsync(context);
-                return purchaseNote;
             });
 
         public Task<bool> DeleteAsync(Guid id) =>

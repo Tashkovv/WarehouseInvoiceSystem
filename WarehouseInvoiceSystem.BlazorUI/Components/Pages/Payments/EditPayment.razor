@@ -13,7 +13,7 @@
 
 <div class="d-flex justify-space-between align-center mb-4">
     <MudText Typo="Typo.h4">@Localization.GetString("EditPayment")</MudText>
-    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                Variant="Variant.Text"
                Href="@($"/payments/{Id}")">
         @Localization.GetString("BackToPayments")
@@ -42,7 +42,7 @@ else
                     <MudItem xs="12">
                         <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
                             <MudText Typo="Typo.body2">
-                                <strong>@Localization.GetString("InvoiceNumber"):</strong> 
+                                <strong>@Localization.GetString("InvoiceNumber"):</strong>
                                 <MudLink Href="@($"/invoices/{_payment.InvoiceId}")">@_payment.InvoiceNumber</MudLink>
                             </MudText>
                             @if (_invoice != null)
@@ -140,7 +140,7 @@ else
                     }
                 </MudButton>
             </div>
-            </MudItem>
+        </MudItem>
     </MudForm>
 }
 
@@ -183,11 +183,11 @@ else
     private async Task LoadPayment()
     {
         _loading = true;
-        
+
         try
         {
             _payment = await PaymentService.GetPaymentByIdAsync(Id);
-            
+
             if (_payment != null)
             {
                 _paymentDate = _payment.PaymentDate;
@@ -256,8 +256,8 @@ else
             _updateDto.ReferenceNumber = _referenceNumber;
             _updateDto.Notes = _notes;
 
-            PaymentDto updated = await PaymentService.UpdatePaymentAsync(Id, _updateDto);
-            
+            await PaymentService.UpdatePaymentAsync(Id, _updateDto);
+
             Snackbar.Add(Localization.GetString("PaymentUpdated"), Severity.Success);
             Navigation.NavigateTo($"/payments/{Id}");
         }

@@ -90,7 +90,7 @@
 
         // ── Create ────────────────────────────────────────────────────────────────────
 
-        public async Task<PurchaseNoteDto> CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto)
+        public async Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto)
         {
             if (!await individualRepository.ExistsAsync(createDto.IndividualId))
                 throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
@@ -137,19 +137,17 @@
                 LineItems = lineItems
             };
 
-            PurchaseNote created = await purchaseNoteRepository.CreateAsync(purchaseNote);
+            await purchaseNoteRepository.CreateAsync(purchaseNote);
 
             // Only create inventory transactions if goods are actually received (Paid = received + paid)
             // Draft notes do NOT create stock yet
             if (initialStatus == PurchaseNoteStatus.Paid)
-                await CreateInventoryTransactionsAsync(created);
-
-            return MapToDto(created);
+                await CreateInventoryTransactionsAsync(purchaseNote);
         }
 
         // ── Update ────────────────────────────────────────────────────────────────────
 
-        public async Task<PurchaseNoteDto> UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto)
+        public async Task UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto)
         {
             PurchaseNote? purchaseNote = await purchaseNoteRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
@@ -196,8 +194,7 @@
                 purchaseNote.TotalAmount = purchaseNote.SubTotal;
             }
 
-            PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(purchaseNote);
-            return MapToDto(updated);
+            await purchaseNoteRepository.UpdateAsync(purchaseNote);
         }
 
         // ── Status transitions ────────────────────────────────────────────────────────
@@ -214,10 +211,10 @@
 
             note.Status = PurchaseNoteStatus.Pending;
 
-            PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(note);
-            await CreateInventoryTransactionsAsync(updated);
+            await purchaseNoteRepository.UpdateAsync(note);
+            await CreateInventoryTransactionsAsync(note);
 
-            return MapToDto(updated);
+            return MapToDto(note);
         }
 
         /// <summary>Pending → Paid. Financial settlement only — no stock change.</summary>
@@ -233,8 +230,8 @@
             note.Status = PurchaseNoteStatus.Paid;
             note.PaidDate = DateTime.UtcNow;
 
-            PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(note);
-            return MapToDto(updated);
+            await purchaseNoteRepository.UpdateAsync(note);
+            return MapToDto(note);
         }
 
         /// <summary>Pending → Draft. Reverses inventory transactions.</summary>
@@ -249,14 +246,14 @@
 
             note.Status = PurchaseNoteStatus.Draft;
 
-            PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(note);
+            await purchaseNoteRepository.UpdateAsync(note);
 
             await inventoryService.ReverseTransactionsForDocumentAsync(
                 id,
                 DocumentType,
                 $"{localizationService.GetString("PurchaseNoteRevertedToDraft")}: {note.NoteNumber}");
 
-            return MapToDto(updated);
+            return MapToDto(note);
         }
 
         /// <summary>Draft or Pending → Cancelled. Reverses stock if was Pending.</summary>
@@ -269,21 +266,30 @@
                 throw new InvalidOperationException(
                     $"Purchase note {note.NoteNumber} cannot be cancelled (current: {note.Status}).");
 
-            bool wasP = note.Status == PurchaseNoteStatus.Pending;
+            bool wasPending = note.Status == PurchaseNoteStatus.Pending;
+            PurchaseNoteStatus previousStatus = note.Status;
 
             note.Status = PurchaseNoteStatus.Cancelled;
+            await purchaseNoteRepository.UpdateAsync(note);
 
-            PurchaseNote updated = await purchaseNoteRepository.UpdateAsync(note);
-
-            if (wasP)
+            if (wasPending)
             {
-                await inventoryService.ReverseTransactionsForDocumentAsync(
-                    id,
-                    DocumentType,
-                    $"{localizationService.GetString("PurchaseNoteCancelled")}: {note.NoteNumber}");
+                try
+                {
+                    await inventoryService.ReverseTransactionsForDocumentAsync(
+                        id,
+                        DocumentType,
+                        $"{localizationService.GetString("PurchaseNoteCancelled")}: {note.NoteNumber}");
+                }
+                catch (Exception)
+                {
+                    note.Status = previousStatus;
+                    await purchaseNoteRepository.UpdateAsync(note);
+                    throw;
+                }
             }
 
-            return MapToDto(updated);
+            return MapToDto(note);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────────

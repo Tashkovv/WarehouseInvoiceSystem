@@ -13,8 +13,8 @@
         Task<Individual?> GetByIdentificationNumberAsync(string identificationNumber);
         Task<bool> ExistsAsync(Guid id);
         Task<bool> IdentificationNumberExistsAsync(string identificationNumber, Guid? excludeId = null);
-        Task<Individual> CreateAsync(Individual individual);
-        Task<Individual> UpdateAsync(Individual individual);
+        Task CreateAsync(Individual individual);
+        Task UpdateAsync(Individual individual);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
     }

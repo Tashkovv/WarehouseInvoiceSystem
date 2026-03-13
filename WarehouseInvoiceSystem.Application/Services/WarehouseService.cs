@@ -71,9 +71,9 @@
             }
 
             newDefaultWarehouse.IsDefault = true;
-            Warehouse? warehouse = await warehouseRepository.UpdateAsync(newDefaultWarehouse);
+            await warehouseRepository.UpdateAsync(newDefaultWarehouse);
 
-            return warehouse != null;
+            return true;
         }
 
         public async Task<bool> HasProductsAsync(Guid id)
@@ -81,7 +81,7 @@
             return await warehouseRepository.HasProductsAsync(id);
         }
 
-        public async Task<WarehouseDto> CreateWarehouseAsync(CreateWarehouseDto createDto)
+        public async Task CreateWarehouseAsync(CreateWarehouseDto createDto)
         {
             // Automatically set as default only if no default warehouse exists yet
             Warehouse? existingDefault = await warehouseRepository.GetDefaultWarehouseAsync();
@@ -94,11 +94,10 @@
                 IsDefault = isDefault
             };
 
-            Warehouse created = await warehouseRepository.CreateAsync(warehouse);
-            return MapToDto(created);
+            await warehouseRepository.CreateAsync(warehouse);
         }
 
-        public async Task<WarehouseDto> UpdateWarehouseAsync(Guid id, UpdateWarehouseDto updateDto)
+        public async Task UpdateWarehouseAsync(Guid id, UpdateWarehouseDto updateDto)
         {
             Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Warehouse with ID {id} not found");
@@ -106,8 +105,7 @@
             warehouse.Name = updateDto.Name;
             warehouse.Address = updateDto.Address;
 
-            Warehouse updated = await warehouseRepository.UpdateAsync(warehouse);
-            return MapToDto(updated);
+            await warehouseRepository.UpdateAsync(warehouse);
         }
 
         public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)

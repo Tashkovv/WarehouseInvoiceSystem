@@ -114,8 +114,8 @@
         {
             try
             {
-                IndividualDto individual = await individualService.CreateIndividualAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = individual.Id }, individual);
+                await individualService.CreateIndividualAsync(createDto);
+                return Ok();
             }
             catch (InvalidOperationException ex)
             {
@@ -136,8 +136,8 @@
         {
             try
             {
-                IndividualDto individual = await individualService.UpdateIndividualAsync(id, updateDto);
-                return Ok(individual);
+                await individualService.UpdateIndividualAsync(id, updateDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {

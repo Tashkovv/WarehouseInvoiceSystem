@@ -39,6 +39,23 @@
             modelBuilder.ApplyConfiguration(new UserConfiguration());
         }
 
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            DateTime now = DateTime.UtcNow;
+
+            foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Domain.Common.AuditableEntity> entry
+                     in ChangeTracker.Entries<Domain.Common.AuditableEntity>())
+            {
+                if (entry.State == EntityState.Added)
+                    entry.Entity.CreatedAt = now;
+
+                if (entry.State == EntityState.Modified)
+                    entry.Entity.UpdatedAt = now;
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
             base.ConfigureConventions(configurationBuilder);

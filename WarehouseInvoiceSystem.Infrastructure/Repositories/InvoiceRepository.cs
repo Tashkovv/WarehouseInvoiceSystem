@@ -159,19 +159,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<Invoice> CreateAsync(Invoice invoice) =>
+        public Task<Guid> CreateAsync(Invoice invoice) =>
             WithContextAsync(async context =>
             {
                 invoice.CreatedAt = DateTime.UtcNow;
                 context.Invoices.Add(invoice);
                 await SaveAsync(context);
-
-                return (await All<Invoice>(context)
-                    .Include(i => i.Company)
-                    .Include(i => i.LineItems)
-                        .ThenInclude(li => li.Product)
-                    .Include(i => i.Payments)
-                    .FirstOrDefaultAsync(i => i.Id == invoice.Id))!;
+                return invoice.Id;
             });
 
         public Task<Invoice> UpdateAsync(Invoice invoice) =>
@@ -207,23 +201,20 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<string> GenerateInvoiceNumberAsync(InvoiceType type) =>
             WithContextAsync(async context =>
             {
+                // PostgreSQL sequences are atomic — concurrent calls each get a unique value
+                // with no possibility of duplicates or gaps under load.
+                // The sequences are created by the migration AddInvoiceSequences.
+                string sequenceName = type == InvoiceType.Receivable
+                    ? "invoice_number_seq"
+                    : "bill_number_seq";
+
                 string prefix = type == InvoiceType.Receivable ? "INV" : "BILL";
                 int year = DateTime.UtcNow.Year;
                 int month = DateTime.UtcNow.Month;
 
-                Invoice? lastInvoice = await context.Invoices
-                    .Where(i => i.Type == type &&
-                                i.InvoiceNumber.StartsWith($"{prefix}-{year:D4}{month:D2}"))
-                    .OrderByDescending(i => i.InvoiceNumber)
-                    .FirstOrDefaultAsync();
-
-                int nextNumber = 1;
-                if (lastInvoice != null)
-                {
-                    string[] parts = lastInvoice.InvoiceNumber.Split('-');
-                    if (parts.Length == 2 && int.TryParse(parts[1].AsSpan(6), out int lastNumber))
-                        nextNumber = lastNumber + 1;
-                }
+                long nextNumber = await context.Database
+                    .SqlQueryRaw<long>($"SELECT nextval('{sequenceName}') AS \"Value\"")
+                    .FirstAsync();
 
                 return $"{prefix}-{year:D4}{month:D2}{nextNumber:D4}";
             });

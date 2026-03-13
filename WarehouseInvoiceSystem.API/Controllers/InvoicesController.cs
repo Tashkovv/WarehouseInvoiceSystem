@@ -209,8 +209,8 @@
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                InvoiceDto invoice = await invoiceService.CreateInvoiceAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = invoice.Id }, invoice);
+                await invoiceService.CreateInvoiceAsync(createDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {
@@ -234,8 +234,8 @@
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                InvoiceDto invoice = await invoiceService.UpdateInvoiceAsync(id, updateDto);
-                return Ok(invoice);
+                await invoiceService.UpdateInvoiceAsync(id, updateDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {

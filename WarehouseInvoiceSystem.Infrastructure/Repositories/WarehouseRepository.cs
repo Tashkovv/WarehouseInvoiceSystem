@@ -59,21 +59,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(context =>
                 All<Warehouse>(context).AnyAsync(w => w.Id == id));
 
-        public Task<Warehouse> CreateAsync(Warehouse warehouse) =>
+        public Task CreateAsync(Warehouse warehouse) =>
             WithContextAsync(async context =>
             {
                 warehouse.CreatedAt = DateTime.UtcNow;
                 context.Warehouses.Add(warehouse);
                 await SaveAsync(context);
-                return warehouse;
             });
 
-        public Task<Warehouse> UpdateAsync(Warehouse warehouse) =>
+        public Task UpdateAsync(Warehouse warehouse) =>
             WithContextAsync(async context =>
             {
                 context.Warehouses.Update(warehouse);
                 await SaveAsync(context);
-                return warehouse;
             });
 
         public Task<bool> SetActiveStatusAsync(Guid id, bool isActive) =>

@@ -18,7 +18,7 @@
 
 <div class="d-flex justify-space-between align-center mb-4">
     <MudText Typo="Typo.h4">@Localization.GetString("CreateInvoice")</MudText>
-    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack" 
+    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
                Variant="Variant.Text"
                Href="/invoices">
         @Localization.GetString("BackToInvoices")
@@ -44,7 +44,7 @@ else
                     <MudCardContent>
                         <MudGrid>
                             <MudItem xs="12" md="4">
-                                <MudSelect T="Guid?"
+                                <MudSelect T="Guid ?"
                                            @bind-Value="_selectedCompanyId"
                                            Label="@Localization.GetString("Company")"
                                            Required="true"
@@ -68,12 +68,12 @@ else
                                            Variant="Variant.Outlined"
                                            AnchorOrigin="Origin.BottomLeft"
                                            Placeholder="@Localization.GetString("SelectInvoiceType")">
-                                    <MudSelectItem T="InvoiceType ?" Value="@((InvoiceType?)InvoiceType.Receivable)">
+                                    <MudSelectItem T="InvoiceType?" Value="@((InvoiceType?)InvoiceType.Receivable)">
                                         <MudChip T="InvoiceType" Size="Size.Medium" Color="Color.Success">
                                             @Localization.GetString("Receivable")
                                         </MudChip>
                                     </MudSelectItem>
-                                    <MudSelectItem T="InvoiceType ?" Value="@((InvoiceType?)InvoiceType.Payable)">
+                                    <MudSelectItem T="InvoiceType?" Value="@((InvoiceType?)InvoiceType.Payable)">
                                         <MudChip T="InvoiceType" Size="Size.Medium" Color="Color.Warning">
                                             @Localization.GetString("Payable")
                                         </MudChip>
@@ -84,10 +84,10 @@ else
                             <MudItem xs="12" md="4">
                                 <MudAutocomplete T="WarehouseDto"
                                                  Label="@Localization.GetString("Warehouse")"
-                                                 Placeholder="@Localization.GetString("SelectWarehouse")"
                                                  @bind-Value="_selectedWarehouse"
                                                  SearchFunc="@SearchWarehouses"
                                                  Required="true"
+                                                 Clearable="true"
                                                  ToStringFunc="@(w => w?.Name ?? string.Empty)"
                                                  ResetValueOnEmptyText="true"
                                                  Variant="Variant.Outlined" />
@@ -100,7 +100,7 @@ else
                                                Label="@Localization.GetString("IssueDate")"
                                                Required="true"
                                                RequiredError="@Localization.GetString("IssueDateRequired")"
-                                               Variant="Variant.Outlined"/>
+                                               Variant="Variant.Outlined" />
                             </MudItem>
 
                             <MudItem xs="12" md="4">
@@ -111,7 +111,7 @@ else
                                                  Variant="Variant.Outlined"
                                                  Adornment="Adornment.End"
                                                  AdornmentText="@Localization.GetString("Days")"
-                                                 Min="0"/>
+                                                 Min="0" />
                             </MudItem>
 
                             <MudItem xs="12" md="4">
@@ -518,10 +518,10 @@ else
                     TaxRate = i.TaxRate
                 }).ToList();
 
-            InvoiceDto created = await InvoiceService.CreateInvoiceAsync(_createDto);
+            Guid id = await InvoiceService.CreateInvoiceAsync(_createDto);
 
             Snackbar.Add(Localization.GetString("InvoiceCreated"), Severity.Success);
-            Navigation.NavigateTo($"/invoices/{created.Id}");
+            Navigation.NavigateTo($"/invoices/{id}");
         }
         catch (Exception ex)
         {

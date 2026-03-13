@@ -84,8 +84,8 @@
         {
             try
             {
-                PurchaseNoteDto note = await purchaseNoteService.CreatePurchaseNoteAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = note.Id }, note);
+                await purchaseNoteService.CreatePurchaseNoteAsync(createDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
             catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
@@ -95,7 +95,11 @@
         [HttpPut("{id}")]
         public async Task<ActionResult<PurchaseNoteDto>> Update(Guid id, [FromBody] UpdatePurchaseNoteDto updateDto)
         {
-            try { return Ok(await purchaseNoteService.UpdatePurchaseNoteAsync(id, updateDto)); }
+            try 
+            {
+                await purchaseNoteService.UpdatePurchaseNoteAsync(id, updateDto);
+                return Ok();
+            }
             catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
             catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (Exception ex) { logger.LogError(ex, "Error updating purchase note {Id}", id); return StatusCode(500, BaseErrorMessage); }

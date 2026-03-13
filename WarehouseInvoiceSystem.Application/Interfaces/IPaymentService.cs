@@ -10,8 +10,8 @@
         Task<PagedResult<PaymentDto>> GetPagedAsync(GetPaymentsQuery query);
         Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(Guid invoiceId);
         Task<PaymentDto?> GetPaymentByIdAsync(Guid id);
-        Task<PaymentDto> CreatePaymentAsync(CreatePaymentDto createDto);
-        Task<PaymentDto> UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto);
+        Task CreatePaymentAsync(CreatePaymentDto createDto);
+        Task UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto);
         Task<bool> DeletePaymentAsync(Guid id);
     }
 }

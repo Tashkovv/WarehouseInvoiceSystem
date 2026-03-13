@@ -114,8 +114,8 @@
         {
             try
             {
-                ProductDto product = await productService.CreateProductAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = product.Id }, product);
+                await productService.CreateProductAsync(createDto);
+                return Ok();
             }
             catch (InvalidOperationException ex)
             {
@@ -136,8 +136,8 @@
         {
             try
             {
-                ProductDto product = await productService.UpdateProductAsync(id, updateDto);
-                return Ok(product);
+                await productService.UpdateProductAsync(id, updateDto);
+                return Ok();
             }
             catch (KeyNotFoundException ex)
             {

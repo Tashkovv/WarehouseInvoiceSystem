@@ -121,8 +121,8 @@
                     return BadRequest(ModelState);
                 }
 
-                CompanyDto company = await companyService.CreateCompanyAsync(createDto);
-                return CreatedAtAction(nameof(GetById), new { id = company.Id }, company);
+                await companyService.CreateCompanyAsync(createDto);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -144,8 +144,8 @@
                     return BadRequest(ModelState);
                 }
 
-                CompanyDto company = await companyService.UpdateCompanyAsync(id, updateDto);
-                return Ok(company);
+                await companyService.UpdateCompanyAsync(id, updateDto);
+                return Ok();
             }
             catch (KeyNotFoundException)
             {

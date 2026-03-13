@@ -15,8 +15,8 @@
         Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByIndividualAsync(Guid individualId);
         Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByStatusAsync(PurchaseNoteStatus status);
-        Task<PurchaseNoteDto> CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto);
-        Task<PurchaseNoteDto> UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto);
+        Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto);
+        Task UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto);
 
         /// <summary>Receive goods: Draft → Pending. Creates inventory transactions.</summary>
         Task<PurchaseNoteDto> ReceiveAsync(Guid id);

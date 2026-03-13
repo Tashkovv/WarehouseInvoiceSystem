@@ -14,6 +14,7 @@
             builder.HasKey(e => e.Id);
             builder.Property(e => e.Id).ValueGeneratedOnAdd();
             builder.Property(e => e.CreatedAt).IsRequired();
+            builder.Property(e => e.UpdatedAt);
             builder.Property(e => e.DeletedOn);
 
             builder.Property(e => e.Username).IsRequired().HasMaxLength(50);

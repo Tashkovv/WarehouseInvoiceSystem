@@ -265,7 +265,7 @@
             }
         }
 
-        public async Task<ProductDto> CreateProductAsync(CreateProductDto createDto)
+        public async Task CreateProductAsync(CreateProductDto createDto)
         {
             // Validate unique code
             if (await productRepository.CodeExistsAsync(createDto.Code))
@@ -281,11 +281,10 @@
                 IsActive = createDto.IsActive
             };
 
-            Product created = await productRepository.CreateAsync(product);
-            return MapToDto(created);
+            await productRepository.CreateAsync(product);
         }
 
-        public async Task<ProductDto> UpdateProductAsync(Guid id, UpdateProductDto updateDto)
+        public async Task UpdateProductAsync(Guid id, UpdateProductDto updateDto)
         {
             Product? product = await productRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Product with ID {id} not found");
@@ -301,8 +300,7 @@
             product.DefaultPrice = updateDto.DefaultPrice;
             product.IsActive = updateDto.IsActive;
 
-            Product updated = await productRepository.UpdateAsync(product);
-            return MapToDto(updated);
+            await productRepository.UpdateAsync(product);
         }
 
         public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)

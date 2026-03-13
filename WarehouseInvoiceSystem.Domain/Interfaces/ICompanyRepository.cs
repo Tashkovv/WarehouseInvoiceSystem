@@ -12,8 +12,8 @@
         Task<IEnumerable<Company>> GetActiveCompaniesAsync();
         Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type);
         Task<Company?> GetByIdAsync(Guid id);
-        Task<Company> CreateAsync(Company company);
-        Task<Company> UpdateAsync(Company company);
+        Task CreateAsync(Company company);
+        Task UpdateAsync(Company company);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> ExistsAsync(Guid id);
         Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId);

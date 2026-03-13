@@ -63,21 +63,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(context =>
                 All<Company>(context).FirstOrDefaultAsync(c => c.Id == id));
 
-        public Task<Company> CreateAsync(Company company) =>
+        public Task CreateAsync(Company company) =>
             WithContextAsync(async context =>
             {
                 company.CreatedAt = DateTime.UtcNow;
                 context.Companies.Add(company);
                 await SaveAsync(context);
-                return company;
             });
 
-        public Task<Company> UpdateAsync(Company company) =>
+        public Task UpdateAsync(Company company) =>
             WithContextAsync(async context =>
             {
                 context.Companies.Update(company);
                 await SaveAsync(context);
-                return company;
             });
 
         public Task<bool> DeleteAsync(Guid id) =>

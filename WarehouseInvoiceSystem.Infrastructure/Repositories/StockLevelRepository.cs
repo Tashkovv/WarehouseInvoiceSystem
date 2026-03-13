@@ -54,6 +54,42 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(s => s.Warehouse)
                     .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId));
 
+        /// <summary>
+        /// Reads and writes the StockLevel row inside the same DbContext so the xmin
+        /// concurrency token captured on the SELECT is still valid when EF issues the
+        /// UPDATE — this is the fix for the split-context DbUpdateConcurrencyException.
+        /// Creates the row if it does not yet exist.
+        /// </summary>
+        public Task ApplyDeltaAsync(Guid productId, Guid warehouseId, decimal delta, bool updateRestockDate) =>
+            WithContextAsync(async context =>
+            {
+                StockLevel? stockLevel = await AllTracked<StockLevel>(context)
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId);
+
+                if (stockLevel == null)
+                {
+                    stockLevel = new StockLevel
+                    {
+                        ProductId = productId,
+                        WarehouseId = warehouseId,
+                        Quantity = delta,
+                        MinimumQuantity = 0,
+                        ReorderPoint = 0,
+                        LastRestockedAt = DateTime.UtcNow
+                    };
+                    context.StockLevels.Add(stockLevel);
+                }
+                else
+                {
+                    stockLevel.Quantity += delta;
+                    if (updateRestockDate)
+                        stockLevel.LastRestockedAt = DateTime.UtcNow;
+                    context.StockLevels.Update(stockLevel);
+                }
+
+                await SaveAsync(context);
+            });
+
         public Task<IEnumerable<StockLevel>> GetByProductIdAsync(Guid productId) =>
             WithContextAsync(async context =>
             {

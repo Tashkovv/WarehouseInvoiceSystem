@@ -12,8 +12,8 @@
         Task<Warehouse?> GetDefaultWarehouseAsync();
         Task<bool> ExistsAsync(Guid id);
         Task<bool> HasProductsAsync(Guid id);
-        Task<Warehouse> CreateAsync(Warehouse warehouse);
-        Task<Warehouse> UpdateAsync(Warehouse warehouse);
+        Task CreateAsync(Warehouse warehouse);
+        Task UpdateAsync(Warehouse warehouse);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
     }
 }
