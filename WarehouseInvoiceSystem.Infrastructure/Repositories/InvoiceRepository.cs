@@ -7,11 +7,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
+    using static System.Runtime.InteropServices.JavaScript.JSType;
 
     public class InvoiceRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IInvoiceRepository
     {
-        public Task<IEnumerable<Invoice>> GetAllAsync() =>
+        public Task<IEnumerable<Invoice>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
@@ -19,10 +20,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(i => i.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<Invoice>> GetPagedAsync(GetInvoicesQuery query) =>
+        public Task<PagedResult<Invoice>> GetPagedAsync(GetInvoicesQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Invoice> q = ApplyFilters(
@@ -34,12 +35,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<Invoice> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<Invoice>
                 {
@@ -50,7 +51,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId) =>
+        public Task<IEnumerable<Invoice>> GetByCompanyIdAsync(Guid companyId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
@@ -59,20 +60,20 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(i => i.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<Invoice>> GetByTypeAsync(InvoiceType type) =>
+        public Task<IEnumerable<Invoice>> GetByTypeAsync(InvoiceType type, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
                     .Where(i => i.Type == type)
                     .Include(i => i.Company)
                     .OrderByDescending(i => i.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<Invoice>> GetByStatusAsync(InvoiceStatus status) =>
+        public Task<IEnumerable<Invoice>> GetByStatusAsync(InvoiceStatus status, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
@@ -81,10 +82,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(i => i.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<Invoice>> GetOverdueInvoicesAsync() =>
+        public Task<IEnumerable<Invoice>> GetOverdueInvoicesAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 DateTime today = DateTime.UtcNow.Date;
@@ -94,28 +95,28 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                 i.Status != InvoiceStatus.Cancelled)
                     .Include(i => i.Company)
                     .OrderBy(i => i.DueDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<Invoice?> GetByIdAsync(Guid id) =>
+        public Task<Invoice?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Invoice>(context)
                     .Include(i => i.Company)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .Include(i => i.Payments)
-                    .FirstOrDefaultAsync(i => i.Id == id));
+                    .FirstOrDefaultAsync(i => i.Id == id, ct));
 
-        public Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber) =>
+        public Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Invoice>(context)
                     .Include(i => i.Company)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .Include(i => i.Payments)
-                    .FirstOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber));
+                    .FirstOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber, ct));
 
-        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId) =>
+        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<InvoiceLine>)await All<InvoiceLine>(context)
@@ -127,10 +128,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(li => li.Invoice)
                         .ThenInclude(i => i.Warehouse)
                     .OrderByDescending(li => li.Invoice.IssueDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query) =>
+        public Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<InvoiceLine> q = ApplyLineItemFilters(
@@ -143,12 +144,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = q.OrderByDescending(li => li.Invoice.IssueDate);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<InvoiceLine> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<InvoiceLine>
                 {
@@ -194,16 +195,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return true;
             });
 
-        public Task<bool> ExistsAsync(Guid id) =>
+        public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Invoice>(context).AnyAsync(i => i.Id == id));
+                All<Invoice>(context).AnyAsync(i => i.Id == id, ct));
 
-        public Task<string> GenerateInvoiceNumberAsync(InvoiceType type) =>
+        public Task<string> GenerateInvoiceNumberAsync(InvoiceType type, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
-                // PostgreSQL sequences are atomic — concurrent calls each get a unique value
-                // with no possibility of duplicates or gaps under load.
-                // The sequences are created by the migration AddInvoiceSequences.
                 string sequenceName = type == InvoiceType.Receivable
                     ? "invoice_number_seq"
                     : "bill_number_seq";
@@ -214,39 +212,39 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 long nextNumber = await context.Database
                     .SqlQueryRaw<long>($"SELECT nextval('{sequenceName}') AS \"Value\"")
-                    .FirstAsync();
+                    .FirstAsync(ct);
 
                 return $"{prefix}-{year:D4}{month:D2}{nextNumber:D4}";
             });
 
-        public Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync() =>
+        public Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 DateTime today = DateTime.UtcNow.Date;
                 IQueryable<Invoice> invoices = All<Invoice>(context);
 
-                int total = await invoices.CountAsync();
-                int paid = await invoices.CountAsync(i => i.Status == InvoiceStatus.Paid);
+                int total = await invoices.CountAsync(ct);
+                int paid = await invoices.CountAsync(i => i.Status == InvoiceStatus.Paid, ct);
                 int unpaid = await invoices.CountAsync(i => i.Type == InvoiceType.Payable &&
                                                               i.Status != InvoiceStatus.Paid &&
-                                                              i.Status != InvoiceStatus.Cancelled);
+                                                              i.Status != InvoiceStatus.Cancelled, ct);
                 int overdue = await invoices.CountAsync(i => i.DueDate < today &&
                                                               i.Status != InvoiceStatus.Paid &&
-                                                              i.Status != InvoiceStatus.Cancelled);
+                                                              i.Status != InvoiceStatus.Cancelled, ct);
 
                 return (total, paid, unpaid, overdue);
             });
 
-        public Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync() =>
+        public Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Invoice> invoices = All<Invoice>(context)
                     .Where(i => i.Status != InvoiceStatus.Cancelled &&
                                 i.Type == InvoiceType.Payable);
 
-                decimal totalAmount = await invoices.SumAsync(i => i.TotalAmount);
-                decimal totalPaid = await invoices.SumAsync(i => i.AmountPaid);
-                decimal totalDue = await invoices.SumAsync(i => i.TotalAmount - i.AmountPaid);
+                decimal totalAmount = await invoices.SumAsync(i => i.TotalAmount, ct);
+                decimal totalPaid = await invoices.SumAsync(i => i.AmountPaid, ct);
+                decimal totalDue = await invoices.SumAsync(i => i.TotalAmount - i.AmountPaid, ct);
 
                 return (totalAmount, totalPaid, totalDue);
             });
@@ -274,16 +272,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 q = q.Where(i => i.TotalAmount <= query.AmountMax.Value);
 
             if (query.IssueDateFrom.HasValue)
-                q = q.Where(i => i.IssueDate >= query.IssueDateFrom.Value);
+                q = q.Where(i => i.IssueDate.Date >= query.IssueDateFrom.Value.Date);
 
             if (query.IssueDateTo.HasValue)
-                q = q.Where(i => i.IssueDate <= query.IssueDateTo.Value);
+                q = q.Where(i => i.IssueDate.Date < query.IssueDateTo.Value.Date.AddDays(1));
 
             if (query.DueDateFrom.HasValue)
-                q = q.Where(i => i.DueDate >= query.DueDateFrom.Value);
+                q = q.Where(i => i.DueDate.Date >= query.DueDateFrom.Value.Date);
 
             if (query.DueDateTo.HasValue)
-                q = q.Where(i => i.DueDate <= query.DueDateTo.Value);
+                q = q.Where(i => i.DueDate.Date < query.DueDateTo.Value.Date.AddDays(1));
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {

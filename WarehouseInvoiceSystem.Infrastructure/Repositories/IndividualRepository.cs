@@ -10,27 +10,27 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class IndividualRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IIndividualRepository
     {
-        public Task<IEnumerable<Individual>> GetAllAsync() =>
+        public Task<IEnumerable<Individual>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Individual>)await All<Individual>(context)
                     .OrderBy(i => i.LastName)
                     .ThenBy(i => i.FirstName)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<Individual>> GetPagedAsync(GetIndividualsQuery query) =>
+        public Task<PagedResult<Individual>> GetPagedAsync(GetIndividualsQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Individual> q = ApplyFilters(All<Individual>(context), query);
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<Individual> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<Individual>
                 {
@@ -41,27 +41,27 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<IEnumerable<Individual>> GetActiveIndividualsAsync() =>
+        public Task<IEnumerable<Individual>> GetActiveIndividualsAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Individual>)await All<Individual>(context)
                     .Where(i => i.IsActive)
                     .OrderBy(i => i.LastName)
                     .ThenBy(i => i.FirstName)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<Individual?> GetByIdAsync(Guid id) =>
+        public Task<Individual?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Individual>(context).FirstOrDefaultAsync(i => i.Id == id));
+                All<Individual>(context).FirstOrDefaultAsync(i => i.Id == id, ct));
 
-        public Task<Individual?> GetByIdentificationNumberAsync(string identificationNumber) =>
+        public Task<Individual?> GetByIdentificationNumberAsync(string identificationNumber, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Individual>(context).FirstOrDefaultAsync(i => i.IdentificationNumber == identificationNumber));
+                All<Individual>(context).FirstOrDefaultAsync(i => i.IdentificationNumber == identificationNumber, ct));
 
-        public Task<bool> ExistsAsync(Guid id) =>
+        public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Individual>(context).AnyAsync(i => i.Id == id));
+                All<Individual>(context).AnyAsync(i => i.Id == id, ct));
 
         public Task<bool> IdentificationNumberExistsAsync(string identificationNumber, Guid? excludeId = null) =>
             WithContextAsync(context =>

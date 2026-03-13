@@ -11,26 +11,26 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class CompanyRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), ICompanyRepository
     {
-        public Task<IEnumerable<Company>> GetAllAsync() =>
+        public Task<IEnumerable<Company>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Company>)await All<Company>(context)
                     .OrderBy(c => c.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query) =>
+        public Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Company> q = ApplyFilters(All<Company>(context), query);
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<Company> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<Company>
                 {
@@ -41,27 +41,27 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<IEnumerable<Company>> GetActiveCompaniesAsync() =>
+        public Task<IEnumerable<Company>> GetActiveCompaniesAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Company>)await All<Company>(context)
                     .Where(c => c.IsActive)
                     .OrderBy(c => c.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type) =>
+        public Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Company>)await All<Company>(context)
                     .Where(c => c.IsActive && (c.Type == type || c.Type == CompanyType.Both))
                     .OrderBy(c => c.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<Company?> GetByIdAsync(Guid id) =>
+        public Task<Company?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Company>(context).FirstOrDefaultAsync(c => c.Id == id));
+                All<Company>(context).FirstOrDefaultAsync(c => c.Id == id, ct));
 
         public Task CreateAsync(Company company) =>
             WithContextAsync(async context =>
@@ -94,11 +94,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return true;
             });
 
-        public Task<bool> ExistsAsync(Guid id) =>
+        public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Company>(context).AnyAsync(c => c.Id == id && c.IsActive));
+                All<Company>(context).AnyAsync(c => c.Id == id && c.IsActive, ct));
 
-        public Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId) =>
+        public Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Invoice>(context)
                     .Where(i => i.CompanyId == companyId &&
@@ -107,7 +107,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                 i.Status != InvoiceStatus.Cancelled)
                     .SumAsync(i => i.TotalAmount - i.AmountPaid));
 
-        public Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId) =>
+        public Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Invoice>(context)
                     .Where(i => i.CompanyId == companyId &&

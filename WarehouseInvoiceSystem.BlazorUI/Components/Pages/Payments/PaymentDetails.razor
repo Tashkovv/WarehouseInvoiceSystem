@@ -147,6 +147,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     public Guid Id { get; set; }
 
@@ -184,7 +185,7 @@ else
         _loading = true;
         try
         {
-            _payment = await PaymentService.GetPaymentByIdAsync(Id);
+            _payment = await PaymentService.GetPaymentByIdAsync(Id, _cts.Token);
         }
         catch (Exception ex)
         {
@@ -203,7 +204,7 @@ else
         try
         {
             if (_payment != null)
-                _invoice = await InvoiceService.GetInvoiceByIdAsync(_payment.InvoiceId);
+                _invoice = await InvoiceService.GetInvoiceByIdAsync(_payment.InvoiceId, _cts.Token);
         }
         catch (Exception ex)
         {
@@ -331,6 +332,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

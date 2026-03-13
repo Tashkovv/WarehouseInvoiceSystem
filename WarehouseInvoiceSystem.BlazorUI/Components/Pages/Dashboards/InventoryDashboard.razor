@@ -485,6 +485,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
 
     private List<ProductDto> _products = [];
@@ -546,7 +547,7 @@ else
 
         try
         {
-            IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
+            IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync(_cts.Token);
             _warehouses = warehouses.ToList();
 
             if (firstLoad)
@@ -594,13 +595,13 @@ else
 
     private async Task LoadStaticData()
     {
-        IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync();
+        IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync(_cts.Token);
         _products = products.ToList();
 
-        IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
+        IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync(_cts.Token);
         _invoices = invoices.ToList();
 
-        IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
+        IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token);
         _purchaseNotes = purchaseNotes.ToList();
     }
 
@@ -760,6 +761,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 

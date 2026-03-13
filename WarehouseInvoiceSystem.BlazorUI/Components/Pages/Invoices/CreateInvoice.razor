@@ -307,6 +307,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
     private bool _saving = false;
     private MudForm _form = null!;
@@ -351,7 +352,7 @@ else
 
         try
         {
-            IEnumerable<CompanyDto> companies = await CompanyService.GetActiveCompaniesAsync();
+            IEnumerable<CompanyDto> companies = await CompanyService.GetActiveCompaniesAsync(_cts.Token);
             _companies = companies.ToList();
         }
         catch (Exception ex)
@@ -369,7 +370,7 @@ else
     {
         try
         {
-            IEnumerable<WarehouseDto> whs = await WarehouseService.GetAllWarehousesAsync();
+            IEnumerable<WarehouseDto> whs = await WarehouseService.GetAllWarehousesAsync(_cts.Token);
             _warehouses = whs.ToList();
             _selectedWarehouse = _warehouses.FirstOrDefault(w => w.IsDefault) ?? _warehouses.FirstOrDefault();
         }
@@ -383,7 +384,7 @@ else
     {
         try
         {
-            IEnumerable<ProductDto> products = await ProductService.GetActiveProductsAsync();
+            IEnumerable<ProductDto> products = await ProductService.GetActiveProductsAsync(_cts.Token);
             _products = products.ToList();
         }
         catch (Exception ex)
@@ -536,6 +537,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 

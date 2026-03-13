@@ -20,16 +20,20 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         }
 
         protected async Task<TResult> WithContextAsync<TResult>(
-            Func<ApplicationDbContext, Task<TResult>> action)
+            Func<ApplicationDbContext, Task<TResult>> action,
+            CancellationToken ct = default)
         {
             await using var context = _factory.CreateDbContext();
+            ct.ThrowIfCancellationRequested();
             return await action(context);
         }
 
         protected async Task WithContextAsync(
-            Func<ApplicationDbContext, Task> action)
+            Func<ApplicationDbContext, Task> action,
+            CancellationToken ct = default)
         {
             await using var context = _factory.CreateDbContext();
+            ct.ThrowIfCancellationRequested();
             await action(context);
         }
 

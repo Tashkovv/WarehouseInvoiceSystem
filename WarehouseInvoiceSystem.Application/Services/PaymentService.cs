@@ -14,16 +14,16 @@
                                 IInventoryTransactionRepository transactionRepository,
                                 ILocalizationService localizationService) : IPaymentService
     {
-        public async Task<IEnumerable<PaymentDto>> GetAllPaymentsAsync()
+        public async Task<IEnumerable<PaymentDto>> GetAllPaymentsAsync(CancellationToken ct = default)
         {
-            IEnumerable<Payment> payments = await paymentRepository.GetAllAsync();
+            IEnumerable<Payment> payments = await paymentRepository.GetAllAsync(ct);
             IEnumerable<PaymentDto> paymentDtos = payments.Select(MapToDto);
             return paymentDtos;
         }
 
-        public async Task<PagedResult<PaymentDto>> GetPagedAsync(GetPaymentsQuery query)
+        public async Task<PagedResult<PaymentDto>> GetPagedAsync(GetPaymentsQuery query, CancellationToken ct = default)
         {
-            PagedResult<Payment> result = await paymentRepository.GetPagedAsync(query);
+            PagedResult<Payment> result = await paymentRepository.GetPagedAsync(query, ct);
             return new PagedResult<PaymentDto>
             {
                 Items = [.. result.Items.Select(MapToDto)],
@@ -33,16 +33,16 @@
             };
         }
 
-        public async Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(Guid invoiceId)
+        public async Task<IEnumerable<PaymentDto>> GetPaymentsByInvoiceAsync(Guid invoiceId, CancellationToken ct = default)
         {
-            IEnumerable<Payment> payments = await paymentRepository.GetByInvoiceIdAsync(invoiceId);
+            IEnumerable<Payment> payments = await paymentRepository.GetByInvoiceIdAsync(invoiceId, ct);
             IEnumerable<PaymentDto> paymentDtos = payments.Select(MapToDto);
             return paymentDtos;
         }
 
-        public async Task<PaymentDto?> GetPaymentByIdAsync(Guid id)
+        public async Task<PaymentDto?> GetPaymentByIdAsync(Guid id, CancellationToken ct = default)
         {
-            Payment? payment = await paymentRepository.GetByIdAsync(id);
+            Payment? payment = await paymentRepository.GetByIdAsync(id, ct);
             PaymentDto? paymentDto = payment == null ? null : MapToDto(payment);
             return paymentDto;
         }

@@ -194,6 +194,7 @@
 </MudCard>
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     [SupplyParameterFromQuery(Name = "individualId")]
     public Guid? IndividualIdParam { get; set; }
@@ -233,7 +234,7 @@
             _filterIndividualId = IndividualIdParam.Value;
             try
             {
-                IndividualDto? match = await IndividualService.GetIndividualByIdAsync(IndividualIdParam.Value);
+                IndividualDto? match = await IndividualService.GetIndividualByIdAsync(IndividualIdParam.Value, _cts.Token);
                 if (match is not null)
                     _filterIndividualInitialLabel = match.FullName;
             }
@@ -282,7 +283,7 @@
             SortAscending = ascending,
         };
 
-        PagedResult<PurchaseNoteDto> result = await PurchaseNoteService.GetPagedAsync(query);
+        PagedResult<PurchaseNoteDto> result = await PurchaseNoteService.GetPagedAsync(query, ct);
 
         return new GridData<PurchaseNoteDto>
         {
@@ -316,7 +317,7 @@
             SortBy = "LastName",
             SortAscending = true,
             IsActive = true
-        });
+        }, ct);
 
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
@@ -446,6 +447,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

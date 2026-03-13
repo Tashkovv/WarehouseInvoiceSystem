@@ -10,26 +10,26 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class ProductRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IProductRepository
     {
-        public Task<IEnumerable<Product>> GetAllAsync() =>
+        public Task<IEnumerable<Product>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Product>)await All<Product>(context)
                     .OrderBy(p => p.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<Product>> GetPagedAsync(GetProductsQuery query) =>
+        public Task<PagedResult<Product>> GetPagedAsync(GetProductsQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Product> q = ApplyFilters(All<Product>(context), query);
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<Product> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<Product>
                 {
@@ -40,44 +40,44 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<IEnumerable<Product>> GetByIdsAsync(List<Guid> ids) =>
+        public Task<IEnumerable<Product>> GetByIdsAsync(List<Guid> ids, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Product>)await All<Product>(context)
                     .Where(p => ids.Contains(p.Id))
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<Product>> GetActiveProductsAsync() =>
+        public Task<IEnumerable<Product>> GetActiveProductsAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Product>)await All<Product>(context)
                     .Where(p => p.IsActive)
                     .OrderBy(p => p.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<Product?> GetByIdAsync(Guid id) =>
+        public Task<Product?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Product>(context)
                     .Include(p => p.StockLevels)
-                    .FirstOrDefaultAsync(p => p.Id == id));
+                    .FirstOrDefaultAsync(p => p.Id == id, ct));
 
-        public Task<Product?> GetByCodeAsync(string code) =>
+        public Task<Product?> GetByCodeAsync(string code, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Product>(context).FirstOrDefaultAsync(p => p.Code == code));
+                All<Product>(context).FirstOrDefaultAsync(p => p.Code == code, ct));
 
-        public Task<bool> ExistsAsync(Guid id) =>
+        public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Product>(context).AnyAsync(p => p.Id == id));
+                All<Product>(context).AnyAsync(p => p.Id == id, ct));
 
-        public Task<bool> AllExistAsync(IEnumerable<Guid> ids) =>
+        public Task<bool> AllExistAsync(IEnumerable<Guid> ids, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 List<Guid> idList = ids.Distinct().ToList();
                 int found = await All<Product>(context)
                     .Where(p => idList.Contains(p.Id))
-                    .CountAsync();
+                    .CountAsync(ct);
                 return found == idList.Count;
             });
 

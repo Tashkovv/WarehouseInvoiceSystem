@@ -6,17 +6,17 @@
 
     public interface IProductService
     {
-        Task<IEnumerable<ProductDto>> GetAllProductsAsync();
-        Task<PagedResult<ProductDto>> GetPagedAsync(GetProductsQuery query);
-        Task<IEnumerable<ProductDto>> GetProductsByIdsAsync(List<Guid> productIds);
-        Task<IEnumerable<ProductDto>> GetActiveProductsAsync();
-        Task<ProductDto?> GetProductByIdAsync(Guid id);
-        Task<ProductDto?> GetProductByCodeAsync(string code);
+        Task<IEnumerable<ProductDto>> GetAllProductsAsync(CancellationToken ct = default);
+        Task<PagedResult<ProductDto>> GetPagedAsync(GetProductsQuery query, CancellationToken ct = default);
+        Task<IEnumerable<ProductDto>> GetProductsByIdsAsync(List<Guid> productIds, CancellationToken ct = default);
+        Task<IEnumerable<ProductDto>> GetActiveProductsAsync(CancellationToken ct = default);
+        Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken ct = default);
+        Task<ProductDto?> GetProductByCodeAsync(string code, CancellationToken ct = default);
         /// <summary>
         /// Returns full product analytics + transaction history + stock movements in a single coordinated call.
         /// </summary>
-        Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId);
-        Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query);
+        Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId, CancellationToken ct = default);
+        Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
         Task CreateProductAsync(CreateProductDto createDto);
         Task UpdateProductAsync(Guid id, UpdateProductDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);

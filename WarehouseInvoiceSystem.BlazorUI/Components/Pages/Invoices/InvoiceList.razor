@@ -234,6 +234,7 @@
 </MudCard>
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     [SupplyParameterFromQuery(Name = "companyId")]
     public string? CompanyIdParam { get; set; }
@@ -287,7 +288,7 @@
         {
             try
             {
-                CompanyDto? company = await CompanyService.GetCompanyByIdAsync(_filterCompanyId.Value);
+                CompanyDto? company = await CompanyService.GetCompanyByIdAsync(_filterCompanyId.Value, _cts.Token);
                 if (company is not null)
                     _filterCompanyInitialLabel = company.Name;
             }
@@ -364,7 +365,7 @@
         query.SortBy = sortBy;
         query.SortAscending = ascending;
 
-        PagedResult<InvoiceDto> result = await InvoiceService.GetPagedAsync(query);
+        PagedResult<InvoiceDto> result = await InvoiceService.GetPagedAsync(query, ct);
 
         return new GridData<InvoiceDto>
         {
@@ -431,7 +432,7 @@
             SortBy = "Name",
             SortAscending = true,
             IsActive = true
-        });
+        }, ct);
 
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
@@ -574,7 +575,7 @@
         try
         {
             GetInvoicesQuery exportQuery = BuildQuery();
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllFilteredAsync(exportQuery);
+            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllFilteredAsync(exportQuery, _cts.Token);
 
             byte[] fileBytes = await ExcelExportService.ExportInvoicesToExcelAsync(invoices);
             string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
@@ -609,6 +610,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

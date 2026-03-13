@@ -7,14 +7,14 @@
 
     public interface IPurchaseNoteService
     {
-        Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync();
-        Task<PagedResult<PurchaseNoteDto>> GetPagedAsync(GetPurchaseNotesQuery query);
-        Task<IEnumerable<PurchaseNoteDto>> GetAllFilteredAsync(GetPurchaseNotesQuery query);
-        Task<PurchaseNoteDto?> GetPurchaseNoteByIdAsync(Guid id);
-        Task<PurchaseNoteDto?> GetPurchaseNoteByNumberAsync(string noteNumber);
-        Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByIndividualAsync(Guid individualId);
-        Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByDateRangeAsync(DateTime startDate, DateTime endDate);
-        Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByStatusAsync(PurchaseNoteStatus status);
+        Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync(CancellationToken ct = default);
+        Task<PagedResult<PurchaseNoteDto>> GetPagedAsync(GetPurchaseNotesQuery query, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetAllFilteredAsync(GetPurchaseNotesQuery query, CancellationToken ct = default);
+        Task<PurchaseNoteDto?> GetPurchaseNoteByIdAsync(Guid id, CancellationToken ct = default);
+        Task<PurchaseNoteDto?> GetPurchaseNoteByNumberAsync(string noteNumber, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByIndividualAsync(Guid individualId, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default);
         Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto);
         Task UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto);
 

@@ -12,15 +12,15 @@
     public class IndividualService(IIndividualRepository individualRepository,
                                    IPurchaseNoteService purchaseNoteService) : IIndividualService
     {
-        public async Task<IEnumerable<IndividualDto>> GetAllIndividualsAsync()
+        public async Task<IEnumerable<IndividualDto>> GetAllIndividualsAsync(CancellationToken ct = default)
         {
-            IEnumerable<Individual> individuals = await individualRepository.GetAllAsync();
+            IEnumerable<Individual> individuals = await individualRepository.GetAllAsync(ct);
             return individuals.Select(MapToDto);
         }
 
-        public async Task<PagedResult<IndividualDto>> GetPagedAsync(GetIndividualsQuery query)
+        public async Task<PagedResult<IndividualDto>> GetPagedAsync(GetIndividualsQuery query, CancellationToken ct = default)
         {
-            PagedResult<Individual> result = await individualRepository.GetPagedAsync(query);
+            PagedResult<Individual> result = await individualRepository.GetPagedAsync(query, ct);
             return new PagedResult<IndividualDto>
             {
                 Items = [.. result.Items.Select(MapToDto)],
@@ -30,25 +30,25 @@
             };
         }
 
-        public async Task<IEnumerable<IndividualDto>> GetActiveIndividualsAsync()
+        public async Task<IEnumerable<IndividualDto>> GetActiveIndividualsAsync(CancellationToken ct = default)
         {
-            IEnumerable<Individual> individuals = await individualRepository.GetActiveIndividualsAsync();
+            IEnumerable<Individual> individuals = await individualRepository.GetActiveIndividualsAsync(ct);
             return individuals.Select(MapToDto);
         }
 
-        public async Task<IndividualDto?> GetIndividualByIdAsync(Guid id)
+        public async Task<IndividualDto?> GetIndividualByIdAsync(Guid id, CancellationToken ct = default)
         {
             Individual? individual = await individualRepository.GetByIdAsync(id);
             return individual == null ? null : MapToDto(individual);
         }
 
-        public async Task<IndividualDto?> GetIndividualByIdentificationNumberAsync(string identificationNumber)
+        public async Task<IndividualDto?> GetIndividualByIdentificationNumberAsync(string identificationNumber, CancellationToken ct = default)
         {
-            Individual? individual = await individualRepository.GetByIdentificationNumberAsync(identificationNumber);
+            Individual? individual = await individualRepository.GetByIdentificationNumberAsync(identificationNumber, ct);
             return individual == null ? null : MapToDto(individual);
         }
 
-        public async Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId)
+        public async Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId, CancellationToken ct = default)
         {
             var analytics = new IndividualAnalyticsDto();
 

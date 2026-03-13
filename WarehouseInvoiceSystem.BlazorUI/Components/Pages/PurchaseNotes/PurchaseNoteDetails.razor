@@ -163,6 +163,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -187,7 +188,7 @@ else
         _loading = true;
         try
         {
-            _note = await PurchaseNoteService.GetPurchaseNoteByIdAsync(Id);
+            _note = await PurchaseNoteService.GetPurchaseNoteByIdAsync(Id, _cts.Token);
             BuildActions();
         }
         catch (Exception ex)
@@ -381,6 +382,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

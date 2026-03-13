@@ -8,15 +8,15 @@
 
     public interface IInvoiceService
     {
-        Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync();
-        Task<PagedResult<InvoiceDto>> GetPagedAsync(GetInvoicesQuery query);
-        Task<IEnumerable<InvoiceDto>> GetAllFilteredAsync(GetInvoicesQuery query);
-        Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId);
-        Task<IEnumerable<InvoiceDto>> GetInvoicesByTypeAsync(InvoiceType type);
-        Task<IEnumerable<InvoiceDto>> GetInvoicesByStatusAsync(InvoiceStatus status);
-        Task<IEnumerable<InvoiceDto>> GetOverdueInvoicesAsync();
-        Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id);
-        Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber);
+        Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync(CancellationToken ct = default);
+        Task<PagedResult<InvoiceDto>> GetPagedAsync(GetInvoicesQuery query, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetAllFilteredAsync(GetInvoicesQuery query, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetInvoicesByTypeAsync(InvoiceType type, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetInvoicesByStatusAsync(InvoiceStatus status, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetOverdueInvoicesAsync(CancellationToken ct = default);
+        Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id, CancellationToken ct = default);
+        Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber, CancellationToken ct = default);
         Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto);
         Task UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
         Task<bool> DeleteInvoiceAsync(Guid id);
@@ -39,6 +39,6 @@
 
         Task CreateInventoryTransactionsIfNeededAsync(Invoice invoice);
         Task CreateReverseTransactionsIfNeeded(Invoice invoice, string? reason = null);
-        Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync();
+        Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync(CancellationToken ct = default);
     }
 }

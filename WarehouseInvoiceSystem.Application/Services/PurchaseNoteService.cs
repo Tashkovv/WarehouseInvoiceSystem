@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
+    using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
@@ -20,15 +21,15 @@
 
         // ── Queries ───────────────────────────────────────────────────────────────────
 
-        public async Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync()
+        public async Task<IEnumerable<PurchaseNoteDto>> GetAllPurchaseNotesAsync(CancellationToken ct = default)
         {
-            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetAllAsync();
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetAllAsync(ct);
             return notes.Select(MapToDto);
         }
 
-        public async Task<PagedResult<PurchaseNoteDto>> GetPagedAsync(GetPurchaseNotesQuery query)
+        public async Task<PagedResult<PurchaseNoteDto>> GetPagedAsync(GetPurchaseNotesQuery query, CancellationToken ct = default)
         {
-            PagedResult<PurchaseNote> result = await purchaseNoteRepository.GetPagedAsync(query);
+            PagedResult<PurchaseNote> result = await purchaseNoteRepository.GetPagedAsync(query, ct);
             return new PagedResult<PurchaseNoteDto>
             {
                 Items = [.. result.Items.Select(MapToDto)],
@@ -38,7 +39,7 @@
             };
         }
 
-        public async Task<IEnumerable<PurchaseNoteDto>> GetAllFilteredAsync(GetPurchaseNotesQuery query)
+        public async Task<IEnumerable<PurchaseNoteDto>> GetAllFilteredAsync(GetPurchaseNotesQuery query, CancellationToken ct = default)
         {
             GetPurchaseNotesQuery exportQuery = new()
             {
@@ -54,37 +55,37 @@
                 DateFrom = query.DateFrom,
                 DateTo = query.DateTo
             };
-            PagedResult<PurchaseNote> result = await purchaseNoteRepository.GetPagedAsync(exportQuery);
+            PagedResult<PurchaseNote> result = await purchaseNoteRepository.GetPagedAsync(exportQuery, ct);
             return result.Items.Select(MapToDto);
         }
 
-        public async Task<PurchaseNoteDto?> GetPurchaseNoteByIdAsync(Guid id)
+        public async Task<PurchaseNoteDto?> GetPurchaseNoteByIdAsync(Guid id, CancellationToken ct = default)
         {
-            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id);
+            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id, ct);
             return note == null ? null : MapToDto(note);
         }
 
-        public async Task<PurchaseNoteDto?> GetPurchaseNoteByNumberAsync(string noteNumber)
+        public async Task<PurchaseNoteDto?> GetPurchaseNoteByNumberAsync(string noteNumber, CancellationToken ct = default)
         {
-            PurchaseNote? note = await purchaseNoteRepository.GetByNoteNumberAsync(noteNumber);
+            PurchaseNote? note = await purchaseNoteRepository.GetByNoteNumberAsync(noteNumber, ct);
             return note == null ? null : MapToDto(note);
         }
 
-        public async Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByIndividualAsync(Guid individualId)
+        public async Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByIndividualAsync(Guid individualId, CancellationToken ct = default)
         {
-            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByIndividualIdAsync(individualId);
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByIndividualIdAsync(individualId, ct);
             return notes.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken ct = default)
         {
-            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByDateRangeAsync(startDate, endDate);
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByDateRangeAsync(startDate, endDate, ct);
             return notes.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByStatusAsync(PurchaseNoteStatus status)
+        public async Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default)
         {
-            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByStatusAsync(status);
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByStatusAsync(status, ct);
             return notes.Select(MapToDto);
         }
 
@@ -296,20 +297,21 @@
 
         private async Task CreateInventoryTransactionsAsync(PurchaseNote purchaseNote)
         {
-            foreach (PurchaseNoteLine line in purchaseNote.LineItems)
-            {
-                await inventoryService.CreateTransactionAsync(
-                    new DTOs.InventoryTransaction.CreateInventoryTransactionDto
-                    {
-                        ProductId = line.ProductId,
-                        WarehouseId = purchaseNote.WarehouseId,
-                        Type = InventoryTransactionType.Inbound,
-                        Quantity = line.Quantity,
-                        SourceDocumentId = purchaseNote.Id,
-                        SourceDocumentType = DocumentType,
-                        Note = $"{localizationService.GetString("PurchaseFrom")} {purchaseNote.Individual.FullName} - {purchaseNote.NoteNumber}"
-                    });
-            }
+            string note = $"{localizationService.GetString("PurchaseFrom")} {purchaseNote.Individual?.FullName} - {purchaseNote.NoteNumber}";
+
+            IEnumerable<CreateInventoryTransactionDto> items = purchaseNote.LineItems.Select(line =>
+                new CreateInventoryTransactionDto
+                {
+                    ProductId = line.ProductId,
+                    WarehouseId = purchaseNote.WarehouseId,
+                    Type = InventoryTransactionType.Inbound,
+                    Quantity = line.Quantity,
+                    SourceDocumentId = purchaseNote.Id,
+                    SourceDocumentType = DocumentType,
+                    Note = note
+                });
+
+            await inventoryService.CreateBatchAsync(purchaseNote.WarehouseId, items);
         }
 
         private static PurchaseNoteDto MapToDto(PurchaseNote note) => new()

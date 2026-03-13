@@ -11,7 +11,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class PurchaseNoteRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IPurchaseNoteRepository
     {
-        public Task<IEnumerable<PurchaseNote>> GetAllAsync() =>
+        public Task<IEnumerable<PurchaseNote>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
@@ -20,10 +20,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(pn => pn.PurchaseDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query) =>
+        public Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<PurchaseNote> q = ApplyFilters(
@@ -36,12 +36,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<PurchaseNote> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<PurchaseNote>
                 {
@@ -52,25 +52,25 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<PurchaseNote?> GetByIdAsync(Guid id) =>
+        public Task<PurchaseNote?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<PurchaseNote>(context)
                     .Include(pn => pn.Individual)
                     .Include(pn => pn.Warehouse)
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
-                    .FirstOrDefaultAsync(pn => pn.Id == id));
+                    .FirstOrDefaultAsync(pn => pn.Id == id, ct));
 
-        public Task<PurchaseNote?> GetByNoteNumberAsync(string noteNumber) =>
+        public Task<PurchaseNote?> GetByNoteNumberAsync(string noteNumber, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<PurchaseNote>(context)
                     .Include(pn => pn.Individual)
                     .Include(pn => pn.Warehouse)
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
-                    .FirstOrDefaultAsync(pn => pn.NoteNumber == noteNumber));
+                    .FirstOrDefaultAsync(pn => pn.NoteNumber == noteNumber, ct));
 
-        public Task<IEnumerable<PurchaseNote>> GetByIndividualIdAsync(Guid individualId) =>
+        public Task<IEnumerable<PurchaseNote>> GetByIndividualIdAsync(Guid individualId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
@@ -79,10 +79,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(pn => pn.PurchaseDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<PurchaseNote>> GetByDateRangeAsync(DateTime startDate, DateTime endDate) =>
+        public Task<IEnumerable<PurchaseNote>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
@@ -91,10 +91,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(pn => pn.Individual)
                     .Include(pn => pn.Warehouse)
                     .OrderByDescending(pn => pn.PurchaseDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status) =>
+        public Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
@@ -103,10 +103,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(pn => pn.PurchaseDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId) =>
+        public Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<PurchaseNoteLine>)await All<PurchaseNoteLine>(context)
@@ -118,10 +118,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(li => li.PurchaseNote)
                         .ThenInclude(pn => pn.Warehouse)
                     .OrderByDescending(li => li.PurchaseNote.PurchaseDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query) =>
+        public Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<PurchaseNoteLine> q = ApplyLineItemFilters(
@@ -134,12 +134,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = q.OrderByDescending(li => li.PurchaseNote.PurchaseDate);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<PurchaseNoteLine> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<PurchaseNoteLine>
                 {
@@ -150,14 +150,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<string> GenerateNoteNumberAsync() =>
+        public Task<string> GenerateNoteNumberAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 string? lastNoteNumber = await context.PurchaseNotes
                     .Where(pn => pn.NoteNumber.StartsWith("OB-"))
                     .OrderByDescending(pn => pn.NoteNumber)
                     .Select(pn => pn.NoteNumber)
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefaultAsync(ct);
 
                 if (string.IsNullOrEmpty(lastNoteNumber))
                     return "OB-000001";
@@ -169,9 +169,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return "OB-000001";
             });
 
-        public Task<bool> ExistsAsync(Guid id) =>
+        public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<PurchaseNote>(context).AnyAsync(pn => pn.Id == id));
+                All<PurchaseNote>(context).AnyAsync(pn => pn.Id == id, ct));
 
         public Task CreateAsync(PurchaseNote purchaseNote) =>
             WithContextAsync(async context =>
@@ -220,10 +220,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 q = q.Where(p => p.TotalAmount <= query.AmountMax.Value);
 
             if (query.DateFrom.HasValue)
-                q = q.Where(p => p.PurchaseDate >= query.DateFrom.Value);
+                q = q.Where(p => p.PurchaseDate >= query.DateFrom.Value.Date);
 
             if (query.DateTo.HasValue)
-                q = q.Where(p => p.PurchaseDate <= query.DateTo.Value);
+                q = q.Where(p => p.PurchaseDate < query.DateTo.Value.Date.AddDays(1));
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
@@ -240,8 +240,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         private static IQueryable<PurchaseNoteLine> ApplyLineItemFilters(IQueryable<PurchaseNoteLine> q, GetProductHistoryQuery query)
         {
             q = q.Where(li => li.ProductId == query.ProductId &&
-                               li.PurchaseNote.DeletedOn == null &&
-                               li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
+                              li.PurchaseNote.DeletedOn == null &&
+                              li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
 
             if (query.WarehouseId.HasValue)
                 q = q.Where(li => li.PurchaseNote.WarehouseId == query.WarehouseId.Value);

@@ -9,21 +9,21 @@
 
     public class WarehouseService(IWarehouseRepository warehouseRepository) : IWarehouseService
     {
-        public async Task<IEnumerable<WarehouseDto>> GetAllWarehousesAsync()
+        public async Task<IEnumerable<WarehouseDto>> GetAllWarehousesAsync(CancellationToken ct = default)
         {
-            IEnumerable<Warehouse> warehouses = await warehouseRepository.GetAllAsync();
+            IEnumerable<Warehouse> warehouses = await warehouseRepository.GetAllAsync(ct);
             return warehouses.Select(x => MapToDto(x));
         }
 
-        public async Task<PagedResult<WarehouseDto>> GetPagedAsync(GetWarehousesQuery query)
+        public async Task<PagedResult<WarehouseDto>> GetPagedAsync(GetWarehousesQuery query, CancellationToken ct = default)
         {
-            PagedResult<Warehouse> result = await warehouseRepository.GetPagedAsync(query);
+            PagedResult<Warehouse> result = await warehouseRepository.GetPagedAsync(query, ct);
 
             // Check HasProducts for each warehouse in the page
             List<WarehouseDto> items = [];
             foreach (Warehouse w in result.Items)
             {
-                bool hasProducts = await warehouseRepository.HasProductsAsync(w.Id);
+                bool hasProducts = await warehouseRepository.HasProductsAsync(w.Id, ct);
                 items.Add(MapToDto(w, hasProducts));
             }
 
@@ -36,13 +36,13 @@
             };
         }
 
-        public async Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id)
+        public async Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id, CancellationToken ct = default)
         {
             Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id);
             return warehouse == null ? null : MapToDto(warehouse);
         }
 
-        public async Task<WarehouseDto?> GetDefaultWarehouseAsync()
+        public async Task<WarehouseDto?> GetDefaultWarehouseAsync(CancellationToken ct = default)
         {
             Warehouse? warehouse = await warehouseRepository.GetDefaultWarehouseAsync();
             return warehouse == null ? null : MapToDto(warehouse);
@@ -76,9 +76,9 @@
             return true;
         }
 
-        public async Task<bool> HasProductsAsync(Guid id)
+        public async Task<bool> HasProductsAsync(Guid id, CancellationToken ct = default)
         {
-            return await warehouseRepository.HasProductsAsync(id);
+            return await warehouseRepository.HasProductsAsync(id, ct);
         }
 
         public async Task CreateWarehouseAsync(CreateWarehouseDto createDto)

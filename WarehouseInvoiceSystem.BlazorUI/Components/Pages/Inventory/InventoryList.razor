@@ -182,6 +182,7 @@
 </MudCard>
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<StockLevelDto> _grid = null!;
     private string _searchString = string.Empty;
 
@@ -223,7 +224,7 @@
             SortAscending = ascending,
         };
 
-        PagedResult<StockLevelDto> result = await InventoryService.GetPagedStockAsync(query);
+        PagedResult<StockLevelDto> result = await InventoryService.GetPagedStockAsync(query, ct);
 
         return new GridData<StockLevelDto>
         {
@@ -257,7 +258,7 @@
             SortBy = "Name",
             SortAscending = true,
             IsActive = true
-        });
+        }, ct);
 
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
@@ -283,7 +284,7 @@
             SortBy = "Name",
             SortAscending = true,
             IsActive = true
-        });
+        }, ct);
 
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
@@ -372,6 +373,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

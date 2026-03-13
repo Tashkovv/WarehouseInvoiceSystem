@@ -270,6 +270,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -294,7 +295,7 @@ else
                 PageSize = 10,
                 SortBy = "Name",
                 SortAscending = true
-            });
+            }, ct);
 
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
@@ -409,11 +410,11 @@ else
 
         try
         {
-            _product = await ProductService.GetProductByIdAsync(Id);
+            _product = await ProductService.GetProductByIdAsync(Id, _cts.Token);
             if (_product != null)
             {
                 // Single call — replaces GetProductAnalyticsAsync + GetAllWarehousesAsync + GetProductTransactionHistoryAsync
-                _details = await ProductService.GetProductDetailsAsync(Id);
+                _details = await ProductService.GetProductDetailsAsync(Id, _cts.Token);
 
                 _selectedWarehouseId = null;
 
@@ -602,6 +603,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

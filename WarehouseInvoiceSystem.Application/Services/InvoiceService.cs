@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
+    using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
@@ -20,15 +21,15 @@
 
         // ── Queries ───────────────────────────────────────────────────────────────────
 
-        public async Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync()
+        public async Task<IEnumerable<InvoiceDto>> GetAllInvoicesAsync(CancellationToken ct = default)
         {
-            IEnumerable<Invoice> invoices = await invoiceRepository.GetAllAsync();
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetAllAsync(ct);
             return invoices.Select(MapToDto);
         }
 
-        public async Task<PagedResult<InvoiceDto>> GetPagedAsync(GetInvoicesQuery query)
+        public async Task<PagedResult<InvoiceDto>> GetPagedAsync(GetInvoicesQuery query, CancellationToken ct = default)
         {
-            PagedResult<Invoice> result = await invoiceRepository.GetPagedAsync(query);
+            PagedResult<Invoice> result = await invoiceRepository.GetPagedAsync(query, ct);
             return new PagedResult<InvoiceDto>
             {
                 Items = [.. result.Items.Select(MapToDto)],
@@ -38,7 +39,7 @@
             };
         }
 
-        public async Task<IEnumerable<InvoiceDto>> GetAllFilteredAsync(GetInvoicesQuery query)
+        public async Task<IEnumerable<InvoiceDto>> GetAllFilteredAsync(GetInvoicesQuery query, CancellationToken ct = default)
         {
             GetInvoicesQuery exportQuery = new()
             {
@@ -58,43 +59,43 @@
                 DueDateFrom = query.DueDateFrom,
                 DueDateTo = query.DueDateTo
             };
-            PagedResult<Invoice> result = await invoiceRepository.GetPagedAsync(exportQuery);
+            PagedResult<Invoice> result = await invoiceRepository.GetPagedAsync(exportQuery, ct);
             return result.Items.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId)
+        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByCompanyAsync(Guid companyId, CancellationToken ct = default)
         {
-            IEnumerable<Invoice> invoices = await invoiceRepository.GetByCompanyIdAsync(companyId);
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetByCompanyIdAsync(companyId, ct);
             return invoices.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByTypeAsync(InvoiceType type)
+        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByTypeAsync(InvoiceType type, CancellationToken ct = default)
         {
-            IEnumerable<Invoice> invoices = await invoiceRepository.GetByTypeAsync(type);
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetByTypeAsync(type, ct);
             return invoices.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByStatusAsync(InvoiceStatus status)
+        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByStatusAsync(InvoiceStatus status, CancellationToken ct = default)
         {
-            IEnumerable<Invoice> invoices = await invoiceRepository.GetByStatusAsync(status);
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetByStatusAsync(status, ct);
             return invoices.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<InvoiceDto>> GetOverdueInvoicesAsync()
+        public async Task<IEnumerable<InvoiceDto>> GetOverdueInvoicesAsync(CancellationToken ct = default)
         {
-            IEnumerable<Invoice> invoices = await invoiceRepository.GetOverdueInvoicesAsync();
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetOverdueInvoicesAsync(ct);
             return invoices.Select(MapToDto);
         }
 
-        public async Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id)
+        public async Task<InvoiceDto?> GetInvoiceByIdAsync(Guid id, CancellationToken ct = default)
         {
-            Invoice? invoice = await invoiceRepository.GetByIdAsync(id);
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id, ct);
             return invoice == null ? null : MapToDto(invoice);
         }
 
-        public async Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber)
+        public async Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber, CancellationToken ct = default)
         {
-            Invoice? invoice = await invoiceRepository.GetByInvoiceNumberAsync(invoiceNumber);
+            Invoice? invoice = await invoiceRepository.GetByInvoiceNumberAsync(invoiceNumber, ct);
             return invoice == null ? null : MapToDto(invoice);
         }
 
@@ -343,20 +344,21 @@
                 ? InventoryTransactionType.Outbound
                 : InventoryTransactionType.Inbound;
 
-            foreach (InvoiceLine line in invoice.LineItems)
-            {
-                await inventoryService.CreateTransactionAsync(
-                    new DTOs.InventoryTransaction.CreateInventoryTransactionDto
-                    {
-                        ProductId = line.ProductId,
-                        WarehouseId = invoice.WarehouseId,
-                        Type = type,
-                        Quantity = line.Quantity,
-                        SourceDocumentId = invoice.Id,
-                        SourceDocumentType = invoiceString,
-                        Note = GenerateNote(invoice, type)
-                    });
-            }
+            string note = GenerateNote(invoice, type);
+
+            IEnumerable<CreateInventoryTransactionDto> items = invoice.LineItems.Select(line =>
+                new DTOs.InventoryTransaction.CreateInventoryTransactionDto
+                {
+                    ProductId = line.ProductId,
+                    WarehouseId = invoice.WarehouseId,
+                    Type = type,
+                    Quantity = line.Quantity,
+                    SourceDocumentId = invoice.Id,
+                    SourceDocumentType = invoiceString,
+                    Note = note
+                });
+
+            await inventoryService.CreateBatchAsync(invoice.WarehouseId, items);
         }
 
         public async Task CreateReverseTransactionsIfNeeded(Invoice invoice, string? reason = null)
@@ -374,10 +376,10 @@
 
         // ── Summary ───────────────────────────────────────────────────────────────────
 
-        public async Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync()
+        public async Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync(CancellationToken ct = default)
         {
-            (int total, int paid, int unpaid, int overdue) = await invoiceRepository.GetPayableInvoiceCountsAsync();
-            (decimal totalAmount, decimal totalPaid, decimal totalDue) = await invoiceRepository.GetPayableInvoiceTotalsAsync();
+            (int total, int paid, int unpaid, int overdue) = await invoiceRepository.GetPayableInvoiceCountsAsync(ct);
+            (decimal totalAmount, decimal totalPaid, decimal totalDue) = await invoiceRepository.GetPayableInvoiceTotalsAsync(ct);
 
             return new InvoiceSummaryDto
             {

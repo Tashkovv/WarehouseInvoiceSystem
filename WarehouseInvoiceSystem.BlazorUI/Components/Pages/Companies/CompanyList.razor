@@ -147,6 +147,7 @@
 </MudCard>
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<CompanyDto> _grid = null!;
     private string _searchString = string.Empty;
     private CompanyType? _filterType = null;
@@ -201,7 +202,7 @@
             IsActive = _filterIsActive
         };
 
-        PagedResult<CompanyDto> result = await CompanyService.GetPagedAsync(query);
+        PagedResult<CompanyDto> result = await CompanyService.GetPagedAsync(query, ct);
 
         return new GridData<CompanyDto>
         {
@@ -366,6 +367,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

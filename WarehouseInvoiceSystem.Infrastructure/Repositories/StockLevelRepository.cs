@@ -10,16 +10,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class StockLevelRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IStockLevelRepository
     {
-        public Task<IEnumerable<StockLevel>> GetAllStockLevelAsync() =>
+        public Task<IEnumerable<StockLevel>> GetAllStockLevelAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<StockLevel>)await All<StockLevel>(context)
                     .Where(s => s.Product.IsActive && s.Warehouse.IsActive)
                     .Include(s => s.Warehouse)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<StockLevel>> GetPagedAsync(GetStockQuery query) =>
+        public Task<PagedResult<StockLevel>> GetPagedAsync(GetStockQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<StockLevel> q = ApplyFilters(
@@ -31,12 +31,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<StockLevel> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<StockLevel>
                 {
@@ -47,12 +47,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<StockLevel?> GetByProductAndWarehouseAsync(Guid productId, Guid warehouseId) =>
+        public Task<StockLevel?> GetByProductAndWarehouseAsync(Guid productId, Guid warehouseId, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<StockLevel>(context)
                     .Include(s => s.Product)
                     .Include(s => s.Warehouse)
-                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId));
+                    .FirstOrDefaultAsync(s => s.ProductId == productId && s.WarehouseId == warehouseId, ct));
 
         /// <summary>
         /// Reads and writes the StockLevel row inside the same DbContext so the xmin
@@ -90,26 +90,26 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 await SaveAsync(context);
             });
 
-        public Task<IEnumerable<StockLevel>> GetByProductIdAsync(Guid productId) =>
+        public Task<IEnumerable<StockLevel>> GetByProductIdAsync(Guid productId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<StockLevel>)await All<StockLevel>(context)
                     .Where(s => s.ProductId == productId)
                     .Include(s => s.Warehouse)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<StockLevel>> GetByWarehouseIdAsync(Guid warehouseId) =>
+        public Task<IEnumerable<StockLevel>> GetByWarehouseIdAsync(Guid warehouseId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<StockLevel>)await All<StockLevel>(context)
                     .Where(s => s.WarehouseId == warehouseId)
                     .Include(s => s.Product)
                     .OrderBy(s => s.Product.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<StockLevel>> GetLowStockItemsAsync(Guid? warehouseId = null) =>
+        public Task<IEnumerable<StockLevel>> GetLowStockItemsAsync(Guid? warehouseId = null, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<StockLevel> q = All<StockLevel>(context)
@@ -122,7 +122,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (warehouseId.HasValue)
                     q = q.Where(s => s.WarehouseId == warehouseId.Value);
 
-                return (IEnumerable<StockLevel>)await q.OrderBy(s => s.Product.Name).ToListAsync();
+                return (IEnumerable<StockLevel>)await q.OrderBy(s => s.Product.Name).ToListAsync(ct);
             });
 
         public Task<StockLevel> CreateAsync(StockLevel stockLevel) =>

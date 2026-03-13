@@ -215,6 +215,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
     private List<CompanyDto> _companies = [];
     private List<IndividualDto> _individuals = [];
@@ -244,10 +245,10 @@ else
 
         try
         {
-            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync();
+            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync(_cts.Token);
             _companies = companies.ToList();
 
-            IEnumerable<IndividualDto> individuals = await IndividualService.GetAllIndividualsAsync();
+            IEnumerable<IndividualDto> individuals = await IndividualService.GetAllIndividualsAsync(_cts.Token);
             _individuals = individuals.ToList();
 
             _clientCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Client || c.Type == Domain.Enums.CompanyType.Both);
@@ -283,6 +284,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

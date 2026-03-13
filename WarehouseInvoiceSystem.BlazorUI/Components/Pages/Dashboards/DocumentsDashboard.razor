@@ -388,6 +388,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
     private List<InvoiceDto> _invoices = [];
     private List<PurchaseNoteDto> _purchaseNotes = [];
@@ -480,13 +481,13 @@ else
 
         try
         {
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync();
+            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync(_cts.Token);
             _invoices = invoices.ToList();
 
-            IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync();
+            IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token);
             _purchaseNotes = purchaseNotes.ToList();
 
-            IEnumerable<PaymentDto> payments = await PaymentService.GetAllPaymentsAsync();
+            IEnumerable<PaymentDto> payments = await PaymentService.GetAllPaymentsAsync(_cts.Token);
             _payments = payments.ToList();
         }
         catch (Exception ex)
@@ -579,6 +580,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

@@ -7,17 +7,26 @@
 
     public interface IPurchaseNoteRepository
     {
-        Task<IEnumerable<PurchaseNote>> GetAllAsync();
-        Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query);
-        Task<PurchaseNote?> GetByIdAsync(Guid id);
-        Task<PurchaseNote?> GetByNoteNumberAsync(string noteNumber);
-        Task<IEnumerable<PurchaseNote>> GetByIndividualIdAsync(Guid individualId);
-        Task<IEnumerable<PurchaseNote>> GetByDateRangeAsync(DateTime startDate, DateTime endDate);
-        Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status);
-        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId);
-        Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query);
-        Task<string> GenerateNoteNumberAsync();
-        Task<bool> ExistsAsync(Guid id);
+        Task<IEnumerable<PurchaseNote>> GetAllAsync(CancellationToken ct = default);
+        Task<PagedResult<PurchaseNote>> GetPagedAsync(GetPurchaseNotesQuery query, CancellationToken ct = default);
+
+        Task<PurchaseNote?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+        Task<PurchaseNote?> GetByNoteNumberAsync(string noteNumber, CancellationToken ct = default);
+
+        Task<IEnumerable<PurchaseNote>> GetByIndividualIdAsync(Guid individualId, CancellationToken ct = default);
+
+        Task<IEnumerable<PurchaseNote>> GetByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken ct = default);
+
+        Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default);
+
+        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default);
+
+        Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+
+        Task<string> GenerateNoteNumberAsync(CancellationToken ct = default);
+        Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
+
         Task CreateAsync(PurchaseNote purchaseNote);
         Task UpdateAsync(PurchaseNote purchaseNote);
         Task<bool> DeleteAsync(Guid id);

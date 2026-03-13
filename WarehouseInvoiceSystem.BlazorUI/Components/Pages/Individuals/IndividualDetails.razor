@@ -216,6 +216,7 @@ else
 }
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -243,10 +244,10 @@ else
 
         try
         {
-            _individual = await IndividualService.GetIndividualByIdAsync(Id);
+            _individual = await IndividualService.GetIndividualByIdAsync(Id, _cts.Token);
             if (_individual != null)
             {
-                _analytics = await IndividualService.GetIndividualAnalyticsAsync(Id);
+                _analytics = await IndividualService.GetIndividualAnalyticsAsync(Id, _cts.Token);
                 BuildActions();
             }
         }
@@ -407,6 +408,8 @@ else
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

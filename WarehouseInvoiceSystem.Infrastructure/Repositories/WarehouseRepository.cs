@@ -10,27 +10,27 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class WarehouseRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IWarehouseRepository
     {
-        public Task<IEnumerable<Warehouse>> GetAllAsync() =>
+        public Task<IEnumerable<Warehouse>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Warehouse>)await All<Warehouse>(context)
                     .Where(w => w.IsActive)
                     .OrderBy(w => w.Name)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<Warehouse>> GetPagedAsync(GetWarehousesQuery query) =>
+        public Task<PagedResult<Warehouse>> GetPagedAsync(GetWarehousesQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Warehouse> q = ApplyFilters(All<Warehouse>(context), query);
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<Warehouse> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<Warehouse>
                 {
@@ -41,23 +41,23 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<bool> HasProductsAsync(Guid id) =>
+        public Task<bool> HasProductsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                context.StockLevels.AnyAsync(s => s.WarehouseId == id && s.Quantity > 0));
+                context.StockLevels.AnyAsync(s => s.WarehouseId == id && s.Quantity > 0, ct));
 
-        public Task<Warehouse?> GetByIdAsync(Guid id) =>
+        public Task<Warehouse?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Warehouse>(context).FirstOrDefaultAsync(w => w.Id == id));
+                All<Warehouse>(context).FirstOrDefaultAsync(w => w.Id == id, ct));
 
-        public Task<Warehouse?> GetDefaultWarehouseAsync() =>
+        public Task<Warehouse?> GetDefaultWarehouseAsync(CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Warehouse>(context)
                     .Where(w => w.IsActive && w.IsDefault)
-                    .FirstOrDefaultAsync());
+                    .FirstOrDefaultAsync(ct));
 
-        public Task<bool> ExistsAsync(Guid id) =>
+        public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
-                All<Warehouse>(context).AnyAsync(w => w.Id == id));
+                All<Warehouse>(context).AnyAsync(w => w.Id == id, ct));
 
         public Task CreateAsync(Warehouse warehouse) =>
             WithContextAsync(async context =>

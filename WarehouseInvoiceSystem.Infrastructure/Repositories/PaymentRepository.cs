@@ -10,17 +10,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class PaymentRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IPaymentRepository
     {
-        public Task<IEnumerable<Payment>> GetAllAsync() =>
+        public Task<IEnumerable<Payment>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Payment>)await All<Payment>(context)
                     .Include(p => p.Invoice)
                         .ThenInclude(i => i.Company)
                     .OrderByDescending(p => p.PaymentDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<Payment>> GetPagedAsync(GetPaymentsQuery query) =>
+        public Task<PagedResult<Payment>> GetPagedAsync(GetPaymentsQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<Payment> q = ApplyFilters(
@@ -31,12 +31,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = ApplySort(q, query.SortBy, query.SortAscending);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<Payment> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<Payment>
                 {
@@ -47,22 +47,22 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId) =>
+        public Task<IEnumerable<Payment>> GetByInvoiceIdAsync(Guid invoiceId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Payment>)await All<Payment>(context)
                     .Where(p => p.InvoiceId == invoiceId)
                     .Include(p => p.Invoice)
                     .OrderByDescending(p => p.PaymentDate)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<Payment?> GetByIdAsync(Guid id) =>
+        public Task<Payment?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Payment>(context)
                     .Include(p => p.Invoice)
                         .ThenInclude(i => i.Company)
-                    .FirstOrDefaultAsync(p => p.Id == id));
+                    .FirstOrDefaultAsync(p => p.Id == id, ct));
 
         public Task CreateAsync(Payment payment) =>
             WithContextAsync(async context =>
@@ -91,7 +91,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return true;
             });
 
-        public Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId) =>
+        public Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Payment>(context)
                     .Where(p => p.InvoiceId == invoiceId)
@@ -106,10 +106,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 q = q.Where(p => p.PaymentMethod == query.PaymentMethod.Value);
 
             if (query.DateFrom.HasValue)
-                q = q.Where(p => p.PaymentDate >= query.DateFrom.Value);
+                q = q.Where(p => p.PaymentDate >= query.DateFrom.Value.Date);
 
             if (query.DateTo.HasValue)
-                q = q.Where(p => p.PaymentDate <= query.DateTo.Value);
+                q = q.Where(p => p.PaymentDate < query.DateTo.Value.Date.AddDays(1));
 
             if (query.AmountMin.HasValue)
                 q = q.Where(p => p.Amount >= query.AmountMin.Value);

@@ -2,11 +2,13 @@ using WarehouseInvoiceSystem.BlazorUI.Services;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using System.Globalization;
+using WarehouseInvoiceSystem.Application.BackgroundWorkers;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Services;
 using WarehouseInvoiceSystem.Application.Settings;
 using WarehouseInvoiceSystem.BlazorUI.Components;
 using WarehouseInvoiceSystem.Domain.Interfaces;
+using WarehouseInvoiceSystem.Infrastructure.Common;
 using WarehouseInvoiceSystem.Infrastructure.Data;
 using WarehouseInvoiceSystem.Infrastructure.Repositories;
 
@@ -62,6 +64,11 @@ builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<WisDialogService>();
+
+// Background job infrastructure
+builder.Services.AddSingleton<IAppStateService, AppStateService>();
+builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
+builder.Services.AddHostedService<BackgroundJobWorker>();
 
 // Add HttpClient
 builder.Services.AddScoped(sp =>

@@ -134,6 +134,7 @@
 </MudCard>
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<ProductDto> _grid = null!;
     private string _searchString = string.Empty;
     private bool? _filterIsActive = null;
@@ -177,7 +178,7 @@
             IsActive = _filterIsActive
         };
 
-        PagedResult<ProductDto> result = await ProductService.GetPagedAsync(query);
+        PagedResult<ProductDto> result = await ProductService.GetPagedAsync(query, ct);
 
         return new GridData<ProductDto>
         {
@@ -304,6 +305,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

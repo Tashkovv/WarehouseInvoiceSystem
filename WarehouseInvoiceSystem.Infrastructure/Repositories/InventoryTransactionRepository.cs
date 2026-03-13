@@ -10,27 +10,27 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public class InventoryTransactionRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IInventoryTransactionRepository
     {
-        public Task<IEnumerable<InventoryTransaction>> GetAllAsync() =>
+        public Task<IEnumerable<InventoryTransaction>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
                     .Include(t => t.Product)
                     .Include(t => t.Warehouse)
                     .OrderByDescending(t => t.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<InventoryTransaction>> GetByProductIdAsync(Guid productId) =>
+        public Task<IEnumerable<InventoryTransaction>> GetByProductIdAsync(Guid productId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
                     .Where(t => t.ProductId == productId)
                     .Include(t => t.Warehouse)
                     .OrderByDescending(t => t.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<PagedResult<InventoryTransaction>> GetPagedByProductAsync(GetInventoryTransactionsQuery query) =>
+        public Task<PagedResult<InventoryTransaction>> GetPagedByProductAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<InventoryTransaction> q = ApplyFilters(
@@ -40,12 +40,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = q.OrderByDescending(t => t.CreatedAt);
 
-                int totalCount = await q.CountAsync();
+                int totalCount = await q.CountAsync(ct);
 
                 List<InventoryTransaction> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 return new PagedResult<InventoryTransaction>
                 {
@@ -56,17 +56,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        public Task<IEnumerable<InventoryTransaction>> GetByWarehouseIdAsync(Guid warehouseId) =>
+        public Task<IEnumerable<InventoryTransaction>> GetByWarehouseIdAsync(Guid warehouseId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
                     .Where(t => t.WarehouseId == warehouseId)
                     .Include(t => t.Product)
                     .OrderByDescending(t => t.CreatedAt)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<IEnumerable<InventoryTransaction>> GetBySourceDocumentAsync(Guid sourceDocumentId, string sourceDocumentType) =>
+        public Task<IEnumerable<InventoryTransaction>> GetBySourceDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
@@ -74,23 +74,23 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                 t.SourceDocumentType == sourceDocumentType)
                     .Include(t => t.Product)
                     .Include(t => t.Warehouse)
-                    .ToListAsync();
+                    .ToListAsync(ct);
             });
 
-        public Task<InventoryTransaction?> GetByIdAsync(Guid id) =>
+        public Task<InventoryTransaction?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<InventoryTransaction>(context)
                     .Include(t => t.Product)
                     .Include(t => t.Warehouse)
-                    .FirstOrDefaultAsync(t => t.Id == id));
+                    .FirstOrDefaultAsync(t => t.Id == id, ct));
 
-        public Task<bool> HasTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType) =>
+        public Task<bool> HasTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<InventoryTransaction>(context)
                     .AnyAsync(t => t.SourceDocumentId == sourceDocumentId &&
-                                   t.SourceDocumentType == sourceDocumentType));
+                                   t.SourceDocumentType == sourceDocumentType, ct));
 
-        public Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType) =>
+        public Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 string reversalType = $"{sourceDocumentType}_Reversal";
@@ -98,7 +98,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 List<InventoryTransaction> reversals = await AllTracked<InventoryTransaction>(context)
                     .Where(t => t.SourceDocumentId == sourceDocumentId &&
                                 t.SourceDocumentType == reversalType)
-                    .ToListAsync();
+                    .ToListAsync(ct);
 
                 foreach (InventoryTransaction reversal in reversals)
                     reversal.DeletedOn = DateTime.UtcNow;
@@ -114,6 +114,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 context.InventoryTransactions.Add(transaction);
                 await SaveAsync(context);
                 return transaction;
+            });
+
+        public Task CreateBatchAsync(IEnumerable<InventoryTransaction> transactions) =>
+            WithContextAsync(async context =>
+            {
+                DateTime now = DateTime.UtcNow;
+                foreach (InventoryTransaction t in transactions)
+                    t.CreatedAt = now;
+
+                context.InventoryTransactions.AddRange(transactions);
+                await SaveAsync(context);
             });
 
         private static IQueryable<InventoryTransaction> ApplyFilters(IQueryable<InventoryTransaction> q, GetInventoryTransactionsQuery query)

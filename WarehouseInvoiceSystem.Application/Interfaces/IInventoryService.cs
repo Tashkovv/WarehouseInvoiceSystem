@@ -8,20 +8,27 @@
     public interface IInventoryService
     {
         // Stock Levels
-        Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync();
-        Task<PagedResult<StockLevelDto>> GetPagedStockAsync(GetStockQuery query);
-        Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId);
-        Task<IEnumerable<StockLevelDto>> GetStockByProductAsync(Guid productId);
-        Task<IEnumerable<StockLevelDto>> GetStockByWarehouseAsync(Guid warehouseId);
-        Task<IEnumerable<StockLevelDto>> GetLowStockItemsAsync(Guid? warehouseId = null);
+        Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync(CancellationToken ct = default);
+        Task<PagedResult<StockLevelDto>> GetPagedStockAsync(GetStockQuery query, CancellationToken ct = default);
+        Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId, CancellationToken ct = default);
+        Task<IEnumerable<StockLevelDto>> GetStockByProductAsync(Guid productId, CancellationToken ct = default);
+        Task<IEnumerable<StockLevelDto>> GetStockByWarehouseAsync(Guid warehouseId, CancellationToken ct = default);
+        Task<IEnumerable<StockLevelDto>> GetLowStockItemsAsync(Guid? warehouseId = null, CancellationToken ct = default);
         Task<StockLevelDto> UpdateStockLevelAsync(Guid productId, Guid warehouseId, UpdateStockLevelDto updateDto);
 
         // Transactions
-        Task<IEnumerable<InventoryTransactionDto>> GetAllTransactionsAsync();
-        Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByProductAsync(Guid productId);
-        Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query);
-        Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId);
+        Task<IEnumerable<InventoryTransactionDto>> GetAllTransactionsAsync(CancellationToken ct = default);
+        Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByProductAsync(Guid productId, CancellationToken ct = default);
+        Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default);
+        Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId, CancellationToken ct = default);
         Task<InventoryTransactionDto> CreateTransactionAsync(CreateInventoryTransactionDto createDto);
+
+        /// <summary>
+        /// Validates product and warehouse once, inserts all transactions in a single
+        /// SaveAsync call, then applies each stock delta. Use instead of looping
+        /// CreateTransactionAsync per line to eliminate N+1 DB round-trips.
+        /// </summary>
+        Task CreateBatchAsync(Guid warehouseId, IEnumerable<CreateInventoryTransactionDto> items);
 
         // Stock Adjustments
         Task AdjustStockAsync(Guid productId, Guid warehouseId, decimal quantityChange, string reason);

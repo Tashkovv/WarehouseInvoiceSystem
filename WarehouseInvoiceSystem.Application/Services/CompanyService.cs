@@ -12,15 +12,15 @@
     public class CompanyService(ICompanyRepository companyRepository,
                                 IInvoiceService invoiceService) : ICompanyService
     {
-        public async Task<IEnumerable<CompanyDto>> GetAllCompaniesAsync()
+        public async Task<IEnumerable<CompanyDto>> GetAllCompaniesAsync(CancellationToken ct = default)
         {
-            IEnumerable<Company> companies = await companyRepository.GetAllAsync();
+            IEnumerable<Company> companies = await companyRepository.GetAllAsync(ct);
             return companies.Select(MapToDto);
         }
 
-        public async Task<PagedResult<CompanyDto>> GetPagedAsync(GetCompaniesQuery query)
+        public async Task<PagedResult<CompanyDto>> GetPagedAsync(GetCompaniesQuery query, CancellationToken ct = default)
         {
-            PagedResult<Company> result = await companyRepository.GetPagedAsync(query);
+            PagedResult<Company> result = await companyRepository.GetPagedAsync(query, ct);
             return new PagedResult<CompanyDto>
             {
                 Items = [.. result.Items.Select(MapToDto)],
@@ -30,21 +30,21 @@
             };
         }
 
-        public async Task<IEnumerable<CompanyDto>> GetActiveCompaniesAsync()
+        public async Task<IEnumerable<CompanyDto>> GetActiveCompaniesAsync(CancellationToken ct = default)
         {
-            IEnumerable<Company> companies = await companyRepository.GetActiveCompaniesAsync();
+            IEnumerable<Company> companies = await companyRepository.GetActiveCompaniesAsync(ct);
             return companies.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<CompanyDto>> GetCompaniesByTypeAsync(CompanyType type)
+        public async Task<IEnumerable<CompanyDto>> GetCompaniesByTypeAsync(CompanyType type, CancellationToken ct = default)
         {
-            IEnumerable<Company> companies = await companyRepository.GetByTypeAsync(type);
+            IEnumerable<Company> companies = await companyRepository.GetByTypeAsync(type, ct);
             return companies.Select(MapToDto);
         }
 
-        public async Task<CompanyDto?> GetCompanyByIdAsync(Guid id)
+        public async Task<CompanyDto?> GetCompanyByIdAsync(Guid id, CancellationToken ct = default)
         {
-            Company? company = await companyRepository.GetByIdAsync(id);
+            Company? company = await companyRepository.GetByIdAsync(id, ct);
             return company == null ? null : MapToDto(company);
         }
 
@@ -98,12 +98,12 @@
             return true;
         }
 
-        public async Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id)
+        public async Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id, CancellationToken ct = default)
         {
             Company? company = await companyRepository.GetByIdAsync(id) ?? throw new KeyNotFoundException($"Company with ID {id} not found");
 
-            decimal owedByUs = await companyRepository.GetTotalOwedByCompanyAsync(id);
-            decimal owedToUs = await companyRepository.GetTotalOwedToCompanyAsync(id);
+            decimal owedByUs = await companyRepository.GetTotalOwedByCompanyAsync(id, ct);
+            decimal owedToUs = await companyRepository.GetTotalOwedToCompanyAsync(id, ct);
 
             return new CompanyBalanceDto
             {
@@ -115,7 +115,7 @@
             };
         }
 
-        public async Task<CompanyAnalyticsDto> GetCompanyAnalyticsAsync(Guid id)
+        public async Task<CompanyAnalyticsDto> GetCompanyAnalyticsAsync(Guid id, CancellationToken ct = default)
         {
             var analytics = new CompanyAnalyticsDto();
 

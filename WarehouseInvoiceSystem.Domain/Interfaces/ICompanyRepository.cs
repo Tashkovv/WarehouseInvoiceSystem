@@ -7,16 +7,22 @@
 
     public interface ICompanyRepository
     {
-        Task<IEnumerable<Company>> GetAllAsync();
-        Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query);
-        Task<IEnumerable<Company>> GetActiveCompaniesAsync();
-        Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type);
-        Task<Company?> GetByIdAsync(Guid id);
+        Task<IEnumerable<Company>> GetAllAsync(CancellationToken ct = default);
+        Task<PagedResult<Company>> GetPagedAsync(GetCompaniesQuery query, CancellationToken ct = default);
+
+        Task<IEnumerable<Company>> GetActiveCompaniesAsync(CancellationToken ct = default);
+        Task<IEnumerable<Company>> GetByTypeAsync(CompanyType type, CancellationToken ct = default);
+
+        Task<Company?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
         Task CreateAsync(Company company);
         Task UpdateAsync(Company company);
         Task<bool> DeleteAsync(Guid id);
-        Task<bool> ExistsAsync(Guid id);
-        Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId);
-        Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId);
+        Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
+
+        Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId, CancellationToken ct = default);
+
+        Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId, CancellationToken ct = default);
+
     }
 }

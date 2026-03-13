@@ -6,12 +6,12 @@
 
     public interface IIndividualService
     {
-        Task<IEnumerable<IndividualDto>> GetAllIndividualsAsync();
-        Task<PagedResult<IndividualDto>> GetPagedAsync(GetIndividualsQuery query);
-        Task<IEnumerable<IndividualDto>> GetActiveIndividualsAsync();
-        Task<IndividualDto?> GetIndividualByIdAsync(Guid id);
-        Task<IndividualDto?> GetIndividualByIdentificationNumberAsync(string identificationNumber);
-        Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId);
+        Task<IEnumerable<IndividualDto>> GetAllIndividualsAsync(CancellationToken ct = default);
+        Task<PagedResult<IndividualDto>> GetPagedAsync(GetIndividualsQuery query, CancellationToken ct = default);
+        Task<IEnumerable<IndividualDto>> GetActiveIndividualsAsync(CancellationToken ct = default);
+        Task<IndividualDto?> GetIndividualByIdAsync(Guid id, CancellationToken ct = default);
+        Task<IndividualDto?> GetIndividualByIdentificationNumberAsync(string identificationNumber, CancellationToken ct = default);
+        Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId, CancellationToken ct = default);
         Task CreateIndividualAsync(CreateIndividualDto createDto);
         Task UpdateIndividualAsync(Guid id, UpdateIndividualDto updateDto);
         Task<bool> DeleteIndividualAsync(Guid id);

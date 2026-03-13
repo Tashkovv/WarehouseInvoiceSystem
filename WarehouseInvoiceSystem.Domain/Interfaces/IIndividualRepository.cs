@@ -6,12 +6,16 @@
 
     public interface IIndividualRepository
     {
-        Task<IEnumerable<Individual>> GetAllAsync();
-        Task<PagedResult<Individual>> GetPagedAsync(GetIndividualsQuery query);
-        Task<IEnumerable<Individual>> GetActiveIndividualsAsync();
-        Task<Individual?> GetByIdAsync(Guid id);
-        Task<Individual?> GetByIdentificationNumberAsync(string identificationNumber);
-        Task<bool> ExistsAsync(Guid id);
+        Task<IEnumerable<Individual>> GetAllAsync(CancellationToken ct = default);
+        Task<PagedResult<Individual>> GetPagedAsync(GetIndividualsQuery query, CancellationToken ct = default);
+
+        Task<IEnumerable<Individual>> GetActiveIndividualsAsync(CancellationToken ct = default);
+        Task<Individual?> GetByIdAsync(Guid id, CancellationToken ct = default);
+
+        Task<Individual?> GetByIdentificationNumberAsync(string identificationNumber, CancellationToken ct = default);
+
+        Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
+
         Task<bool> IdentificationNumberExistsAsync(string identificationNumber, Guid? excludeId = null);
         Task CreateAsync(Individual individual);
         Task UpdateAsync(Individual individual);

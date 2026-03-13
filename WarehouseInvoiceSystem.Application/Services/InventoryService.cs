@@ -17,15 +17,15 @@
         IWarehouseRepository warehouseRepository) : IInventoryService
     {
         // Stock Levels
-        public async Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync()
+        public async Task<IEnumerable<StockLevelDto>> GetAllStockLevelAsync(CancellationToken ct = default)
         {
-            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetAllStockLevelAsync();
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetAllStockLevelAsync(ct);
             return stockLevels.Select(MapStockLevelToDto);
         }
 
-        public async Task<PagedResult<StockLevelDto>> GetPagedStockAsync(GetStockQuery query)
+        public async Task<PagedResult<StockLevelDto>> GetPagedStockAsync(GetStockQuery query, CancellationToken ct = default)
         {
-            PagedResult<StockLevel> result = await stockLevelRepository.GetPagedAsync(query);
+            PagedResult<StockLevel> result = await stockLevelRepository.GetPagedAsync(query, ct);
             return new PagedResult<StockLevelDto>
             {
                 Items = [.. result.Items.Select(MapStockLevelToDto)],
@@ -35,27 +35,27 @@
             };
         }
 
-        public async Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId)
+        public async Task<StockLevelDto?> GetStockLevelAsync(Guid productId, Guid warehouseId, CancellationToken ct = default)
         {
-            StockLevel? stockLevel = await stockLevelRepository.GetByProductAndWarehouseAsync(productId, warehouseId);
+            StockLevel? stockLevel = await stockLevelRepository.GetByProductAndWarehouseAsync(productId, warehouseId, ct);
             return stockLevel == null ? null : MapStockLevelToDto(stockLevel);
         }
 
-        public async Task<IEnumerable<StockLevelDto>> GetStockByProductAsync(Guid productId)
+        public async Task<IEnumerable<StockLevelDto>> GetStockByProductAsync(Guid productId, CancellationToken ct = default)
         {
-            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetByProductIdAsync(productId);
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetByProductIdAsync(productId, ct);
             return stockLevels.Select(MapStockLevelToDto);
         }
 
-        public async Task<IEnumerable<StockLevelDto>> GetStockByWarehouseAsync(Guid warehouseId)
+        public async Task<IEnumerable<StockLevelDto>> GetStockByWarehouseAsync(Guid warehouseId, CancellationToken ct = default)
         {
-            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetByWarehouseIdAsync(warehouseId);
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetByWarehouseIdAsync(warehouseId, ct);
             return stockLevels.Select(MapStockLevelToDto);
         }
 
-        public async Task<IEnumerable<StockLevelDto>> GetLowStockItemsAsync(Guid? warehouseId = null)
+        public async Task<IEnumerable<StockLevelDto>> GetLowStockItemsAsync(Guid? warehouseId = null, CancellationToken ct = default)
         {
-            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetLowStockItemsAsync(warehouseId);
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetLowStockItemsAsync(warehouseId, ct);
             return stockLevels.Select(MapStockLevelToDto);
         }
 
@@ -89,21 +89,21 @@
         }
 
         // Transactions
-        public async Task<IEnumerable<InventoryTransactionDto>> GetAllTransactionsAsync()
+        public async Task<IEnumerable<InventoryTransactionDto>> GetAllTransactionsAsync(CancellationToken ct = default)
         {
-            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetAllAsync();
+            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetAllAsync(ct);
             return transactions.Select(MapTransactionToDto);
         }
 
-        public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByProductAsync(Guid productId)
+        public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByProductAsync(Guid productId, CancellationToken ct = default)
         {
-            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByProductIdAsync(productId);
+            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByProductIdAsync(productId, ct);
             return transactions.Select(MapTransactionToDto);
         }
 
-        public async Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query)
+        public async Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default)
         {
-            PagedResult<InventoryTransaction> result = await transactionRepository.GetPagedByProductAsync(query);
+            PagedResult<InventoryTransaction> result = await transactionRepository.GetPagedByProductAsync(query, ct);
 
             return new PagedResult<InventoryTransactionDto>
             {
@@ -114,9 +114,9 @@
             };
         }
 
-        public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId)
+        public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId, CancellationToken ct = default)
         {
-            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByWarehouseIdAsync(warehouseId);
+            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByWarehouseIdAsync(warehouseId, ct);
             return transactions.Select(MapTransactionToDto);
         }
 
@@ -160,6 +160,40 @@
             };
 
             await CreateTransactionAsync(transactionDto);
+        }
+
+        public async Task CreateBatchAsync(Guid warehouseId, IEnumerable<CreateInventoryTransactionDto> items)
+        {
+            List<CreateInventoryTransactionDto> dtos = items.ToList();
+            if (dtos.Count == 0) return;
+
+            // Validate warehouse once for the whole batch
+            if (!await warehouseRepository.ExistsAsync(warehouseId))
+                throw new KeyNotFoundException($"Warehouse with ID {warehouseId} not found");
+
+            // Validate all products in one query
+            List<Guid> productIds = dtos.Select(d => d.ProductId).Distinct().ToList();
+            if (!await productRepository.AllExistAsync(productIds))
+                throw new KeyNotFoundException("One or more products in the batch were not found");
+
+            // Build and insert all transaction rows in a single SaveAsync
+            List<InventoryTransaction> transactions = dtos.Select(d => new InventoryTransaction
+            {
+                ProductId = d.ProductId,
+                WarehouseId = d.WarehouseId,
+                Type = d.Type,
+                Quantity = d.Quantity,
+                SourceDocumentId = d.SourceDocumentId,
+                SourceDocumentType = d.SourceDocumentType,
+                Note = d.Note,
+            }).ToList();
+
+            await transactionRepository.CreateBatchAsync(transactions);
+
+            // Apply stock deltas — each call is its own WithContextAsync so the
+            // xmin read and write share the same DbContext (Bug 2 fix preserved).
+            foreach (InventoryTransaction t in transactions)
+                await UpdateStockFromTransactionAsync(t);
         }
 
         // Private helpers

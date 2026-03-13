@@ -126,7 +126,7 @@
                                                Size="Size.Small"
                                                Color="Color.Warning"
                                                Title="@(context.Item.HasProducts ? Localization.GetString("DeactivateWarehouseDisabledTooltip")
-                                                                                                                            : Localization.GetString("Deactivate"))"
+                                                                                                                                                                       : Localization.GetString("Deactivate"))"
                                                Disabled="@(context.Item.IsDefault || context.Item.HasProducts)"
                                                OnClick="@(() => SetActiveStatus(context.Item, false))" />
                             }
@@ -162,6 +162,7 @@
 </MudCard>
 
 @code {
+    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<WarehouseDto> _grid = null!;
     private string _searchString = string.Empty;
     private bool? _filterIsActive = null;
@@ -205,7 +206,7 @@
             SortAscending = ascending,
         };
 
-        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(query);
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(query, ct);
 
         return new GridData<WarehouseDto>
         {
@@ -348,6 +349,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

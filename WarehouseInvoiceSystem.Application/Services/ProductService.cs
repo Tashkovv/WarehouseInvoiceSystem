@@ -17,15 +17,15 @@
     {
         private const string reversalString = "_Reversal";
 
-        public async Task<IEnumerable<ProductDto>> GetAllProductsAsync()
+        public async Task<IEnumerable<ProductDto>> GetAllProductsAsync(CancellationToken ct = default)
         {
-            IEnumerable<Product> products = await productRepository.GetAllAsync();
+            IEnumerable<Product> products = await productRepository.GetAllAsync(ct);
             return products.Select(MapToDto);
         }
 
-        public async Task<PagedResult<ProductDto>> GetPagedAsync(GetProductsQuery query)
+        public async Task<PagedResult<ProductDto>> GetPagedAsync(GetProductsQuery query, CancellationToken ct = default)
         {
-            PagedResult<Product> result = await productRepository.GetPagedAsync(query);
+            PagedResult<Product> result = await productRepository.GetPagedAsync(query, ct);
             return new PagedResult<ProductDto>
             {
                 Items = [.. result.Items.Select(MapToDto)],
@@ -35,41 +35,41 @@
             };
         }
 
-        public async Task<IEnumerable<ProductDto>> GetProductsByIdsAsync(List<Guid> productIds)
+        public async Task<IEnumerable<ProductDto>> GetProductsByIdsAsync(List<Guid> productIds, CancellationToken ct = default)
         {
-            IEnumerable<Product> products = await productRepository.GetByIdsAsync(productIds);
+            IEnumerable<Product> products = await productRepository.GetByIdsAsync(productIds, ct);
             return products.Select(MapToDto);
         }
 
-        public async Task<IEnumerable<ProductDto>> GetActiveProductsAsync()
+        public async Task<IEnumerable<ProductDto>> GetActiveProductsAsync(CancellationToken ct = default)
         {
-            IEnumerable<Product> products = await productRepository.GetActiveProductsAsync();
+            IEnumerable<Product> products = await productRepository.GetActiveProductsAsync(ct);
             return products.Select(MapToDto);
         }
 
-        public async Task<ProductDto?> GetProductByIdAsync(Guid id)
+        public async Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken ct = default)
         {
             Product? product = await productRepository.GetByIdAsync(id);
             return product == null ? null : MapToDto(product);
         }
 
-        public async Task<ProductDto?> GetProductByCodeAsync(string code)
+        public async Task<ProductDto?> GetProductByCodeAsync(string code, CancellationToken ct = default)
         {
-            Product? product = await productRepository.GetByCodeAsync(code);
+            Product? product = await productRepository.GetByCodeAsync(code, ct);
             return product == null ? null : MapToDto(product);
         }
 
-        public async Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId)
+        public async Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId, CancellationToken ct = default)
         {
-            Product? product = await productRepository.GetByIdAsync(productId)
+            Product? product = await productRepository.GetByIdAsync(productId, ct)
                 ?? throw new KeyNotFoundException($"Product with ID {productId} not found");
 
             // EF Core's scoped DbContext cannot run concurrent queries on the same instance.
             // These must be awaited sequentially even though they're logically independent.
             IEnumerable<StockLevelDto> stockLevels = await inventoryService.GetStockByProductAsync(productId);
             IEnumerable<InventoryTransactionDto> allTransactions = await inventoryService.GetTransactionsByProductAsync(productId);
-            IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository.GetLineItemsByProductIdAsync(productId);
-            IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository.GetLineItemsByProductIdAsync(productId);
+            IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository.GetLineItemsByProductIdAsync(productId, ct);
+            IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository.GetLineItemsByProductIdAsync(productId, ct);
 
             var stockList = stockLevels.ToList();
 
@@ -170,12 +170,12 @@
             };
         }
 
-        public async Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query)
+        public async Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default)
         {
             if (!query.Purchased)
             {
                 // Sold — receivable invoices only, single repo call
-                PagedResult<InvoiceLine> result = await invoiceRepository.GetPagedLineItemsByProductIdAsync(query);
+                PagedResult<InvoiceLine> result = await invoiceRepository.GetPagedLineItemsByProductIdAsync(query, ct);
 
                 return new PagedResult<ProductTransactionRowDto>
                 {
@@ -214,10 +214,10 @@
                 };
 
                 PagedResult<PurchaseNoteLine> noteResult =
-                    await purchaseNoteRepository.GetPagedLineItemsByProductIdAsync(unpaged);
+                    await purchaseNoteRepository.GetPagedLineItemsByProductIdAsync(unpaged, ct);
 
                 PagedResult<InvoiceLine> invoiceResult =
-                    await invoiceRepository.GetPagedLineItemsByProductIdAsync(unpaged);
+                    await invoiceRepository.GetPagedLineItemsByProductIdAsync(unpaged, ct);
 
                 List<ProductTransactionRowDto> allRows =
                 [
