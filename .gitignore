@@ -479,3 +479,7 @@ Temporary Items
 
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
+
+# files that are created by appState service in runtime
+/WarehouseInvoiceSystem.API/app-state.json
+/WarehouseInvoiceSystem.BlazorUI/app-state.json
