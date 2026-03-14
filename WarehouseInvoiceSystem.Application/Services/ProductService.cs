@@ -207,6 +207,8 @@
                     WarehouseId = query.WarehouseId,
                     Purchased = true,
                     PartyName = query.PartyName,
+                    CompanyId = query.CompanyId,
+                    IndividualId = query.IndividualId,
                     DateFrom = query.DateFrom,
                     DateTo = query.DateTo,
                     Page = 1,

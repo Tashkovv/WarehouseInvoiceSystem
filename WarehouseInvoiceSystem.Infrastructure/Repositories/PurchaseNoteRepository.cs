@@ -184,7 +184,25 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task UpdateAsync(PurchaseNote purchaseNote) =>
             WithContextAsync(async context =>
             {
-                context.PurchaseNotes.Update(purchaseNote);
+                PurchaseNote? tracked = await context.PurchaseNotes.FindAsync(purchaseNote.Id)
+                    ?? throw new KeyNotFoundException($"Purchase note {purchaseNote.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(purchaseNote);
+
+                foreach (PurchaseNoteLine li in purchaseNote.LineItems)
+                {
+                    if (li.Id == Guid.Empty)
+                    {
+                        li.PurchaseNoteId = purchaseNote.Id;
+                        context.PurchaseNoteLines.Add(li);
+                    }
+                    else
+                    {
+                        PurchaseNoteLine? trackedLine = await context.PurchaseNoteLines.FindAsync(li.Id);
+                        if (trackedLine is not null)
+                            context.Entry(trackedLine).CurrentValues.SetValues(li);
+                    }
+                }
+
                 await SaveAsync(context);
             });
 
@@ -252,8 +270,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             if (query.WarehouseId.HasValue)
                 q = q.Where(li => li.PurchaseNote.WarehouseId == query.WarehouseId.Value);
 
-            if (!string.IsNullOrWhiteSpace(query.PartyName))
-                q = q.Where(li => (li.PurchaseNote.Individual.FirstName + " " + li.PurchaseNote.Individual.LastName) == query.PartyName);
+            if (query.IndividualId.HasValue)
+                q = q.Where(li => li.PurchaseNote.IndividualId == query.IndividualId.Value);
+
+            // Purchase notes have no company party — return nothing when filtering by company
+            if (query.CompanyId.HasValue)
+                return q.Where(_ => false);
 
             if (query.DateFrom.HasValue)
                 q = q.Where(li => li.PurchaseNote.PurchaseDate >= query.DateFrom.Value.Date);

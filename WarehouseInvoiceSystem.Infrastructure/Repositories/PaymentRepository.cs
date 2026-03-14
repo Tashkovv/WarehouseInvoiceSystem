@@ -75,7 +75,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task UpdateAsync(Payment payment) =>
             WithContextAsync(async context =>
             {
-                context.Payments.Update(payment);
+                Payment? tracked = await context.Payments.FindAsync(payment.Id)
+                    ?? throw new KeyNotFoundException($"Payment {payment.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(payment);
                 await SaveAsync(context);
             });
 

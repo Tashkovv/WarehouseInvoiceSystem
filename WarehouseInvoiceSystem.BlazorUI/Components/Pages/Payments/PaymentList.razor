@@ -316,7 +316,8 @@
 
     private void OnRowClick(DataGridRowClickEventArgs<PaymentDto> args)
     {
-        Navigation.NavigateTo($"/payments/{args.Item.Id}");
+        if (args.MouseEventArgs.Detail == 2)
+            Navigation.NavigateTo($"/payments/{args.Item.Id}");
     }
 
     private async Task OpenCreateDialog()

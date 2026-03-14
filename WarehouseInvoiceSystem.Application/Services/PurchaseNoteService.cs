@@ -153,13 +153,9 @@
             PurchaseNote? purchaseNote = await purchaseNoteRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
 
-            if (purchaseNote.Status == PurchaseNoteStatus.Paid)
+            if (purchaseNote.Status != PurchaseNoteStatus.Draft)
                 throw new InvalidOperationException(
-                    $"Purchase note {purchaseNote.NoteNumber} is Paid and cannot be edited.");
-
-            if (purchaseNote.Status == PurchaseNoteStatus.Cancelled)
-                throw new InvalidOperationException(
-                    $"Purchase note {purchaseNote.NoteNumber} is Cancelled and cannot be edited.");
+                    $"Purchase note {purchaseNote.NoteNumber} cannot be fully edited (current: {purchaseNote.Status}). Only Draft notes can be edited.");
 
             if (!await individualRepository.ExistsAsync(updateDto.IndividualId))
                 throw new KeyNotFoundException($"Individual with ID {updateDto.IndividualId} not found");
@@ -330,6 +326,19 @@
             }
 
             return MapToDto(note);
+        }
+
+        public async Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default)
+        {
+            PurchaseNote? purchaseNote = await purchaseNoteRepository.GetByIdAsync(id, ct)
+                ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
+
+            if (purchaseNote.Status != PurchaseNoteStatus.Pending)
+                throw new InvalidOperationException(
+                    $"Notes can only be updated on a Pending purchase note (current: {purchaseNote.Status}).");
+
+            purchaseNote.Notes = notes;
+            await purchaseNoteRepository.UpdateAsync(purchaseNote);
         }
 
         // ── Delete ────────────────────────────────────────────────────────────────────

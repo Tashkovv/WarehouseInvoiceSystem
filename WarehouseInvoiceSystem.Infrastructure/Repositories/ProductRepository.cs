@@ -103,7 +103,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task UpdateAsync(Product product) =>
             WithContextAsync(async context =>
             {
-                context.Products.Update(product);
+                Product? tracked = await context.Products.FindAsync(product.Id)
+                    ?? throw new KeyNotFoundException($"Product {product.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(product);
                 await SaveAsync(context);
             });
 

@@ -924,10 +924,17 @@ html {
         outline-width: 2.5px;
     }
 
+    /* Restore outline when a child button receives focus (MudBlazor resets outline:0) */
+    .wis-split-btn:focus-within {
+        outline: 1.5px solid var(--wis-btn-clr);
+        outline-offset: -2.5px;
+    }
+
 /* Primary section (left side of split, or the whole button when solo) */
 .wis-split-btn__primary {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     height: 100%;
     padding: 0 12px;
@@ -964,6 +971,11 @@ html {
     .wis-split-btn__primary--solo:hover:not(:disabled) {
         background: rgb(var(--wis-btn-clr-rgb));
         outline-width: 2.5px;
+    }
+
+    .wis-split-btn__primary--solo:focus {
+        outline: 1.5px solid var(--wis-btn-clr);
+        outline-offset: -2.5px;
     }
 
     .wis-split-btn__primary--solo .wis-split-btn__icon .mud-icon-root {
@@ -1187,7 +1199,6 @@ html {
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    gap: 32px;
     padding-left: 24px;
 }
 
@@ -1327,6 +1338,17 @@ html {
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.72rem !important;
+}
+
+.wis-notes-input fieldset {
+    border-radius: 28px !important;
+    border-color: var(--mud-palette-secondary) !important;
+}
+
+/* Medium-size override for page-level action buttons (create/edit pages) */
+.wis-page-actions .wis-split-btn,
+.wis-page-actions .wis-split-btn__primary--solo {
+    height: 40px;
 }
 
 .wis-capitalize {

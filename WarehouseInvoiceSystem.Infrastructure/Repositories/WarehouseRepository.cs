@@ -70,7 +70,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task UpdateAsync(Warehouse warehouse) =>
             WithContextAsync(async context =>
             {
-                context.Warehouses.Update(warehouse);
+                Warehouse? tracked = await context.Warehouses.FindAsync(warehouse.Id)
+                    ?? throw new KeyNotFoundException($"Warehouse {warehouse.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(warehouse);
                 await SaveAsync(context);
             });
 

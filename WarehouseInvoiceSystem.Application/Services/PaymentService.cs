@@ -139,7 +139,7 @@
             }
             else
             {
-                invoice.Status = InvoiceStatus.Sent; // or whatever the previous status was
+                invoice.Status = InvoiceStatus.Sent;
             }
 
             await invoiceRepository.UpdateAsync(invoice);

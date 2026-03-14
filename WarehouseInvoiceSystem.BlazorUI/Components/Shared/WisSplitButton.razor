@@ -14,9 +14,12 @@
                         disabled="@PrimaryAction.Disabled"
                         title="@(PrimaryAction.Disabled? PrimaryAction.DisabledReason ?? string.Empty : string.Empty)"
                         @onclick="PrimaryAction.OnClick">
-                    <span class="wis-split-btn__icon">
-                        <MudIcon Icon="@PrimaryAction.Icon" Size="Size.Small" />
-                    </span>
+                    @if (!string.IsNullOrEmpty(PrimaryAction.Icon))
+                    {
+                        <span class="wis-split-btn__icon">
+                            <MudIcon Icon="@PrimaryAction.Icon" Size="Size.Small" />
+                        </span>
+                    }
                     <span>@PrimaryAction.Label</span>
                 </button>
 

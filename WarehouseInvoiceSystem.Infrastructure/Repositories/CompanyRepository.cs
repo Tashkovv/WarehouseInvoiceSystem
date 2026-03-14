@@ -74,7 +74,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task UpdateAsync(Company company) =>
             WithContextAsync(async context =>
             {
-                context.Companies.Update(company);
+                Company? tracked = await context.Companies.FindAsync(company.Id)
+                    ?? throw new KeyNotFoundException($"Company {company.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(company);
                 await SaveAsync(context);
             });
 
@@ -127,10 +129,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
                 string search = $"%{query.Search}%";
-                q = q.Where(c =>
-                    EF.Functions.ILike(c.Name, search) ||
-                    (c.ContactPerson != null && EF.Functions.ILike(c.ContactPerson, search)) ||
-                    (c.Email != null && EF.Functions.ILike(c.Email, search)));
+                q = query.SearchByNameOnly
+                    ? q.Where(c => EF.Functions.ILike(c.Name, search))
+                    : q.Where(c =>
+                        EF.Functions.ILike(c.Name, search) ||
+                        (c.ContactPerson != null && EF.Functions.ILike(c.ContactPerson, search)) ||
+                        (c.Email != null && EF.Functions.ILike(c.Email, search)));
             }
 
             return q;

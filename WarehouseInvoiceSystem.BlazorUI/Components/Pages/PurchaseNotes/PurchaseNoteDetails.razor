@@ -67,17 +67,50 @@ else
 
                         </div>
 
-                        @if (!string.IsNullOrWhiteSpace(_note.Notes))
+                        @if (!string.IsNullOrWhiteSpace(_note.Notes) || _note.Status == PurchaseNoteStatus.Pending)
                         {
                             <div class="wis-contact-row-divider"></div>
                             <div class="wis-contact-row-right">
-                                <div class="d-flex align-start gap-2">
-                                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" Class="mt-1" />
-                                    <div>
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Notes")</MudText>
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="line-height: 1.6;">@_note.Notes</MudText>
+                                @if (_note.Status == PurchaseNoteStatus.Pending && _notesEditMode)
+                                {
+                                    <div class="d-flex align-center gap-1 mb-0">
+                                        <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                       Size="Size.Small"
+                                                       Title="@Localization.GetString("Cancel")"
+                                                       OnClick="CancelNotesEdit"
+                                                       Disabled="@_notesSaving" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                                       Size="Size.Small"
+                                                       Color="Color.Primary"
+                                                       Title="@Localization.GetString("Save")"
+                                                       OnClick="SaveNotes"
+                                                       Disabled="@_notesSaving" />
                                     </div>
-                                </div>
+                                    <MudTextField @bind-Value="_notesEditValue"
+                                                  Variant="Variant.Outlined"
+                                                  FullWidth="true"
+                                                  Margin="Margin.Dense"
+                                                  Class="mt-0 wis-notes-input" />
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-center gap-1 mb-0">
+                                        <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" />
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
+                                        @if (_note.Status == PurchaseNoteStatus.Pending)
+                                        {
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                           Size="Size.Small"
+                                                           Title="@Localization.GetString("Edit")"
+                                                           OnClick="StartNotesEdit" />
+                                        }
+                                    </div>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
+                                        @(string.IsNullOrWhiteSpace(_note.Notes) ? "—" : _note.Notes)
+                                    </MudText>
+                                }
                             </div>
                         }
                     </div>
@@ -172,6 +205,11 @@ else
     private List<WisDetailActionItem> _actions = [];
     private WisActionItem _act = null!;
 
+    // Inline notes editing (Pending status only)
+    private bool _notesEditMode;
+    private bool _notesSaving;
+    private string? _notesEditValue;
+
     protected override async Task OnInitializedAsync()
     {
         _act = new WisActionItem(this);
@@ -226,7 +264,6 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("MarkAsPaid"), MarkAsPaid);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Edit,   Localization.GetString("Edit"),   GoToEdit),
                     _act.Primary(Icons.Material.Filled.Undo,   Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,   Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
@@ -347,6 +384,41 @@ else
         {
             Console.WriteLine($"Error cancelling purchase note: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+        }
+    }
+
+    // ── Inline notes editing ──────────────────────────────────────────────────
+
+    private void StartNotesEdit()
+    {
+        _notesEditValue = _note?.Notes;
+        _notesEditMode = true;
+    }
+
+    private void CancelNotesEdit()
+    {
+        _notesEditMode = false;
+        _notesEditValue = null;
+    }
+
+    private async Task SaveNotes()
+    {
+        if (_note is null) return;
+        _notesSaving = true;
+        try
+        {
+            await PurchaseNoteService.UpdateNotesAsync(Id, _notesEditValue, _cts.Token);
+            _note.Notes = _notesEditValue;
+            _notesEditMode = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating notes: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+        }
+        finally
+        {
+            _notesSaving = false;
         }
     }
 

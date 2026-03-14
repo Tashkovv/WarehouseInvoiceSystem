@@ -238,6 +238,19 @@
             await invoiceRepository.UpdateAsync(invoice);
         }
 
+        public async Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id, ct)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status != InvoiceStatus.Sent)
+                throw new InvalidOperationException(
+                    $"Notes can only be updated on a Sent invoice (current: {invoice.Status}).");
+
+            invoice.Notes = notes;
+            await invoiceRepository.UpdateAsync(invoice);
+        }
+
         // ── Delete ────────────────────────────────────────────────────────────────────
 
         public async Task<bool> DeleteInvoiceAsync(Guid id)

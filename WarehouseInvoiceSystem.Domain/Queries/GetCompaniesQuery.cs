@@ -7,5 +7,6 @@
     {
         public CompanyType? Type { get; set; }
         public bool? IsActive { get; set; }
+        public bool SearchByNameOnly { get; set; }
     }
 }

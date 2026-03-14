@@ -105,6 +105,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .Include(i => i.Payments)
+                    .Include(i => i.Warehouse)
                     .FirstOrDefaultAsync(i => i.Id == id, ct));
 
         public Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber, CancellationToken ct = default) =>
@@ -172,7 +173,25 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<Invoice> UpdateAsync(Invoice invoice) =>
             WithContextAsync(async context =>
             {
-                context.Invoices.Update(invoice);
+                Invoice? tracked = await context.Invoices.FindAsync(invoice.Id)
+                    ?? throw new KeyNotFoundException($"Invoice {invoice.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(invoice);
+
+                foreach (InvoiceLine li in invoice.LineItems)
+                {
+                    if (li.Id == Guid.Empty)
+                    {
+                        li.InvoiceId = invoice.Id;
+                        context.InvoiceLines.Add(li);
+                    }
+                    else
+                    {
+                        InvoiceLine? trackedLine = await context.InvoiceLines.FindAsync(li.Id);
+                        if (trackedLine is not null)
+                            context.Entry(trackedLine).CurrentValues.SetValues(li);
+                    }
+                }
+
                 await SaveAsync(context);
 
                 return (await All<Invoice>(context)
@@ -312,8 +331,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             if (query.WarehouseId.HasValue)
                 q = q.Where(li => li.Invoice.WarehouseId == query.WarehouseId.Value);
 
-            if (!string.IsNullOrWhiteSpace(query.PartyName))
-                q = q.Where(li => li.Invoice.Company.Name == query.PartyName);
+            if (query.CompanyId.HasValue)
+                q = q.Where(li => li.Invoice.CompanyId == query.CompanyId.Value);
+
+            // Invoices have no individual party — return nothing when filtering by individual
+            if (query.IndividualId.HasValue)
+                return q.Where(_ => false);
 
             if (query.DateFrom.HasValue)
                 q = q.Where(li => li.Invoice.IssueDate >= query.DateFrom.Value.Date);

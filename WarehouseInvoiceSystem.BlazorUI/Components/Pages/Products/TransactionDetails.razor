@@ -3,11 +3,15 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IProductService ProductService
 @inject IInventoryService InventoryService
 @inject IWarehouseService WarehouseService
+@inject ICompanyService CompanyService
+@inject IIndividualService IndividualService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
@@ -44,7 +48,7 @@ else
 
                         <WisAutocompleteFilter TValue="Guid"
                                                Label="@Localization.GetString("AllWarehouses")"
-                                               AllLabel="@Localization.GetString("AllWarehouses")"
+                                               AllLabel="@Localization.GetString("All")"
                                                Icon="@Icons.Material.Filled.Warehouse"
                                                LoadItems="LoadWarehouseItems"
                                                PopoverAnchorOrigin="Origin.BottomRight"
@@ -242,7 +246,30 @@ else
                                                 DatePresetChanged="OnHistoryDatePresetChanged"
                                                 OnChanged="ReloadHistory" />
 
-                            @if (_historyDateRange.Start != null || _historyDateRange.End != null)
+                            @if (_historyMode == HistoryMode.Purchased)
+                            {
+                                <WisAutocompleteFilter TValue="Guid"
+                                                       Label="@Localization.GetString("AllVendors")"
+                                                       AllLabel="@Localization.GetString("AllVendors")"
+                                                       Icon="@Icons.Material.Filled.People"
+                                                       LoadItems="LoadVendorItems"
+                                                       SelectedValue="@(_historyVendorId ?? default)"
+                                                       SelectedValueChanged="@(async (Guid v) => await OnHistoryVendorChanged(v == default ? (Guid?)null : v))"
+                                                       MinWidth="180px" />
+                            }
+                            else
+                            {
+                                <WisAutocompleteFilter TValue="Guid"
+                                                       Label="@Localization.GetString("AllBuyers")"
+                                                       AllLabel="@Localization.GetString("AllBuyers")"
+                                                       Icon="@Icons.Material.Filled.Business"
+                                                       LoadItems="LoadBuyerItems"
+                                                       SelectedValue="@(_historyBuyerId ?? default)"
+                                                       SelectedValueChanged="@(async (Guid v) => await OnHistoryBuyerChanged(v == default ? (Guid?)null : v))"
+                                                       MinWidth="180px" />
+                            }
+
+                            @if (_historyDateRange.Start != null || _historyDateRange.End != null || _historyVendorId.HasValue || _historyBuyerId.HasValue)
                             {
                                 <button type="button"
                                         class="wis-filter-btn wis-filter-btn--clear"
@@ -562,15 +589,94 @@ else
     private DateRange _historyDateRange = new(null, null);
     private int? _historyDatePreset = null;
     private WisDateRangeFilter? _historyDateRangeFilter;
+    // PURCHASED filter state (companies + individuals)
+    private Guid? _historyVendorId;
+    private readonly Dictionary<Guid, bool> _vendorTypeMap = new(); // true = individual
+
+    // SOLD filter state (companies only)
+    private Guid? _historyBuyerId;
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadVendorItems(string search, int page, CancellationToken ct)
+    {
+        Task<PagedResult<CompanyDto>> companiesTask = CompanyService.GetPagedAsync(
+            new GetCompaniesQuery { Search = search, Page = page, PageSize = 10, SortBy = "Name", SortAscending = true, SearchByNameOnly = true }, ct);
+
+        Task<PagedResult<IndividualDto>> individualsTask = IndividualService.GetPagedAsync(
+            new GetIndividualsQuery { Search = search, Page = page, PageSize = 10, SortBy = "LastName", SortAscending = true, SearchByNameOnly = true }, ct);
+
+        await Task.WhenAll(companiesTask, individualsTask);
+
+        PagedResult<CompanyDto> companies = companiesTask.Result;
+        PagedResult<IndividualDto> individuals = individualsTask.Result;
+
+        List<WisAutocompleteItem<Guid>> items = [];
+
+        foreach (CompanyDto c in companies.Items)
+        {
+            _vendorTypeMap[c.Id] = false;
+            items.Add(new WisAutocompleteItem<Guid> { Label = c.Name, Value = c.Id });
+        }
+
+        foreach (IndividualDto i in individuals.Items)
+        {
+            _vendorTypeMap[i.Id] = true;
+            items.Add(new WisAutocompleteItem<Guid> { Label = i.FullName, Value = i.Id });
+        }
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = [.. items.OrderBy(x => x.Label)],
+            TotalCount = companies.TotalCount + individuals.TotalCount,
+            Page = page,
+            PageSize = 20
+        };
+    }
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadBuyerItems(string search, int page, CancellationToken ct)
+    {
+        PagedResult<CompanyDto> companies = await CompanyService.GetPagedAsync(
+            new GetCompaniesQuery { Search = search, Page = page, PageSize = 20, SortBy = "Name", SortAscending = true, SearchByNameOnly = true }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = companies.Items.Select(c => new WisAutocompleteItem<Guid> { Label = c.Name, Value = c.Id }).ToList(),
+            TotalCount = companies.TotalCount,
+            Page = companies.Page,
+            PageSize = companies.PageSize
+        };
+    }
+
+    private async Task OnHistoryVendorChanged(Guid? vendorId)
+    {
+        _historyVendorId = vendorId;
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
+
+    private async Task OnHistoryBuyerChanged(Guid? buyerId)
+    {
+        _historyBuyerId = buyerId;
+        if (_historyTable is not null)
+            await _historyTable.ReloadServerData();
+    }
 
     private async Task<TableData<ProductTransactionRowDto>> LoadHistoryServerData(TableState state, CancellationToken ct)
     {
+        bool vendorIsIndividual = _historyVendorId.HasValue
+            && _vendorTypeMap.TryGetValue(_historyVendorId.Value, out bool isInd) && isInd;
+
         PagedResult<ProductTransactionRowDto> result = await ProductService.GetPagedProductHistoryAsync(
             new GetProductHistoryQuery
             {
                 ProductId = Id,
                 WarehouseId = _selectedWarehouseId,
                 Purchased = _historyMode == HistoryMode.Purchased,
+                CompanyId = _historyMode == HistoryMode.Sold
+                    ? _historyBuyerId
+                    : (_historyVendorId.HasValue && !vendorIsIndividual ? _historyVendorId : null),
+                IndividualId = _historyMode == HistoryMode.Purchased && vendorIsIndividual
+                    ? _historyVendorId
+                    : null,
                 DateFrom = _historyDateRange.Start,
                 DateTo = _historyDateRange.End,
                 Page = state.Page + 1,
@@ -586,7 +692,10 @@ else
 
     private async Task SetHistoryMode(HistoryMode mode)
     {
+        if (_historyMode == mode) return;
         _historyMode = mode;
+        _historyVendorId = null;
+        _historyBuyerId = null;
         if (_historyTable is not null)
             await _historyTable.ReloadServerData();
     }
@@ -613,6 +722,8 @@ else
     {
         _historyDateRange = new(null, null);
         _historyDatePreset = null;
+        _historyVendorId = null;
+        _historyBuyerId = null;
         if (_historyDateRangeFilter is not null)
             await _historyDateRangeFilter.ClearAsync();
         if (_historyTable is not null)

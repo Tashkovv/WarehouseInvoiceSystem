@@ -86,7 +86,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task UpdateAsync(Individual individual) =>
             WithContextAsync(async context =>
             {
-                context.Individuals.Update(individual);
+                Individual? tracked = await context.Individuals.FindAsync(individual.Id)
+                    ?? throw new KeyNotFoundException($"Individual {individual.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(individual);
                 await SaveAsync(context);
             });
 
@@ -124,10 +126,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             if (!string.IsNullOrWhiteSpace(query.Search))
             {
                 string search = $"%{query.Search}%";
-                q = q.Where(i =>
-                    EF.Functions.ILike(i.FirstName, search) ||
-                    EF.Functions.ILike(i.LastName, search) ||
-                    EF.Functions.ILike(i.IdentificationNumber, search));
+                q = query.SearchByNameOnly
+                    ? q.Where(i =>
+                        EF.Functions.ILike(i.FirstName + " " + i.LastName, search) ||
+                        EF.Functions.ILike(i.LastName + " " + i.FirstName, search))
+                    : q.Where(i =>
+                        EF.Functions.ILike(i.FirstName + " " + i.LastName, search) ||
+                        EF.Functions.ILike(i.LastName + " " + i.FirstName, search) ||
+                        EF.Functions.ILike(i.IdentificationNumber, search));
             }
 
             return q;

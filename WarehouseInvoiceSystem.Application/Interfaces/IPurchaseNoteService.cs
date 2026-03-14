@@ -17,6 +17,7 @@
         Task<IEnumerable<PurchaseNoteDto>> GetPurchaseNotesByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default);
         Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto);
         Task UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto);
+        Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
 
         /// <summary>Receive goods: Draft → Pending. Creates inventory transactions.</summary>
         Task<PurchaseNoteDto> ReceiveAsync(Guid id);

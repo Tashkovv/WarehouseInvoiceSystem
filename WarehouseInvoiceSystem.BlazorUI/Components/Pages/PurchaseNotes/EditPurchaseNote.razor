@@ -1,9 +1,12 @@
-﻿@page "/purchase-notes/edit/{Id:guid}"
+@page "/purchase-notes/edit/{Id:guid}"
+@implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Enums
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IIndividualService IndividualService
 @inject IProductService ProductService
@@ -14,14 +17,7 @@
 
 <PageTitle>@Localization.GetString("EditPurchaseNote") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div class="d-flex justify-space-between align-center mb-4">
-    <MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("EditPurchaseNote")</MudText>
-    <MudButton StartIcon="@Icons.Material.Filled.ArrowBack"
-               Variant="Variant.Text"
-               Href="/purchase-notes">
-        @Localization.GetString("BackToPurchaseNotes")
-    </MudButton>
-</div>
+<WisDetailHeader BackHref="/purchase-notes" BackLabel="@Localization.GetString("PurchaseNotes")" />
 
 @if (_loading)
 {
@@ -31,7 +27,7 @@ else if (_model == null)
 {
     <MudAlert Severity="Severity.Error">@Localization.GetString("PurchaseNoteNotFound")</MudAlert>
 }
-else if (_model.Status == PurchaseNoteStatus.Paid || _model.Status == PurchaseNoteStatus.Cancelled)
+else if (_model.Status != PurchaseNoteStatus.Draft)
 {
     <MudAlert Severity="Severity.Warning" Class="mb-4">
         @Localization.GetString("PurchaseNoteNotEditable")
@@ -45,11 +41,19 @@ else if (_model.Status == PurchaseNoteStatus.Paid || _model.Status == PurchaseNo
 else
 {
     <MudCard Elevation="2" Class="mb-4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <MudText Typo="Typo.h6">@Localization.GetString("PurchaseNoteInformation")</MudText>
+            </CardHeaderContent>
+            <CardHeaderActions>
+                <MudChip T="string" Size="Size.Medium">@_model.NoteNumber</MudChip>
+            </CardHeaderActions>
+        </MudCardHeader>
         <MudCardContent>
             <MudForm @ref="_form" @bind-IsValid="@_isValid">
                 <MudGrid>
                     <!-- Individual Selection -->
-                    <MudItem xs="12" md="6">
+                    <MudItem xs="12" md="4">
                         <MudAutocomplete T="IndividualDto"
                                          Label="@Localization.GetString("Individual")"
                                          @bind-Value="_selectedIndividual"
@@ -73,7 +77,7 @@ else
                     </MudItem>
 
                     <!-- Warehouse Selection -->
-                    <MudItem xs="12" md="6">
+                    <MudItem xs="12" md="4">
                         <MudAutocomplete T="WarehouseDto"
                                          Label="@Localization.GetString("Warehouse")"
                                          @bind-Value="_selectedWarehouse"
@@ -81,13 +85,15 @@ else
                                          ToStringFunc="@(w => w?.Name ?? "")"
                                          ResetValueOnEmptyText="true"
                                          Variant="Variant.Outlined"
+                                         RequiredError="@Localization.GetString("WarehouseRequired")"
                                          CoerceText="false"
+                                         Required="true"
                                          Clearable="true">
                         </MudAutocomplete>
                     </MudItem>
 
                     <!-- Purchase Date -->
-                    <MudItem xs="12" md="6">
+                    <MudItem xs="12" md="4">
                         <MudDatePicker @bind-Date="_purchaseDate"
                                        Label="@Localization.GetString("PurchaseDate")"
                                        Variant="Variant.Outlined"
@@ -105,143 +111,96 @@ else
                 </MudGrid>
 
                 <!-- Line Items -->
-                <MudDivider Class="my-6" />
-                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("Products")</MudText>
+                <MudDivider Class="my-4" />
+                <div class="d-flex justify-space-between align-center mb-2">
+                    <MudText Typo="Typo.h6">@Localization.GetString("Products")</MudText>
+                    <WisButton Action="@_addLineItemAction" />
+                </div>
 
-                @if (_model.Status == PurchaseNoteStatus.Pending)
-                {
-                    <MudAlert Severity="Severity.Info" Class="mb-4">
-                        @Localization.GetString("LineItemsLockedPending")
-                    </MudAlert>
-                    @foreach (var item in _lineItems)
-                    {
-                        <MudPaper Class="pa-3 mb-2" Elevation="0" Style="border: 1px solid rgba(0,0,0,0.12);">
-                            <MudText Typo="Typo.body2">
-                                <strong>@item.SelectedProduct?.Code</strong> — @item.SelectedProduct?.Name
-                                &nbsp;|&nbsp; @item.Quantity × @item.UnitPrice.ToString("C")
-                                &nbsp;= <strong>@((item.Quantity * item.UnitPrice).ToString("C"))</strong>
+                <MudTable Items="_lineItems" Dense="true" Hover="true" Elevation="0" Class="mb-2">
+                    <HeaderContent>
+                        <MudTh>@Localization.GetString("Product")</MudTh>
+                        <MudTh Style="width:140px">@Localization.GetString("Quantity")</MudTh>
+                        <MudTh Style="width:185px">@Localization.GetString("UnitPrice")</MudTh>
+                        <MudTh Style="width:200px" Class="text-right">@Localization.GetString("Amount")</MudTh>
+                        <MudTh Style="width:48px"></MudTh>
+                    </HeaderContent>
+                    <RowTemplate Context="item">
+                        <MudTd>
+                            <MudAutocomplete T="ProductDto"
+                                             Value="item.SelectedProduct"
+                                             SearchFunc="@SearchProducts"
+                                             ToStringFunc="@(p => p?.Name ?? "")"
+                                             ValueChanged="@((ProductDto p) => OnProductSelected(item, p))"
+                                             ResetValueOnEmptyText="true"
+                                             CoerceText="false"
+                                             Variant="Variant.Text"
+                                             Clearable="true"
+                                             FullWidth="true">
+                                <ItemTemplate Context="product">
+                                    <MudText Typo="Typo.body2">
+                                        <strong>@product.Code</strong> - @product.Name
+                                    </MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @product.Unit | @product.DefaultPrice.ToString("C")
+                                    </MudText>
+                                </ItemTemplate>
+                            </MudAutocomplete>
+                        </MudTd>
+                        <MudTd>
+                            <MudNumericField T="int"
+                                             @bind-Value="item.Quantity"
+                                             @bind-Value:after="CalculateTotals"
+                                             Variant="Variant.Text"
+                                             Min="1"
+                                             Step="1" />
+                        </MudTd>
+                        <MudTd>
+                            <MudNumericField @bind-Value="item.UnitPrice"
+                                             @bind-Value:after="CalculateTotals"
+                                             Variant="Variant.Text"
+                                             Format="N2"
+                                             Min="0m"
+                                             TextUpdateSuppression="false"
+                                             Adornment="Adornment.End"
+                                             AdornmentText="@Localization.CurrencySymbol" />
+                        </MudTd>
+                        <MudTd Class="text-right">
+                            <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers">
+                                @((item.Quantity * item.UnitPrice).ToString("C"))
                             </MudText>
-                        </MudPaper>
-                    }
-                }
-                else
-                {
-                    @foreach (var item in _lineItems)
-                    {
-                        <MudPaper Class="pa-4 mb-4" Elevation="1">
-                            <MudGrid>
-                                <MudItem xs="12" md="5">
-                                    <MudAutocomplete T="ProductDto"
-                                                     Label="@Localization.GetString("Product")"
-                                                     Value="item.SelectedProduct"
-                                                     SearchFunc="@SearchProducts"
-                                                     ToStringFunc="@(p => p?.Name ?? "")"
-                                                     ValueChanged="@((ProductDto p) => OnProductSelected(item, p))"
-                                                     Required="true"
-                                                     ResetValueOnEmptyText="true"
-                                                     CoerceText="false"
-                                                     Variant="Variant.Outlined"
-                                                     RequiredError="@Localization.GetString("PleaseSelectProduct")"
-                                                     Clearable="true">
-                                        <ItemTemplate Context="product">
-                                            <MudText Typo="Typo.body2">
-                                                <strong>@product.Code</strong> - @product.Name
-                                            </MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                @product.Unit | @product.DefaultPrice.ToString("C")
-                                            </MudText>
-                                        </ItemTemplate>
-                                    </MudAutocomplete>
-                                </MudItem>
-
-                                <MudItem xs="6" md="2">
-                                    <MudNumericField T="int"
-                                                     @bind-Value="item.Quantity"
-                                                     @bind-Value:after="CalculateTotals"
-                                                     Label="@Localization.GetString("Quantity")"
-                                                     Min="1"
-                                                     Step="1"
-                                                     Required="true"
-                                                     RequiredError="@Localization.GetString("EnterQuantity")"
-                                                     Variant="Variant.Outlined" />
-                                </MudItem>
-
-                                <MudItem xs="6" md="2">
-                                    <MudNumericField @bind-Value="item.UnitPrice"
-                                                     @bind-Value:after="CalculateTotals"
-                                                     Label="@Localization.GetString("UnitPrice")"
-                                                     Format="N2"
-                                                     Min="0m"
-                                                     Required="true"
-                                                     RequiredError="@Localization.GetString("EnterUnitPrice")"
-                                                     TextUpdateSuppression="false"
-                                                     Variant="Variant.Outlined"
-                                                     Adornment="Adornment.End"
-                                                     AdornmentText="@Localization.CurrencySymbol" />
-                                </MudItem>
-
-                                <MudItem xs="10" md="2">
-                                    <MudTextField Value="@((item.Quantity * item.UnitPrice).ToString("C"))"
-                                                  Label="@Localization.GetString("Amount")"
-                                                  Variant="Variant.Outlined"
-                                                  ReadOnly="true" />
-                                </MudItem>
-
-                                <MudItem xs="2" md="1" Class="d-flex align-center justify-center">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                   Color="Color.Error"
-                                                   OnClick="@(() => RemoveLineItem(item))"
-                                                   Size="Size.Small" />
-                                </MudItem>
-                            </MudGrid>
-                        </MudPaper>
-                    }
-
-                    <MudButton StartIcon="@Icons.Material.Filled.Add"
-                               Color="Color.Info"
-                               Variant="Variant.Outlined"
-                               OnClick="AddLineItem"
-                               Class="mb-4">
-                        @Localization.GetString("AddProduct")
-                    </MudButton>
-                }
+                        </MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           OnClick="@(() => RemoveLineItem(item))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <NoRecordsContent>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                            @Localization.GetString("AddLineItems")
+                        </MudText>
+                    </NoRecordsContent>
+                </MudTable>
 
                 <!-- Totals -->
-                <MudDivider Class="my-6" />
-                <MudGrid>
-                    <MudItem xs="12" Class="d-flex justify-end">
-                        <MudStack Spacing="2" Style="min-width: 300px;">
-                            <MudText Typo="Typo.h6" Align="Align.Right">
-                                @Localization.GetString("Total"): <strong>@_total.ToString("C")</strong>
-                            </MudText>
-                        </MudStack>
-                    </MudItem>
-                </MudGrid>
+                <MudDivider Class="my-3" />
+                <div class="d-flex justify-end gap-4 px-2 pb-1">
+                    <div class="d-flex align-center gap-2">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Total"):</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary" Class="font-weight-bold tabular-numbers">@_total.ToString("C")</MudText>
+                    </div>
+                </div>
             </MudForm>
         </MudCardContent>
     </MudCard>
     <!-- Actions -->
     <MudItem xs="12">
-        <div class="d-flex justify-end gap-2">
-            <MudButton Variant="Variant.Outlined"
-                       OnClick="Cancel"
-                       Disabled="@_saving">
-                @Localization.GetString("Cancel")
-            </MudButton>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="SaveNote"
-                       Disabled="@(_saving || !_lineItems.Any())">
-                @if (_saving)
-                {
-                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">@Localization.GetString("Saving")</MudText>
-                }
-                else
-                {
-                    @Localization.GetString("Save")
-                }
-            </MudButton>
+        <div class="d-flex justify-space-between wis-page-actions">
+            <WisDialogActions OnCancel="Cancel"
+                              OnSave="SaveNote"
+                              SaveDisabled="@(_saving || !_isValid || !_lineItems.Any())" />
         </div>
     </MudItem>
 }
@@ -249,11 +208,20 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
+    private readonly CancellationTokenSource _cts = new();
     private MudForm _form = null!;
     private bool _isValid;
     private bool _loading = true;
     private bool _saving;
     private PurchaseNoteDto? _model;
+
+    private WisDetailActionItem _addLineItemAction => new()
+    {
+        Icon = Icons.Material.Filled.Add,
+        Label = Localization.GetString("AddProduct"),
+        Color = Color.Info,
+        OnClick = EventCallback.Factory.Create(this, AddLineItem)
+    };
 
     private IndividualDto? _selectedIndividual;
     private WarehouseDto? _selectedWarehouse;
@@ -261,15 +229,14 @@ else
     private string? _notes;
     private decimal _total = 0;
 
-    private List<IndividualDto> _individuals = [];
-    private List<ProductDto> _products = [];
-    private List<WarehouseDto> _warehouses = [];
     private List<LineItemModel> _lineItems = [];
+
+    // Dirty tracking snapshot
+    private FormSnapshot? _snapshot;
 
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadData();
         await LoadPurchaseNote();
     }
 
@@ -278,24 +245,28 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadData()
+    private async Task<IEnumerable<IndividualDto>> SearchIndividuals(string value, CancellationToken ct)
     {
-        try
-        {
-            IEnumerable<IndividualDto> individuals = await IndividualService.GetActiveIndividualsAsync();
-            _individuals = individuals.ToList();
+        GetIndividualsQuery query = new() { PageSize = 10, IsActive = true };
+        if (!string.IsNullOrWhiteSpace(value)) query.Search = value;
+        PagedResult<IndividualDto> result = await IndividualService.GetPagedAsync(query, ct);
+        return result.Items;
+    }
 
-            IEnumerable<ProductDto> products = await ProductService.GetActiveProductsAsync();
-            _products = products.ToList();
+    private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken ct)
+    {
+        GetProductsQuery query = new() { PageSize = 10, IsActive = true };
+        if (!string.IsNullOrWhiteSpace(value)) query.Search = value;
+        PagedResult<ProductDto> result = await ProductService.GetPagedAsync(query, ct);
+        return result.Items;
+    }
 
-            IEnumerable<WarehouseDto> warehouses = await WarehouseService.GetAllWarehousesAsync();
-            _warehouses = warehouses.ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading data: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingData"), Severity.Error);
-        }
+    private async Task<IEnumerable<WarehouseDto>> SearchWarehouses(string value, CancellationToken ct)
+    {
+        GetWarehousesQuery query = new() { PageSize = 10, IsActive = true };
+        if (!string.IsNullOrWhiteSpace(value)) query.Search = value;
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(query, ct);
+        return result.Items;
     }
 
     private async Task LoadPurchaseNote()
@@ -307,18 +278,18 @@ else
             _model = await PurchaseNoteService.GetPurchaseNoteByIdAsync(Id);
             if (_model != null)
             {
-                _selectedIndividual = _individuals.FirstOrDefault(i => i.Id == _model.IndividualId);
-                _selectedWarehouse = _warehouses.FirstOrDefault(w => w.Id == _model.WarehouseId);
                 _purchaseDate = _model.PurchaseDate;
                 _notes = _model.Notes;
 
-                // Load line items — fall back to a direct lookup for any product
-                // that has been deactivated since the purchase note was created
+                _selectedIndividual = await IndividualService.GetIndividualByIdAsync(_model.IndividualId, _cts.Token);
+
+                if (_model.WarehouseId.HasValue)
+                    _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(_model.WarehouseId.Value, _cts.Token);
+
                 List<LineItemModel> lineItems = [];
                 foreach (PurchaseNoteLineDto li in _model.LineItems)
                 {
-                    ProductDto? product = _products.FirstOrDefault(p => p.Id == li.ProductId)
-                        ?? await ProductService.GetProductByIdAsync(li.ProductId);
+                    ProductDto? product = await ProductService.GetProductByIdAsync(li.ProductId);
                     lineItems.Add(new LineItemModel
                     {
                         Id = li.Id,
@@ -331,6 +302,7 @@ else
                 _lineItems = lineItems;
 
                 CalculateTotals();
+                _snapshot = CaptureSnapshot();
             }
         }
         catch (Exception ex)
@@ -342,35 +314,6 @@ else
         {
             _loading = false;
         }
-    }
-
-    private async Task<IEnumerable<IndividualDto>> SearchIndividuals(string value, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(value))
-            return _individuals;
-
-        return _individuals.Where(i =>
-            i.FullName.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-            i.IdentificationNumber.Contains(value, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(value))
-            return _products;
-
-        return _products.Where(p =>
-            p.Code.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-            p.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private async Task<IEnumerable<WarehouseDto>> SearchWarehouses(string value, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrEmpty(value))
-            return _warehouses;
-
-        return _warehouses.Where(w =>
-            w.Name.Contains(value, StringComparison.OrdinalIgnoreCase));
     }
 
     private void OnProductSelected(LineItemModel item, ProductDto? product)
@@ -401,25 +344,49 @@ else
         StateHasChanged();
     }
 
+    private FormSnapshot CaptureSnapshot() => new(
+        _selectedIndividual?.Id,
+        _selectedWarehouse?.Id,
+        _purchaseDate!.Value.Date,
+        _notes,
+        _lineItems.Select(i => new LineItemSnapshot(i.Id, i.SelectedProduct?.Id, i.Quantity, i.UnitPrice)).ToList()
+    );
+
+    private bool IsUnchanged()
+    {
+        if (_snapshot == null) return false;
+        FormSnapshot current = CaptureSnapshot();
+        return current.IndividualId == _snapshot.IndividualId
+            && current.WarehouseId == _snapshot.WarehouseId
+            && current.PurchaseDate!.Value.Date == _snapshot.PurchaseDate
+            && current.Notes == _snapshot.Notes
+            && current.LineItems.Count == _snapshot.LineItems.Count
+            && current.LineItems.Zip(_snapshot.LineItems).All(pair =>
+                pair.First.Id == pair.Second.Id
+                && pair.First.ProductId == pair.Second.ProductId
+                && pair.First.Quantity == pair.Second.Quantity
+                && pair.First.UnitPrice == pair.Second.UnitPrice);
+    }
+
     private async Task SaveNote()
     {
         await _form.ValidateAsync();
         if (!_isValid || _selectedIndividual == null || _model == null) return;
 
+        if (IsUnchanged())
+        {
+            Snackbar.Add(Localization.GetString("NoChanges"), Severity.Info);
+            return;
+        }
+
         _saving = true;
 
         try
         {
-            if (_selectedWarehouse == null)
-            {
-                Snackbar.Add(Localization.GetString("PleaseSelectWarehouse"), Severity.Warning);
-                return;
-            }
-
             UpdatePurchaseNoteDto dto = new()
             {
                 IndividualId = _selectedIndividual.Id,
-                WarehouseId = _selectedWarehouse.Id,
+                WarehouseId = _selectedWarehouse!.Id,
                 PurchaseDate = _purchaseDate?.Date ?? DateTime.Today,
                 Notes = _notes,
                 LineItems = _lineItems
@@ -453,6 +420,26 @@ else
     {
         Navigation.NavigateTo($"/purchase-notes/{Id}");
     }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private sealed record FormSnapshot(
+        Guid? IndividualId,
+        Guid? WarehouseId,
+        DateTime? PurchaseDate,
+        string? Notes,
+        IReadOnlyList<LineItemSnapshot> LineItems);
+
+    private sealed record LineItemSnapshot(
+        Guid Id,
+        Guid? ProductId,
+        int Quantity,
+        decimal UnitPrice);
 
     private class LineItemModel
     {

@@ -19,6 +19,7 @@
         Task<InvoiceDto?> GetInvoiceByNumberAsync(string invoiceNumber, CancellationToken ct = default);
         Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto);
         Task UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
+        Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
         Task<bool> DeleteInvoiceAsync(Guid id);
 
         // ── Status transitions ──────────────────────────────────────────────────

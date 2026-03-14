@@ -483,3 +483,6 @@ Temporary Items
 # files that are created by appState service in runtime
 /WarehouseInvoiceSystem.API/app-state.json
 /WarehouseInvoiceSystem.BlazorUI/app-state.json
+
+# claude
+.claude/settings.local.json
