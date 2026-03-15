@@ -11,11 +11,11 @@
 
         public InventoryTransactionType Type { get; set; }
 
-        public decimal Quantity { get; set; }  // always positive
+        public decimal Quantity { get; set; } 
 
         public Guid? SourceDocumentId { get; set; }
 
-        public string? SourceDocumentType { get; set; }  // Examples: "Invoice", "ManualAdjustment"
+        public string? SourceDocumentType { get; set; }
 
         public string? Note { get; set; }
 

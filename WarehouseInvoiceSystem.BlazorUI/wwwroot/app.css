@@ -40,8 +40,14 @@
    General utilities
    ============================================= */
 .mud-table-cell.text-right,
+.mud-data-grid-cell.text-right,
+th.text-right,
 .text-right input {
     text-align: right !important;
+}
+
+th.text-right .column-header {
+    justify-content: flex-end !important;
 }
 
 .mud-select .mud-select-input.mud-input-slot {
@@ -136,6 +142,7 @@ html {
 .row-status-info td:first-child,
 .row-status-primary td:first-child,
 .row-status-secondary td:first-child,
+.row-status-tertiary td:first-child,
 .row-status-default td:first-child {
     border-radius: 0 2px 2px 0;
 }
@@ -169,43 +176,52 @@ html {
     border-left: 5px solid var(--mud-palette-secondary) !important;
 }
 
+.row-status-tertiary td:first-child {
+    border-left: 5px solid var(--mud-palette-tertiary) !important;
+}
+
 .row-status-default td:first-child {
     border-left: 5px solid var(--mud-palette-action-disabled) !important;
 }
 
 /* Subtle background tints per status */
 .row-status-success {
-    background-color: rgba(76, 175, 80, 0.07) !important;
+    background-color: rgba(var(--mud-palette-success-rgb), 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-dark {
-    background-color: rgba(30, 30, 30, 0.07) !important;
+    background-color: rgba(var(--mud-palette-dark-rgb), 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-warning {
-    background-color: rgba(255, 152, 0, 0.07) !important;
+    background-color: rgba(var(--mud-palette-warning-rgb), 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-error {
-    background-color: rgba(244, 67, 54, 0.07) !important;
+    background-color: rgba(var(--mud-palette-error-rgb), 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-info {
-    background-color: rgba(33, 150, 243, 0.07) !important;
+    background-color: rgba(var(--mud-palette-info-rgb), 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-primary {
-    background-color: rgba(94, 53, 177, 0.07) !important;
+    background-color: rgba(var(--mud-palette-primary-rgb), 0.07) !important;
     cursor: pointer;
 }
 
 .row-status-secondary {
-    background-color: rgba(156, 39, 176, 0.07) !important;
+    background-color: rgba(var(--mud-palette-secondary-rgb), 0.07) !important;
+    cursor: pointer;
+}
+
+.row-status-tertiary {
+    background-color: rgba(var(--mud-palette-tertiary-rgb), 0.07) !important;
     cursor: pointer;
 }
 
@@ -657,6 +673,10 @@ html {
         border-left: 5px solid var(--mud-palette-secondary) !important;
     }
 
+    .wis-data-grid .mud-table-body tr.row-status-tertiary:hover td:first-child {
+        border-left: 5px solid var(--mud-palette-tertiary) !important;
+    }
+
     .wis-data-grid .mud-table-body tr.row-status-default:hover td:first-child {
         border-left: 5px solid var(--mud-palette-action-disabled) !important;
     }
@@ -888,6 +908,11 @@ html {
 .wis-btn-color--secondary {
     --wis-btn-clr: var(--mud-palette-secondary);
     --wis-btn-clr-rgb: var(--mud-palette-secondary-rgb);
+}
+
+.wis-btn-color--dark {
+    --wis-btn-clr: var(--mud-palette-dark);
+    --wis-btn-clr-rgb: var(--mud-palette-dark-rgb);
 }
 
 .wis-btn-color--success {

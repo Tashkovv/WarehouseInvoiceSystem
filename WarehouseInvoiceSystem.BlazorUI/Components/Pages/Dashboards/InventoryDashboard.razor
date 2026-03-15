@@ -742,17 +742,19 @@ else
 
     private string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
     {
-        InventoryTransactionType.Inbound => $"+{quantity:N2}",
-        InventoryTransactionType.Outbound => $"-{quantity:N2}",
+        InventoryTransactionType.Inbound    => $"+{quantity:N2}",
+        InventoryTransactionType.Outbound   => $"-{quantity:N2}",
         InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
+        InventoryTransactionType.Reversed   => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
         _ => quantity.ToString("N2")
     };
 
     private Color GetQuantityColor(InventoryTransactionType type, decimal quantity) => type switch
     {
-        InventoryTransactionType.Inbound => Color.Success,
-        InventoryTransactionType.Outbound => Color.Error,
+        InventoryTransactionType.Inbound    => Color.Success,
+        InventoryTransactionType.Outbound   => Color.Error,
         InventoryTransactionType.Adjustment => quantity > 0 ? Color.Success : Color.Error,
+        InventoryTransactionType.Reversed   => quantity > 0 ? Color.Success : Color.Error,
         _ => Color.Default
     };
 

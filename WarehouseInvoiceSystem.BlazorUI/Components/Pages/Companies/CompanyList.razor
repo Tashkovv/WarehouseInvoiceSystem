@@ -36,6 +36,7 @@
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterIsActive"
+                           FilterVariant="Variant.Outlined"
                            SelectedValueChanged="OnStatusFilterChanged" />
     </Filters>
 </WisGridToolbar>
@@ -99,9 +100,10 @@
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
+                                 Variant="Variant.Outlined"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ActiveCompany")
-                                                        : Localization.GetString("InactiveCompany"))
+                                                    : Localization.GetString("InactiveCompany"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>

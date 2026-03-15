@@ -205,6 +205,7 @@
                 InventoryTransactionType.Outbound => -transaction.Quantity,
                 InventoryTransactionType.TransferOut => -transaction.Quantity,
                 InventoryTransactionType.Adjustment => transaction.Quantity,
+                InventoryTransactionType.Reversed => transaction.Quantity, // signed: negated at creation
                 _ => 0
             };
 
@@ -227,22 +228,13 @@
 
             foreach (InventoryTransaction original in existing)
             {
-                // Create the mirror-image transaction
-                InventoryTransactionType reversalType = original.Type switch
-                {
-                    InventoryTransactionType.Outbound => InventoryTransactionType.Inbound,
-                    InventoryTransactionType.Inbound => InventoryTransactionType.Outbound,
-                    InventoryTransactionType.TransferIn => InventoryTransactionType.TransferOut,
-                    InventoryTransactionType.TransferOut => InventoryTransactionType.TransferIn,
-                    _ => InventoryTransactionType.Adjustment
-                };
-
+                // Create a Reversed transaction that negates the original's stock effect
                 InventoryTransaction reversal = new()
                 {
                     ProductId = original.ProductId,
                     WarehouseId = original.WarehouseId,
-                    Type = reversalType,
-                    Quantity = original.Quantity,
+                    Type = InventoryTransactionType.Reversed,
+                    Quantity = -ComputeStockChange(original), // signed: undoes the original delta
                     SourceDocumentId = sourceDocumentId,
                     SourceDocumentType = $"{sourceDocumentType}_Reversal",
                     Note = reason
@@ -261,23 +253,30 @@
 
             foreach (InventoryTransaction reversal in reversals)
             {
-                // The reversal cancelled the original stock movement — undoing the reversal
-                // means re-applying the original direction, which is the opposite of the reversal type
+                // Undo the reversal's stock effect by negating it
+                // For new Reversed transactions (signed quantity): negate the quantity
+                // For legacy reversals (flipped-type): use the opposite type
                 InventoryTransactionType restoreType = reversal.Type switch
                 {
-                    InventoryTransactionType.Outbound => InventoryTransactionType.Inbound,
-                    InventoryTransactionType.Inbound => InventoryTransactionType.Outbound,
-                    InventoryTransactionType.TransferIn => InventoryTransactionType.TransferOut,
+                    InventoryTransactionType.Outbound    => InventoryTransactionType.Inbound,
+                    InventoryTransactionType.Inbound     => InventoryTransactionType.Outbound,
+                    InventoryTransactionType.TransferIn  => InventoryTransactionType.TransferOut,
                     InventoryTransactionType.TransferOut => InventoryTransactionType.TransferIn,
-                    _ => InventoryTransactionType.Adjustment
+                    InventoryTransactionType.Reversed    => InventoryTransactionType.Reversed,
+                    _                                    => InventoryTransactionType.Adjustment
                 };
+
+                // Reversed uses signed quantity — negate to undo; all others keep positive quantity
+                decimal restoreQuantity = reversal.Type == InventoryTransactionType.Reversed
+                    ? -reversal.Quantity
+                    : reversal.Quantity;
 
                 await UpdateStockFromTransactionAsync(new InventoryTransaction
                 {
                     ProductId = reversal.ProductId,
                     WarehouseId = reversal.WarehouseId,
                     Type = restoreType,
-                    Quantity = reversal.Quantity
+                    Quantity = restoreQuantity
                 });
             }
         }
@@ -288,10 +287,11 @@
             {
                 Id = stockLevel.Id,
                 ProductId = stockLevel.ProductId,
-                ProductCode = stockLevel.Product?.Code ?? string.Empty,
-                ProductName = stockLevel.Product?.Name ?? string.Empty,
+                ProductCode = stockLevel.Product.Code,
+                ProductName = stockLevel.Product.Name,
+                ProductUnit = stockLevel.Product.Unit,
                 WarehouseId = stockLevel.WarehouseId,
-                WarehouseName = stockLevel.Warehouse?.Name ?? string.Empty,
+                WarehouseName = stockLevel.Warehouse.Name,
                 Quantity = stockLevel.Quantity,
                 ReservedQuantity = stockLevel.ReservedQuantity,
                 AvailableQuantity = stockLevel.AvailableQuantity,
@@ -307,10 +307,10 @@
             {
                 Id = transaction.Id,
                 ProductId = transaction.ProductId,
-                ProductCode = transaction.Product?.Code ?? string.Empty,
-                ProductName = transaction.Product?.Name ?? string.Empty,
+                ProductCode = transaction.Product.Code,
+                ProductName = transaction.Product.Name,
                 WarehouseId = transaction.WarehouseId,
-                WarehouseName = transaction.Warehouse?.Name ?? string.Empty,
+                WarehouseName = transaction.Warehouse.Name,
                 Type = transaction.Type,
                 Quantity = transaction.Quantity,
                 SourceDocumentId = transaction.SourceDocumentId,

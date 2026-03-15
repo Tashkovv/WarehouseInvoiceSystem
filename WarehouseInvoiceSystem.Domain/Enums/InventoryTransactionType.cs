@@ -6,6 +6,7 @@
         Outbound,       // Sale, consumption
         Adjustment,     // Manual correction
         TransferIn,
-        TransferOut
+        TransferOut,
+        Reversed        // Cancellation reversal (signed quantity)
     }
 }

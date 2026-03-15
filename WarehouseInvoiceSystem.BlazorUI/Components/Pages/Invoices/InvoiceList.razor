@@ -38,6 +38,7 @@
                            Items="_typeFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterType"
+                           FilterVariant="Variant.Outlined"
                            SelectedValueChanged="OnTypeFilterChanged" />
         <FilterPopoverList TValue="InvoiceStatus"
                            Label="@Localization.GetString("Status")"
@@ -108,7 +109,6 @@
                      SortMode="SortMode.Single"
                      Class="wis-data-grid">
             <Columns>
-
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
                                 IsEditable="false"
@@ -141,6 +141,7 @@
                                 IsEditable="false">
                     <CellTemplate>
                         <MudChip T="string" Size="Size.Small"
+                                 Variant="Variant.Outlined"
                                  Color="@(context.Item.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
                             @(context.Item.Type == InvoiceType.Receivable
                                                         ? Localization.GetString("Receivable")
@@ -183,6 +184,8 @@
                 <PropertyColumn Property="x => x.TotalAmount"
                                 Title="@Localization.GetString("Total")"
                                 Sortable="true"
+                                HeaderClass="text-right"
+                                CellClass="text-right"
                                 IsEditable="false">
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">

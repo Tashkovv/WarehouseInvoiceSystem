@@ -116,6 +116,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<StockLevel>)await All<StockLevel>(context)
                     .Where(s => s.ProductId == productId)
+                    .Include(s => s.Product)
                     .Include(s => s.Warehouse)
                     .ToListAsync(ct);
             });
@@ -126,6 +127,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<StockLevel>)await All<StockLevel>(context)
                     .Where(s => s.WarehouseId == warehouseId)
                     .Include(s => s.Product)
+                    .Include(s => s.Warehouse)
                     .OrderBy(s => s.Product.Name)
                     .ToListAsync(ct);
             });

@@ -117,6 +117,7 @@ else
                                                Items="_transactionTypeItems"
                                                Mode="FilterSelectionMode.Multiple"
                                                SelectedValues="_movementTypeFilter"
+                                               FilterVariant="Variant.Outlined"
                                                SelectedValuesChanged="OnMovementTypeFilterChanged" />
 
                             @* Date range *@
@@ -161,7 +162,7 @@ else
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("Date")">
                                     <MudText Typo="Typo.body2"
-                                             Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
+                                             Color="Color.Default">
                                         @context.CreatedAt.ToString("dd MMM yyyy HH:mm")
                                     </MudText>
                                 </MudTd>
@@ -169,20 +170,20 @@ else
                                     <MudChip T="string"
                                              Size="Size.Small"
                                              Color="@GetMovementTypeColor(context)"
-                                             Variant="@(IsReversal(context) ? Variant.Text : Variant.Outlined)"
+                                             Variant="Variant.Outlined"
                                              Icon="@GetMovementTypeIcon(context)">
                                         @GetMovementTypeLabel(context)
                                     </MudChip>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Warehouse")">
                                     <MudText Typo="Typo.body2"
-                                             Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
+                                             Color="Color.Default">
                                         @context.WarehouseName
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
-                                             Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
+                                             Color="Color.Default">
                                         @context.Quantity.ToString("N2") @_product!.Unit
                                     </MudText>
                                 </MudTd>
@@ -474,11 +475,12 @@ else
 
     private List<FilterPopoverItem<InventoryTransactionType>> _transactionTypeItems =>
     [
-        new() { Label = Localization.GetString("Inbound"),     Value = InventoryTransactionType.Inbound,     Color = Color.Success },
-        new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Warning },
-        new() { Label = Localization.GetString("Adjustment"),  Value = InventoryTransactionType.Adjustment,  Color = Color.Info    },
-        new() { Label = Localization.GetString("TransferIn"),  Value = InventoryTransactionType.TransferIn,  Color = Color.Primary },
-        new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Default },
+        new() { Label = Localization.GetString("Inbound"),     Value = InventoryTransactionType.Inbound,     Color = Color.Success,  Icon = Icons.Material.Filled.ArrowDownward },
+        new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Warning,  Icon = Icons.Material.Filled.ArrowUpward },
+        new() { Label = Localization.GetString("Adjustment"),  Value = InventoryTransactionType.Adjustment,  Color = Color.Info,     Icon = Icons.Material.Filled.Tune },
+        new() { Label = Localization.GetString("TransferIn"),  Value = InventoryTransactionType.TransferIn,  Color = Color.Tertiary, Icon = Icons.Material.Filled.CallMade },
+        new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Default,  Icon = Icons.Material.Filled.CallReceived },
+        new() { Label = Localization.GetString("Reversed"),    Value = InventoryTransactionType.Reversed,    Color = Color.Dark,     Icon = Icons.Material.Filled.Undo },
     ];
 
     private async Task<TableData<InventoryTransactionDto>> LoadMovementsServerData(TableState state, CancellationToken ct)
@@ -540,46 +542,41 @@ else
 
     // ── Stock Movement helpers ────────────────────────────────────────────────
 
-    private static bool IsReversal(InventoryTransactionDto t) =>
-        t.SourceDocumentType != null && t.SourceDocumentType.EndsWith("_Reversal");
+    private string GetMovementRowClass(InventoryTransactionDto t, int _) => t.Type switch
+    {
+        InventoryTransactionType.Inbound     => "row-status-success",
+        InventoryTransactionType.TransferIn  => "row-status-tertiary",
+        InventoryTransactionType.Outbound    => "row-status-warning",
+        InventoryTransactionType.TransferOut => "row-status-warning",
+        InventoryTransactionType.Adjustment  => "row-status-info",
+        InventoryTransactionType.Reversed    => "row-status-dark",
+        _                                    => ""
+    };
 
-    private string GetMovementRowClass(InventoryTransactionDto t, int _) =>
-        IsReversal(t) ? "row-status-default" : t.Type switch
-        {
-            InventoryTransactionType.Inbound => "row-status-success",
-            InventoryTransactionType.TransferIn => "row-status-success",
-            InventoryTransactionType.Outbound => "row-status-warning",
-            InventoryTransactionType.TransferOut => "row-status-warning",
-            InventoryTransactionType.Adjustment => "row-status-info",
-            _ => ""
-        };
+    private Color GetMovementTypeColor(InventoryTransactionDto t) => t.Type switch
+    {
+        InventoryTransactionType.Inbound     => Color.Success,
+        InventoryTransactionType.TransferIn  => Color.Tertiary,
+        InventoryTransactionType.Outbound    => Color.Warning,
+        InventoryTransactionType.TransferOut => Color.Warning,
+        InventoryTransactionType.Adjustment  => Color.Info,
+        InventoryTransactionType.Reversed    => Color.Dark,
+        _                                    => Color.Default
+    };
 
-    private Color GetMovementTypeColor(InventoryTransactionDto t) =>
-        IsReversal(t) ? Color.Default : t.Type switch
-        {
-            InventoryTransactionType.Inbound => Color.Success,
-            InventoryTransactionType.TransferIn => Color.Success,
-            InventoryTransactionType.Outbound => Color.Warning,
-            InventoryTransactionType.TransferOut => Color.Warning,
-            InventoryTransactionType.Adjustment => Color.Info,
-            _ => Color.Default
-        };
-
-    private string GetMovementTypeIcon(InventoryTransactionDto t) =>
-        IsReversal(t) ? Icons.Material.Filled.Undo : t.Type switch
-        {
-            InventoryTransactionType.Inbound => Icons.Material.Filled.ArrowDownward,
-            InventoryTransactionType.Outbound => Icons.Material.Filled.ArrowUpward,
-            InventoryTransactionType.TransferIn => Icons.Material.Filled.CallReceived,
-            InventoryTransactionType.TransferOut => Icons.Material.Filled.CallMade,
-            InventoryTransactionType.Adjustment => Icons.Material.Filled.Tune,
-            _ => Icons.Material.Filled.SwapVert
-        };
+    private string GetMovementTypeIcon(InventoryTransactionDto t) => t.Type switch
+    {
+        InventoryTransactionType.Inbound     => Icons.Material.Filled.ArrowDownward,
+        InventoryTransactionType.Outbound    => Icons.Material.Filled.ArrowUpward,
+        InventoryTransactionType.TransferIn  => Icons.Material.Filled.CallReceived,
+        InventoryTransactionType.TransferOut => Icons.Material.Filled.CallMade,
+        InventoryTransactionType.Adjustment  => Icons.Material.Filled.Tune,
+        InventoryTransactionType.Reversed    => Icons.Material.Filled.Undo,
+        _                                    => Icons.Material.Filled.SwapVert
+    };
 
     private string GetMovementTypeLabel(InventoryTransactionDto t) =>
-        IsReversal(t)
-            ? Localization.GetString("Reversal")
-            : Localization.GetString(t.Type.ToString());
+        Localization.GetString(t.Type.ToString());
 
     // ── Document History ──────────────────────────────────────────────────────
 

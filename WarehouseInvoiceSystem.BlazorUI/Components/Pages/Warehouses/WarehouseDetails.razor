@@ -115,17 +115,37 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
                                              Color="@GetQuantityColor(context)">
-                                        @context.Quantity.ToString("N2")
+                                        @context.Quantity.ToString("N2") @context.ProductUnit
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Available")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@context.AvailableQuantity.ToString("N2")</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        @context.AvailableQuantity.ToString("N2") @context.ProductUnit
+                                    </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("MinimumQuantity")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@(context.MinimumQuantity?.ToString("N2") ?? "—")</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        @if (context.MinimumQuantity.HasValue)
+                                        {
+                                            @($"{context.MinimumQuantity.Value.ToString("N2")} {context.ProductUnit}")
+                                        }
+                                        else
+                                        {
+                                            <text>—</text>
+                                        }
+                                    </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("ReorderPoint")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@(context.ReorderPoint?.ToString("N2") ?? "—")</MudText>
+                                    <MudText Typo="Typo.body2">
+                                        @if (context.ReorderPoint.HasValue)
+                                        {
+                                            @($"{context.ReorderPoint.Value.ToString("N2")} {context.ProductUnit}")
+                                        }
+                                        else
+                                        {
+                                            <text>—</text>
+                                        }
+                                    </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("LastRestocked")">
                                     <MudText Typo="Typo.body2">@(context.LastRestockedAt.ToString("dd MMM yyyy") ?? "—")</MudText>

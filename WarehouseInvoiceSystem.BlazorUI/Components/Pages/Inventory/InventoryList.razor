@@ -34,7 +34,7 @@
                 @onclick="ToggleLowStockFilter"
                 type="button">
             <span class="wis-filter-btn__icon">
-                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Outlined.WarningAmber" Size="Size.Small" />
             </span>
             <span class="wis-filter-btn__label">@Localization.GetString("LowStock")</span>
         </button>
@@ -101,17 +101,19 @@
                 <PropertyColumn Property="x => x.Quantity"
                                 Title="@Localization.GetString("CurrentStock")"
                                 Sortable="true"
+                                HeaderClass="text-right"
+                                CellClass="text-right"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd" Spacing="1">
                             <MudText Typo="Typo.body2"
                                      Class="wis-cell-amount"
                                      Color="@(IsLowStock(context.Item) ? Color.Error : Color.Default)">
-                                @context.Item.Quantity.ToString("N2")
+                                @context.Item.Quantity.ToString("N2") @context.Item.ProductUnit
                             </MudText>
                             @if (IsLowStock(context.Item))
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.Warning"
+                                <MudIcon Icon="@Icons.Material.Outlined.WarningAmber"
                                          Size="Size.Small"
                                          Color="Color.Error" />
                             }
@@ -122,18 +124,36 @@
                 <PropertyColumn Property="x => x.MinimumQuantity"
                                 Title="@Localization.GetString("MinimumQuantity")"
                                 Sortable="false"
+                                HeaderClass="text-right"
+                                CellClass="text-right"
                                 IsEditable="false">
                     <CellTemplate>
-                        @(context.Item.MinimumQuantity?.ToString("N2") ?? "—")
+                        @if (context.Item.MinimumQuantity.HasValue)
+                        {
+                            @($"{context.Item.MinimumQuantity.Value.ToString("N2")} {context.Item.ProductUnit}")
+                        }
+                        else
+                        {
+                            <text>—</text>
+                        }
                     </CellTemplate>
                 </PropertyColumn>
 
                 <PropertyColumn Property="x => x.ReorderPoint"
                                 Title="@Localization.GetString("ReorderPoint")"
                                 Sortable="false"
+                                HeaderClass="text-right"
+                                CellClass="text-right"
                                 IsEditable="false">
                     <CellTemplate>
-                        @(context.Item.ReorderPoint?.ToString("N2") ?? "—")
+                        @if (context.Item.ReorderPoint.HasValue)
+                        {
+                            @($"{context.Item.ReorderPoint.Value.ToString("N2")} {context.Item.ProductUnit}")
+                        }
+                        else
+                        {
+                            <text>—</text>
+                        }
                     </CellTemplate>
                 </PropertyColumn>
 

@@ -25,6 +25,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
                     .Where(t => t.ProductId == productId)
+                    .Include(t => t.Product)
                     .Include(t => t.Warehouse)
                     .OrderByDescending(t => t.CreatedAt)
                     .ToListAsync(ct);
@@ -35,6 +36,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 IQueryable<InventoryTransaction> q = ApplyFilters(
                     All<InventoryTransaction>(context)
+                        .Include(t => t.Product)
                         .Include(t => t.Warehouse),
                     query);
 
@@ -62,6 +64,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
                     .Where(t => t.WarehouseId == warehouseId)
                     .Include(t => t.Product)
+                    .Include(t => t.Warehouse)
                     .OrderByDescending(t => t.CreatedAt)
                     .ToListAsync(ct);
             });

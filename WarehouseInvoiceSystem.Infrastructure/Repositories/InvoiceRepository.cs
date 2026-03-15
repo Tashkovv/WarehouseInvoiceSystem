@@ -17,6 +17,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(i => i.CreatedAt)
@@ -29,8 +30,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 IQueryable<Invoice> q = ApplyFilters(
                     All<Invoice>(context)
                         .Include(i => i.Company)
-                        .Include(i => i.LineItems)
-                            .ThenInclude(li => li.Product),
+                        .Include(i => i.Warehouse),
                     query);
 
                 q = ApplySort(q, query.SortBy, query.SortAscending);
@@ -57,6 +57,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
                     .Where(i => i.CompanyId == companyId)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(i => i.CreatedAt)
@@ -69,6 +70,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
                     .Where(i => i.Type == type)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .OrderByDescending(i => i.CreatedAt)
                     .ToListAsync(ct);
             });
@@ -79,6 +81,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
                     .Where(i => i.Status == status)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(i => i.CreatedAt)
@@ -94,6 +97,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                 i.Status != InvoiceStatus.Paid &&
                                 i.Status != InvoiceStatus.Cancelled)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .OrderBy(i => i.DueDate)
                     .ToListAsync(ct);
             });
@@ -112,6 +116,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(context =>
                 All<Invoice>(context)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .Include(i => i.Payments)
@@ -196,6 +201,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 return (await All<Invoice>(context)
                     .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
                     .Include(i => i.LineItems)
                         .ThenInclude(li => li.Product)
                     .Include(i => i.Payments)

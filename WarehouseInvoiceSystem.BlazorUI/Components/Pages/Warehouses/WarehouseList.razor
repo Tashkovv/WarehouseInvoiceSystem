@@ -30,6 +30,7 @@
                            Items="_statusFilterItems"
                            Mode="FilterSelectionMode.Single"
                            SelectedValue="_filterIsActive"
+                           FilterVariant="Variant.Outlined"
                            SelectedValueChanged="OnStatusFilterChanged" />
     </Filters>
 </WisGridToolbar>
@@ -87,9 +88,10 @@
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
+                                 Variant="Variant.Outlined"
                                  Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
                             @(context.Item.IsActive ? Localization.GetString("ActiveWarehouse")
-                                                        : Localization.GetString("InactiveWarehouse"))
+                                                    : Localization.GetString("InactiveWarehouse"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -224,7 +226,7 @@
 
     private string GetRowClass(WarehouseDto item, int index) =>
         item.IsActive
-            ? (item.IsDefault ? "row-status-success" : string.Empty)
+            ? (item.IsDefault ? "row-status-info" : string.Empty)
             : "row-status-default";
 
     private async Task OnSearch(string text)

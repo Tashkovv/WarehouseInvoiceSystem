@@ -29,9 +29,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 IQueryable<PurchaseNote> q = ApplyFilters(
                     All<PurchaseNote>(context)
                         .Include(p => p.Individual)
-                        .Include(p => p.Warehouse)
-                        .Include(p => p.LineItems)
-                            .ThenInclude(li => li.Product),
+                        .Include(p => p.Warehouse),
                     query);
 
                 q = ApplySort(q, query.SortBy, query.SortAscending);
@@ -91,6 +89,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                  pn.PurchaseDate.Date <= endDate.Date)
                     .Include(pn => pn.Individual)
                     .Include(pn => pn.Warehouse)
+                    .Include(pn => pn.LineItems)
+                        .ThenInclude(li => li.Product)
                     .OrderByDescending(pn => pn.PurchaseDate)
                     .ToListAsync(ct);
             });
@@ -101,6 +101,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
                     .Where(pn => pn.Status == status)
                     .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(pn => pn.PurchaseDate)

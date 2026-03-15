@@ -204,10 +204,24 @@ else
                                 <MudText Typo="Typo.body2">@context.Description</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
-                                <MudText Typo="Typo.body2" Class="font-weight-medium">
-                                    @context.Quantity.ToString("N2")
-                                    <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">@context.ProductUnit</MudText>
-                                </MudText>
+                                <div class="d-flex align-center justify-end gap-2">
+                                    @if (_stockByProduct.Count > 0)
+                                    {
+                                        decimal avail = _stockByProduct.TryGetValue(context.ProductId, out decimal s) ? s : 0;
+                                        bool ok = avail >= context.Quantity;
+                                        <MudChip T="string"
+                                                 Size="Size.Small"
+                                                 Variant="Variant.Outlined"
+                                                 Color="@(ok ? Color.Success : Color.Warning)"
+                                                 Icon="@(ok ? Icons.Material.Outlined.Inventory2 : Icons.Material.Outlined.WarningAmber)">
+                                            @avail.ToString("N2") @context.ProductUnit
+                                        </MudChip>
+                                    }
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                        @context.Quantity.ToString("N2")
+                                        <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">@context.ProductUnit</MudText>
+                                    </MudText>
+                                </div>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
                                 <MudText Typo="Typo.body2" Color="Color.Dark">@context.UnitPrice.ToString("C")</MudText>
@@ -305,6 +319,7 @@ else
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = [];
     private bool _hasInsufficientStock = false;
+    private Dictionary<Guid, decimal> _stockByProduct = [];
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
@@ -372,6 +387,7 @@ else
 
     private async Task LoadStockAsync()
     {
+        _stockByProduct = [];
         if (_invoice == null || _invoice.Type != InvoiceType.Receivable || _invoice.Status != InvoiceStatus.Draft)
         {
             _hasInsufficientStock = false;
@@ -381,9 +397,9 @@ else
         try
         {
             IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_invoice.WarehouseId, _cts.Token);
-            Dictionary<Guid, decimal> stockByProduct = levels.ToDictionary(s => s.ProductId, s => s.AvailableQuantity);
+            _stockByProduct = levels.ToDictionary(s => s.ProductId, s => s.AvailableQuantity);
             _hasInsufficientStock = _invoice.LineItems.Any(li =>
-                !stockByProduct.TryGetValue(li.ProductId, out decimal available) || li.Quantity > available);
+                !_stockByProduct.TryGetValue(li.ProductId, out decimal available) || li.Quantity > available);
         }
         catch (Exception ex)
         {

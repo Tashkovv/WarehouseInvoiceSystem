@@ -61,7 +61,8 @@
                                 <MudChip T="string"
                                          Size="Size.Small"
                                          Color="item.Color"
-                                         Variant="Variant.Filled"
+                                         Variant="@FilterVariant"
+                                         Icon="@item.Icon"
                                          Class="ma-0">
                                     @item.Label
                                 </MudChip>
@@ -84,7 +85,8 @@
                             <MudChip T="string"
                                      Size="Size.Small"
                                      Color="item.Color"
-                                     Variant="Variant.Filled"
+                                     Variant="@FilterVariant"
+                                     Icon="@item.Icon"
                                      Class="ma-0"
                                      OnClick="@(() => OnMultiValueChanged(item.Value, !isChecked))">
                                 @item.Label
@@ -98,9 +100,7 @@
 </div>
 
 @code {
-    /// <summary>
-    /// When set, renders a labeled pill button instead of a bare icon.
-    /// </summary>
+    /// <summary>  When set, renders a labeled pill button instead of a bare icon. </summary>
     [Parameter]
     public string? Label { get; set; }
 
@@ -124,8 +124,6 @@
     [Parameter]
     public EventCallback<IReadOnlyCollection<TValue>> SelectedValuesChanged { get; set; }
 
-
-
     /// <summary>Controls which edge of the trigger the popover anchors to. Default: BottomLeft.</summary>
     [Parameter]
     public Origin PopoverAnchorOrigin { get; set; } = Origin.BottomLeft;
@@ -133,6 +131,10 @@
     /// <summary>Controls which edge of the popover aligns to the anchor. Default: TopLeft.</summary>
     [Parameter]
     public Origin PopoverTransformOrigin { get; set; } = Origin.TopLeft;
+
+    /// <summary> Controls what is the variant type of the mud chip. Default: Variant.Filled. </summary>
+    [Parameter]
+    public Variant FilterVariant { get; set; } = Variant.Filled;
 
     private bool _open = false;
     private TValue? _singleValue;
