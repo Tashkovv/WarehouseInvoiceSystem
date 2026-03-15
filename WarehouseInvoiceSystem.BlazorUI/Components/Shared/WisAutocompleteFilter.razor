@@ -395,13 +395,15 @@
     public async ValueTask DisposeAsync()
     {
         _debounceTimer?.Dispose();
+        _cts.Cancel();
         _cts.Dispose();
 
         if (_dotNetRef is not null)
         {
-            try { await JS.InvokeVoidAsync("wisAutocomplete.removeScrollListener", _scrollContainerId); }
-            catch (JSDisconnectedException) { /* circuit already gone — expected on page refresh */ }
-            catch { /* any other JS failure during teardown — safe to ignore */ }
+            try { await JS.InvokeVoidAsync("wisAutocomplete.removeScrollListener", _scrollContainerId, CancellationToken.None); }
+            catch (JSDisconnectedException) { }
+            catch (OperationCanceledException) { }
+            catch { }
             _dotNetRef.Dispose();
         }
     }
