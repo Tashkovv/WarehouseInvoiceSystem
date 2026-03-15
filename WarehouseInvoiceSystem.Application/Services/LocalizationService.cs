@@ -596,6 +596,10 @@
                 ["NoProductsInWarehouse"] = "No products in this warehouse",
                 ["SelectWarehouseForThresholds"] = "Select a specific warehouse to edit its thresholds",
                 ["DeactivateWarehouseDisabledTooltip"] = "Warehouse is default or has products in it",
+                ["EditNotAvailable"] = "Only Draft invoices can be edited",
+                ["SendNotAvailable"] = "Not available for this type or status",
+                ["PaymentNotAvailable"] = "Not available for this status",
+                ["DeleteNotAvailable"] = "Only Cancelled invoices can be deleted",
 
                 // Individuals
                 ["Individuals"] = "Individuals",
@@ -1273,6 +1277,10 @@
                 ["NoProductsInWarehouse"] = "Нема производи во овој магацин",
                 ["SelectWarehouseForThresholds"] = "Изберете конкретен магацин за да ги измените праговите",
                 ["DeactivateWarehouseDisabledTooltip"] = "Магацинот е стандарден или содржи производи",
+                ["EditNotAvailable"] = "Само Нацрт фактури може да се уредуваат",
+                ["SendNotAvailable"] = "Не е достапно за овој тип или статус",
+                ["PaymentNotAvailable"] = "Не е достапно за овој статус",
+                ["DeleteNotAvailable"] = "Само Откажани фактури може да се бришат",
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",

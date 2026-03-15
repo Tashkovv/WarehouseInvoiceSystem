@@ -109,6 +109,21 @@
                      Class="wis-data-grid">
             <Columns>
 
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+
                 <PropertyColumn Property="x => x.InvoiceNumber"
                                 Title="@Localization.GetString("InvoiceNumber")"
                                 Sortable="true"
@@ -188,48 +203,6 @@
                     </CellTemplate>
                 </PropertyColumn>
 
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="@_actionsColClass"
-                                CellClass="@_actionsColClass">
-                    <CellTemplate>
-                        <MudStack Row="true" Spacing="0">
-                            @if (context.Item.Status == InvoiceStatus.Draft)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Size="Size.Small"
-                                               Color="Color.Primary"
-                                               Title="@Localization.GetString("Edit")"
-                                               OnClick="@(() => Navigation.NavigateTo($"/invoices/edit/{context.Item.Id}"))" />
-                            }
-                            @if (CanSendEmail(context.Item.Type, context.Item.Status))
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Send"
-                                               Size="Size.Small"
-                                               Color="Color.Info"
-                                               Title="@Localization.GetString("SendEmail")"
-                                               OnClick="@(() => OpenSendEmailDialog(context.Item))" />
-                            }
-                            else if (CanPay(context.Item.Status))
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Payment"
-                                               Size="Size.Small"
-                                               Color="Color.Success"
-                                               Title="@Localization.GetString("RecordPayment")"
-                                               OnClick="@(() => OpenPaymentDialog(context.Item))" />
-                            }
-                            else if (context.Item.Status == InvoiceStatus.Cancelled)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Size="Size.Small"
-                                               Color="Color.Error"
-                                               Title="@Localization.GetString("Delete")"
-                                               OnClick="@(() => DeleteInvoice(context.Item))" />
-                            }
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
 
             </Columns>
 
@@ -262,7 +235,6 @@
 
     private MudDataGrid<InvoiceDto> _grid = null!;
     private bool _exporting = false;
-    private string _actionsColClass = "wis-col-actions-2";
     private string _searchString = string.Empty;
 
     // Quick filters
@@ -384,9 +356,6 @@
         query.SortAscending = ascending;
 
         PagedResult<InvoiceDto> result = await InvoiceService.GetPagedAsync(query, ct);
-
-        int maxActions = result.Items.Any() ? result.Items.Max(GetActionCount) : 0;
-        _actionsColClass = maxActions >= 2 ? "wis-col-actions-2" : "wis-col-actions-1";
 
         return new GridData<InvoiceDto>
         {
@@ -671,6 +640,29 @@
         }
     }
 
+    private async Task CancelInvoice(InvoiceDto invoice)
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("CancelInvoice"),
+            Localization.GetString("CancelInvoiceConfirm"),
+            Localization.GetString("Cancel"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await InvoiceService.CancelAsync(invoice.Id);
+            Snackbar.Add(Localization.GetString("InvoiceCancelled"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+    }
+
     private bool CanPay(InvoiceStatus status) =>
         status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
 
@@ -680,13 +672,73 @@
          status == InvoiceStatus.PartiallyPaid ||
          status == InvoiceStatus.Overdue);
 
-    private static int GetActionCount(InvoiceDto item)
+    private List<WisDetailActionItem> BuildRowActions(InvoiceDto item)
     {
-        bool canSendEmail = item.Type == InvoiceType.Receivable &&
-            (item.Status == InvoiceStatus.Draft || item.Status == InvoiceStatus.PartiallyPaid || item.Status == InvoiceStatus.Overdue);
-        bool canPay = item.Status != InvoiceStatus.Paid && item.Status != InvoiceStatus.Cancelled;
-        bool canDelete = item.Status == InvoiceStatus.Cancelled;
-        return (item.Status == InvoiceStatus.Draft ? 1 : 0) + (canSendEmail || canPay || canDelete ? 1 : 0);
+        bool isCancelled = item.Status == InvoiceStatus.Cancelled;
+        bool canEdit     = item.Status == InvoiceStatus.Draft;
+        bool canSend     = CanSendEmail(item.Type, item.Status);
+        bool canPay      = CanPay(item.Status);
+
+        List<WisDetailActionItem> actions =
+        [
+            new WisDetailActionItem
+            {
+                Icon           = Icons.Material.Filled.Edit,
+                Label          = Localization.GetString("Edit"),
+                Disabled       = !canEdit,
+                DisabledReason = canEdit ? null : Localization.GetString("EditNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/edit/{item.Id}"))
+            },
+            new WisDetailActionItem
+            {
+                Icon           = Icons.Material.Filled.Send,
+                Label          = Localization.GetString("Send"),
+                Color          = Color.Info,
+                Disabled       = !canSend,
+                DisabledReason = canSend ? null : Localization.GetString("SendNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => OpenSendEmailDialog(item))
+            },
+            new WisDetailActionItem
+            {
+                Icon           = Icons.Material.Filled.Payment,
+                Label          = Localization.GetString("Payment"),
+                Color          = Color.Success,
+                Disabled       = !canPay,
+                DisabledReason = canPay ? null : Localization.GetString("PaymentNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => OpenPaymentDialog(item))
+            },
+            new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.ContentCopy,
+                Label   = Localization.GetString("Copy"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
+            },
+        ];
+
+        if (!isCancelled)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon            = Icons.Material.Filled.Cancel,
+                Label           = Localization.GetString("Cancel"),
+                Color           = Color.Error,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => CancelInvoice(item))
+            });
+        }
+        else
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon            = Icons.Material.Filled.Delete,
+                Label           = Localization.GetString("Delete"),
+                Color           = Color.Error,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => DeleteInvoice(item))
+            });
+        }
+
+        return actions;
     }
 
     public void Dispose()
