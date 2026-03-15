@@ -140,7 +140,7 @@ else
                                 <MudTextField @bind-Value="_notes"
                                               Label="@Localization.GetString("Notes")"
                                               Variant="Variant.Outlined"
-                                              Lines="3" />
+                                              Lines="1" />
                             </MudItem>
                         </MudGrid>
                     </MudCardContent>
@@ -159,17 +159,17 @@ else
                         </CardHeaderActions>
                     </MudCardHeader>
                     <MudCardContent>
-                        <MudTable Items="_lineItems" Dense="true" Hover="true" Elevation="0" Class="mb-2">
+                        <MudTable Items="_lineItems" Dense="true" Hover="true" Elevation="0" Class="mb-2" Style="table-layout: fixed; width: 100%" ContainerStyle="overflow: hidden">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
                                 @if (_selectedCompany != null && _selectedType == InvoiceType.Receivable && _lineItems.Any(i => i.SelectedProduct != null))
                                 {
-                                    <MudTh Style="width:120px">@Localization.GetString("Available")</MudTh>
+                                    <MudTh Style="width:7%">@Localization.GetString("Available")</MudTh>
                                 }
-                                <MudTh Style="width:140px">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Style="width:185px">@Localization.GetString("UnitPrice")</MudTh>
-                                <MudTh Style="width:190px">@Localization.GetString("TaxRate")</MudTh>
-                                <MudTh Style="width:200px" Class="text-right">@Localization.GetString("Amount")</MudTh>
+                                <MudTh Style="width:14%" Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Style="width:16%" Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
+                                <MudTh Style="width:16%" Class="text-right">@Localization.GetString("TaxRate")</MudTh>
+                                <MudTh Style="width:17%" Class="text-right">@Localization.GetString("Amount")</MudTh>
                                 <MudTh Style="width:48px"></MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
@@ -236,14 +236,17 @@ else
                                         }
                                     </MudTd>
                                 }
-                                <MudTd>
+                                <MudTd Class="text-right">
                                     <MudNumericField @bind-Value="item.Quantity"
                                                      @bind-Value:after="CalculateTotals"
                                                      Variant="Variant.Text"
                                                      Min="1"
-                                                     Step="1" />
+                                                     Step="1"
+                                                     Class="text-right"
+                                                     Adornment="Adornment.End"
+                                                     AdornmentText="@(item.SelectedProduct?.Unit ?? "")" />
                                 </MudTd>
-                                <MudTd>
+                                <MudTd Class="text-right">
                                     <MudNumericField @bind-Value="item.UnitPrice"
                                                      @bind-Value:after="CalculateTotals"
                                                      Variant="Variant.Text"
@@ -251,6 +254,7 @@ else
                                                      Step="1"
                                                      Format="N2"
                                                      TextUpdateSuppression="false"
+                                                     Class="text-right"
                                                      Adornment="Adornment.End"
                                                      AdornmentText="@Localization.CurrencySymbol" />
                                 </MudTd>
@@ -262,12 +266,13 @@ else
                                                      Max="100"
                                                      Step="0.1m"
                                                      Format="N2"
+                                                     Class="text-right"
                                                      Adornment="Adornment.End"
                                                      AdornmentText="%"
                                                      TextUpdateSuppression="false" />
                                 </MudTd>
                                 <MudTd Class="text-right">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers text-right">
                                         @item.LineTotal.ToString("C")
                                     </MudText>
                                 </MudTd>

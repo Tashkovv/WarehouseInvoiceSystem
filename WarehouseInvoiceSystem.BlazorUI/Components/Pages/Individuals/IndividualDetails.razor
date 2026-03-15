@@ -173,7 +173,7 @@ else
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Number")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Amount")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -183,7 +183,7 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Date")">
                                     <MudText Typo="Typo.body2">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Amount")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">

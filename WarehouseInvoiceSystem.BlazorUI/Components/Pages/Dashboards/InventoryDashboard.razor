@@ -188,8 +188,8 @@ else
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Value")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Value")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
@@ -202,13 +202,13 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
                                              Color="@(item.IsOutOfStock ? Color.Error : item.IsLowStock ? Color.Warning : Color.Default)">
                                         @item.TotalQuantity.ToString("N2") @item.ProductUnit
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Value")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Value")" Class="text-right">
                                     <MudText Typo="Typo.body2">@item.TotalValue.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
@@ -308,8 +308,8 @@ else
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("TotalSpend")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalSpend")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 <MudTd DataLabel="#">
@@ -321,10 +321,10 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">@item.Quantity.ToString("N2") @item.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
                                         @item.TotalValue.ToString("C")
                                     </MudText>
@@ -369,8 +369,8 @@ else
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("TotalRevenue")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalRevenue")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 <MudTd DataLabel="#">
@@ -382,10 +382,10 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">@item.Quantity.ToString("N2") @item.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalRevenue")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("TotalRevenue")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
                                         @item.TotalValue.ToString("C")
                                     </MudText>
@@ -425,7 +425,7 @@ else
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
                                 <MudTh>@Localization.GetString("Note")</MudTh>
                             </HeaderContent>
@@ -454,7 +454,7 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductName</MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ProductCode</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
                                              Color="@GetQuantityColor(context.Type, context.Quantity)">
                                         @GetQuantityText(context.Type, context.Quantity)

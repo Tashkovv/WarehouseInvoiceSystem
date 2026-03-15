@@ -132,29 +132,29 @@ else
                                   Class="wis-secondary-list">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Reserved")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Available")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Minimum")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Reserved")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Available")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Minimum")</MudTh>
                                 <MudTh>@Localization.GetString("LastRestocked")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("Warehouse")">
                                     <MudText Typo="Typo.body2">@context.WarehouseName</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
                                              Color="@(context.Quantity <= context.MinimumQuantity ? Color.Error : Color.Default)">
                                         @context.Quantity.ToString("N2") @_product.Unit
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Reserved")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Reserved")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.ReservedQuantity.ToString("N2") @_product.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Available")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Available")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.AvailableQuantity.ToString("N2") @_product.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Minimum")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Minimum")" Class="text-right">
                                     <MudText Typo="Typo.body2">@(context.MinimumQuantity?.ToString("N2") ?? "0,00") @_product.Unit</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("LastRestocked")">

@@ -155,7 +155,7 @@ else
                                 <MudTh>@Localization.GetString("Date")</MudTh>
                                 <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("Note")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -180,7 +180,7 @@ else
                                         @context.WarehouseName
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
                                              Color="@(IsReversal(context) ? Color.Secondary : Color.Default)">
                                         @context.Quantity.ToString("N2") @_product!.Unit
@@ -298,9 +298,9 @@ else
                                 <MudTh>@Localization.GetString("DocumentNumber")</MudTh>
                                 <MudTh>@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))</MudTh>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("UnitPrice")</MudTh>
-                                <MudTh Style="text-align: right;">@Localization.GetString("Total")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Total")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("Date")">
@@ -315,13 +315,13 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Warehouse")">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@context.WarehouseName</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Quantity")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.Quantity.ToString("N2") @_product!.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Total")" Style="text-align: right;">
+                                <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
                                     <MudText Typo="Typo.body2"
                                              Color="@(_historyMode == HistoryMode.Purchased ? Color.Info : Color.Success)">
                                         @context.TotalPrice.ToString("C")

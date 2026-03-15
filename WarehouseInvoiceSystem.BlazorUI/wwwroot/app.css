@@ -39,6 +39,11 @@
 /* =============================================
    General utilities
    ============================================= */
+.mud-table-cell.text-right,
+.text-right input {
+    text-align: right !important;
+}
+
 .mud-select .mud-select-input.mud-input-slot {
     display: flex !important;
     align-items: center;
