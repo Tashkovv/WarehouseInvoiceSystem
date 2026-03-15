@@ -97,7 +97,8 @@ else
                         <MudDatePicker @bind-Date="_purchaseDate"
                                        Label="@Localization.GetString("PurchaseDate")"
                                        Variant="Variant.Outlined"
-                                       Required="true" />
+                                       Required="true"
+                                       RequiredError="@Localization.GetString("PurchaseDateRequired")" />
                     </MudItem>
 
                     <!-- Notes -->
@@ -283,8 +284,7 @@ else
 
                 _selectedIndividual = await IndividualService.GetIndividualByIdAsync(_model.IndividualId, _cts.Token);
 
-                if (_model.WarehouseId.HasValue)
-                    _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(_model.WarehouseId.Value, _cts.Token);
+                _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(_model.WarehouseId, _cts.Token);
 
                 List<LineItemModel> lineItems = [];
                 foreach (PurchaseNoteLineDto li in _model.LineItems)
@@ -371,7 +371,7 @@ else
     private async Task SaveNote()
     {
         await _form.ValidateAsync();
-        if (!_isValid || _selectedIndividual == null || _model == null) return;
+        if (!_isValid || _model == null) return;
 
         if (IsUnchanged())
         {
@@ -385,7 +385,7 @@ else
         {
             UpdatePurchaseNoteDto dto = new()
             {
-                IndividualId = _selectedIndividual.Id,
+                IndividualId = _selectedIndividual!.Id,
                 WarehouseId = _selectedWarehouse!.Id,
                 PurchaseDate = _purchaseDate?.Date ?? DateTime.Today,
                 Notes = _notes,

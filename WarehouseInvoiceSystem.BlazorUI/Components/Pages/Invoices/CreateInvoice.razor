@@ -95,6 +95,7 @@ else
                                                  @bind-Value="_selectedWarehouse"
                                                  SearchFunc="@SearchWarehouses"
                                                  Required="true"
+                                                 RequiredError="@Localization.GetString("SelectWarehouse")"
                                                  Clearable="true"
                                                  ToStringFunc="@(w => w?.Name ?? string.Empty)"
                                                  ResetValueOnEmptyText="true"
@@ -260,7 +261,7 @@ else
                 <div class="d-flex justify-space-between wis-page-actions">
                     <WisDialogActions OnCancel="@(() => Navigation.NavigateTo("/invoices"))"
                                       OnSave="HandleSubmit"
-                                      SaveDisabled="@(_saving || !_isValid)" />
+                                      SaveDisabled="@(_saving || !_isValid || !_lineItems.Any() || _lineItems.Any(i => i.SelectedProduct == null))" />
                 </div>
             </MudItem>
         </MudGrid>
@@ -268,6 +269,8 @@ else
 }
 
 @code {
+    [Parameter, SupplyParameterFromQuery(Name = "copyFrom")] public Guid? CopyFrom { get; set; }
+
     private readonly CancellationTokenSource _cts = new();
 
     private WisDetailActionItem _addLineItemAction => new()
@@ -286,8 +289,8 @@ else
     private CompanyDto? _selectedCompany;
     private WarehouseDto? _selectedWarehouse;
     private InvoiceType? _selectedType;
-    private DateTime? _issueDate = DateTime.UtcNow;
-    private DateTime? _dueDate = DateTime.UtcNow.AddDays(30);
+    private DateTime? _issueDate = DateTime.Today;
+    private DateTime? _dueDate = DateTime.Today.AddDays(30);
     private int _paymentTermsDays = 30;
     private string? _notes;
 
@@ -299,8 +302,13 @@ else
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadDefaultWarehouse();
-        AddLineItem();
+        if (CopyFrom.HasValue)
+            await PrefillFromInvoice(CopyFrom.Value);
+        else
+        {
+            await LoadDefaultWarehouse();
+            AddLineItem();
+        }
     }
 
     private async void OnLanguageChanged()
@@ -319,6 +327,59 @@ else
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading default warehouse: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task PrefillFromInvoice(Guid sourceId)
+    {
+        _loading = true;
+        try
+        {
+            InvoiceDto? source = await InvoiceService.GetInvoiceByIdAsync(sourceId, _cts.Token);
+            if (source == null)
+            {
+                await LoadDefaultWarehouse();
+                AddLineItem();
+                return;
+            }
+
+            _selectedCompany = await CompanyService.GetCompanyByIdAsync(source.CompanyId, _cts.Token);
+            _selectedType = source.Type;
+            _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(source.WarehouseId, _cts.Token);
+
+            int termsDays = (int)(source.DueDate - source.IssueDate).TotalDays;
+            _paymentTermsDays = termsDays > 0 ? termsDays : 30;
+            _issueDate = DateTime.Today;
+            _dueDate = DateTime.Today.AddDays(_paymentTermsDays);
+            _notes = source.Notes;
+
+            foreach (InvoiceLineDto li in source.LineItems)
+            {
+                ProductDto? product = await ProductService.GetProductByIdAsync(li.ProductId);
+                if (product != null)
+                {
+                    _lineItems.Add(new LineItemModel
+                    {
+                        SelectedProduct = product,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice,
+                        TaxRate = li.TaxRate
+                    });
+                }
+            }
+
+            CalculateTotals();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error prefilling from invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingInvoice"), Severity.Error);
+            AddLineItem();
         }
         finally
         {
@@ -418,47 +479,17 @@ else
 
     private async Task HandleSubmit()
     {
-        if (_selectedCompany == null)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectCompany"), Severity.Warning);
-            return;
-        }
-
-        if (!_selectedType.HasValue)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectType"), Severity.Warning);
-            return;
-        }
-
-        if (_selectedWarehouse == null)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectWarehouse"), Severity.Warning);
-            return;
-        }
-
-        if (!_lineItems.Any() || _lineItems.All(i => i.SelectedProduct == null && string.IsNullOrWhiteSpace(i.Description)))
-        {
-            Snackbar.Add(Localization.GetString("PleaseAddAtLeastOneLineItem"), Severity.Warning);
-            return;
-        }
-
-        if (_lineItems.Any(i => i.SelectedProduct == null))
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectProduct"), Severity.Warning);
-            return;
-        }
-
         _saving = true;
 
         try
         {
             CreateInvoiceDto dto = new()
             {
-                CompanyId = _selectedCompany.Id,
-                Type = _selectedType.Value,
+                CompanyId = _selectedCompany!.Id,
+                Type = _selectedType!.Value,
                 IssueDate = _issueDate ?? DateTime.UtcNow,
                 DueDate = _dueDate ?? DateTime.UtcNow.AddDays(30),
-                WarehouseId = _selectedWarehouse.Id,
+                WarehouseId = _selectedWarehouse!.Id,
                 Notes = _notes,
                 LineItems = _lineItems
                     .Where(i => i.SelectedProduct != null)

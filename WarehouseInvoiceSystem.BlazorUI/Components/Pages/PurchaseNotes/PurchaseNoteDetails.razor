@@ -56,13 +56,10 @@ else
                                     <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" Color="Color.Secondary" />
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.IndividualIdentificationNumber</MudText>
                                 </div>
-                                @if (!string.IsNullOrEmpty(_note.WarehouseName))
-                                {
-                                    <div class="wis-detail-contact-item">
-                                        <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2">@_note.WarehouseName</MudText>
-                                    </div>
-                                }
+                                <div class="wis-detail-contact-item">
+                                    <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.body2">@_note.WarehouseName</MudText>
+                                </div>
                             </div>
 
                         </div>
@@ -255,8 +252,9 @@ else
                 _primaryAction = _act.Warning(Icons.Material.Filled.MoveToInbox, Localization.GetString("ReceiveGoods"), ReceiveGoods);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Edit,   Localization.GetString("Edit"),   GoToEdit),
-                    _act.Error(Icons.Material.Filled.Cancel,   Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
+                    _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
+                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
                 break;
 
@@ -264,24 +262,30 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("MarkAsPaid"), MarkAsPaid);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Undo,   Localization.GetString("Draft"),  RevertToDraft),
-                    _act.Error(Icons.Material.Filled.Cancel,   Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
+                    _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
+                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
                 break;
 
             case PurchaseNoteStatus.Paid:
-                // No actions available for a paid note
+                _primaryAction = _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote);
                 break;
 
             case PurchaseNoteStatus.Cancelled:
                 _primaryAction = _act.Error(Icons.Material.Filled.Delete, Localization.GetString("Delete"), DeleteNote);
+                _actions =
+                [
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote),
+                ];
                 break;
         }
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
-    private void GoToEdit() => Navigation.NavigateTo($"/purchase-notes/edit/{Id}"); // kept as void; _act.Primary accepts Action overload
+    private void GoToEdit() => Navigation.NavigateTo($"/purchase-notes/edit/{Id}");
+    private void CopyNote() => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={Id}");
 
     private async Task ReceiveGoods()
     {

@@ -380,10 +380,11 @@ else
                 _primaryAction = _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog);
                 _actions =
                 [
-                    _act.Success(Icons.Material.Filled.Payment,  Localization.GetString("Payment"), RecordPayment),
-                    _act.Primary(Icons.Material.Filled.Edit,     Localization.GetString("Edit"),    GoToEdit),
-                    _act.Secondary(Icons.Material.Filled.Print,  Localization.GetString("Export"),  ExportForPrinting),
-                    _act.Error(Icons.Material.Filled.Cancel,     Localization.GetString("Cancel"),  CancelInvoice, dividerBefore: true),
+                    _act.Success(Icons.Material.Filled.Payment,        Localization.GetString("Payment"), RecordPayment),
+                    _act.Primary(Icons.Material.Filled.Edit,           Localization.GetString("Edit"),    GoToEdit),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy,  Localization.GetString("Copy"),    CopyInvoice),
+                    _act.Secondary(Icons.Material.Filled.Print,        Localization.GetString("Export"),  ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,           Localization.GetString("Cancel"),  CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
@@ -391,9 +392,10 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Edit,    Localization.GetString("Edit"),   GoToEdit),
-                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
-                    _act.Error(Icons.Material.Filled.Cancel,    Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
+                    _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
+                    _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
@@ -401,9 +403,10 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Undo,    Localization.GetString("Draft"),  RevertToDraft),
-                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
-                    _act.Error(Icons.Material.Filled.Cancel,    Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
+                    _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
+                    _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
@@ -411,7 +414,8 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
+                    _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                 ];
                 break;
 
@@ -419,25 +423,35 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Undo,    Localization.GetString("Draft"),  RevertToDraft),
-                    _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting),
-                    _act.Error(Icons.Material.Filled.Cancel,    Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
+                    _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
+                    _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
             case InvoiceStatus.Paid:
                 _primaryAction = _act.Secondary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting);
+                _actions =
+                [
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyInvoice),
+                ];
                 break;
 
             case InvoiceStatus.Cancelled:
                 _primaryAction = _act.Error(Icons.Material.Filled.Delete, Localization.GetString("Delete"), DeleteInvoice);
+                _actions =
+                [
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyInvoice),
+                ];
                 break;
         }
     }
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
-    private void GoToEdit() => Navigation.NavigateTo($"/invoices/edit/{Id}"); // kept as void; _act.Primary accepts Action overload
+    private void GoToEdit() => Navigation.NavigateTo($"/invoices/edit/{Id}");
+    private void CopyInvoice() => Navigation.NavigateTo($"/invoices/create?copyFrom={Id}");
 
     private async Task RecordPayment()
     {

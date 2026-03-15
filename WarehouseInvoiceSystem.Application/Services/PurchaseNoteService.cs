@@ -105,14 +105,14 @@
 
             string noteNumber = await purchaseNoteRepository.GenerateNoteNumberAsync();
 
-            List<PurchaseNoteLine> lineItems = createDto.LineItems.Select(li => new PurchaseNoteLine
+            List<PurchaseNoteLine> lineItems = [.. createDto.LineItems.Select(li => new PurchaseNoteLine
             {
                 ProductId = li.ProductId,
                 Description = li.Description,
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
                 CreatedAt = DateTime.UtcNow,
-            }).ToList();
+            })];
 
             decimal subTotal = lineItems.Sum(li => li.Amount);
 
@@ -163,74 +163,66 @@
             if (!await warehouseRepository.ExistsAsync(updateDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {updateDto.WarehouseId} not found");
 
+            var productIds = updateDto.LineItems.Select(li => li.ProductId).ToList();
+            if (!await productRepository.AllExistAsync(productIds))
+                throw new KeyNotFoundException("One or more products in the line items were not found");
+
             purchaseNote.IndividualId = updateDto.IndividualId;
             purchaseNote.WarehouseId = updateDto.WarehouseId;
             purchaseNote.PurchaseDate = updateDto.PurchaseDate;
             purchaseNote.Notes = updateDto.Notes;
 
-            // Line items only editable in Draft — Pending locks them since stock already moved
-            if (purchaseNote.Status == PurchaseNoteStatus.Draft)
-            {
-                var productIds = updateDto.LineItems.Select(li => li.ProductId).ToList();
-                if (!await productRepository.AllExistAsync(productIds))
-                    throw new KeyNotFoundException("One or more products in the line items were not found");
-
-                // ── 3-way line item merge ─────────────────────────────────────────
-                // Update existing lines, remove deleted ones, insert new ones
-                DateTime now = DateTime.UtcNow;
-                HashSet<Guid> incomingIds = updateDto.LineItems
-                    .Where(li => li.Id != Guid.Empty)
-                    .Select(li => li.Id)
-                    .ToHashSet();
-
-                // Lines absent from the incoming DTO were removed by the user — soft-delete them
-                foreach (PurchaseNoteLine existing in purchaseNote.LineItems)
-                {
-                    if (!incomingIds.Contains(existing.Id))
-                        existing.DeletedOn = now;
-                }
-
-                // Update existing or insert new
-                Dictionary<Guid, PurchaseNoteLine> existingById = purchaseNote.LineItems
-                    .ToDictionary(li => li.Id);
-
-                List<PurchaseNoteLine> newLineItems = [];
-                foreach (UpdatePurchaseNoteLineDto li in updateDto.LineItems)
-                {
-                    if (li.Id != Guid.Empty && existingById.TryGetValue(li.Id, out PurchaseNoteLine? existing))
-                    {
-                        // Update in place
-                        existing.ProductId = li.ProductId;
-                        existing.Description = li.Description;
-                        existing.Quantity = li.Quantity;
-                        existing.UnitPrice = li.UnitPrice;
-                    }
-                    else
-                    {
-                        // New line
-                        newLineItems.Add(new PurchaseNoteLine
-                        {
-                            ProductId = li.ProductId,
-                            Description = li.Description,
-                            Quantity = li.Quantity,
-                            UnitPrice = li.UnitPrice
-                        });
-                    }
-                }
-
-                foreach (PurchaseNoteLine newLine in newLineItems)
-                    purchaseNote.LineItems.Add(newLine);
-
-                // Recalculate totals from active lines only
-                List<PurchaseNoteLine> activeLines = purchaseNote.LineItems
-                    .Where(li => li.DeletedOn == null)
-                    .ToList();
-
-                purchaseNote.SubTotal = activeLines.Sum(li => li.Amount);
-                purchaseNote.TotalAmount = purchaseNote.SubTotal;
-            }
+            MergeLineItems(purchaseNote, updateDto.LineItems);
 
             await purchaseNoteRepository.UpdateAsync(purchaseNote);
+        }
+
+        // ── 3-way line item merge ─────────────────────────────────────────────────────
+        // Update existing lines, remove deleted ones, insert new ones
+        private static void MergeLineItems(PurchaseNote purchaseNote, IEnumerable<UpdatePurchaseNoteLineDto> incoming)
+        {
+            DateTime now = DateTime.UtcNow;
+            HashSet<Guid> incomingIds = incoming
+                .Where(li => li.Id != Guid.Empty)
+                .Select(li => li.Id)
+                .ToHashSet();
+
+            // Lines absent from the incoming DTO were removed by the user — soft-delete them
+            foreach (PurchaseNoteLine existing in purchaseNote.LineItems.Where(li => !incomingIds.Contains(li.Id)))
+                existing.DeletedOn = now;
+
+            // Update existing or insert new
+            Dictionary<Guid, PurchaseNoteLine> existingById = purchaseNote.LineItems.ToDictionary(li => li.Id);
+            List<PurchaseNoteLine> newLines = [];
+
+            foreach (UpdatePurchaseNoteLineDto li in incoming)
+            {
+                if (li.Id != Guid.Empty && existingById.TryGetValue(li.Id, out PurchaseNoteLine? existing))
+                {
+                    existing.ProductId = li.ProductId;
+                    existing.Description = li.Description;
+                    existing.Quantity = li.Quantity;
+                    existing.UnitPrice = li.UnitPrice;
+                }
+                else
+                {
+                    newLines.Add(new PurchaseNoteLine
+                    {
+                        ProductId = li.ProductId,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice
+                    });
+                }
+            }
+
+            foreach (PurchaseNoteLine line in newLines)
+                purchaseNote.LineItems.Add(line);
+
+            // Recalculate totals from active lines only
+            decimal subTotal = purchaseNote.LineItems.Where(li => li.DeletedOn == null).Sum(li => li.Amount);
+            purchaseNote.SubTotal = subTotal;
+            purchaseNote.TotalAmount = subTotal;
         }
 
         // ── Status transitions ────────────────────────────────────────────────────────
@@ -385,7 +377,7 @@
             IndividualFullName = note.Individual?.FullName ?? string.Empty,
             IndividualIdentificationNumber = note.Individual?.IdentificationNumber ?? string.Empty,
             WarehouseId = note.WarehouseId,
-            WarehouseName = note.Warehouse?.Name,
+            WarehouseName = note.Warehouse.Name,
             PurchaseDate = note.PurchaseDate,
             SubTotal = note.SubTotal,
             TotalAmount = note.TotalAmount,

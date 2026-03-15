@@ -72,7 +72,8 @@
                     <MudDatePicker @bind-Date="_purchaseDate"
                                    Label="@Localization.GetString("PurchaseDate")"
                                    Variant="Variant.Outlined"
-                                   Required="true" />
+                                   Required="true"
+                                   RequiredError="@Localization.GetString("PurchaseDateRequired")" />
                 </MudItem>
 
                 <!-- Notes -->
@@ -188,6 +189,8 @@
 </MudItem>
 
 @code {
+    [Parameter, SupplyParameterFromQuery(Name = "copyFrom")] public Guid? CopyFrom { get; set; }
+
     private readonly CancellationTokenSource _cts = new();
     private MudForm _form = null!;
     private bool _isValid;
@@ -241,8 +244,13 @@
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
-        await LoadDefaultWarehouse();
-        AddLineItem();
+        if (CopyFrom.HasValue)
+            await PrefillFromPurchaseNote(CopyFrom.Value);
+        else
+        {
+            await LoadDefaultWarehouse();
+            AddLineItem();
+        }
     }
 
     private async void OnLanguageChanged()
@@ -260,6 +268,55 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading default warehouse: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task PrefillFromPurchaseNote(Guid sourceId)
+    {
+        _loading = true;
+        try
+        {
+            PurchaseNoteDto? source = await PurchaseNoteService.GetPurchaseNoteByIdAsync(sourceId, _cts.Token);
+            if (source == null)
+            {
+                await LoadDefaultWarehouse();
+                AddLineItem();
+                return;
+            }
+
+            _selectedIndividual = await IndividualService.GetIndividualByIdAsync(source.IndividualId, _cts.Token);
+
+            _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(source.WarehouseId, _cts.Token);
+
+            _purchaseDate = DateTime.Today;
+            _notes = source.Notes;
+
+            foreach (PurchaseNoteLineDto li in source.LineItems)
+            {
+                ProductDto? product = await ProductService.GetProductByIdAsync(li.ProductId, _cts.Token);
+                if (product != null)
+                {
+                    _lineItems.Add(new LineItemModel
+                    {
+                        SelectedProduct = product,
+                        Description = li.Description,
+                        Quantity = li.Quantity,
+                        UnitPrice = li.UnitPrice
+                    });
+                }
+            }
+
+            CalculateTotals();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error prefilling from purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingPurchaseNote"), Severity.Error);
+            AddLineItem();
         }
         finally
         {
@@ -322,7 +379,7 @@
     private async Task SaveNote(bool saveAndNew = false)
     {
         await _form.ValidateAsync();
-        if (!_isValid || _selectedIndividual == null) return;
+        if (!_isValid) return;
 
         _saving = true;
 
@@ -330,8 +387,8 @@
         {
             CreatePurchaseNoteDto dto = new()
             {
-                IndividualId = _selectedIndividual.Id,
-                WarehouseId = _selectedWarehouse.Id,
+                IndividualId = _selectedIndividual!.Id,
+                WarehouseId = _selectedWarehouse!.Id,
                 PurchaseDate = _purchaseDate?.Date ?? DateTime.Today,
                 MarkAsPaid = _markAsPaid,
                 Notes = _notes,

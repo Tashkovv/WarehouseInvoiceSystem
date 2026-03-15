@@ -278,7 +278,7 @@ else
                 <div class="d-flex justify-space-between wis-page-actions">
                     <WisDialogActions OnCancel="@(() => Navigation.NavigateTo($"/invoices/{Id}"))"
                                       OnSave="HandleSubmit"
-                                      SaveDisabled="@(_saving || !_isValid)" />
+                                      SaveDisabled="@(_saving || !_isValid || !_lineItems.Any() || _lineItems.Any(i => i.SelectedProduct == null))" />
                 </div>
             </MudItem>
         </MudGrid>
@@ -506,39 +506,9 @@ else
         await _form.ValidateAsync();
         if (!_isValid) return;
 
-        if (_selectedCompany == null)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectCompany"), Severity.Warning);
-            return;
-        }
-
-        if (!_selectedType.HasValue)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectType"), Severity.Warning);
-            return;
-        }
-
-        if (_selectedWarehouse == null)
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectWarehouse"), Severity.Warning);
-            return;
-        }
-
         if (IsUnchanged())
         {
             Snackbar.Add(Localization.GetString("NoChanges"), Severity.Info);
-            return;
-        }
-
-        if (!_lineItems.Any() || _lineItems.All(i => i.SelectedProduct == null && string.IsNullOrWhiteSpace(i.Description)))
-        {
-            Snackbar.Add(Localization.GetString("PleaseAddAtLeastOneLineItem"), Severity.Warning);
-            return;
-        }
-
-        if (_lineItems.Any(i => i.SelectedProduct == null))
-        {
-            Snackbar.Add(Localization.GetString("PleaseSelectProduct"), Severity.Warning);
             return;
         }
 
