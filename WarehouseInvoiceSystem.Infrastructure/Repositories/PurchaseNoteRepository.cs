@@ -76,6 +76,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
                     .Where(pn => pn.IndividualId == individualId)
                     .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
                     .Include(pn => pn.LineItems)
                         .ThenInclude(li => li.Product)
                     .OrderByDescending(pn => pn.PurchaseDate)

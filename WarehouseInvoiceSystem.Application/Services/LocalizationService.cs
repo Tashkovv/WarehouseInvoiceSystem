@@ -587,6 +587,15 @@
                 ["DeactivateWarehouseConfirm"] = "Are you sure you want to deactivate this warehouse?",
                 ["WarehouseActivated"] = "Warehouse successfully activated",
                 ["WarehouseDeactivated"] = "Warehouse successfully deactivated",
+                ["WarehouseDetails"] = "Warehouse Details",
+                ["StockByProduct"] = "Stock by Product",
+                ["Thresholds"] = "Thresholds",
+                ["EditThresholds"] = "Edit Thresholds",
+                ["ThresholdsUpdated"] = "Thresholds updated successfully",
+                ["ErrorUpdatingThresholds"] = "Error updating thresholds",
+                ["NoProductsInWarehouse"] = "No products in this warehouse",
+                ["SelectWarehouseForThresholds"] = "Select a specific warehouse to edit its thresholds",
+                ["DeactivateWarehouseDisabledTooltip"] = "Warehouse is default or has products in it",
 
                 // Individuals
                 ["Individuals"] = "Individuals",
@@ -1255,6 +1264,15 @@
                 ["WarehouseActivated"] = "Магацинот е успешно активиран",
                 ["WarehouseDeactivated"] = "Магацинот е успешно деактивиран",
                 ["WarehouseRequired"] = "Магацинот е задолжителен",
+                ["WarehouseDetails"] = "Детали за Магацин",
+                ["StockByProduct"] = "Залиха по Производ",
+                ["Thresholds"] = "Прагови",
+                ["EditThresholds"] = "Измени Прагови",
+                ["ThresholdsUpdated"] = "Праговите се успешно ажурирани",
+                ["ErrorUpdatingThresholds"] = "Грешка при ажурирање на праговите",
+                ["NoProductsInWarehouse"] = "Нема производи во овој магацин",
+                ["SelectWarehouseForThresholds"] = "Изберете конкретен магацин за да ги измените праговите",
+                ["DeactivateWarehouseDisabledTooltip"] = "Магацинот е стандарден или содржи производи",
 
                 // Individuals
                 ["Individuals"] = "Физички Лица",

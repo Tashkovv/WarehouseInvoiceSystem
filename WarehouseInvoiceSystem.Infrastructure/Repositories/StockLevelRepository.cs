@@ -158,9 +158,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<StockLevel> UpdateAsync(StockLevel stockLevel) =>
             WithContextAsync(async context =>
             {
-                context.StockLevels.Update(stockLevel);
+                StockLevel tracked = await context.StockLevels.FindAsync(stockLevel.Id)
+                    ?? throw new KeyNotFoundException($"StockLevel {stockLevel.Id} not found");
+                context.Entry(tracked).CurrentValues.SetValues(stockLevel);
                 await SaveAsync(context);
-                return stockLevel;
+                return tracked;
             });
 
         public Task<bool> DeleteAsync(Guid id) =>

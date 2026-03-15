@@ -40,6 +40,7 @@
                      @ref="_grid"
                      ServerData="LoadServerData"
                      RowClassFunc="GetRowClass"
+                     RowClick="OnRowClick"
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
@@ -62,7 +63,7 @@
                             </MudText>
                             @if (context.Item.IsDefault)
                             {
-                                <MudChip T="string" Size="Size.Small" Color="Color.Success">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Info">
                                     @Localization.GetString("Default")
                                 </MudChip>
                             }
@@ -116,7 +117,7 @@
                                            OnClick="@(() => OpenEditDialog(context.Item))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Star"
                                            Size="Size.Small"
-                                           Color="@(context.Item.IsDefault ? Color.Warning : Color.Default)"
+                                           Color="@(context.Item.IsDefault ? Color.Info : Color.Default)"
                                            Title="@Localization.GetString("SetAsDefault")"
                                            Disabled="@(context.Item.IsDefault || !context.Item.IsActive)"
                                            OnClick="@(() => SetAsDefault(context.Item))" />
@@ -213,6 +214,12 @@
             Items = result.Items,
             TotalItems = result.TotalCount
         };
+    }
+
+    private void OnRowClick(DataGridRowClickEventArgs<WarehouseDto> args)
+    {
+        if (args.MouseEventArgs.Detail == 2)
+            Navigation.NavigateTo($"/warehouses/{args.Item!.Id}");
     }
 
     private string GetRowClass(WarehouseDto item, int index) =>

@@ -1,0 +1,52 @@
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            @StockLevel.ProductCode — @StockLevel.ProductName
+        </MudText>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="decimal?"
+                                 @bind-Value="_minimumQuantity"
+                                 Label="@Localization.GetString("MinimumQuantity")"
+                                 Variant="Variant.Outlined"
+                                 Min="0"
+                                 Format="N2"
+                                 FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="decimal?"
+                                 @bind-Value="_reorderPoint"
+                                 Label="@Localization.GetString("ReorderPoint")"
+                                 Variant="Variant.Outlined"
+                                 Min="0"
+                                 Format="N2"
+                                 FullWidth="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <WisDialogActions OnCancel="Cancel" OnSave="Save" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter, EditorRequired] public StockLevelDto StockLevel { get; set; } = null!;
+
+    public record SetThresholdsResult(decimal? MinimumQuantity, decimal? ReorderPoint);
+
+    private decimal? _minimumQuantity;
+    private decimal? _reorderPoint;
+
+    protected override void OnInitialized()
+    {
+        _minimumQuantity = StockLevel.MinimumQuantity;
+        _reorderPoint = StockLevel.ReorderPoint;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Save() => MudDialog.Close(new SetThresholdsResult(_minimumQuantity, _reorderPoint));
+}

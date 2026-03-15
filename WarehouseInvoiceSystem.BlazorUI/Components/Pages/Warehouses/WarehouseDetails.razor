@@ -1,0 +1,378 @@
+@page "/warehouses/{Id:guid}"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@inject IWarehouseService WarehouseService
+@inject IInventoryService InventoryService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject WisDialogService WisDialog
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@Localization.GetString("WarehouseDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_warehouse == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("WarehouseNotFound")</MudAlert>
+}
+else
+{
+    <WisDetailHeader BackHref="/warehouses"
+                     BackLabel="@Localization.GetString("Warehouses")"
+                     PrimaryAction="@_primaryAction"
+                     Actions="@_actions" />
+
+    <MudGrid>
+
+        @* ── Header card ── *@
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+
+                    @* ── Identity row ── *@
+                    <div class="wis-detail-identity mb-3">
+                        <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">@_warehouse.Name</MudText>
+                        @if (_warehouse.IsDefault)
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Info">
+                                @Localization.GetString("Default")
+                            </MudChip>
+                        }
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@(_warehouse.IsActive ? Color.Success : Color.Default)">
+                            @(_warehouse.IsActive ? Localization.GetString("ActiveWarehouse") : Localization.GetString("InactiveWarehouse"))
+                        </MudChip>
+                    </div>
+
+                    @* ── Address ── *@
+                    @if (!string.IsNullOrWhiteSpace(_warehouse.Address))
+                    {
+                        <div class="wis-detail-contact wis-product-meta-row mb-4">
+                            <div class="wis-detail-contact-item">
+                                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_warehouse.Address</MudText>
+                            </div>
+                        </div>
+                    }
+
+
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* ── Stock by Product ── *@
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("StockByProduct")</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <div class="d-flex align-center gap-2 pr-2">
+                            <MudChip T="string" Size="Size.Small" Color="Color.Default"
+                                     Icon="@Icons.Material.Filled.Inventory2">
+                                @_stock.Count @Localization.GetString("Products")
+                            </MudChip>
+                            @if (_lowStockCount > 0)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Warning"
+                                         Icon="@Icons.Material.Filled.Warning">
+                                    @_lowStockCount @Localization.GetString("LowStock")
+                                </MudChip>
+                            }
+                        </div>
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    @if (_stock.Any())
+                    {
+                        <MudTable Items="_stock"
+                                  Hover="true"
+                                  Elevation="0"
+                                  Class="wis-secondary-list">
+                            <HeaderContent>
+                                <MudTh>@Localization.GetString("Code")</MudTh>
+                                <MudTh>@Localization.GetString("Name")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Available")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("MinimumQuantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("ReorderPoint")</MudTh>
+                                <MudTh>@Localization.GetString("LastRestocked")</MudTh>
+                                <MudTh />
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@Localization.GetString("Code")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Name")">
+                                    <MudText Typo="Typo.body2">@context.ProductName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
+                                    <MudText Typo="Typo.body2"
+                                             Color="@GetQuantityColor(context)">
+                                        @context.Quantity.ToString("N2")
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Available")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@context.AvailableQuantity.ToString("N2")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("MinimumQuantity")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@(context.MinimumQuantity?.ToString("N2") ?? "—")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("ReorderPoint")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@(context.ReorderPoint?.ToString("N2") ?? "—")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("LastRestocked")">
+                                    <MudText Typo="Typo.body2">@(context.LastRestockedAt.ToString("dd MMM yyyy") ?? "—")</MudText>
+                                </MudTd>
+                                <MudTd>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Tune"
+                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
+                                                   Title="@Localization.GetString("EditThresholds")"
+                                                   OnClick="@(() => OpenSetThresholdsDialog(context))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2"
+                                     Size="Size.Large"
+                                     Color="Color.Secondary"
+                                     Class="mb-2" />
+                            <MudText Typo="Typo.body1" Color="Color.Secondary">@Localization.GetString("NoProductsInWarehouse")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+    </MudGrid>
+}
+
+@code {
+    private readonly CancellationTokenSource _cts = new();
+    [Parameter] public Guid Id { get; set; }
+
+    private bool _loading = true;
+    private WarehouseDto? _warehouse;
+    private List<StockLevelDto> _stock = [];
+
+    private WisDetailActionItem? _primaryAction;
+    private List<WisDetailActionItem> _actions = [];
+    private WisActionItem _act = null!;
+
+    // ── Computed ──────────────────────────────────────────────────────────────
+
+    private int _lowStockCount => _stock.Count(s =>
+        s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value && s.Quantity > 0);
+
+    private static Color GetQuantityColor(StockLevelDto s)
+    {
+        if (s.Quantity == 0) return Color.Error;
+        if (s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value) return Color.Warning;
+        return Color.Default;
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        _act = new WisActionItem(this);
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadWarehouse();
+    }
+
+    private async void OnLanguageChanged()
+    {
+        BuildActions();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadWarehouse()
+    {
+        _loading = true;
+
+        try
+        {
+            _warehouse = await WarehouseService.GetWarehouseByIdAsync(Id, _cts.Token);
+            if (_warehouse != null)
+            {
+                IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(Id, _cts.Token);
+                _stock = levels.OrderBy(s => s.ProductCode).ToList();
+                BuildActions();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading warehouse: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingWarehouse"), Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void BuildActions()
+    {
+        if (_warehouse is null) return;
+
+        _primaryAction = _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog);
+
+        List<WisDetailActionItem> actions = [];
+
+        if (!_warehouse.IsDefault && _warehouse.IsActive)
+            actions.Add(_act.Secondary(Icons.Material.Filled.Star, Localization.GetString("Default"), SetAsDefault));
+
+        if (_warehouse.IsActive)
+        {
+            bool cannotDeactivate = _warehouse.IsDefault || _stock.Any();
+            actions.Add(_act.Error(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), () => SetActiveStatus(false),
+                dividerBefore: actions.Count > 0,
+                disabled: cannotDeactivate,
+                disabledReason: cannotDeactivate ? Localization.GetString("DeactivateWarehouseDisabledTooltip") : null));
+        }
+        else
+            actions.Add(_act.Success(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Activate"), () => SetActiveStatus(true),
+                dividerBefore: actions.Count > 0));
+
+        _actions = actions;
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────────
+
+    private async Task OpenEditDialog()
+    {
+        if (_warehouse is null) return;
+
+        DialogParameters<WarehouseDialog> parameters = new();
+        parameters.Add(x => x.Warehouse, _warehouse);
+
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<WarehouseDialog>(
+            Localization.GetString("EditWarehouse"), parameters, options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: UpdateWarehouseDto dto })
+        {
+            try
+            {
+                await WarehouseService.UpdateWarehouseAsync(Id, dto);
+                Snackbar.Add(Localization.GetString("WarehouseUpdated"), Severity.Success);
+                await LoadWarehouse();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating warehouse: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingWarehouse"), Severity.Error);
+            }
+        }
+    }
+
+    private async Task SetAsDefault()
+    {
+        try
+        {
+            await WarehouseService.SetDefaultWarehouseAsync(Id);
+            Snackbar.Add(Localization.GetString("WarehouseSetAsDefault"), Severity.Success);
+            await LoadWarehouse();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error setting default warehouse: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorSettingDefaultWarehouse"), Severity.Error);
+        }
+    }
+
+    private async Task SetActiveStatus(bool isActive)
+    {
+        if (!isActive)
+        {
+            bool confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("ConfirmDeactivateWarehouse"),
+                Localization.GetString("DeactivateWarehouseConfirm"),
+                Localization.GetString("Yes"),
+                Localization.GetString("No"));
+
+            if (!confirmed) return;
+        }
+
+        try
+        {
+            await WarehouseService.SetActiveStatusAsync(Id, isActive);
+            string key = isActive ? "WarehouseActivated" : "WarehouseDeactivated";
+            Snackbar.Add(Localization.GetString(key), Severity.Success);
+            await LoadWarehouse();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error changing warehouse status: {ex.Message}");
+            string errorKey = isActive ? "ErrorActivatingWarehouse" : "ErrorDeactivatingWarehouse";
+            Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
+        }
+    }
+
+    private async Task OpenSetThresholdsDialog(StockLevelDto stockLevel)
+    {
+        DialogParameters<SetThresholdsDialog> parameters = new();
+        parameters.Add(x => x.StockLevel, stockLevel);
+
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<SetThresholdsDialog>(
+            Localization.GetString("EditThresholds"), parameters, options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: SetThresholdsDialog.SetThresholdsResult dto })
+        {
+            try
+            {
+                await InventoryService.UpdateStockLevelAsync(
+                    stockLevel.ProductId,
+                    stockLevel.WarehouseId,
+                    new UpdateStockLevelDto
+                    {
+                        Quantity = stockLevel.Quantity,
+                        MinimumQuantity = dto.MinimumQuantity,
+                        ReorderPoint = dto.ReorderPoint
+                    });
+
+                Snackbar.Add(Localization.GetString("ThresholdsUpdated"), Severity.Success);
+                await LoadWarehouse();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating thresholds: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingThresholds"), Severity.Error);
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

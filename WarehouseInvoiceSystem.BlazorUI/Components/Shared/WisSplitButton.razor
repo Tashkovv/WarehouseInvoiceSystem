@@ -75,37 +75,20 @@
                     {
                         <MudDivider />
                     }
-                    @if (item.Disabled && !string.IsNullOrEmpty(item.DisabledReason))
-                    {
-                        <MudTooltip Text="@item.DisabledReason" Placement="Placement.Left">
-                            <ChildContent>
-                                <button class="wis-split-btn__menu-item wis-split-btn__menu-item--disabled"
-                                        type="button"
-                                        disabled>
-                                    <span class="wis-split-btn__menu-icon">
-                                        <MudIcon Icon="@item.Icon" Size="Size.Small" Color="Color.Default" />
-                                    </span>
-                                    <span>@item.Label</span>
-                                </button>
-                            </ChildContent>
-                        </MudTooltip>
-                    }
-                    else
-                    {
-                        <button class="wis-split-btn__menu-item @(item.Disabled ? "wis-split-btn__menu-item--disabled" : "")"
-                                type="button"
-                                disabled="@item.Disabled"
-                                @onclick="@(() => OnMenuItemClick(item))">
-                            <span class="wis-split-btn__menu-icon">
-                                <MudIcon Icon="@item.Icon"
-                                         Size="Size.Small"
-                                         Color="@(item.Disabled ? Color.Default : item.Color)" />
-                            </span>
-                            <span class="@(item.Disabled ? "" : GetTextColorClass(item.Color))">
-                                @item.Label
-                            </span>
-                        </button>
-                    }
+                    <button class="wis-split-btn__menu-item @(item.Disabled ? "wis-split-btn__menu-item--disabled" : "")"
+                            type="button"
+                            disabled="@item.Disabled"
+                            title="@(item.Disabled ? item.DisabledReason ?? string.Empty : string.Empty)"
+                            @onclick="@(() => OnMenuItemClick(item))">
+                        <span class="wis-split-btn__menu-icon">
+                            <MudIcon Icon="@item.Icon"
+                                     Size="Size.Small"
+                                     Color="@(item.Disabled ? Color.Default : item.Color)" />
+                        </span>
+                        <span class="@(item.Disabled ? "" : GetTextColorClass(item.Color))">
+                            @item.Label
+                        </span>
+                    </button>
                 }
             }
         </MudPopover>

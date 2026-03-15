@@ -325,10 +325,6 @@
             PurchaseNote? purchaseNote = await purchaseNoteRepository.GetByIdAsync(id, ct)
                 ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
 
-            if (purchaseNote.Status != PurchaseNoteStatus.Pending)
-                throw new InvalidOperationException(
-                    $"Notes can only be updated on a Pending purchase note (current: {purchaseNote.Status}).");
-
             purchaseNote.Notes = notes;
             await purchaseNoteRepository.UpdateAsync(purchaseNote);
         }

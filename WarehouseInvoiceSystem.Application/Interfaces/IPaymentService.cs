@@ -12,6 +12,7 @@
         Task<PaymentDto?> GetPaymentByIdAsync(Guid id, CancellationToken ct = default);
         Task CreatePaymentAsync(CreatePaymentDto createDto);
         Task UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto);
+        Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
         Task<bool> DeletePaymentAsync(Guid id);
     }
 }

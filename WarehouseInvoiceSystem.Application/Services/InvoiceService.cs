@@ -178,31 +178,33 @@
             invoice.DueDate = updateDto.DueDate;
             invoice.Notes = updateDto.Notes;
 
-            // ── 3-way line item merge ─────────────────────────────────────────────
-            // Update existing lines, remove deleted ones, insert new ones
+            MergeLineItems(invoice, updateDto.LineItems);
+
+            await invoiceRepository.UpdateAsync(invoice);
+        }
+
+        // ── 3-way line item merge ─────────────────────────────────────────────────────
+        // Update existing lines, remove deleted ones, insert new ones
+        private static void MergeLineItems(Invoice invoice, IEnumerable<UpdateInvoiceLineDto> incoming)
+        {
             DateTime now = DateTime.UtcNow;
-            HashSet<Guid> incomingIds = updateDto.LineItems
+            HashSet<Guid> incomingIds = incoming
                 .Where(li => li.Id != Guid.Empty)
                 .Select(li => li.Id)
                 .ToHashSet();
 
             // Lines absent from the incoming DTO were removed by the user — soft-delete them
-            foreach (InvoiceLine existing in invoice.LineItems)
-            {
-                if (!incomingIds.Contains(existing.Id))
-                    existing.DeletedOn = now;
-            }
+            foreach (InvoiceLine existing in invoice.LineItems.Where(li => !incomingIds.Contains(li.Id)))
+                existing.DeletedOn = now;
 
             // Update existing or insert new
-            Dictionary<Guid, InvoiceLine> existingById = invoice.LineItems
-                .ToDictionary(li => li.Id);
+            Dictionary<Guid, InvoiceLine> existingById = invoice.LineItems.ToDictionary(li => li.Id);
+            List<InvoiceLine> newLines = [];
 
-            List<InvoiceLine> newLineItems = [];
-            foreach (UpdateInvoiceLineDto li in updateDto.LineItems)
+            foreach (UpdateInvoiceLineDto li in incoming)
             {
                 if (li.Id != Guid.Empty && existingById.TryGetValue(li.Id, out InvoiceLine? existing))
                 {
-                    // Update in place
                     existing.ProductId = li.ProductId;
                     existing.Description = li.Description;
                     existing.Quantity = li.Quantity;
@@ -211,8 +213,7 @@
                 }
                 else
                 {
-                    // New line
-                    newLineItems.Add(new InvoiceLine
+                    newLines.Add(new InvoiceLine
                     {
                         ProductId = li.ProductId,
                         Description = li.Description,
@@ -223,8 +224,8 @@
                 }
             }
 
-            foreach (InvoiceLine newLine in newLineItems)
-                invoice.LineItems.Add(newLine);
+            foreach (InvoiceLine line in newLines)
+                invoice.LineItems.Add(line);
 
             // Recalculate totals from active lines only
             List<InvoiceLine> activeLines = invoice.LineItems
@@ -234,18 +235,12 @@
             invoice.SubTotal = activeLines.Sum(li => li.Amount);
             invoice.TaxAmount = activeLines.Sum(li => li.TaxAmount);
             invoice.TotalAmount = activeLines.Sum(li => li.TotalAmount);
-
-            await invoiceRepository.UpdateAsync(invoice);
         }
 
         public async Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id, ct)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
-
-            if (invoice.Status != InvoiceStatus.Sent)
-                throw new InvalidOperationException(
-                    $"Notes can only be updated on a Sent invoice (current: {invoice.Status}).");
 
             invoice.Notes = notes;
             await invoiceRepository.UpdateAsync(invoice);

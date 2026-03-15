@@ -4,6 +4,7 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -137,6 +138,7 @@ else
                                 <MudTh Class="text-right">@Localization.GetString("Available")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Minimum")</MudTh>
                                 <MudTh>@Localization.GetString("LastRestocked")</MudTh>
+                                <MudTh />
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("Warehouse")">
@@ -159,6 +161,13 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("LastRestocked")">
                                     <MudText Typo="Typo.body2">@(context.LastRestockedAt?.ToString("dd MMM yyyy") ?? "-")</MudText>
+                                </MudTd>
+                                <MudTd>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Tune"
+                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
+                                                   Title="@Localization.GetString("Thresholds")"
+                                                   OnClick="@(() => OpenSetThresholdsDialog(context))" />
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -434,8 +443,12 @@ else
 
         _primaryAction = _act.Primary(Icons.Material.Filled.Inventory2, Localization.GetString("AdjustStock"), OpenAdjustDialog);
 
+        bool noWarehouse = !_selectedWarehouseId.HasValue;
         _actions =
         [
+            _act.Primary(Icons.Material.Filled.Tune, Localization.GetString("Thresholds"), OpenSetThresholdsFromAction,
+                disabled: noWarehouse,
+                disabledReason: noWarehouse ? Localization.GetString("SelectWarehouseForThresholds") : null),
             _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog),
             _product.IsActive
                 ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus, dividerBefore: true)
@@ -541,6 +554,7 @@ else
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
         _selectedWarehouseId = warehouseId;
+        BuildActions();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -576,6 +590,69 @@ else
             {
                 Console.WriteLine($"Error adjusting stock: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenSetThresholdsFromAction()
+    {
+        if (!_selectedWarehouseId.HasValue) return;
+        WarehouseStockDto? row = _details.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value);
+        if (row is null) return;
+        await OpenSetThresholdsDialog(row);
+    }
+
+    private async Task OpenSetThresholdsDialog(WarehouseStockDto row)
+    {
+        StockLevelDto stockLevel = new()
+        {
+            ProductId = Id,
+            WarehouseId = row.WarehouseId,
+            ProductCode = _product!.Code,
+            ProductName = _product!.Name,
+            Quantity = row.Quantity,
+            AvailableQuantity = row.AvailableQuantity,
+            MinimumQuantity = row.MinimumQuantity,
+            ReorderPoint = row.ReorderPoint,
+            LastRestockedAt = row.LastRestockedAt ?? DateTime.MinValue
+        };
+
+        DialogParameters<SetThresholdsDialog> parameters = new();
+        parameters.Add(x => x.StockLevel, stockLevel);
+
+        DialogOptions options = new()
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseOnEscapeKey = true
+        };
+
+        IDialogReference dialog = await DialogService.ShowAsync<SetThresholdsDialog>(
+            Localization.GetString("EditThresholds"), parameters, options);
+
+        DialogResult? result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: SetThresholdsDialog.SetThresholdsResult dto })
+        {
+            try
+            {
+                await InventoryService.UpdateStockLevelAsync(
+                    Id,
+                    row.WarehouseId,
+                    new UpdateStockLevelDto
+                    {
+                        Quantity = row.Quantity,
+                        MinimumQuantity = dto.MinimumQuantity,
+                        ReorderPoint = dto.ReorderPoint
+                    });
+
+                Snackbar.Add(Localization.GetString("ThresholdsUpdated"), Severity.Success);
+                await LoadProduct();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating thresholds: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingThresholds"), Severity.Error);
             }
         }
     }

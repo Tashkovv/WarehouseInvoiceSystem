@@ -64,52 +64,46 @@ else
 
                         </div>
 
-                        @if (!string.IsNullOrWhiteSpace(_note.Notes) || _note.Status == PurchaseNoteStatus.Pending)
-                        {
-                            <div class="wis-contact-row-divider"></div>
-                            <div class="wis-contact-row-right">
-                                @if (_note.Status == PurchaseNoteStatus.Pending && _notesEditMode)
-                                {
-                                    <div class="d-flex align-center gap-1 mb-0">
-                                        <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
-                                        <MudIconButton Icon="@Icons.Material.Filled.Close"
-                                                       Size="Size.Small"
-                                                       Title="@Localization.GetString("Cancel")"
-                                                       OnClick="CancelNotesEdit"
-                                                       Disabled="@_notesSaving" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.Check"
-                                                       Size="Size.Small"
-                                                       Color="Color.Primary"
-                                                       Title="@Localization.GetString("Save")"
-                                                       OnClick="SaveNotes"
-                                                       Disabled="@_notesSaving" />
-                                    </div>
-                                    <MudTextField @bind-Value="_notesEditValue"
-                                                  Variant="Variant.Outlined"
-                                                  FullWidth="true"
-                                                  Margin="Margin.Dense"
-                                                  Class="mt-0 wis-notes-input" />
-                                }
-                                else
-                                {
-                                    <div class="d-flex align-center gap-1 mb-0">
-                                        <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
-                                        @if (_note.Status == PurchaseNoteStatus.Pending)
-                                        {
-                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                           Size="Size.Small"
-                                                           Title="@Localization.GetString("Edit")"
-                                                           OnClick="StartNotesEdit" />
-                                        }
-                                    </div>
-                                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
-                                        @(string.IsNullOrWhiteSpace(_note.Notes) ? "—" : _note.Notes)
-                                    </MudText>
-                                }
-                            </div>
-                        }
+                        <div class="wis-contact-row-divider"></div>
+                        <div class="wis-contact-row-right">
+                            @if (_notesEditMode)
+                            {
+                                <div class="d-flex align-center gap-1 mb-0">
+                                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                   Size="Size.Small"
+                                                   Title="@Localization.GetString("Cancel")"
+                                                   OnClick="CancelNotesEdit"
+                                                   Disabled="@_notesSaving" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
+                                                   Title="@Localization.GetString("Save")"
+                                                   OnClick="SaveNotes"
+                                                   Disabled="@_notesSaving" />
+                                </div>
+                                <MudTextField @bind-Value="_notesEditValue"
+                                              Variant="Variant.Outlined"
+                                              FullWidth="true"
+                                              Margin="Margin.Dense"
+                                              Class="mt-0 wis-notes-input" />
+                            }
+                            else
+                            {
+                                <div class="d-flex align-center gap-1 mb-0">
+                                    <MudIcon Icon="@Icons.Material.Filled.Notes" Size="Size.Small" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
+                                    <MudIconButton Icon="@(string.IsNullOrWhiteSpace(_note.Notes) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
+                                                   Size="Size.Small"
+                                                   Title="@Localization.GetString("Edit")"
+                                                   OnClick="StartNotesEdit" />
+                                </div>
+                                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
+                                    @(string.IsNullOrWhiteSpace(_note.Notes) ? "—" : _note.Notes)
+                                </MudText>
+                            }
+                        </div>
                     </div>
 
                     <MudDivider Class="mb-4" />
@@ -262,8 +256,8 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("MarkAsPaid"), MarkAsPaid);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
+                    _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
                 break;

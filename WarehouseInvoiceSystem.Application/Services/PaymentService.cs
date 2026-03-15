@@ -145,6 +145,14 @@
             await invoiceRepository.UpdateAsync(invoice);
         }
 
+        public async Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default)
+        {
+            Payment? payment = await paymentRepository.GetByIdAsync(id, ct)
+                ?? throw new KeyNotFoundException($"Payment with ID {id} not found");
+            payment.Notes = notes;
+            await paymentRepository.UpdateAsync(payment);
+        }
+
         public async Task<bool> DeletePaymentAsync(Guid id)
         {
             // Load payment and invoice
