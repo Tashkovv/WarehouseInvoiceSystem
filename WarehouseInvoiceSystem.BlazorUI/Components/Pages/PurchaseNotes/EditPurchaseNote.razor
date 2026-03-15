@@ -131,12 +131,13 @@ else
                             <MudAutocomplete T="ProductDto"
                                              Value="item.SelectedProduct"
                                              SearchFunc="@SearchProducts"
-                                             ToStringFunc="@(p => p?.Name ?? "")"
+                                             ToStringFunc="@(p => p != null ? $"{p.Code} - {p.Name}" : "")"
                                              ValueChanged="@((ProductDto p) => OnProductSelected(item, p))"
                                              ResetValueOnEmptyText="true"
                                              CoerceText="false"
                                              Variant="Variant.Text"
                                              Clearable="true"
+                                             Placeholder="@Localization.GetString("SelectProduct")"
                                              FullWidth="true">
                                 <ItemTemplate Context="product">
                                     <MudText Typo="Typo.body2">

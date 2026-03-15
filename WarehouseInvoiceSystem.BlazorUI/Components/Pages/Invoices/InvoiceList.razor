@@ -2,10 +2,12 @@
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IInvoiceService InvoiceService
+@inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
@@ -578,12 +580,40 @@
 
     private async Task OpenSendEmailDialog(InvoiceDto invoice)
     {
+        if (!await HasSufficientStockAsync(invoice))
+        {
+            Snackbar.Add(Localization.GetString("InsufficientStockToSend"), Severity.Error);
+            return;
+        }
+
         bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
             Localization.GetString("SendInvoiceEmail"),
             p => p.Add(x => x.Invoice, invoice));
 
         if (sent == true)
             await _grid.ReloadServerData();
+    }
+
+    private async Task<bool> HasSufficientStockAsync(InvoiceDto invoice)
+    {
+        if (invoice.Type != InvoiceType.Receivable) return true;
+
+        try
+        {
+            InvoiceDto? full = await InvoiceService.GetInvoiceByIdAsync(invoice.Id, _cts.Token);
+            if (full == null || !full.LineItems.Any()) return true;
+
+            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(invoice.WarehouseId, _cts.Token);
+            Dictionary<Guid, decimal> stockByProduct = levels.ToDictionary(s => s.ProductId, s => s.AvailableQuantity);
+
+            return !full.LineItems.Any(li =>
+                !stockByProduct.TryGetValue(li.ProductId, out decimal available) || li.Quantity > available);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking stock: {ex.Message}");
+            return true; // don't block on error
+        }
     }
 
     private async Task PerformExport()

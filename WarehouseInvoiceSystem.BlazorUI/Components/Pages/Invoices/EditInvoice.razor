@@ -4,10 +4,12 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IInvoiceService InvoiceService
+@inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
@@ -87,6 +89,7 @@ else
                             <MudItem xs="12" md="4">
                                 <MudSelect T="InvoiceType?"
                                            @bind-Value="_selectedType"
+                                           @bind-Value:after="OnTypeChanged"
                                            Label="@Localization.GetString("Type")"
                                            Required="true"
                                            RequiredError="@Localization.GetString("SelectType")"
@@ -109,7 +112,8 @@ else
                             <MudItem xs="12" md="4">
                                 <MudAutocomplete T="WarehouseDto"
                                                  Label="@Localization.GetString("Warehouse")"
-                                                 @bind-Value="_selectedWarehouse"
+                                                 Value="@_selectedWarehouse"
+                                                 ValueChanged="@OnWarehouseSelected"
                                                  SearchFunc="@SearchWarehouses"
                                                  Required="true"
                                                  RequiredError="@Localization.GetString("SelectWarehouse")"
@@ -175,6 +179,10 @@ else
                         <MudTable Items="_lineItems" Dense="true" Hover="true" Elevation="0" Class="mb-2">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
+                                @if (_selectedCompany != null && _selectedType == InvoiceType.Receivable && _lineItems.Any(i => i.SelectedProduct != null))
+                                {
+                                    <MudTh Style="width:120px">@Localization.GetString("Available")</MudTh>
+                                }
                                 <MudTh Style="width:140px">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh Style="width:185px">@Localization.GetString("UnitPrice")</MudTh>
                                 <MudTh Style="width:190px">@Localization.GetString("TaxRate")</MudTh>
@@ -186,23 +194,65 @@ else
                                     <MudAutocomplete T="ProductDto"
                                                      Value="item.SelectedProduct"
                                                      SearchFunc="@SearchProducts"
-                                                     ToStringFunc="@(p => p?.Name ?? "")"
+                                                     ToStringFunc="@(p => p != null ? $"{p.Code} - {p.Name}" : "")"
                                                      ValueChanged="@((ProductDto p) => OnProductSelected(item, p))"
                                                      ResetValueOnEmptyText="true"
                                                      CoerceText="false"
                                                      Variant="Variant.Text"
                                                      Clearable="true"
+                                                     Placeholder="@Localization.GetString("SelectProduct")"
                                                      FullWidth="true">
                                         <ItemTemplate Context="product">
-                                            <MudText Typo="Typo.body2">
-                                                <strong>@product.Code</strong> - @product.Name
-                                            </MudText>
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                @product.Unit | @product.DefaultPrice.ToString("C")
-                                            </MudText>
+                                            @{
+                                                StockLevelDto? stock = GetStockLevel(product.Id);
+                                                bool isReceivable = _selectedType == InvoiceType.Receivable;
+                                                bool outOfStock   = isReceivable && stock != null && stock.AvailableQuantity == 0m;
+                                                bool lowStock     = isReceivable && stock != null && stock.AvailableQuantity > 0m
+                                                                    && stock.MinimumQuantity.HasValue
+                                                                    && stock.AvailableQuantity <= stock.MinimumQuantity.Value;
+                                            }
+                                            <div class="d-flex justify-space-between align-center" style="width:100%">
+                                                <div>
+                                                    <MudText Typo="Typo.body2">
+                                                        <strong>@product.Code</strong> - @product.Name
+                                                    </MudText>
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                        @product.Unit | @product.DefaultPrice.ToString("C")
+                                                    </MudText>
+                                                </div>
+                                                @if (isReceivable && stock != null)
+                                                {
+                                                    <MudChip T="string"
+                                                             Size="Size.Small"
+                                                             Color="@(outOfStock ? Color.Error : lowStock ? Color.Warning : Color.Success)"
+                                                             Variant="Variant.Filled"
+                                                             Class="ml-2">
+                                                        @($"{stock.AvailableQuantity:N0} {product.Unit}")
+                                                    </MudChip>
+                                                }
+                                            </div>
                                         </ItemTemplate>
                                     </MudAutocomplete>
                                 </MudTd>
+                                @if (_selectedCompany != null && _selectedType == InvoiceType.Receivable && _lineItems.Any(i => i.SelectedProduct != null))
+                                {
+                                    <MudTd>
+                                        @if (item.SelectedProduct != null)
+                                        {
+                                            var itemStock = GetStockLevel(item.SelectedProduct.Id);
+                                            if (itemStock != null)
+                                            {
+                                                <MudChip T="string"
+                                                         Size="Size.Small"
+                                                         Color="@GetStockColor(itemStock)"
+                                                         Variant="Variant.Outlined"
+                                                         Class="ml-2">
+                                                    @($"{itemStock.AvailableQuantity:N0} {item.SelectedProduct.Unit}")
+                                                </MudChip>
+                                            }
+                                        }
+                                    </MudTd>
+                                }
                                 <MudTd>
                                     <MudNumericField @bind-Value="item.Quantity"
                                                      @bind-Value:after="CalculateTotals"
@@ -322,6 +372,8 @@ else
     // Dirty tracking snapshot
     private FormSnapshot? _snapshot;
 
+    private Dictionary<Guid, StockLevelDto> _stockByProduct = new();
+
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
@@ -350,7 +402,7 @@ else
         return result.Items;
     }
 
-    private void OnCompanySelected(CompanyDto? company)
+    private async void OnCompanySelected(CompanyDto? company)
     {
         _selectedCompany = company;
         if (company == null) return;
@@ -361,14 +413,64 @@ else
             CompanyType.Vendor => InvoiceType.Payable,
             _ => _selectedType
         };
+
+        await LoadStockForWarehouseAsync();
     }
 
     private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken ct)
     {
-        GetProductsQuery query = new() { PageSize = 10, IsActive = true };
+        GetProductsQuery query = new() { PageSize = 20, IsActive = true };
         if (!string.IsNullOrWhiteSpace(value)) query.Search = value;
         PagedResult<ProductDto> result = await ProductService.GetPagedAsync(query, ct);
-        return result.Items;
+
+        if (_selectedType != InvoiceType.Receivable || _stockByProduct.Count == 0)
+            return result.Items;
+
+        return result.Items.OrderBy(p => GetStockLevel(p.Id)?.AvailableQuantity == 0m ? 1 : 0);
+    }
+
+    private async Task OnWarehouseSelected(WarehouseDto? warehouse)
+    {
+        _selectedWarehouse = warehouse;
+        await LoadStockForWarehouseAsync();
+    }
+
+    private async Task OnTypeChanged()
+    {
+        await LoadStockForWarehouseAsync();
+    }
+
+    private async Task LoadStockForWarehouseAsync()
+    {
+        if (_selectedWarehouse == null || _selectedType != InvoiceType.Receivable)
+        {
+            _stockByProduct = new();
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouse.Id, _cts.Token);
+            _stockByProduct = (levels ?? []).ToDictionary(s => s.ProductId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading stock levels: {ex.Message}");
+            _stockByProduct = new();
+        }
+
+        StateHasChanged();
+    }
+
+    private StockLevelDto? GetStockLevel(Guid productId)
+        => _stockByProduct.TryGetValue(productId, out StockLevelDto? s) ? s : null;
+
+    private static Color GetStockColor(StockLevelDto stock)
+    {
+        if (stock.AvailableQuantity == 0m) return Color.Error;
+        if (stock.MinimumQuantity.HasValue && stock.AvailableQuantity <= stock.MinimumQuantity.Value) return Color.Warning;
+        return Color.Success;
     }
 
     private async Task LoadInvoice()
@@ -384,6 +486,7 @@ else
                 _selectedCompany = await CompanyService.GetCompanyByIdAsync(_invoice.CompanyId, _cts.Token);
                 _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(_invoice.WarehouseId, _cts.Token);
                 _selectedType = _invoice.Type;
+                await LoadStockForWarehouseAsync();
 
                 _issueDate = _invoice.IssueDate;
                 _dueDate = _invoice.DueDate;
