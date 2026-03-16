@@ -1,6 +1,9 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject ILocalizationService Localization
+@inject IBackgroundJobService BackgroundJobService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <MudThemeProvider Theme="_theme" />
 <MudPopoverProvider />
@@ -130,7 +133,32 @@
         </MudMenu>
 
         <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
-        <MudIconButton Icon="@Icons.Material.Filled.Settings" Color="Color.Inherit" />
+        <MudMenu Icon="@Icons.Material.Filled.Settings"
+                 Color="Color.Inherit"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Dense="true">
+            <MudListSubheader Class="px-4 py-2">
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
+                    @Localization.GetString("SystemJobs")
+                </MudText>
+            </MudListSubheader>
+            <MudMenuItem OnClick="RunCheckOverdueInvoices"
+                         Icon="@Icons.Material.Filled.Schedule"
+                         Disabled="_runningJob">
+                @if (_runningJob)
+                {
+                    <div class="d-flex align-center gap-2">
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                        <span>@Localization.GetString("CheckOverdueInvoices")</span>
+                    </div>
+                }
+                else
+                {
+                    @Localization.GetString("CheckOverdueInvoices")
+                }
+            </MudMenuItem>
+        </MudMenu>
     </MudAppBar>
 
     <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh;">
@@ -220,6 +248,8 @@
         }
     };
 
+    private bool _runningJob = false;
+
     protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += StateHasChanged;
@@ -228,6 +258,23 @@
     private void ChangeLanguage(string language)
     {
         Localization.SetLanguage(language);
+    }
+
+    private async Task RunCheckOverdueInvoices()
+    {
+        _runningJob = true;
+        try
+        {
+            await BackgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+            Snackbar.Add(Localization.GetString("CheckOverdueInvoicesSuccess"), Severity.Success);
+            Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error running overdue check: {ex.Message}");
+            Snackbar.Add(Localization.GetString("CheckOverdueInvoicesError"), Severity.Error);
+            _runningJob = false;
+        }
     }
 
     public void Dispose()

@@ -270,6 +270,7 @@ else
                                   Elevation="0"
                                   Dense="true"
                                   T="PaymentDto"
+                                  Class="wis-secondary-list"
                                   RowClass="table-row-clickable"
                                   OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => Navigation.NavigateTo($"/payments/{args.Item!.Id}"))">
                             <HeaderContent>

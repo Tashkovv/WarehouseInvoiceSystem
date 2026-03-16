@@ -102,6 +102,7 @@
                 ["NewCompany"] = "New Company",
                 ["NewIndividual"] = "New Individual",
                 ["NewPurchaseNote"] = "New Purchase Note",
+                ["NewPayment"] = "New Payment",
                 ["NewProduct"] = "New Product",
                 ["ViewLowStock"] = "View Low Stock",
                 ["CompanyBreakdown"] = "Company Breakdown",
@@ -144,6 +145,9 @@
                 ["ByTotalRevenue"] = "By total revenue",
                 ["TotalSpend"] = "Total Spend",
                 ["PayableInvoicesToday"] = "Payable invoices today",
+                ["DaysOverdue"] = "Days overdue",
+                ["WarehouseHealth"] = "Warehouse health",
+                ["FinancialHealth"] = "Financial health",
 
                 // Status
                 ["Draft"] = "Draft",
@@ -541,6 +545,13 @@
                 ["AdjustmentReason"] = "Reason",
                 ["StockAdjusted"] = "Stock adjusted successfully",
                 ["ErrorAdjustingStock"] = "Error adjusting stock",
+
+                // System / Admin
+                ["SystemJobs"] = "System",
+                ["CheckOverdueInvoices"] = "Check Overdue Invoices",
+                ["CheckOverdueInvoicesSuccess"] = "Overdue invoices check completed",
+                ["CheckOverdueInvoicesError"] = "Error running overdue invoices check",
+
                 ["SelectWarehouse"] = "Select Warehouse",
                 ["CurrentStock"] = "Current Stock",
                 ["MinimumQuantity"] = "Minimum Quantity",
@@ -784,6 +795,7 @@
                 ["NewCompany"] = "Нова Компанија",
                 ["NewIndividual"] = "Ново Физичко Лице",
                 ["NewPurchaseNote"] = "Нова Откупна Белешка",
+                ["NewPayment"] = "Ново Плаќање",
                 ["NewProduct"] = "Нов Производ",
                 ["ViewLowStock"] = "Ниска Залиха",
                 ["CompanyBreakdown"] = "Распределба на Компании",
@@ -827,6 +839,9 @@
                 ["ByTotalRevenue"] = "По вкупен приход",
                 ["TotalSpend"] = "Вкупна потрошувачка",
                 ["PayableInvoicesToday"] = "Фактури за плаќање денес",
+                ["DaysOverdue"] = "Денови задоцнување",
+                ["WarehouseHealth"] = "Состојба на магацин",
+                ["FinancialHealth"] = "Финансиска состојба",
 
                 // Status
                 ["Draft"] = "Нацрт",
@@ -1234,6 +1249,13 @@
                 ["AdjustmentReason"] = "Причина",
                 ["StockAdjusted"] = "Залихата е успешно прилагодена",
                 ["ErrorAdjustingStock"] = "Грешка при прилагодување на залиха",
+
+                // System / Admin
+                ["SystemJobs"] = "Систем",
+                ["CheckOverdueInvoices"] = "Провери задоцнети фактури",
+                ["CheckOverdueInvoicesSuccess"] = "Проверката на задоцнети фактури е завршена",
+                ["CheckOverdueInvoicesError"] = "Грешка при проверка на задоцнети фактури",
+
                 ["PurchaseFrom"] = "Откуп од",
                 ["SaleTo"] = "Продажба до",
                 ["InventoryTransactionForInvoice"] = "Трансакција во залиха за фактура",

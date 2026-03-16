@@ -3,14 +3,14 @@
 
 <MudTooltip Text="@(Action.Disabled? Action.DisabledReason ?? string.Empty : string.Empty)"
             Disabled="@(!Action.Disabled || string.IsNullOrEmpty(Action.DisabledReason))">
-    <button class="wis-split-btn__primary wis-split-btn__primary--solo @GetColorClass(Action.Color) @(Action.Disabled ? "wis-split-btn__primary--disabled" : "")"
+    <button class="wis-split-btn__primary wis-split-btn__primary--solo @GetColorClass(Action.Color) @GetSizeClass(ButtonSize) @(Action.Disabled ? "wis-split-btn__primary--disabled" : "")"
             type="button"
             disabled="@Action.Disabled"
             @onclick="Action.OnClick">
         @if (!string.IsNullOrEmpty(Action.Icon))
         {
             <span class="wis-split-btn__icon">
-                <MudIcon Icon="@Action.Icon" Size="Size.Small" />
+                <MudIcon Icon="@Action.Icon" Size="@GetIconSize(ButtonSize)" />
             </span>
         }
         <span>@Action.Label</span>
@@ -19,6 +19,7 @@
 
 @code {
     [Parameter, EditorRequired] public WisDetailActionItem Action { get; set; } = null!;
+    [Parameter] public Size ButtonSize { get; set; } = Size.Medium;
 
     private static string GetColorClass(Color color) => color switch
     {
@@ -29,5 +30,19 @@
         Color.Secondary => "wis-btn-color--secondary",
         Color.Dark => "wis-btn-color--dark",
         _ => "wis-btn-color--primary"
+    };
+
+    private static string GetSizeClass(Size size) => size switch
+    {
+        Size.Small => "wis-btn-size--small",
+        Size.Large => "wis-btn-size--large",
+        _ => ""
+    };
+
+    private static Size GetIconSize(Size size) => size switch
+    {
+        Size.Small => Size.Small,
+        Size.Large => Size.Medium,
+        _ => Size.Small
     };
 }

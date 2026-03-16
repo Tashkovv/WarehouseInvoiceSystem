@@ -1,4 +1,4 @@
-﻿@inject ILocalizationService Localization
+@inject ILocalizationService Localization
 @inject NavigationManager Navigation
 
 <MudCard Elevation="2"
@@ -6,14 +6,14 @@
          @onmouseenter="OnMouseEnter"
          @onmouseleave="OnMouseLeave"
          @onclick="NavigateToLink"
-         Style="@($"cursor: {(!string.IsNullOrEmpty(Link) ? "pointer" : "default")}; transition: all 0.2s ease; height: 100%; border-top: 3px solid {GetAccentColor()}; overflow: hidden;")">
+         Style="@($"cursor: {(!string.IsNullOrEmpty(Link) ? "pointer" : "default")}; transition: all 0.2s ease; height: 100%; border-top: 4px solid {GetAccentColor()}; background-color: rgba({GetAccentColorRgb()}, 0.05); overflow: hidden;")">
     <MudCardContent Class="pa-5">
         <div class="d-flex align-center justify-space-between">
             <!-- Left side: Icon in colored circle -->
             @if (!string.IsNullOrEmpty(Icon))
             {
                 <div class="d-flex align-center justify-center rounded-circle"
-                     style="@($"min-width: 56px; height: 56px; background-color: {GetAccentColor()}1a;")">
+                     style="@($"min-width: 56px; height: 56px; background-color: rgba({GetAccentColorRgb()}, 0.12);")">
                     <MudIcon Icon="@Icon" Color="@IconColor" Size="Size.Large" />
                 </div>
             }
@@ -31,6 +31,17 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
                         @Subtitle
                     </MudText>
+                }
+                @if (!string.IsNullOrEmpty(Trend))
+                {
+                    <div class="d-flex align-center justify-end gap-1 mt-1">
+                        <MudIcon Icon="@(TrendPositive ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)"
+                                 Size="Size.Small"
+                                 Color="@(TrendPositive ? Color.Success : Color.Error)" />
+                        <MudText Typo="Typo.caption" Color="@(TrendPositive ? Color.Success : Color.Error)">
+                            @Trend
+                        </MudText>
+                    </div>
                 }
             </div>
 
@@ -52,6 +63,8 @@
     [Parameter] public string? Icon { get; set; }
     [Parameter] public Color IconColor { get; set; } = Color.Primary;
     [Parameter] public string? Link { get; set; }
+    [Parameter] public string? Trend { get; set; }
+    [Parameter] public bool TrendPositive { get; set; } = true;
 
     private bool _isHovered = false;
 
@@ -66,13 +79,25 @@
 
     private string GetAccentColor() => IconColor switch
     {
-        Color.Primary => "var(--mud-palette-primary)",
+        Color.Primary   => "var(--mud-palette-primary)",
         Color.Secondary => "var(--mud-palette-secondary)",
-        Color.Success => "var(--mud-palette-success)",
-        Color.Warning => "var(--mud-palette-warning)",
-        Color.Error => "var(--mud-palette-error)",
-        Color.Info => "var(--mud-palette-info)",
-        Color.Tertiary => "var(--mud-palette-tertiary)",
-        _ => "var(--mud-palette-primary)"
+        Color.Success   => "var(--mud-palette-success)",
+        Color.Warning   => "var(--mud-palette-warning)",
+        Color.Error     => "var(--mud-palette-error)",
+        Color.Info      => "var(--mud-palette-info)",
+        Color.Tertiary  => "var(--mud-palette-tertiary)",
+        _               => "var(--mud-palette-primary)"
+    };
+
+    private string GetAccentColorRgb() => IconColor switch
+    {
+        Color.Primary   => "var(--mud-palette-primary-rgb)",
+        Color.Secondary => "var(--mud-palette-secondary-rgb)",
+        Color.Success   => "var(--mud-palette-success-rgb)",
+        Color.Warning   => "var(--mud-palette-warning-rgb)",
+        Color.Error     => "var(--mud-palette-error-rgb)",
+        Color.Info      => "var(--mud-palette-info-rgb)",
+        Color.Tertiary  => "var(--mud-palette-tertiary-rgb)",
+        _               => "var(--mud-palette-primary-rgb)"
     };
 }

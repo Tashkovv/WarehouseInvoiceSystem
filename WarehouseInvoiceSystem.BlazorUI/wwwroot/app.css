@@ -984,6 +984,7 @@ html {
 
     .wis-split-btn__primary:hover:not(:disabled) {
         background: rgb(var(--wis-btn-clr-rgb));
+        color: #fff;
     }
 
 /* Solo variant — adds its own border and full radius */
@@ -1001,6 +1002,7 @@ html {
     .wis-split-btn__primary--solo:hover:not(:disabled) {
         background: rgb(var(--wis-btn-clr-rgb));
         outline-width: 2.5px;
+        color: #fff;
     }
 
     .wis-split-btn__primary--solo:focus {
@@ -1012,6 +1014,33 @@ html {
         font-size: 18px !important;
         width: 18px !important;
         height: 18px !important;
+    }
+
+/* Solo size variants */
+.wis-split-btn__primary--solo.wis-btn-size--small {
+    height: 26px;
+    padding: 0 12px 0 9px;
+    border-radius: 13px;
+    font-size: 0.75rem;
+}
+
+    .wis-split-btn__primary--solo.wis-btn-size--small .wis-split-btn__icon .mud-icon-root {
+        font-size: 14px !important;
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+.wis-split-btn__primary--solo.wis-btn-size--large {
+    height: 40px;
+    padding: 0 20px 0 16px;
+    border-radius: 20px;
+    font-size: 0.9375rem;
+}
+
+    .wis-split-btn__primary--solo.wis-btn-size--large .wis-split-btn__icon .mud-icon-root {
+        font-size: 20px !important;
+        width: 20px !important;
+        height: 20px !important;
     }
 
 .wis-split-btn__primary--icon-only {

@@ -1,9 +1,686 @@
-﻿@page "/"
+@page "/"
+@implements IDisposable
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Application.DTOs.Payment
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@inject IInvoiceService InvoiceService
+@inject IPurchaseNoteService PurchaseNoteService
+@inject IPaymentService PaymentService
+@inject IInventoryService InventoryService
+@inject IProductService ProductService
+@inject IIndividualService IndividualService
+@inject ICompanyService CompanyService
+@inject IWarehouseService WarehouseService
+@inject ILocalizationService Localization
+@inject WisDialogService WisDialog
+@inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
+<PageTitle>@Localization.GetString("Overview") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Overview")</MudText>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else
+{
+    <MudGrid>
+
+        <!-- ── Quick Actions ── -->
+        <MudItem xs="12">
+            <MudPaper Elevation="2" Class="pa-4 rounded-lg" Style="background-color: rgba(var(--mud-palette-secondary-rgb), 0.07);">
+                <div class="d-flex flex-wrap gap-3 justify-space-between">
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Business, Label = Localization.GetString("NewCompany"), Color = Color.Success, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewCompanyDialog()) })" ButtonSize="Size.Large" />
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Person, Label = Localization.GetString("NewIndividual"), Color = Color.Dark, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewIndividualDialog()) })" ButtonSize="Size.Large" />
+                    <WisButton Action="@NavAction(Icons.Material.Filled.RequestQuote, Localization.GetString("NewInvoice"), "/invoices/create", Color.Primary)" ButtonSize="Size.Large" />
+                    <WisButton Action="@NavAction(Icons.Material.Filled.Receipt, Localization.GetString("NewPurchaseNote"), "/purchase-notes/create", Color.Info)" ButtonSize="Size.Large" />
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Payment, Label = Localization.GetString("NewPayment"), Color = Color.Success, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewPaymentDialog()) })" ButtonSize="Size.Large" />
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Inventory2, Label = Localization.GetString("NewProduct"), Color = Color.Warning, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewProductDialog()) })" ButtonSize="Size.Large" />
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Inventory2, Label = Localization.GetString("AdjustStock"), Color = Color.Secondary, OnClick = EventCallback.Factory.Create(this, async () => await OpenAdjustStockDialog()) })" ButtonSize="Size.Large" />
+                </div>
+            </MudPaper>
+        </MudItem>
+
+        <!-- ── Row 1: Today's Pulse ── -->
+        <MudItem xs="12">
+            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("TodaysActivity")</MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("Profit")"
+                           Value="@_profitToday.ToString("C")"
+                           Icon="@Icons.Material.Filled.TrendingUp"
+                           IconColor="@(_profitToday >= 0 ? Color.Success : Color.Error)" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
+                           Value="@_invoicesReceivableToday.Count().ToString()"
+                           Subtitle="@_invoicesReceivableToday.Sum(i => i.TotalAmount).ToString("C")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Primary" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
+                           Value="@_purchaseNotesToday.Count().ToString()"
+                           Subtitle="@_purchaseNotesToday.Sum(pn => pn.TotalAmount).ToString("C")"
+                           Icon="@Icons.Material.Filled.Receipt"
+                           IconColor="Color.Info" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("RecentPayments")"
+                           Value="@_paymentsToday.Count().ToString()"
+                           Subtitle="@_paymentsToday.Sum(p => p.Amount).ToString("C")"
+                           Icon="@Icons.Material.Filled.Payments"
+                           IconColor="Color.Success" />
+        </MudItem>
+
+        <!-- ── Row 2: Financial Health ── -->
+        <MudItem xs="12" Class="mt-6">
+            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("FinancialHealth")</MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
+                           Value="@_totalReceivables.ToString("C")"
+                           Subtitle="@($"{_openReceivablesCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                           IconColor="Color.Success" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("TotalPayables")"
+                           Value="@_totalPayables.ToString("C")"
+                           Subtitle="@($"{_openPayableInvoicesCount} {Localization.GetString("Invoices")} · {_openPurchaseNotesCount} {Localization.GetString("PurchaseNotes")}")"
+                           Icon="@Icons.Material.Filled.AccountBalance"
+                           IconColor="Color.Warning" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
+                           Value="@_overdueCount.ToString()"
+                           Subtitle="@_overdueAmount.ToString("C")"
+                           Icon="@Icons.Material.Filled.Warning"
+                           IconColor="@(_overdueCount > 0 ? Color.Error : Color.Success)" />
+        </MudItem>
+
+        <!-- ── Row 3: Warehouse Health ── -->
+        <MudItem xs="12" Class="mt-6">
+            <div class="d-flex align-center flex-wrap gap-3 mb-4">
+                <MudText Typo="Typo.h6">@Localization.GetString("WarehouseHealth")</MudText>
+                <WisAutocompleteFilter TValue="Guid"
+                                       Label="@Localization.GetString("AllWarehouses")"
+                                       AllLabel="@Localization.GetString("AllWarehouses")"
+                                       Icon="@Icons.Material.Filled.Warehouse"
+                                       LoadItems="LoadWarehouseItems"
+                                       SelectedValue="@(_filterWarehouseId ?? default)"
+                                       SelectedValueChanged="OnWarehouseFilterChanged"
+                                       MinWidth="180px" />
+            </div>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalProducts")"
+                           Value="@_filteredStockLevels.Select(sl => sl.ProductId).Distinct().Count().ToString()"
+                           Subtitle="@($"{_filteredStockLevels.Count(sl => sl.Quantity > 0)} {Localization.GetString("InStock")}")"
+                           Icon="@Icons.Material.Filled.Inventory2"
+                           IconColor="Color.Info" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalStockValue")"
+                           Value="@_totalStockValue.ToString("C")"
+                           Subtitle="@(_filterWarehouseId.HasValue ? _filteredStockLevels.FirstOrDefault()?.WarehouseName ?? string.Empty : $"{_filteredStockLevels.Select(sl => sl.WarehouseId).Distinct().Count()} {Localization.GetString("Warehouses")}")"
+                           Icon="@Icons.Material.Filled.Warehouse"
+                           IconColor="Color.Primary" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("LowStock")"
+                           Value="@_lowStockCount.ToString()"
+                           Subtitle="@Localization.GetString("ProductsBelowMinimum")"
+                           Icon="@Icons.Material.Filled.TrendingDown"
+                           IconColor="@(_lowStockCount > 0 ? Color.Warning : Color.Success)" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("OutOfStock")"
+                           Value="@_outOfStockCount.ToString()"
+                           Icon="@Icons.Material.Filled.RemoveShoppingCart"
+                           IconColor="@(_outOfStockCount > 0 ? Color.Error : Color.Success)" />
+        </MudItem>
+
+        <!-- ── Row 4: Attention Needed ── -->
+        @if (_overdueInvoices.Any() || _unpaidPurchaseNotes.Any() || _stockAlerts.Any())
+        {
+            <MudItem xs="12" Class="mt-6">
+                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("AttentionNeeded")</MudText>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudCard Elevation="2">
+                    <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pa-0" Color="Color.Default">
+
+                        @if (_overdueInvoices.Any())
+                        {
+                            <MudTabPanel Text="@Localization.GetString("OverdueInvoices")"
+                                         Icon="@Icons.Material.Filled.Warning"
+                                         BadgeData="@_overdueInvoices.Count()"
+                                         BadgeColor="Color.Error"
+                                         Class="mr-5">
+                                <MudTable Items="@_overdueInvoices.Take(10)"
+                                          Hover="true"
+                                          Dense="true"
+                                          Elevation="0"
+                                          T="InvoiceDto"
+                                          Class="wis-secondary-list"
+                                          RowClassFunc="@((i, n) => "row-status-error table-row-clickable")"
+                                          OnRowClick="@((TableRowClickEventArgs<InvoiceDto> args) => Navigation.NavigateTo($"/invoices/{args.Item!.Id}"))">
+                                    <HeaderContent>
+                                        <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
+                                        <MudTh>@Localization.GetString("Company")</MudTh>
+                                        <MudTh Class="text-right">@Localization.GetString("AmountDue")</MudTh>
+                                        <MudTh>@Localization.GetString("DueDate")</MudTh>
+                                        <MudTh Class="text-right">@Localization.GetString("DaysOverdue")</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
+                                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.InvoiceNumber</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Company")">
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.CompanyName</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("AmountDue")" Class="text-right">
+                                            <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Error">
+                                                @context.AmountDue.ToString("C")
+                                            </MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("DueDate")">
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                @context.DueDate.ToString("dd MMM yyyy")
+                                            </MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("DaysOverdue")" Class="text-right">
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
+                                                @((DateTime.Today - context.DueDate).Days) @Localization.GetString("Days")
+                                            </MudChip>
+                                        </MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                                <MudCardActions Class="pa-4">
+                                    <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Invoices"), "/invoices", Color.Secondary)" />
+                                </MudCardActions>
+                            </MudTabPanel>
+                        }
+
+                        @if (_unpaidPurchaseNotes.Any())
+                        {
+                            <MudTabPanel Text="@Localization.GetString("UnpaidPurchaseNotes")"
+                                         Icon="@Icons.Material.Filled.Receipt"
+                                         BadgeData="@_unpaidPurchaseNotes.Count()"
+                                         BadgeColor="Color.Warning"
+                                         Class="mr-5">
+                                <MudTable Items="@_unpaidPurchaseNotes.Take(10)"
+                                          Hover="true"
+                                          Dense="true"
+                                          Elevation="0"
+                                          T="PurchaseNoteDto"
+                                          Class="wis-secondary-list"
+                                          RowClassFunc="@((pn, n) => "row-status-warning table-row-clickable")"
+                                          OnRowClick="@((TableRowClickEventArgs<PurchaseNoteDto> args) => Navigation.NavigateTo($"/purchase-notes/{args.Item!.Id}"))">
+                                    <HeaderContent>
+                                        <MudTh>@Localization.GetString("NoteNumber")</MudTh>
+                                        <MudTh>@Localization.GetString("Individual")</MudTh>
+                                        <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
+                                        <MudTh>@Localization.GetString("Date")</MudTh>
+                                        <MudTh>@Localization.GetString("Status")</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd DataLabel="@Localization.GetString("NoteNumber")">
+                                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.NoteNumber</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Individual")">
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IndividualFullName</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                            <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Date")">
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                @context.PurchaseDate.ToString("dd MMM yyyy")
+                                            </MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Status")">
+                                            <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)" Variant="Variant.Outlined">
+                                                @GetPurchaseNoteStatusText(context.Status)
+                                            </MudChip>
+                                        </MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                                <MudCardActions Class="pa-4">
+                                    <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("PurchaseNotes"), "/purchase-notes", Color.Secondary)" />
+                                </MudCardActions>
+                            </MudTabPanel>
+                        }
+
+                        @if (_stockAlerts.Any())
+                        {
+                            <MudTabPanel Text="@Localization.GetString("AlertsAndWarnings")"
+                                         Icon="@Icons.Material.Filled.Inventory"
+                                         BadgeData="@_stockAlerts.Count()"
+                                         BadgeColor="Color.Error"
+                                         Class="mr-5">
+                                <MudTable Items="@_stockAlerts.Take(10)"
+                                          Hover="true"
+                                          Dense="true"
+                                          Elevation="0"
+                                          T="StockLevelDto"
+                                          Class="wis-secondary-list"
+                                          RowClassFunc="@((sl, n) => (sl.Quantity == 0 ? "row-status-error" : "row-status-warning") + " table-row-clickable")"
+                                          OnRowClick="@((TableRowClickEventArgs<StockLevelDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
+                                    <HeaderContent>
+                                        <MudTh>@Localization.GetString("Product")</MudTh>
+                                        <MudTh>@Localization.GetString("Warehouse")</MudTh>
+                                        <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                        <MudTh Class="text-right">@Localization.GetString("MinimumQuantity")</MudTh>
+                                        <MudTh>@Localization.GetString("Status")</MudTh>
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd DataLabel="@Localization.GetString("Product")">
+                                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode — @context.ProductName</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Warehouse")">
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.WarehouseName</MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
+                                            <MudText Typo="Typo.body2" Class="font-weight-bold"
+                                                     Color="@(context.Quantity == 0 ? Color.Error : Color.Warning)">
+                                                @context.Quantity.ToString("N2") @context.ProductUnit
+                                            </MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("MinimumQuantity")" Class="text-right">
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                                @if (context.MinimumQuantity.HasValue)
+                                                {
+                                                    @($"{context.MinimumQuantity.Value.ToString("N2")} {context.ProductUnit}")
+                                                }
+                                                else
+                                                {
+                                                    <text>—</text>
+                                                }
+                                            </MudText>
+                                        </MudTd>
+                                        <MudTd DataLabel="@Localization.GetString("Status")">
+                                            @if (context.Quantity == 0)
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
+                                                    @Localization.GetString("OutOfStock")
+                                                </MudChip>
+                                            }
+                                            else
+                                            {
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">
+                                                    @Localization.GetString("LowStock")
+                                                </MudChip>
+                                            }
+                                        </MudTd>
+                                    </RowTemplate>
+                                </MudTable>
+                                <MudCardActions Class="pa-4">
+                                    <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Inventory"), "/inventory", Color.Secondary)" />
+                                </MudCardActions>
+                            </MudTabPanel>
+                        }
+
+                    </MudTabs>
+                </MudCard>
+            </MudItem>
+        }
+
+    </MudGrid>
+}
+
 @code {
+    private readonly CancellationTokenSource _cts = new();
+    private bool _loading = true;
+
+    private List<InvoiceDto> _invoices = [];
+    private List<PurchaseNoteDto> _purchaseNotes = [];
+    private List<PaymentDto> _payments = [];
+    private List<StockLevelDto> _allStockLevels = [];
+    private List<ProductDto> _products = [];
+    private Guid? _filterWarehouseId;
+
+    // ── Today's pulse ──────────────────────────────────────────────────────────
+
+    private IEnumerable<InvoiceDto> _invoicesReceivableToday =>
+        _invoices.Where(i => i.Type == InvoiceType.Receivable && i.IssueDate.Date == DateTime.Today);
+
+    private IEnumerable<InvoiceDto> _invoicesPayableToday =>
+        _invoices.Where(i => i.Type == InvoiceType.Payable && i.IssueDate.Date == DateTime.Today);
+
+    private IEnumerable<PurchaseNoteDto> _purchaseNotesToday =>
+        _purchaseNotes.Where(pn => pn.PurchaseDate.Date == DateTime.Today);
+
+    private IEnumerable<PaymentDto> _paymentsToday =>
+        _payments.Where(p => p.PaymentDate.Date == DateTime.Today);
+
+    private decimal _profitToday =>
+        _invoicesReceivableToday.Sum(i => i.TotalAmount)
+        - _invoicesPayableToday.Sum(i => i.TotalAmount)
+        - _purchaseNotesToday.Sum(pn => pn.TotalAmount);
+
+    // ── Financial health ───────────────────────────────────────────────────────
+
+    private decimal _totalReceivables =>
+        _invoices
+            .Where(i => i.Type == InvoiceType.Receivable &&
+                        (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue))
+            .Sum(i => i.AmountDue);
+
+    private int _openReceivablesCount =>
+        _invoices.Count(i => i.Type == InvoiceType.Receivable &&
+                             (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue));
+
+    private decimal _totalPayables =>
+        _invoices
+            .Where(i => i.Type == InvoiceType.Payable &&
+                        (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue))
+            .Sum(i => i.AmountDue)
+        + _purchaseNotes
+            .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
+            .Sum(pn => pn.TotalAmount);
+
+    private int _openPayableInvoicesCount =>
+        _invoices.Count(i => i.Type == InvoiceType.Payable &&
+                             (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue));
+
+    private int _openPurchaseNotesCount =>
+        _purchaseNotes.Count(pn => pn.Status == PurchaseNoteStatus.Pending);
+
+    private int _overdueCount =>
+        _invoices.Count(i => i.Status == InvoiceStatus.Overdue && i.Type == InvoiceType.Receivable);
+
+    private decimal _overdueAmount =>
+        _invoices
+            .Where(i => i.Status == InvoiceStatus.Overdue && i.Type == InvoiceType.Receivable)
+            .Sum(i => i.AmountDue);
+
+    // ── Warehouse health ───────────────────────────────────────────────────────
+
+    private IEnumerable<StockLevelDto> _filteredStockLevels =>
+        _filterWarehouseId.HasValue
+            ? _allStockLevels.Where(sl => sl.WarehouseId == _filterWarehouseId.Value)
+            : _allStockLevels;
+
+    private decimal _totalStockValue =>
+        _filteredStockLevels.Sum(sl => sl.Quantity * GetProductPrice(sl.ProductId));
+
+    private int _lowStockCount =>
+        _filteredStockLevels.Count(sl => sl.MinimumQuantity.HasValue && sl.Quantity <= sl.MinimumQuantity);
+
+    private int _outOfStockCount =>
+        _filteredStockLevels.Count(sl => sl.Quantity == 0);
+
+    // ── Attention needed ───────────────────────────────────────────────────────
+
+    private IEnumerable<InvoiceDto> _overdueInvoices =>
+        _invoices
+            .Where(i => i.Status == InvoiceStatus.Overdue && i.Type == InvoiceType.Receivable)
+            .Where(i => !_filterWarehouseId.HasValue || i.WarehouseId == _filterWarehouseId.Value)
+            .OrderByDescending(i => DateTime.Today - i.DueDate);
+
+    private IEnumerable<PurchaseNoteDto> _unpaidPurchaseNotes =>
+        _purchaseNotes
+            .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
+            .Where(pn => !_filterWarehouseId.HasValue || pn.WarehouseId == _filterWarehouseId.Value)
+            .OrderBy(pn => pn.PurchaseDate);
+
+    private IEnumerable<StockLevelDto> _stockAlerts =>
+        _filteredStockLevels
+            .Where(sl => sl.Quantity == 0 ||
+                         (sl.MinimumQuantity.HasValue && sl.Quantity > 0 && sl.Quantity <= sl.MinimumQuantity))
+            .OrderBy(sl => sl.Quantity);
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
+
     protected override async Task OnInitializedAsync()
     {
-        Navigation.NavigateTo("/documents-dashboard");
+        Localization.OnLanguageChanged += OnLanguageChanged;
+        await LoadData();
+    }
+
+    private async void OnLanguageChanged() => await InvokeAsync(StateHasChanged);
+
+    private async Task LoadData()
+    {
+        _loading = true;
+
+        try
+        {
+            Task<IEnumerable<InvoiceDto>> invoicesTask = InvoiceService.GetAllInvoicesAsync(_cts.Token);
+            Task<IEnumerable<PurchaseNoteDto>> purchaseNotesTask = PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token);
+            Task<IEnumerable<PaymentDto>> paymentsTask = PaymentService.GetAllPaymentsAsync(_cts.Token);
+            Task<IEnumerable<StockLevelDto>> stockTask = InventoryService.GetAllStockLevelAsync(_cts.Token);
+            Task<IEnumerable<ProductDto>> productsTask = ProductService.GetAllProductsAsync(_cts.Token);
+
+            await Task.WhenAll(invoicesTask, purchaseNotesTask, paymentsTask, stockTask, productsTask);
+
+            _invoices = invoicesTask.Result.ToList();
+            _purchaseNotes = purchaseNotesTask.Result.ToList();
+            _payments = paymentsTask.Result.ToList();
+            _allStockLevels = stockTask.Result.ToList();
+            _products = productsTask.Result.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading home data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(new GetWarehousesQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            SortBy = "Name",
+            SortAscending = true,
+            IsActive = true
+        }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+            {
+                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+                Value = w.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    private void OnWarehouseFilterChanged(Guid value)
+    {
+        _filterWarehouseId = value == default ? null : value;
+    }
+
+    private WisDetailActionItem NavAction(string icon, string label, string href, Color color = Color.Default) => new()
+    {
+        Icon = icon,
+        Label = label,
+        Color = color,
+        OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo(href)),
+    };
+
+    private decimal GetProductPrice(Guid productId) =>
+        _products.FirstOrDefault(p => p.Id == productId)?.DefaultPrice ?? 0;
+
+    private async Task OpenAdjustStockDialog()
+    {
+        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
+            Localization.GetString("AdjustStock"), MaxWidth.Small);
+
+        if (dto is not null)
+        {
+            try
+            {
+                await InventoryService.AdjustStockAsync(dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
+                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
+                IEnumerable<StockLevelDto> updated = await InventoryService.GetAllStockLevelAsync(_cts.Token);
+                _allStockLevels = updated.ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adjusting stock: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenNewPaymentDialog()
+    {
+        try
+        {
+            bool created = await WisDialog.ShowPaymentDialogAsync();
+            if (created)
+                Snackbar.Add(Localization.GetString("PaymentCreated"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating payment: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingPayment"), Severity.Error);
+        }
+    }
+
+    private async Task OpenNewProductDialog()
+    {
+        ProductDto? dto = await WisDialog.ShowFormAsync<ProductDialog, ProductDto>(
+            Localization.GetString("CreateProduct"), MaxWidth.Small);
+
+        if (dto is null) return;
+
+        try
+        {
+            await ProductService.CreateProductAsync(new CreateProductDto
+            {
+                Code = dto.Code,
+                Name = dto.Name,
+                Description = dto.Description,
+                Unit = dto.Unit,
+                DefaultPrice = dto.DefaultPrice,
+                IsActive = dto.IsActive
+            });
+            Snackbar.Add(Localization.GetString("ProductCreated"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating product: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingProduct"), Severity.Error);
+        }
+    }
+
+    private async Task OpenNewCompanyDialog()
+    {
+        CompanyDto? dto = await WisDialog.ShowFormAsync<CompanyDialog, CompanyDto>(
+            Localization.GetString("CreateCompany"));
+
+        if (dto is null) return;
+
+        try
+        {
+            await CompanyService.CreateCompanyAsync(new CreateCompanyDto
+            {
+                Name = dto.Name,
+                Type = dto.Type,
+                ContactPerson = dto.ContactPerson,
+                Email = dto.Email,
+                Phone = dto.Phone,
+                Address = dto.Address,
+                TaxId = dto.TaxId,
+                PaymentTermsDays = dto.PaymentTermsDays,
+                CreditLimit = dto.CreditLimit
+            });
+            Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating company: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingCompany"), Severity.Error);
+        }
+    }
+
+    private async Task OpenNewIndividualDialog()
+    {
+        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
+            Localization.GetString("CreateIndividual"));
+
+        if (dto is null) return;
+
+        try
+        {
+            await IndividualService.CreateIndividualAsync(new CreateIndividualDto
+            {
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                IdentificationNumber = dto.IdentificationNumber,
+                Phone = dto.Phone,
+                Email = dto.Email,
+                Address = dto.Address,
+                IsActive = dto.IsActive
+            });
+            Snackbar.Add(Localization.GetString("IndividualCreated"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating individual: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingIndividual"), Severity.Error);
+        }
+    }
+
+    // ── Status helpers ─────────────────────────────────────────────────────────
+
+    private Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
+    {
+        PurchaseNoteStatus.Draft     => Color.Default,
+        PurchaseNoteStatus.Pending   => Color.Warning,
+        PurchaseNoteStatus.Paid      => Color.Success,
+        PurchaseNoteStatus.Cancelled => Color.Error,
+        _                            => Color.Default
+    };
+
+    private string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
+    {
+        PurchaseNoteStatus.Draft     => Localization.GetString("Draft"),
+        PurchaseNoteStatus.Pending   => Localization.GetString("PendingStatus"),
+        PurchaseNoteStatus.Paid      => Localization.GetString("PaidStatus"),
+        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
+        _                            => status.ToString()
+    };
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

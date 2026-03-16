@@ -15,6 +15,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<StockLevel>)await All<StockLevel>(context)
                     .Where(s => s.Product.IsActive && s.Warehouse.IsActive)
+                    .Include(s => s.Product)
                     .Include(s => s.Warehouse)
                     .ToListAsync(ct);
             });
@@ -154,7 +155,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 stockLevel.CreatedAt = DateTime.UtcNow;
                 context.StockLevels.Add(stockLevel);
                 await SaveAsync(context);
-                return stockLevel;
+                return (await All<StockLevel>(context)
+                    .Include(s => s.Product)
+                    .Include(s => s.Warehouse)
+                    .FirstOrDefaultAsync(s => s.Id == stockLevel.Id))!;
             });
 
         public Task<StockLevel> UpdateAsync(StockLevel stockLevel) =>
@@ -164,7 +168,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     ?? throw new KeyNotFoundException($"StockLevel {stockLevel.Id} not found");
                 context.Entry(tracked).CurrentValues.SetValues(stockLevel);
                 await SaveAsync(context);
-                return tracked;
+                return (await All<StockLevel>(context)
+                    .Include(s => s.Product)
+                    .Include(s => s.Warehouse)
+                    .FirstOrDefaultAsync(s => s.Id == stockLevel.Id))!;
             });
 
         public Task<bool> DeleteAsync(Guid id) =>

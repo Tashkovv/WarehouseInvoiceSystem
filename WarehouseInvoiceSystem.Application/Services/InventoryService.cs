@@ -62,10 +62,10 @@
         {
             StockLevel? stockLevel = await stockLevelRepository.GetByProductAndWarehouseAsync(productId, warehouseId);
 
+            StockLevel saved;
             if (stockLevel == null)
             {
-                // Create new stock level
-                stockLevel = new StockLevel
+                saved = await stockLevelRepository.CreateAsync(new StockLevel
                 {
                     ProductId = productId,
                     WarehouseId = warehouseId,
@@ -73,18 +73,17 @@
                     MinimumQuantity = updateDto.MinimumQuantity,
                     ReorderPoint = updateDto.ReorderPoint,
                     LastRestockedAt = DateTime.UtcNow
-                };
-                stockLevel = await stockLevelRepository.CreateAsync(stockLevel);
+                });
             }
             else
             {
                 stockLevel.Quantity = updateDto.Quantity;
                 stockLevel.MinimumQuantity = updateDto.MinimumQuantity;
                 stockLevel.ReorderPoint = updateDto.ReorderPoint;
-                stockLevel = await stockLevelRepository.UpdateAsync(stockLevel);
+                saved = await stockLevelRepository.UpdateAsync(stockLevel);
             }
 
-            return MapStockLevelToDto(stockLevel);
+            return MapStockLevelToDto(saved);
         }
 
         // Transactions
@@ -144,7 +143,11 @@
             // Update stock level
             await UpdateStockFromTransactionAsync(created);
 
-            return MapTransactionToDto(created);
+            // Re-fetch with navigation properties loaded for DTO mapping
+            InventoryTransaction withNav = await transactionRepository.GetByIdAsync(created.Id)
+                ?? throw new InvalidOperationException($"Transaction {created.Id} not found after creation.");
+
+            return MapTransactionToDto(withNav);
         }
 
         public async Task AdjustStockAsync(Guid productId, Guid warehouseId, decimal quantityChange, string reason)
