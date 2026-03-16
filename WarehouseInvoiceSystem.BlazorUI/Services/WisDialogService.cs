@@ -14,19 +14,21 @@
                                   ILocalizationService localizationService,
                                   IPaymentService paymentService)
     {
-        private static readonly DialogOptions DefaultFormOptions = new()
+        private static DialogOptions FormOptions(MaxWidth maxWidth) => new()
         {
-            MaxWidth = MaxWidth.Medium,
+            MaxWidth = maxWidth,
             FullWidth = true,
             CloseOnEscapeKey = true
         };
 
         // ── Form dialogs ────────────────────────────────────────────────────────
 
-        public async Task<TResult?> ShowFormAsync<TDialog, TResult>(string title)
+        public async Task<TResult?> ShowFormAsync<TDialog, TResult>(
+            string title,
+            MaxWidth maxWidth = MaxWidth.Medium)
             where TDialog : ComponentBase
         {
-            IDialogReference dialog = await dialogService.ShowAsync<TDialog>(title, DefaultFormOptions);
+            IDialogReference dialog = await dialogService.ShowAsync<TDialog>(title, FormOptions(maxWidth));
             DialogResult? result = await dialog.Result;
 
             if (result is { Canceled: false, Data: TResult dto })
@@ -37,13 +39,14 @@
 
         public async Task<TResult?> ShowFormAsync<TDialog, TResult>(
             string title,
-            Action<DialogParameters<TDialog>> configure)
+            Action<DialogParameters<TDialog>> configure,
+            MaxWidth maxWidth = MaxWidth.Medium)
             where TDialog : ComponentBase
         {
             DialogParameters<TDialog> parameters = new();
             configure(parameters);
 
-            IDialogReference dialog = await dialogService.ShowAsync<TDialog>(title, parameters, DefaultFormOptions);
+            IDialogReference dialog = await dialogService.ShowAsync<TDialog>(title, parameters, FormOptions(maxWidth));
             DialogResult? result = await dialog.Result;
 
             if (result is { Canceled: false, Data: TResult dto })
@@ -60,10 +63,12 @@
             string confirmText,
             string? cancelText = null)
         {
-            DialogParameters<WisConfirmDialog> parameters = new();
-            parameters.Add(x => x.Message, message);
-            parameters.Add(x => x.ConfirmText, confirmText);
-            parameters.Add(x => x.CancelText, cancelText ?? localizationService.GetString("Cancel"));
+            DialogParameters<WisConfirmDialog> parameters = new()
+            {
+                { x => x.Message, message },
+                { x => x.ConfirmText, confirmText },
+                { x => x.CancelText, cancelText ?? localizationService.GetString("Cancel") }
+            };
 
             DialogOptions options = new()
             {
@@ -93,7 +98,7 @@
             IDialogReference dialog = await dialogService.ShowAsync<PaymentDialog>(
                 localizationService.GetString("RecordPayment"),
                 parameters,
-                DefaultFormOptions);
+                FormOptions(MaxWidth.Medium));
 
             DialogResult? result = await dialog.Result;
 
@@ -112,7 +117,7 @@
         {
             IDialogReference dialog = await dialogService.ShowAsync<PaymentDialog>(
                 localizationService.GetString("RecordPayment"),
-                DefaultFormOptions);
+                FormOptions(MaxWidth.Medium));
 
             DialogResult? result = await dialog.Result;
 

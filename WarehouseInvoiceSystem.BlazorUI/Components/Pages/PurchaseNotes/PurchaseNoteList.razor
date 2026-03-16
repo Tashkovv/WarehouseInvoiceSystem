@@ -89,6 +89,21 @@
                      Class="wis-data-grid">
             <Columns>
 
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+
                 <PropertyColumn Property="x => x.NoteNumber"
                                 Title="@Localization.GetString("Number")"
                                 Sortable="true"
@@ -153,49 +168,6 @@
                     </CellTemplate>
                 </PropertyColumn>
 
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="@_actionsColClass"
-                                CellClass="@_actionsColClass">
-                    <CellTemplate>
-                        <MudStack Row="true" Spacing="0">
-                            @if (context.Item.Status == PurchaseNoteStatus.Draft)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Size="Size.Small"
-                                               Color="Color.Primary"
-                                               Title="@Localization.GetString("Edit")"
-                                               OnClick="@(() => Navigation.NavigateTo($"/purchase-notes/edit/{context.Item.Id}"))" />
-                            }
-                            @if (context.Item.Status == PurchaseNoteStatus.Draft)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.MoveToInbox"
-                                               Size="Size.Small"
-                                               Color="Color.Warning"
-                                               Title="@Localization.GetString("ReceiveGoods")"
-                                               OnClick="@(() => ReceiveGoods(context.Item))" />
-                            }
-                            else if (context.Item.Status == PurchaseNoteStatus.Pending)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Payment"
-                                               Size="Size.Small"
-                                               Color="Color.Success"
-                                               Title="@Localization.GetString("MarkAsPaid")"
-                                               OnClick="@(() => MarkAsPaid(context.Item))" />
-                            }
-                            else if (context.Item.Status == PurchaseNoteStatus.Cancelled)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Size="Size.Small"
-                                               Color="Color.Error"
-                                               Title="@Localization.GetString("Delete")"
-                                               OnClick="@(() => DeleteNote(context.Item))" />
-                            }
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
-
             </Columns>
 
             <NoRecordsContent>
@@ -223,7 +195,6 @@
 
     private MudDataGrid<PurchaseNoteDto> _grid = null!;
     private string _searchString = string.Empty;
-    private string _actionsColClass = "wis-col-actions-2";
 
     // Quick filter
     private PurchaseNoteStatus? _filterStatus = null;
@@ -307,9 +278,6 @@
         };
 
         PagedResult<PurchaseNoteDto> result = await PurchaseNoteService.GetPagedAsync(query, ct);
-
-        int maxActions = result.Items.Any() ? result.Items.Max(GetActionCount) : 0;
-        _actionsColClass = maxActions >= 2 ? "wis-col-actions-2" : "wis-col-actions-1";
 
         return new GridData<PurchaseNoteDto>
         {
@@ -509,9 +477,105 @@
         _ => Color.Default
     };
 
-    private static int GetActionCount(PurchaseNoteDto item) =>
-        item.Status == PurchaseNoteStatus.Draft ? 2 :
-        item.Status == PurchaseNoteStatus.Pending || item.Status == PurchaseNoteStatus.Cancelled ? 1 : 0;
+    private List<WisDetailActionItem> BuildRowActions(PurchaseNoteDto item)
+    {
+        bool isDraft     = item.Status == PurchaseNoteStatus.Draft;
+        bool isPending   = item.Status == PurchaseNoteStatus.Pending;
+        bool isPaid      = item.Status == PurchaseNoteStatus.Paid;
+        bool isCancelled = item.Status == PurchaseNoteStatus.Cancelled;
+        bool canPay      = isDraft || isPending;
+        bool canCancel   = !isPaid && !isCancelled;
+
+        List<WisDetailActionItem> actions =
+        [
+            new WisDetailActionItem
+            {
+                Icon           = Icons.Material.Filled.Edit,
+                Label          = Localization.GetString("Edit"),
+                Disabled       = !isDraft,
+                DisabledReason = isDraft ? null : Localization.GetString("EditNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/edit/{item.Id}"))
+            },
+            new WisDetailActionItem
+            {
+                Icon           = Icons.Material.Filled.MoveToInbox,
+                Label          = Localization.GetString("ReceiveGoods"),
+                Color          = Color.Warning,
+                Disabled       = !isDraft,
+                DisabledReason = isDraft ? null : Localization.GetString("ActionNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => ReceiveGoods(item))
+            },
+            new WisDetailActionItem
+            {
+                Icon           = Icons.Material.Filled.Payment,
+                Label          = Localization.GetString("MarkAsPaid"),
+                Color          = Color.Success,
+                Disabled       = !canPay,
+                DisabledReason = canPay ? null : Localization.GetString("ActionNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => MarkAsPaid(item))
+            },
+            new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.ContentCopy,
+                Label   = Localization.GetString("Copy"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={item.Id}"))
+            },
+        ];
+
+        if (isCancelled)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon            = Icons.Material.Filled.Delete,
+                Label           = Localization.GetString("Delete"),
+                Color           = Color.Error,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => DeleteNote(item))
+            });
+        }
+        else
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon            = Icons.Material.Filled.Cancel,
+                Label           = Localization.GetString("Cancel"),
+                Color           = Color.Error,
+                IsDividerBefore = true,
+                Disabled        = !canCancel,
+                DisabledReason  = canCancel ? null : Localization.GetString("ActionNotAvailable"),
+                OnClick         = EventCallback.Factory.Create(this, () => CancelNote(item))
+            });
+        }
+
+        return actions;
+    }
+
+    private async Task CancelNote(PurchaseNoteDto note)
+    {
+        string message = note.Status == PurchaseNoteStatus.Pending
+            ? Localization.GetString("CancelPendingNoteConfirm")
+            : Localization.GetString("CancelDraftNoteConfirm");
+
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("CancelPurchaseNote"),
+            message,
+            Localization.GetString("Cancel"),
+            Localization.GetString("Back"));
+
+        if (!confirmed) return;
+
+        try
+        {
+            await PurchaseNoteService.CancelAsync(note.Id);
+            Snackbar.Add(Localization.GetString("PurchaseNoteCancelled"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cancelling purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
+        }
+    }
 
     private string GetStatusText(PurchaseNoteStatus status) => status switch
     {

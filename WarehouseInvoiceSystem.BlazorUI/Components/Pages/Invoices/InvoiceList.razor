@@ -238,6 +238,7 @@
 
     private MudDataGrid<InvoiceDto> _grid = null!;
     private bool _exporting = false;
+    private bool _exportingRow = false;
     private string _searchString = string.Empty;
 
     // Quick filters
@@ -678,9 +679,11 @@
     private List<WisDetailActionItem> BuildRowActions(InvoiceDto item)
     {
         bool isCancelled = item.Status == InvoiceStatus.Cancelled;
+        bool isPaid      = item.Status == InvoiceStatus.Paid;
         bool canEdit     = item.Status == InvoiceStatus.Draft;
         bool canSend     = CanSendEmail(item.Type, item.Status);
         bool canPay      = CanPay(item.Status);
+        bool canCancel   = !isCancelled && !isPaid;
 
         List<WisDetailActionItem> actions =
         [
@@ -716,6 +719,13 @@
                 Label   = Localization.GetString("Copy"),
                 OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
             },
+            new WisDetailActionItem
+            {
+                Icon     = Icons.Material.Filled.FileDownload,
+                Label    = Localization.GetString("Export"),
+                Disabled = _exportingRow,
+                OnClick  = EventCallback.Factory.Create(this, () => ExportInvoiceRow(item))
+            },
         ];
 
         if (!isCancelled)
@@ -726,6 +736,8 @@
                 Label           = Localization.GetString("Cancel"),
                 Color           = Color.Error,
                 IsDividerBefore = true,
+                Disabled        = !canCancel,
+                DisabledReason  = canCancel ? null : Localization.GetString("ActionNotAvailable"),
                 OnClick         = EventCallback.Factory.Create(this, () => CancelInvoice(item))
             });
         }
@@ -742,6 +754,30 @@
         }
 
         return actions;
+    }
+
+    private async Task ExportInvoiceRow(InvoiceDto item)
+    {
+        _exportingRow = true;
+        try
+        {
+            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(item.Id);
+            string fileName = $"{Localization.GetString("Invoice")}_{item.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await JSRuntime.InvokeVoidAsync(
+                "fileDownloadHelper.downloadFileFromStream",
+                fileName,
+                new DotNetStreamReference(new MemoryStream(fileBytes)));
+            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exportingRow = false;
+        }
     }
 
     public void Dispose()

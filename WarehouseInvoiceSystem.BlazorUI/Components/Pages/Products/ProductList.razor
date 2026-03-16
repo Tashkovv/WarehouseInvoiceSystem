@@ -6,7 +6,7 @@
 @inject IProductService ProductService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Products") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -51,6 +51,21 @@
                      SortMode="SortMode.Single"
                      Class="wis-data-grid">
             <Columns>
+
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
 
                 <PropertyColumn Property="x => x.Code"
                                 Title="@Localization.GetString("Code")"
@@ -101,22 +116,6 @@
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
-
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="wis-col-actions-1"
-                                CellClass="wis-col-actions-1">
-                    <CellTemplate>
-                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("Edit")"
-                                           OnClick="@(() => OpenEditDialog(context.Item))" />
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
 
             </Columns>
 
@@ -214,40 +213,21 @@
 
     private async Task OpenCreateDialog()
     {
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+        ProductDto? created = await WisDialog.ShowFormAsync<ProductDialog, ProductDto>(
+            Localization.GetString("CreateProduct"), MaxWidth.Small);
 
-        IDialogReference dialog = await DialogService.ShowAsync<ProductDialog>(
-            Localization.GetString("CreateProduct"), options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: ProductDto created })
+        if (created is not null)
             await CreateProduct(created);
     }
 
     private async Task OpenEditDialog(ProductDto product)
     {
-        DialogParameters<ProductDialog> parameters = new();
-        parameters.Add(x => x.Product, product);
+        ProductDto? edited = await WisDialog.ShowFormAsync<ProductDialog, ProductDto>(
+            Localization.GetString("EditProduct"),
+            p => p.Add(x => x.Product, product),
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<ProductDialog>(
-            Localization.GetString("EditProduct"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: ProductDto edited })
+        if (edited is not null)
             await SaveProduct(edited);
     }
 
@@ -305,6 +285,50 @@
     {
         _filterIsActive = null;
         await _grid.ReloadServerData();
+    }
+
+    private List<WisDetailActionItem> BuildRowActions(ProductDto item) =>
+    [
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Edit,
+            Label   = Localization.GetString("Edit"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon            = Icons.Material.Filled.PowerSettingsNew,
+            Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
+            Color           = item.IsActive ? Color.Warning : Color.Success,
+            IsDividerBefore = true,
+            OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
+        },
+    ];
+
+    private async Task SetActiveStatus(ProductDto item, bool isActive)
+    {
+        if (!isActive)
+        {
+            bool confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("DeactivateProduct"),
+                Localization.GetString("DeactivateProductConfirm"),
+                Localization.GetString("Deactivate"),
+                Localization.GetString("Cancel"));
+            if (!confirmed) return;
+        }
+
+        try
+        {
+            await ProductService.SetActiveStatusAsync(item.Id, isActive);
+            string key = isActive ? "ProductActivated" : "ProductDeactivated";
+            Snackbar.Add(Localization.GetString(key), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating product status: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingProduct"), Severity.Error);
+        }
     }
 
     public void Dispose()

@@ -7,7 +7,7 @@
 @inject ICompanyService CompanyService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Companies") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -59,6 +59,21 @@
                      Class="wis-data-grid">
             <Columns>
 
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+
                 <PropertyColumn Property="x => x.Name"
                                 Title="@Localization.GetString("Name")"
                                 Sortable="true"
@@ -107,27 +122,6 @@
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
-
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="wis-col-actions-2"
-                                CellClass="wis-col-actions-2">
-                    <CellTemplate>
-                        <MudStack Row="true" Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("Edit")"
-                                           OnClick="@(() => OpenEditDialog(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.RequestQuote"
-                                           Size="Size.Small"
-                                           Color="Color.Secondary"
-                                           Title="@Localization.GetString("ViewInvoices")"
-                                           OnClick="@(() => ViewCompanyInvoices(context.Item.Id))" />
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
 
             </Columns>
 
@@ -266,40 +260,20 @@
 
     private async Task OpenCreateDialog()
     {
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+        CompanyDto? created = await WisDialog.ShowFormAsync<CompanyDialog, CompanyDto>(
+            Localization.GetString("CreateCompany"));
 
-        IDialogReference dialog = await DialogService.ShowAsync<CompanyDialog>(
-            Localization.GetString("CreateCompany"), options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: CompanyDto created })
+        if (created is not null)
             await CreateCompany(created);
     }
 
     private async Task OpenEditDialog(CompanyDto company)
     {
-        DialogParameters<CompanyDialog> parameters = new();
-        parameters.Add(x => x.Company, company);
+        CompanyDto? edited = await WisDialog.ShowFormAsync<CompanyDialog, CompanyDto>(
+            Localization.GetString("EditCompany"),
+            p => p.Add(x => x.Company, company));
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<CompanyDialog>(
-            Localization.GetString("EditCompany"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: CompanyDto edited })
+        if (edited is not null)
             await SaveCompany(edited);
     }
 
@@ -365,6 +339,57 @@
         _filterType = null;
         _filterIsActive = null;
         await _grid.ReloadServerData();
+    }
+
+    private List<WisDetailActionItem> BuildRowActions(CompanyDto item) =>
+    [
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Edit,
+            Label   = Localization.GetString("Edit"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.RequestQuote,
+            Label   = Localization.GetString("Invoices"),
+            Color   = Color.Secondary,
+            OnClick = EventCallback.Factory.Create(this, () => ViewCompanyInvoices(item.Id))
+        },
+        new WisDetailActionItem
+        {
+            Icon            = Icons.Material.Filled.PowerSettingsNew,
+            Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
+            Color           = item.IsActive ? Color.Warning : Color.Success,
+            IsDividerBefore = true,
+            OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
+        },
+    ];
+
+    private async Task SetActiveStatus(CompanyDto company, bool isActive)
+    {
+        if (!isActive)
+        {
+            bool confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("DeactivateCompany"),
+                Localization.GetString("DeactivateCompanyConfirm"),
+                Localization.GetString("Deactivate"),
+                Localization.GetString("Back"));
+            if (!confirmed) return;
+        }
+
+        try
+        {
+            await CompanyService.SetActiveStatusAsync(company.Id, isActive);
+            string key = isActive ? "CompanyActivated" : "CompanyDeactivated";
+            Snackbar.Add(Localization.GetString(key), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating company status: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
+        }
     }
 
     public void Dispose()

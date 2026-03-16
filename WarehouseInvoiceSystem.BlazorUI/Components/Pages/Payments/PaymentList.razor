@@ -7,7 +7,6 @@
 @inject IPaymentService PaymentService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
 @inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
@@ -78,6 +77,21 @@
                      Class="wis-data-grid">
             <Columns>
 
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+
                 <PropertyColumn Property="x => x.PaymentDate"
                                 Title="@Localization.GetString("PaymentDate")"
                                 Sortable="true"
@@ -134,27 +148,6 @@
                                 Title="@Localization.GetString("RecordedBy")"
                                 Sortable="false"
                                 IsEditable="false" />
-
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="wis-col-actions-2"
-                                CellClass="wis-col-actions-2">
-                    <CellTemplate>
-                        <MudStack Row="true" Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("Edit")"
-                                           OnClick="@(() => OpenEditDialog(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Size="Size.Small"
-                                           Color="Color.Error"
-                                           Title="@Localization.GetString("Delete")"
-                                           OnClick="@(() => DeletePayment(context.Item.Id))" />
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
 
             </Columns>
 
@@ -324,56 +317,32 @@
 
     private async Task OpenCreateDialog()
     {
-        DialogParameters<PaymentDialog> parameters = new();
-        if (InvoiceIdParam.HasValue)
-            parameters.Add(x => x.PreSelectedInvoiceId, InvoiceIdParam);
-
-        DialogOptions options = new()
+        try
         {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+            bool created = InvoiceIdParam.HasValue
+                ? await WisDialog.ShowPaymentDialogAsync(InvoiceIdParam.Value)
+                : await WisDialog.ShowPaymentDialogAsync();
 
-        IDialogReference dialog = await DialogService.ShowAsync<PaymentDialog>(
-            Localization.GetString("RecordPayment"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: CreatePaymentDto dto })
-        {
-            try
+            if (created)
             {
-                await PaymentService.CreatePaymentAsync(dto);
                 Snackbar.Add(Localization.GetString("PaymentCreated"), Severity.Success);
                 await _grid.ReloadServerData();
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error creating payment: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorCreatingPayment"), Severity.Error);
-            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating payment: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingPayment"), Severity.Error);
         }
     }
 
     private async Task OpenEditDialog(PaymentDto payment)
     {
-        DialogParameters<PaymentDialog> parameters = new();
-        parameters.Add(x => x.Payment, payment);
+        UpdatePaymentDto? dto = await WisDialog.ShowFormAsync<PaymentDialog, UpdatePaymentDto>(
+            Localization.GetString("EditPayment"),
+            p => p.Add(x => x.Payment, payment));
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<PaymentDialog>(
-            Localization.GetString("EditPayment"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: UpdatePaymentDto dto })
+        if (dto is not null)
         {
             try
             {
@@ -415,6 +384,24 @@
             }
         }
     }
+
+    private List<WisDetailActionItem> BuildRowActions(PaymentDto item) =>
+    [
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Edit,
+            Label   = Localization.GetString("Edit"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon            = Icons.Material.Filled.Delete,
+            Label           = Localization.GetString("Delete"),
+            Color           = Color.Error,
+            IsDividerBefore = true,
+            OnClick         = EventCallback.Factory.Create(this, () => DeletePayment(item.Id))
+        },
+    ];
 
     private string GetRowClass(PaymentDto item, int index) => item.PaymentMethod switch
     {

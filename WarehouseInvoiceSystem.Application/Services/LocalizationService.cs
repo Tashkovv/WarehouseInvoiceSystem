@@ -56,6 +56,7 @@
                 ["PartnersDashboard"] = "Partners Dashboard",
                 ["DocumentsDashboard"] = "Documents Dashboard",
                 ["InventoryDashboard"] = "Inventory Dashboard",
+                ["WarehouseDashboard"] = "Warehouse Dashboard",
                 ["BusinessPartners"] = "Business Partners",
                 ["FinancialDocuments"] = "Financial Documents",
                 ["StockManagement"] = "Stock Management",
@@ -699,6 +700,7 @@
                 ["PurchaseNoteNotEditable"] = "This purchase note cannot be edited because it is Paid or Cancelled.",
                 ["BackToPurchaseNote"] = "Back to purchase note",
                 ["LineItemsLockedPending"] = "Line items are locked while the note is Pending (goods already received). Revert to Draft to make changes.",
+                ["PurchaseNotesShort"] = "P. Notes",
             },
             #endregion
 
@@ -736,6 +738,7 @@
                 ["PartnersDashboard"] = "Табла Партнери",
                 ["DocumentsDashboard"] = "Табла Документи",
                 ["InventoryDashboard"] = "Табла Залиха",
+                ["WarehouseDashboard"] = "Табла Магацин",
                 ["BusinessPartners"] = "Деловни Партнери",
                 ["FinancialDocuments"] = "Финансиски Документи",
                 ["StockManagement"] = "Управување со Залиха",
@@ -1381,6 +1384,7 @@
                 ["PurchaseNoteNotEditable"] = "Оваа откупна белешка не може да се уредува бидејќи е Платена или Откажана.",
                 ["BackToPurchaseNote"] = "Назад кон откупна белешка",
                 ["LineItemsLockedPending"] = "Производите се заклучени додека белешката е Во Тек (стоката е веќе примена). Вратете на Нацрт за да направите промени.",
+                ["PurchaseNotesShort"] = "О. Белешки",
             }
             #endregion
         };

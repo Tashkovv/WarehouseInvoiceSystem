@@ -77,14 +77,14 @@
                  TransformOrigin="Origin.TopLeft"
                  Dense="true">
             <ActivatorContent>
-                <MudButton Href="/inventory-dashboard"
-                           StartIcon="@Icons.Material.Filled.Inventory"
+                <MudButton Href="/warehouse-dashboard"
+                           StartIcon="@Icons.Material.Filled.Warehouse"
                            IconSize="Size.Large"
                            Color="Color.Inherit"
                            @onmouseenter="@(() => { })"
                            Style="text-transform: none;">
                     <MudText Typo="Typo.h5">
-                        @Localization.GetString("Inventory")
+                        @Localization.GetString("Warehouse")
                     </MudText>
                 </MudButton>
             </ActivatorContent>
@@ -93,7 +93,7 @@
                     @Localization.GetString("Products")
                 </MudMenuItem>
                 <MudMenuItem Href="/inventory" Icon="@Icons.Material.Filled.Assessment">
-                    @Localization.GetString("Inventory")
+                    @Localization.GetString("Stock")
                 </MudMenuItem>
                 <MudMenuItem Href="/warehouses" Icon="@Icons.Material.Filled.Warehouse">
                     @Localization.GetString("Warehouses")

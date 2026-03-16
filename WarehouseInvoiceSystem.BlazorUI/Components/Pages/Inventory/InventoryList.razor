@@ -9,7 +9,7 @@
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
 @inject ILocalizationService Localization
-@inject IDialogService DialogService
+@inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 
@@ -81,6 +81,21 @@
                      SortMode="SortMode.Single"
                      Class="wis-data-grid">
             <Columns>
+
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
 
                 <PropertyColumn Property="x => x.ProductCode"
                                 Title="@Localization.GetString("Code")"
@@ -165,22 +180,6 @@
                         @context.Item.LastRestockedAt.ToLocalTime().ToString("dd MMM yyyy")
                     </CellTemplate>
                 </PropertyColumn>
-
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="wis-col-actions-1"
-                                CellClass="wis-col-actions-1">
-                    <CellTemplate>
-                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
-                            <MudIconButton Icon="@Icons.Material.Filled.Tune"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("EditThresholds")"
-                                           OnClick="@(() => OpenSetThresholdsDialog(context.Item))" />
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
 
             </Columns>
 
@@ -352,21 +351,56 @@
             Navigation.NavigateTo($"/products/{args.Item.ProductId}/transactions?warehouse={args.Item.WarehouseId}");
     }
 
+    private List<WisDetailActionItem> BuildRowActions(StockLevelDto item) =>
+    [
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Inventory2,
+            Label   = Localization.GetString("AdjustStock"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenAdjustDialogRow(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Tune,
+            Label   = Localization.GetString("EditThresholds"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenSetThresholdsDialog(item))
+        },
+    ];
+
+    private async Task OpenAdjustDialogRow(StockLevelDto item)
+    {
+        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
+            Localization.GetString("AdjustStock"),
+            p =>
+            {
+                p.Add(x => x.PreSelectedProductId, item.ProductId);
+                p.Add(x => x.PreSelectedWarehouseId, item.WarehouseId);
+            },
+            MaxWidth.Small);
+
+        if (dto is not null)
+        {
+            try
+            {
+                await InventoryService.AdjustStockAsync(
+                    dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
+                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error adjusting stock: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
+            }
+        }
+    }
+
     private async Task OpenAdjustDialog()
     {
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
+            Localization.GetString("AdjustStock"), MaxWidth.Small);
 
-        IDialogReference dialog = await DialogService.ShowAsync<AdjustStockDialog>(
-            Localization.GetString("AdjustStock"), new DialogParameters<AdjustStockDialog>(), options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: AdjustStockDialog.AdjustStockResult dto })
+        if (dto is not null)
         {
             try
             {
@@ -385,22 +419,12 @@
 
     private async Task OpenSetThresholdsDialog(StockLevelDto stockLevel)
     {
-        DialogParameters<SetThresholdsDialog> parameters = new();
-        parameters.Add(x => x.StockLevel, stockLevel);
+        SetThresholdsDialog.SetThresholdsResult? dto = await WisDialog.ShowFormAsync<SetThresholdsDialog, SetThresholdsDialog.SetThresholdsResult>(
+            Localization.GetString("EditThresholds"),
+            p => p.Add(x => x.StockLevel, stockLevel),
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<SetThresholdsDialog>(
-            Localization.GetString("EditThresholds"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: SetThresholdsDialog.SetThresholdsResult dto })
+        if (dto is not null)
         {
             try
             {

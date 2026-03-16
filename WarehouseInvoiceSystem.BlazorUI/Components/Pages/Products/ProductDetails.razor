@@ -13,7 +13,6 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject WisDialogService WisDialog
-@inject IDialogService DialogService
 @inject IInventoryService InventoryService
 @inject ISnackbar Snackbar
 
@@ -451,8 +450,8 @@ else
                 disabledReason: noWarehouse ? Localization.GetString("SelectWarehouseForThresholds") : null),
             _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog),
             _product.IsActive
-                ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus, dividerBefore: true)
-                : _act.Success(Icons.Material.Filled.CheckCircle,  Localization.GetString("Activate"),   ToggleActiveStatus, dividerBefore: true),
+                ? _act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), ToggleActiveStatus, dividerBefore: true)
+                : _act.Success(Icons.Material.Filled.PowerSettingsNew,  Localization.GetString("Activate"),   ToggleActiveStatus, dividerBefore: true),
         ];
 
         _transactionsAction = _act.Secondary(Icons.Material.Filled.SyncAlt, Localization.GetString("Transactions"), () => Navigation.NavigateTo($"/products/{Id}/transactions{(_selectedWarehouseId.HasValue ? $"?warehouse={_selectedWarehouseId}" : "")}"));
@@ -560,24 +559,17 @@ else
 
     private async Task OpenAdjustDialog()
     {
-        DialogParameters<AdjustStockDialog> parameters = new();
-        parameters.Add(x => x.PreSelectedProductId, Id);
-        if (_selectedWarehouseId.HasValue)
-            parameters.Add(x => x.PreSelectedWarehouseId, _selectedWarehouseId.Value);
+        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
+            Localization.GetString("AdjustStock"),
+            p =>
+            {
+                p.Add(x => x.PreSelectedProductId, Id);
+                if (_selectedWarehouseId.HasValue)
+                    p.Add(x => x.PreSelectedWarehouseId, _selectedWarehouseId.Value);
+            },
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<AdjustStockDialog>(
-            Localization.GetString("AdjustStock"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: AdjustStockDialog.AdjustStockResult dto })
+        if (dto is not null)
         {
             try
             {
@@ -617,22 +609,12 @@ else
             LastRestockedAt = row.LastRestockedAt ?? DateTime.MinValue
         };
 
-        DialogParameters<SetThresholdsDialog> parameters = new();
-        parameters.Add(x => x.StockLevel, stockLevel);
+        SetThresholdsDialog.SetThresholdsResult? dto = await WisDialog.ShowFormAsync<SetThresholdsDialog, SetThresholdsDialog.SetThresholdsResult>(
+            Localization.GetString("EditThresholds"),
+            p => p.Add(x => x.StockLevel, stockLevel),
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<SetThresholdsDialog>(
-            Localization.GetString("EditThresholds"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: SetThresholdsDialog.SetThresholdsResult dto })
+        if (dto is not null)
         {
             try
             {

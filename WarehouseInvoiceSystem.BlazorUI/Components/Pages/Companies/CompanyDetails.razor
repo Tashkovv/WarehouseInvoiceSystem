@@ -424,8 +424,8 @@ else
         _actions =
         [
             _company.IsActive
-                ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus)
-                : _act.Success(Icons.Material.Filled.CheckCircle,  Localization.GetString("Activate"),   ToggleActiveStatus),
+                ? _act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), ToggleActiveStatus)
+                : _act.Success(Icons.Material.Filled.PowerSettingsNew,  Localization.GetString("Activate"),   ToggleActiveStatus),
         ];
 
         _invoicesAction = _act.Secondary(Icons.Material.Filled.RequestQuote, Localization.GetString("Invoices"), () => Navigation.NavigateTo($"/invoices?companyId={Id}"));

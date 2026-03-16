@@ -1,4 +1,4 @@
-﻿@page "/inventory-dashboard"
+﻿@page "/warehouse-dashboard"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
@@ -15,9 +15,9 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 
-<PageTitle>@Localization.GetString("InventoryDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
+<PageTitle>@Localization.GetString("WarehouseDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("StockManagement")</MudText>
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("Warehouse")</MudText>
 
 @if (_loading)
 {

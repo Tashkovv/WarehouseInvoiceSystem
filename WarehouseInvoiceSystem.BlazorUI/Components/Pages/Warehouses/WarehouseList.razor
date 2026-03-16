@@ -6,7 +6,6 @@
 @inject IWarehouseService WarehouseService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
 @inject WisDialogService WisDialog
 @inject ISnackbar Snackbar
 
@@ -52,6 +51,21 @@
                      SortMode="SortMode.Single"
                      Class="wis-data-grid">
             <Columns>
+
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                IsEditable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
 
                 <PropertyColumn Property="x => x.Name"
                                 Title="@Localization.GetString("Name")"
@@ -104,46 +118,6 @@
                         @context.Item.CreatedAt.ToString("dd MMM yyyy")
                     </CellTemplate>
                 </PropertyColumn>
-
-                <TemplateColumn Sortable="false"
-                                Filterable="false"
-                                IsEditable="false"
-                                HeaderClass="wis-col-actions-3"
-                                CellClass="wis-col-actions-3">
-                    <CellTemplate>
-                        <MudStack Row="true" Spacing="0">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Size="Size.Small"
-                                           Color="Color.Primary"
-                                           Title="@Localization.GetString("Edit")"
-                                           OnClick="@(() => OpenEditDialog(context.Item))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Star"
-                                           Size="Size.Small"
-                                           Color="@(context.Item.IsDefault ? Color.Info : Color.Default)"
-                                           Title="@Localization.GetString("SetAsDefault")"
-                                           Disabled="@(context.Item.IsDefault || !context.Item.IsActive)"
-                                           OnClick="@(() => SetAsDefault(context.Item))" />
-                            @if (context.Item.IsActive)
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew"
-                                               Size="Size.Small"
-                                               Color="Color.Warning"
-                                               Title="@(context.Item.HasProducts ? Localization.GetString("DeactivateWarehouseDisabledTooltip")
-                                                                                                                                                                       : Localization.GetString("Deactivate"))"
-                                               Disabled="@(context.Item.IsDefault || context.Item.HasProducts)"
-                                               OnClick="@(() => SetActiveStatus(context.Item, false))" />
-                            }
-                            else
-                            {
-                                <MudIconButton Icon="@Icons.Material.Filled.PowerSettingsNew"
-                                               Size="Size.Small"
-                                               Color="Color.Success"
-                                               Title="@Localization.GetString("Activate")"
-                                               OnClick="@(() => SetActiveStatus(context.Item, true))" />
-                            }
-                        </MudStack>
-                    </CellTemplate>
-                </TemplateColumn>
 
             </Columns>
 
@@ -249,19 +223,10 @@
 
     private async Task OpenCreateDialog()
     {
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
+        CreateWarehouseDto? dto = await WisDialog.ShowFormAsync<WarehouseDialog, CreateWarehouseDto>(
+            Localization.GetString("CreateWarehouse"), MaxWidth.Small);
 
-        IDialogReference dialog = await DialogService.ShowAsync<WarehouseDialog>(
-            Localization.GetString("CreateWarehouse"), options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: CreateWarehouseDto dto })
+        if (dto is not null)
         {
             try
             {
@@ -279,22 +244,12 @@
 
     private async Task OpenEditDialog(WarehouseDto warehouse)
     {
-        DialogParameters<WarehouseDialog> parameters = new();
-        parameters.Add(x => x.Warehouse, warehouse);
+        UpdateWarehouseDto? dto = await WisDialog.ShowFormAsync<WarehouseDialog, UpdateWarehouseDto>(
+            Localization.GetString("EditWarehouse"),
+            p => p.Add(x => x.Warehouse, warehouse),
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<WarehouseDialog>(
-            Localization.GetString("EditWarehouse"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: UpdateWarehouseDto dto })
+        if (dto is not null)
         {
             try
             {
@@ -309,6 +264,34 @@
             }
         }
     }
+
+    private List<WisDetailActionItem> BuildRowActions(WarehouseDto item) =>
+    [
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Edit,
+            Label   = Localization.GetString("Edit"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon     = Icons.Material.Filled.Star,
+            Label    = Localization.GetString("Default"),
+            Color    = Color.Info,
+            Disabled = item.IsDefault || !item.IsActive,
+            OnClick  = EventCallback.Factory.Create(this, () => SetAsDefault(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon            = Icons.Material.Filled.PowerSettingsNew,
+            Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
+            Color           = item.IsActive ? Color.Warning : Color.Success,
+            IsDividerBefore = true,
+            Disabled        = item.IsActive && (item.IsDefault || item.HasProducts),
+            DisabledReason  = item.IsActive && (item.IsDefault || item.HasProducts) ? Localization.GetString("DeactivateWarehouseDisabledTooltip") : null,
+            OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
+        },
+    ];
 
     private async Task SetAsDefault(WarehouseDto warehouse)
     {

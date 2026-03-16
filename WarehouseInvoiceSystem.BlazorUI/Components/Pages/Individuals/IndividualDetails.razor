@@ -267,8 +267,8 @@ else
         _actions =
         [
             _individual.IsActive
-                ? _act.Error(Icons.Material.Filled.DoNotDisturbOn, Localization.GetString("Deactivate"), ToggleActiveStatus)
-                : _act.Success(Icons.Material.Filled.CheckCircle,  Localization.GetString("Activate"),   ToggleActiveStatus),
+                ? _act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), ToggleActiveStatus)
+                : _act.Success(Icons.Material.Filled.PowerSettingsNew,  Localization.GetString("Activate"),   ToggleActiveStatus),
         ];
 
         _purchaseNotesAction = _act.Secondary(Icons.Material.Filled.Receipt, Localization.GetString("PurchaseNotes"), () => Navigation.NavigateTo($"/purchase-notes?individualId={Id}"));

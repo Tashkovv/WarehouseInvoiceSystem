@@ -7,7 +7,6 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject WisDialogService WisDialog
-@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("WarehouseDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -255,7 +254,7 @@ else
         if (_warehouse.IsActive)
         {
             bool cannotDeactivate = _warehouse.IsDefault || _stock.Any();
-            actions.Add(_act.Error(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), () => SetActiveStatus(false),
+            actions.Add(_act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), () => SetActiveStatus(false),
                 dividerBefore: actions.Count > 0,
                 disabled: cannotDeactivate,
                 disabledReason: cannotDeactivate ? Localization.GetString("DeactivateWarehouseDisabledTooltip") : null));
@@ -273,22 +272,12 @@ else
     {
         if (_warehouse is null) return;
 
-        DialogParameters<WarehouseDialog> parameters = new();
-        parameters.Add(x => x.Warehouse, _warehouse);
+        UpdateWarehouseDto? dto = await WisDialog.ShowFormAsync<WarehouseDialog, UpdateWarehouseDto>(
+            Localization.GetString("EditWarehouse"),
+            p => p.Add(x => x.Warehouse, _warehouse),
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<WarehouseDialog>(
-            Localization.GetString("EditWarehouse"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: UpdateWarehouseDto dto })
+        if (dto is not null)
         {
             try
             {
@@ -349,22 +338,12 @@ else
 
     private async Task OpenSetThresholdsDialog(StockLevelDto stockLevel)
     {
-        DialogParameters<SetThresholdsDialog> parameters = new();
-        parameters.Add(x => x.StockLevel, stockLevel);
+        SetThresholdsDialog.SetThresholdsResult? dto = await WisDialog.ShowFormAsync<SetThresholdsDialog, SetThresholdsDialog.SetThresholdsResult>(
+            Localization.GetString("EditThresholds"),
+            p => p.Add(x => x.StockLevel, stockLevel),
+            MaxWidth.Small);
 
-        DialogOptions options = new()
-        {
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true,
-            CloseOnEscapeKey = true
-        };
-
-        IDialogReference dialog = await DialogService.ShowAsync<SetThresholdsDialog>(
-            Localization.GetString("EditThresholds"), parameters, options);
-
-        DialogResult? result = await dialog.Result;
-
-        if (result is { Canceled: false, Data: SetThresholdsDialog.SetThresholdsResult dto })
+        if (dto is not null)
         {
             try
             {
