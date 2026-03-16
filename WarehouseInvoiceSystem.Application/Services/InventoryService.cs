@@ -150,6 +150,43 @@
             return MapTransactionToDto(withNav);
         }
 
+        public async Task TransferStockAsync(Guid productId, Guid sourceWarehouseId, Guid destinationWarehouseId, decimal quantity, string? note)
+        {
+            if (sourceWarehouseId == destinationWarehouseId)
+                throw new InvalidOperationException("Source and destination warehouse must be different.");
+
+            if (quantity <= 0)
+                throw new ArgumentOutOfRangeException(nameof(quantity), "Transfer quantity must be greater than zero.");
+
+            Guid transferId = Guid.NewGuid();
+            const string transferType = "Transfer";
+
+            CreateInventoryTransactionDto outbound = new()
+            {
+                ProductId = productId,
+                WarehouseId = sourceWarehouseId,
+                Type = InventoryTransactionType.TransferOut,
+                Quantity = quantity,
+                SourceDocumentId = transferId,
+                SourceDocumentType = transferType,
+                Note = note
+            };
+
+            CreateInventoryTransactionDto inbound = new()
+            {
+                ProductId = productId,
+                WarehouseId = destinationWarehouseId,
+                Type = InventoryTransactionType.TransferIn,
+                Quantity = quantity,
+                SourceDocumentId = transferId,
+                SourceDocumentType = transferType,
+                Note = note
+            };
+
+            await CreateTransactionAsync(outbound);
+            await CreateTransactionAsync(inbound);
+        }
+
         public async Task AdjustStockAsync(Guid productId, Guid warehouseId, decimal quantityChange, string reason)
         {
             CreateInventoryTransactionDto transactionDto = new()

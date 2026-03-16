@@ -24,6 +24,7 @@
 <WisGridToolbar CreateAction="OpenAdjustDialog"
                 CreateLabel="@Localization.GetString("AdjustStock")"
                 CreateIcon="@Icons.Material.Filled.Inventory2"
+                CreateActions="@_toolbarActions"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterIsLowStock == true || _activeAdvancedFilterCount > 0)"
@@ -204,6 +205,7 @@
     private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<StockLevelDto> _grid = null!;
     private string _searchString = string.Empty;
+    private List<WisDetailActionItem> _toolbarActions = [];
 
     // Quick filter
     private bool? _filterIsLowStock = null;
@@ -219,6 +221,15 @@
     protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
+        _toolbarActions =
+        [
+            new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.SwapHoriz,
+                Label   = Localization.GetString("TransferStock"),
+                OnClick = EventCallback.Factory.Create(this, OpenTransferDialog)
+            }
+        ];
     }
 
     private async void OnLanguageChanged()
@@ -361,6 +372,12 @@
         },
         new WisDetailActionItem
         {
+            Icon    = Icons.Material.Filled.SwapHoriz,
+            Label   = Localization.GetString("TransferStock"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenTransferDialogRow(item))
+        },
+        new WisDetailActionItem
+        {
             Icon    = Icons.Material.Filled.Tune,
             Label   = Localization.GetString("EditThresholds"),
             OnClick = EventCallback.Factory.Create(this, () => OpenSetThresholdsDialog(item))
@@ -414,6 +431,46 @@
                 Console.WriteLine($"Error adjusting stock: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
             }
+        }
+    }
+
+    private async Task OpenTransferDialogRow(StockLevelDto item)
+    {
+        TransferStockDialog.TransferStockResult? dto = await WisDialog.ShowFormAsync<TransferStockDialog, TransferStockDialog.TransferStockResult>(
+            Localization.GetString("TransferStock"),
+            p =>
+            {
+                p.Add(x => x.PreSelectedProductId, item.ProductId);
+                p.Add(x => x.PreSelectedSourceWarehouseId, item.WarehouseId);
+            },
+            MaxWidth.Small);
+
+        if (dto is not null)
+            await ExecuteTransfer(dto);
+    }
+
+    private async Task OpenTransferDialog()
+    {
+        TransferStockDialog.TransferStockResult? dto = await WisDialog.ShowFormAsync<TransferStockDialog, TransferStockDialog.TransferStockResult>(
+            Localization.GetString("TransferStock"), MaxWidth.Small);
+
+        if (dto is not null)
+            await ExecuteTransfer(dto);
+    }
+
+    private async Task ExecuteTransfer(TransferStockDialog.TransferStockResult dto)
+    {
+        try
+        {
+            await InventoryService.TransferStockAsync(
+                dto.ProductId, dto.SourceWarehouseId, dto.DestinationWarehouseId, dto.Quantity, dto.Note);
+            Snackbar.Add(Localization.GetString("StockTransferred"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error transferring stock: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorTransferringStock"), Severity.Error);
         }
     }
 

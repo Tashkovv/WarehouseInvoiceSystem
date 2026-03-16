@@ -1,0 +1,285 @@
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@inject ILocalizationService Localization
+@inject IProductService ProductService
+@inject IWarehouseService WarehouseService
+@inject IInventoryService InventoryService
+
+<MudDialog>
+    <DialogContent>
+        @if (_loading)
+        {
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        }
+        else
+        {
+            <MudGrid>
+
+                @* Product *@
+                <MudItem xs="12">
+                    @if (_productLocked)
+                    {
+                        <MudTextField Value="@_selectedProduct?.Name"
+                                      Label="@Localization.GetString("Product")"
+                                      Variant="Variant.Outlined"
+                                      ReadOnly="true"
+                                      FullWidth="true" />
+                    }
+                    else
+                    {
+                        <MudAutocomplete T="ProductDto"
+                                         Value="_selectedProduct"
+                                         ValueChanged="OnProductSelected"
+                                         SearchFunc="SearchProducts"
+                                         ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                                         Label="@Localization.GetString("Product")"
+                                         Variant="Variant.Outlined"
+                                         Required="true"
+                                         Clearable="true"
+                                         ResetValueOnEmptyText="true"
+                                         FullWidth="true" />
+                    }
+                </MudItem>
+
+                @* Source Warehouse *@
+                <MudItem xs="12" sm="6">
+                    @if (_sourceWarehouseLocked)
+                    {
+                        <MudTextField Value="@(_warehouses.FirstOrDefault(w => w.Id == _sourceWarehouseId)?.Name)"
+                                      Label="@Localization.GetString("SourceWarehouse")"
+                                      Variant="Variant.Outlined"
+                                      ReadOnly="true"
+                                      FullWidth="true" />
+                    }
+                    else
+                    {
+                        <MudSelect T="Guid?"
+                                   Value="_sourceWarehouseId"
+                                   ValueChanged="OnSourceWarehouseSelected"
+                                   Label="@Localization.GetString("SourceWarehouse")"
+                                   Variant="Variant.Outlined"
+                                   Required="true"
+                                   FullWidth="true"
+                                   AnchorOrigin="Origin.BottomLeft">
+                            @foreach (WarehouseDto w in _warehouses)
+                            {
+                                <MudSelectItem Value="@((Guid?)w.Id)">@w.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
+                </MudItem>
+
+                @* Destination Warehouse *@
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Guid?"
+                               Value="_destinationWarehouseId"
+                               ValueChanged="OnDestinationWarehouseSelected"
+                               Label="@Localization.GetString("DestinationWarehouse")"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               FullWidth="true"
+                               AnchorOrigin="Origin.BottomLeft">
+                        @foreach (WarehouseDto w in _warehouses.Where(w => w.Id != _sourceWarehouseId))
+                        {
+                            <MudSelectItem Value="@((Guid?)w.Id)">@w.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                @* Current stock at source *@
+                @if (_sourceStock is not null)
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="@(_sourceStock.Quantity <= 0 ? Severity.Warning : Severity.Info)"
+                                  Variant="Variant.Outlined"
+                                  Class="py-2 wis-alert-fullwidth">
+                            <MudGrid Spacing="0">
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("CurrentStock")</MudText>
+                                    <MudText Typo="Typo.subtitle2"
+                                             Color="@(_sourceStock.Quantity <= 0 ? Color.Warning : Color.Primary)">
+                                        @_sourceStock.Quantity.ToString("N2") @_selectedProduct?.Unit
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MinimumQuantity")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                                        @(_sourceStock.MinimumQuantity?.ToString("N2") ?? "—")
+                                    </MudText>
+                                </MudItem>
+                                <MudItem xs="4" Class="text-center">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("ReorderPoint")</MudText>
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Default">
+                                        @(_sourceStock.ReorderPoint?.ToString("N2") ?? "—")
+                                    </MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudAlert>
+                    </MudItem>
+                }
+
+                @* Quantity *@
+                <MudItem xs="12" sm="6">
+                    <MudNumericField T="decimal"
+                                     @bind-Value="_quantity"
+                                     Label="@Localization.GetString("Quantity")"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     Min="0.01m"
+                                     Format="N2"
+                                     HideSpinButtons="true"
+                                     FullWidth="true" />
+                </MudItem>
+
+                @* Note *@
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_note"
+                                  Label="@Localization.GetString("TransferNote")"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="300"
+                                  FullWidth="true" />
+                </MudItem>
+
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <WisDialogActions OnCancel="Cancel"
+                          OnSave="Save"
+                          SaveLabel="@(Localization.GetString("Transfer"))"
+                          SaveDisabled="@(!IsValid || _loading)" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public Guid? PreSelectedProductId { get; set; }
+    [Parameter] public Guid? PreSelectedSourceWarehouseId { get; set; }
+
+    public record TransferStockResult(
+        Guid ProductId,
+        Guid SourceWarehouseId,
+        Guid DestinationWarehouseId,
+        decimal Quantity,
+        string? Note);
+
+    private bool _loading = true;
+    private bool _productLocked;
+    private bool _sourceWarehouseLocked;
+
+    private List<ProductDto> _products = [];
+    private List<WarehouseDto> _warehouses = [];
+
+    private ProductDto? _selectedProduct;
+    private Guid? _sourceWarehouseId;
+    private Guid? _destinationWarehouseId;
+    private StockLevelDto? _sourceStock;
+
+    private decimal _quantity = 1m;
+    private string? _note;
+
+    private bool IsValid =>
+        _selectedProduct is not null &&
+        _sourceWarehouseId.HasValue &&
+        _destinationWarehouseId.HasValue &&
+        _sourceWarehouseId != _destinationWarehouseId &&
+        _quantity > 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _products = (await ProductService.GetActiveProductsAsync())
+                .OrderBy(p => p.Name).ToList();
+            _warehouses = (await WarehouseService.GetAllWarehousesAsync())
+                .OrderByDescending(w => w.IsDefault).ThenBy(w => w.Name).ToList();
+
+            if (PreSelectedProductId.HasValue)
+            {
+                _selectedProduct = _products.FirstOrDefault(p => p.Id == PreSelectedProductId.Value)
+                    ?? await ProductService.GetProductByIdAsync(PreSelectedProductId.Value);
+                _productLocked = true;
+            }
+
+            if (PreSelectedSourceWarehouseId.HasValue)
+            {
+                _sourceWarehouseId = PreSelectedSourceWarehouseId.Value;
+                _sourceWarehouseLocked = true;
+            }
+
+            await LoadSourceStock();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transfer stock data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadSourceStock()
+    {
+        if (_selectedProduct is null || !_sourceWarehouseId.HasValue)
+        {
+            _sourceStock = null;
+            return;
+        }
+
+        try
+        {
+            _sourceStock = await InventoryService.GetStockLevelAsync(
+                _selectedProduct.Id, _sourceWarehouseId.Value);
+        }
+        catch
+        {
+            _sourceStock = null;
+        }
+    }
+
+    private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return _products;
+
+        return _products.Where(p =>
+            p.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            p.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task OnProductSelected(ProductDto? product)
+    {
+        _selectedProduct = product;
+        await LoadSourceStock();
+    }
+
+    private async Task OnSourceWarehouseSelected(Guid? id)
+    {
+        _sourceWarehouseId = id;
+        // If destination was the same, clear it
+        if (_destinationWarehouseId == id)
+            _destinationWarehouseId = null;
+        await LoadSourceStock();
+    }
+
+    private void OnDestinationWarehouseSelected(Guid? id)
+    {
+        _destinationWarehouseId = id;
+    }
+
+    private void Save()
+    {
+        MudDialog.Close(DialogResult.Ok(new TransferStockResult(
+            _selectedProduct!.Id,
+            _sourceWarehouseId!.Value,
+            _destinationWarehouseId!.Value,
+            _quantity,
+            _note)));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

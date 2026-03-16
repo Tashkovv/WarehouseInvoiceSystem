@@ -545,6 +545,14 @@
                 ["AdjustmentReason"] = "Reason",
                 ["StockAdjusted"] = "Stock adjusted successfully",
                 ["ErrorAdjustingStock"] = "Error adjusting stock",
+                ["TransferStock"] = "Transfer Stock",
+                ["Transfer"] = "Transfer",
+                ["SourceWarehouse"] = "Source Warehouse",
+                ["DestinationWarehouse"] = "Destination Warehouse",
+                ["TransferNote"] = "Note (optional)",
+                ["StockTransferred"] = "Stock transferred successfully",
+                ["ErrorTransferringStock"] = "Error transferring stock",
+                ["SameWarehouseError"] = "Source and destination warehouse must be different",
 
                 // System / Admin
                 ["SystemJobs"] = "System",
@@ -1249,6 +1257,14 @@
                 ["AdjustmentReason"] = "Причина",
                 ["StockAdjusted"] = "Залихата е успешно прилагодена",
                 ["ErrorAdjustingStock"] = "Грешка при прилагодување на залиха",
+                ["TransferStock"] = "Префрли Залиха",
+                ["Transfer"] = "Префрли",
+                ["SourceWarehouse"] = "Изворен Магацин",
+                ["DestinationWarehouse"] = "Одреден Магацин",
+                ["TransferNote"] = "Забелешка (опционално)",
+                ["StockTransferred"] = "Залихата е успешно префрлена",
+                ["ErrorTransferringStock"] = "Грешка при префрлување на залиха",
+                ["SameWarehouseError"] = "Изворниот и одредениот магацин мора да бидат различни",
 
                 // System / Admin
                 ["SystemJobs"] = "Систем",
