@@ -1755,3 +1755,106 @@ html {
     flex-shrink: 0;
     user-select: none;
 }
+
+/* ── WisPagerContent ── */
+.wis-pager {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    border-top: 1px solid var(--mud-palette-divider);
+    background: var(--mud-palette-background-grey);
+    padding: 0 12px;
+    min-height: 44px;
+}
+
+.wis-pager__rpp-label {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+    white-space: nowrap;
+}
+
+/* Rows-per-page pill */
+.wis-pager__rpp-pill {
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 999px;
+    padding: 1px 2px 1px 10px;
+    background: var(--mud-palette-surface);
+    display: inline-flex;
+    align-items: center;
+    min-width: 80px;
+    max-width: 110px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+    .wis-pager__rpp-pill:hover {
+        border-color: var(--mud-palette-primary);
+        background: rgba(var(--mud-palette-primary-rgb), 0.06);
+    }
+
+    /* Strip ALL MudSelect underlines inside the pill */
+    .wis-pager__rpp-pill .mud-input-root::before,
+    .wis-pager__rpp-pill .mud-input-root::after,
+    .wis-pager__rpp-pill .mud-input-root-text::before,
+    .wis-pager__rpp-pill .mud-input-root-text::after,
+    .wis-pager__rpp-pill .mud-input-underline::before,
+    .wis-pager__rpp-pill .mud-input-underline::after {
+        display: none !important;
+        border-bottom: none !important;
+    }
+
+    .wis-pager__rpp-pill .mud-input-slot {
+        padding: 0;
+    }
+
+    .wis-pager__rpp-pill .mud-select-input {
+        font-size: 0.75rem;
+        padding: 0;
+        min-height: unset;
+        height: auto;
+    }
+
+/* Vertical separator */
+.wis-pager__sep {
+    width: 1px;
+    height: 20px;
+    background: var(--mud-palette-divider);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
+/* Nav row: prev/next buttons + info badge */
+.wis-pager__nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+/* Page info badge */
+.wis-pager__info {
+    background: rgba(var(--mud-palette-primary-rgb), 0.08);
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+    font-size: 0.75rem;
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin: 0 2px;
+    white-space: nowrap;
+    user-select: none;
+}
+
+/* Nav icon buttons */
+.wis-pager__btn {
+    width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+}
+
+    .wis-pager__btn:not(.mud-disabled):hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.1) !important;
+        color: var(--mud-palette-primary) !important;
+    }
+
+    .wis-pager__btn.mud-disabled {
+        opacity: 0.3;
+    }
