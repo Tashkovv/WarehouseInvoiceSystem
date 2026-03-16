@@ -129,7 +129,9 @@
                                      Min="0.01m"
                                      Format="N2"
                                      HideSpinButtons="true"
-                                     FullWidth="true" />
+                                     FullWidth="true"
+                                     Error="@_quantityExceedsStock"
+                                     ErrorText="@(_quantityExceedsStock ? $"{Localization.GetString("ExceedsStock")} ({_sourceStock!.Quantity:N2} {_selectedProduct?.Unit})" : null)" />
                 </MudItem>
 
                 @* Note *@
@@ -181,12 +183,16 @@
     private decimal _quantity = 1m;
     private string? _note;
 
+    private bool _quantityExceedsStock =>
+        _sourceStock is not null && _quantity > _sourceStock.Quantity;
+
     private bool IsValid =>
         _selectedProduct is not null &&
         _sourceWarehouseId.HasValue &&
         _destinationWarehouseId.HasValue &&
         _sourceWarehouseId != _destinationWarehouseId &&
-        _quantity > 0;
+        _quantity > 0 &&
+        !_quantityExceedsStock;
 
     protected override async Task OnInitializedAsync()
     {

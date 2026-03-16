@@ -1,9 +1,14 @@
-﻿@page "/partners-dashboard"
+@page "/partners-dashboard"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Domain.Enums
 @inject ICompanyService CompanyService
 @inject IIndividualService IndividualService
+@inject IInvoiceService InvoiceService
+@inject IPurchaseNoteService PurchaseNoteService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 
@@ -18,14 +23,14 @@
 else
 {
     <MudGrid>
-        <!-- Summary Cards -->
+
+        <!-- ── Summary Cards ── -->
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalCompanies")"
                            Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompanies.Count()}")"
                            Value="@_companies.Count.ToString()"
                            Icon="@Icons.Material.Filled.Business"
-                           IconColor="Color.Primary"
-                           Link="/companies" />
+                           IconColor="Color.Primary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
@@ -41,67 +46,71 @@ else
                            Value="@_individuals.Count.ToString()"
                            Subtitle="@($"{Localization.GetString("DashboardActiveIndividuals")}: {_activeIndividuals.Count()}")"
                            Icon="@Icons.Material.Filled.Person"
-                           IconColor="Color.Secondary"
-                           Link="/individuals" />
+                           IconColor="Color.Secondary" />
         </MudItem>
 
-        <!-- Recent Companies -->
+        <!-- ── Top Clients / Top Vendors ── -->
+        <MudItem xs="12">
+            <div class="d-flex align-center flex-wrap gap-2 mb-2">
+                <MudText Typo="Typo.h6">@Localization.GetString("TopPartners")</MudText>
+                <WisDateRangeFilter @bind-DateRange="_partnerDateRange"
+                                    @bind-DatePreset="_partnerDatePreset"
+                                    Label="@Localization.GetString("Period")"
+                                    MaxDate="DateTime.Today"
+                                    OnChanged="RecalculateSummaries" />
+            </div>
+        </MudItem>
+
         <MudItem xs="12" md="6">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") — @Localization.GetString("Companies")</MudText>
+                        <MudText Typo="Typo.h6">@Localization.GetString("TopClientsBySales")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("ByTotalRevenue")
+                        </MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Href="/companies/create"
-                                   Color="Color.Primary"
-                                   Variant="Variant.Filled"
+                        <MudButton Href="/companies"
+                                   Color="Color.Default"
+                                   Variant="Variant.Outlined"
                                    Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.Add">
-                            @Localization.GetString("Company")
+                                   StartIcon="@Icons.Material.Filled.List">
+                            @Localization.GetString("Companies")
                         </MudButton>
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
-                    @if (_recentCompanies.Any())
+                    @if (_topClients.Any())
                     {
-                        <MudTable Items="_recentCompanies"
+                        <MudTable Items="_topClients"
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
-                                  T="CompanyDto"
+                                  T="PartnerSummary"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<CompanyDto> args) => NavigateTo($"/companies/{args.Item!.Id}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummary> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
                             <HeaderContent>
+                                <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
-                                <MudTh>@Localization.GetString("Type")</MudTh>
-                                <MudTh>@Localization.GetString("Status")</MudTh>
-                                <MudTh>@Localization.GetString("Created")</MudTh>
+                                <MudTh>@Localization.GetString("Invoices")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalRevenue")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
+                                <MudTd DataLabel="#">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @(_topClients.IndexOf(context) + 1)
+                                    </MudText>
+                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Name")">
-                                    <div class="d-flex align-center">
-                                        <MudAvatar Color="Color.Primary" Size="Size.Small" Class="mr-2" Style="font-size: 0.75rem;">
-                                            @context.Name.Substring(0, 1).ToUpper()
-                                        </MudAvatar>
-                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Name</MudText>
-                                    </div>
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Type")">
-                                    <MudChip T="string" Size="Size.Small"
-                                             Color="@GetTypeColor(context.Type)">
-                                        @GetTypeText(context.Type)
-                                    </MudChip>
+                                <MudTd DataLabel="@Localization.GetString("Invoices")">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DocumentCount</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Status")">
-                                    <MudChip T="string" Size="Size.Small"
-                                             Color="@(context.IsActive ? Color.Success : Color.Default)">
-                                        @(context.IsActive? Localization.GetString("ActiveCompany") : Localization.GetString("InactiveCompany"))
-                                    </MudChip>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Created")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @context.CreatedAt.ToString("dd MMM yyyy")
+                                <MudTd DataLabel="@Localization.GetString("TotalRevenue")" Class="text-right">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
+                                        @context.TotalAmount.ToString("C")
                                     </MudText>
                                 </MudTd>
                             </RowTemplate>
@@ -114,77 +123,63 @@ else
                                      Size="Size.Large"
                                      Color="Color.Secondary"
                                      Class="mb-2" />
-                            <MudText Color="Color.Secondary">@Localization.GetString("NoCompaniesFound")</MudText>
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
                         </div>
                     }
                 </MudCardContent>
-                <MudCardActions Class="pa-4">
-                    <MudButton Href="/companies"
-                               Color="Color.Default"
-                               Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.List">
-                        @Localization.GetString("Companies")
-                    </MudButton>
-                </MudCardActions>
             </MudCard>
         </MudItem>
 
-        <!-- Recent Individuals -->
         <MudItem xs="12" md="6">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("RecentlyAdded") — @Localization.GetString("Individuals")</MudText>
+                        <MudText Typo="Typo.h6">@Localization.GetString("TopVendorsBySpend")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("ByTotalSpend")
+                        </MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Href="/individuals/create"
-                                   Color="Color.Primary"
-                                   Variant="Variant.Filled"
+                        <MudButton Href="/individuals"
+                                   Color="Color.Default"
+                                   Variant="Variant.Outlined"
                                    Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.Add">
-                            @Localization.GetString("Individual")
+                                   StartIcon="@Icons.Material.Filled.List">
+                            @Localization.GetString("Individuals")
                         </MudButton>
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
-                    @if (_recentIndividuals.Any())
+                    @if (_topVendors.Any())
                     {
-                        <MudTable Items="_recentIndividuals"
+                        <MudTable Items="_topVendors"
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
-                                  T="IndividualDto"
+                                  T="PartnerSummary"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<IndividualDto> args) => NavigateTo($"/individuals/{args.Item!.Id}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummary> args) => NavigateTo($"/individuals/{args.Item!.PartnerId}"))">
                             <HeaderContent>
+                                <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
-                                <MudTh>@Localization.GetString("IdentificationNumber")</MudTh>
-                                <MudTh>@Localization.GetString("Status")</MudTh>
-                                <MudTh>@Localization.GetString("Created")</MudTh>
+                                <MudTh>@Localization.GetString("PurchaseNotes")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalSpend")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
-                                <MudTd DataLabel="@Localization.GetString("Name")">
-                                    <div class="d-flex align-center">
-                                        <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="mr-2" Style="font-size: 0.75rem;">
-                                            @context.FullName.Substring(0, 1).ToUpper()
-                                        </MudAvatar>
-                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@context.FullName</MudText>
-                                    </div>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("IdentificationNumber")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @context.IdentificationNumber
+                                <MudTd DataLabel="#">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @(_topVendors.IndexOf(context) + 1)
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Status")">
-                                    <MudChip T="string" Size="Size.Small"
-                                             Color="@(context.IsActive ? Color.Success : Color.Default)">
-                                        @(context.IsActive? Localization.GetString("ActiveIndividual") : Localization.GetString("InactiveIndividual"))
-                                    </MudChip>
+                                <MudTd DataLabel="@Localization.GetString("Name")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Created")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @context.CreatedAt.ToString("dd MMM yyyy")
+                                <MudTd DataLabel="@Localization.GetString("PurchaseNotes")">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DocumentCount</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
+                                        @context.TotalAmount.ToString("C")
                                     </MudText>
                                 </MudTd>
                             </RowTemplate>
@@ -197,20 +192,129 @@ else
                                      Size="Size.Large"
                                      Color="Color.Secondary"
                                      Class="mb-2" />
-                            <MudText Color="Color.Secondary">@Localization.GetString("NoIndividualsFound")</MudText>
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoPurchaseNotesFound")</MudText>
                         </div>
                     }
                 </MudCardContent>
-                <MudCardActions Class="pa-4">
-                    <MudButton Href="/individuals"
-                               Color="Color.Default"
-                               Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.List">
-                        @Localization.GetString("Individuals")
-                    </MudButton>
-                </MudCardActions>
             </MudCard>
         </MudItem>
+
+        <!-- ── Partners Needing Attention ── -->
+        @if (_overdueClients.Any() || _unpaidVendors.Any())
+        {
+            <MudItem xs="12" Class="mt-2">
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6" Class="d-flex align-center">
+                                <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" Color="Color.Warning" />
+                                @Localization.GetString("AttentionNeeded")
+                            </MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent Class="pa-0">
+                        <MudGrid Spacing="0">
+
+                            @* Clients with overdue invoices *@
+                            <MudItem xs="12" md="6">
+                                <div class="pa-3 pb-1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Error" Class="mb-2 d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.RequestQuote" Size="Size.Small" Class="mr-1" />
+                                        @Localization.GetString("ClientsWithOverdueInvoices")
+                                    </MudText>
+                                </div>
+                                @if (_overdueClients.Any())
+                                {
+                                    <MudTable Items="_overdueClients"
+                                              Hover="true"
+                                              Dense="true"
+                                              Elevation="0"
+                                              T="PartnerAttention"
+                                              RowClass="table-row-clickable"
+                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttention> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
+                                        <HeaderContent>
+                                            <MudTh>@Localization.GetString("Company")</MudTh>
+                                            <MudTh>@Localization.GetString("Invoices")</MudTh>
+                                            <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd DataLabel="@Localization.GetString("Company")">
+                                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
+                                            </MudTd>
+                                            <MudTd DataLabel="@Localization.GetString("Invoices")">
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
+                                                    @context.Count
+                                                </MudChip>
+                                            </MudTd>
+                                            <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                                <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Error">
+                                                    @context.Amount.ToString("C")
+                                                </MudText>
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                }
+                                else
+                                {
+                                    <div class="pa-4 pb-3">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("NoAttentionNeeded")</MudText>
+                                    </div>
+                                }
+                            </MudItem>
+
+                            @* Vendors with unpaid purchase notes *@
+                            <MudItem xs="12" md="6">
+                                <div class="pa-3 pb-1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Warning" Class="mb-2 d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Small" Class="mr-1" />
+                                        @Localization.GetString("VendorsWithUnpaidNotes")
+                                    </MudText>
+                                </div>
+                                @if (_unpaidVendors.Any())
+                                {
+                                    <MudTable Items="_unpaidVendors"
+                                              Hover="true"
+                                              Dense="true"
+                                              Elevation="0"
+                                              T="PartnerAttention"
+                                              RowClass="table-row-clickable"
+                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttention> args) => NavigateTo($"/individuals/{args.Item!.PartnerId}"))">
+                                        <HeaderContent>
+                                            <MudTh>@Localization.GetString("Individual")</MudTh>
+                                            <MudTh>@Localization.GetString("PurchaseNotes")</MudTh>
+                                            <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd DataLabel="@Localization.GetString("Individual")">
+                                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
+                                            </MudTd>
+                                            <MudTd DataLabel="@Localization.GetString("PurchaseNotes")">
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">
+                                                    @context.Count
+                                                </MudChip>
+                                            </MudTd>
+                                            <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                                <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Warning">
+                                                    @context.Amount.ToString("C")
+                                                </MudText>
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                }
+                                else
+                                {
+                                    <div class="pa-4 pb-3">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("NoAttentionNeeded")</MudText>
+                                    </div>
+                                }
+                            </MudItem>
+
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
     </MudGrid>
 }
 
@@ -219,14 +323,25 @@ else
     private bool _loading = true;
     private List<CompanyDto> _companies = [];
     private List<IndividualDto> _individuals = [];
+    private List<InvoiceDto> _invoices = [];
+    private List<PurchaseNoteDto> _purchaseNotes = [];
 
     private IEnumerable<CompanyDto> _activeCompanies => _companies.Where(c => c.IsActive);
     private IEnumerable<IndividualDto> _activeIndividuals => _individuals.Where(i => i.IsActive);
-    private IEnumerable<CompanyDto> _recentCompanies => _companies.OrderByDescending(c => c.CreatedAt).Take(5);
-    private IEnumerable<IndividualDto> _recentIndividuals => _individuals.OrderByDescending(i => i.CreatedAt).Take(5);
 
-    private int _clientCount = 0;
-    private int _vendorCount = 0;
+    private int _clientCount;
+    private int _vendorCount;
+
+    private List<PartnerSummary> _topClients = [];
+    private List<PartnerSummary> _topVendors = [];
+    private List<PartnerAttention> _overdueClients = [];
+    private List<PartnerAttention> _unpaidVendors = [];
+
+    // ── Partner stats date range ──
+    private int? _partnerDatePreset = 30;
+    private DateRange _partnerDateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
+    private DateTime _partnerFromDate => _partnerDateRange.Start ?? DateTime.Today.AddDays(-30);
+    private DateTime _partnerToDate => _partnerDateRange.End ?? DateTime.Today;
 
     protected override async Task OnInitializedAsync()
     {
@@ -245,14 +360,26 @@ else
 
         try
         {
-            IEnumerable<CompanyDto> companies = await CompanyService.GetAllCompaniesAsync(_cts.Token);
+            (IEnumerable<CompanyDto> companies,
+             IEnumerable<IndividualDto> individuals,
+             IEnumerable<InvoiceDto> invoices,
+             IEnumerable<PurchaseNoteDto> purchaseNotes) =
+            (
+                await CompanyService.GetAllCompaniesAsync(_cts.Token),
+                await IndividualService.GetAllIndividualsAsync(_cts.Token),
+                await InvoiceService.GetAllInvoicesAsync(_cts.Token),
+                await PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token)
+            );
+
             _companies = companies.ToList();
-
-            IEnumerable<IndividualDto> individuals = await IndividualService.GetAllIndividualsAsync(_cts.Token);
             _individuals = individuals.ToList();
+            _invoices = invoices.ToList();
+            _purchaseNotes = purchaseNotes.ToList();
 
-            _clientCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Client || c.Type == Domain.Enums.CompanyType.Both);
-            _vendorCount = _companies.Count(c => c.Type == Domain.Enums.CompanyType.Vendor || c.Type == Domain.Enums.CompanyType.Both);
+            _clientCount = _companies.Count(c => c.Type == CompanyType.Client || c.Type == CompanyType.Both);
+            _vendorCount = _companies.Count(c => c.Type == CompanyType.Vendor || c.Type == CompanyType.Both);
+
+            CalculateSummaries();
         }
         catch (Exception ex)
         {
@@ -264,28 +391,94 @@ else
         }
     }
 
+    private void RecalculateSummaries() => CalculateSummaries();
+
+    private void CalculateSummaries()
+    {
+        // Top 5 clients by total invoiced revenue (receivable invoices)
+        _topClients = _invoices
+            .Where(i => i.Type == InvoiceType.Receivable
+                     && i.IssueDate.Date >= _partnerFromDate.Date
+                     && i.IssueDate.Date <= _partnerToDate.Date)
+            .GroupBy(i => i.CompanyId)
+            .Select(g => new PartnerSummary
+            {
+                PartnerId = g.Key,
+                PartnerName = g.First().CompanyName,
+                DocumentCount = g.Count(),
+                TotalAmount = g.Sum(i => i.TotalAmount)
+            })
+            .OrderByDescending(p => p.TotalAmount)
+            .Take(5)
+            .ToList();
+
+        // Top 5 vendors by total purchase spend
+        _topVendors = _purchaseNotes
+            .Where(pn => pn.PurchaseDate.Date >= _partnerFromDate.Date
+                      && pn.PurchaseDate.Date <= _partnerToDate.Date)
+            .GroupBy(pn => pn.IndividualId)
+            .Select(g => new PartnerSummary
+            {
+                PartnerId = g.Key,
+                PartnerName = g.First().IndividualFullName,
+                DocumentCount = g.Count(),
+                TotalAmount = g.Sum(pn => pn.TotalAmount)
+            })
+            .OrderByDescending(p => p.TotalAmount)
+            .Take(5)
+            .ToList();
+
+        // Clients with overdue invoices (receivable, overdue status)
+        _overdueClients = _invoices
+            .Where(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue)
+            .GroupBy(i => i.CompanyId)
+            .Select(g => new PartnerAttention
+            {
+                PartnerId = g.Key,
+                PartnerName = g.First().CompanyName,
+                Count = g.Count(),
+                Amount = g.Sum(i => i.AmountDue)
+            })
+            .OrderByDescending(p => p.Amount)
+            .ToList();
+
+        // Vendors with unpaid purchase notes (pending or draft)
+        _unpaidVendors = _purchaseNotes
+            .Where(pn => pn.Status == PurchaseNoteStatus.Pending || pn.Status == PurchaseNoteStatus.Draft)
+            .GroupBy(pn => pn.IndividualId)
+            .Select(g => new PartnerAttention
+            {
+                PartnerId = g.Key,
+                PartnerName = g.First().IndividualFullName,
+                Count = g.Count(),
+                Amount = g.Sum(pn => pn.TotalAmount)
+            })
+            .OrderByDescending(p => p.Amount)
+            .ToList();
+    }
+
     private void NavigateTo(string url) => Navigation.NavigateTo(url);
-
-    private Color GetTypeColor(Domain.Enums.CompanyType type) => type switch
-    {
-        Domain.Enums.CompanyType.Client => Color.Success,
-        Domain.Enums.CompanyType.Vendor => Color.Warning,
-        Domain.Enums.CompanyType.Both => Color.Info,
-        _ => Color.Default
-    };
-
-    private string GetTypeText(Domain.Enums.CompanyType type) => type switch
-    {
-        Domain.Enums.CompanyType.Client => Localization.GetString("Client"),
-        Domain.Enums.CompanyType.Vendor => Localization.GetString("Vendor"),
-        Domain.Enums.CompanyType.Both => Localization.GetString("ClientAndVendor"),
-        _ => type.ToString()
-    };
 
     public void Dispose()
     {
         _cts.Cancel();
         _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+
+    private class PartnerSummary
+    {
+        public Guid PartnerId { get; set; }
+        public string PartnerName { get; set; } = string.Empty;
+        public int DocumentCount { get; set; }
+        public decimal TotalAmount { get; set; }
+    }
+
+    private class PartnerAttention
+    {
+        public Guid PartnerId { get; set; }
+        public string PartnerName { get; set; } = string.Empty;
+        public int Count { get; set; }
+        public decimal Amount { get; set; }
     }
 }

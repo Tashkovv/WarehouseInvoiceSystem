@@ -1,0 +1,149 @@
+@* Compact date picker following the same pill-trigger + static-calendar popover
+   pattern as WisDateRangeFilter.
+   When OpenTo="OpenTo.Month", clicking a month immediately selects it (no day step). *@
+
+<div style="position: relative; display: inline-flex; align-items: center;">
+
+    @* ── Trigger pill ── *@
+    <button type="button"
+            class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
+            @onclick="Toggle"
+            style="min-width: 160px; justify-content: space-between; gap: 6px;">
+
+        <span style="display: inline-flex; align-items: center; gap: 6px;">
+            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth"
+                     Size="Size.Small"
+                     Style="opacity: 0.7; flex-shrink: 0;" />
+            <span class="wis-filter-btn__label @(_isActive ? "wis-filter-btn__label--selected" : "")">
+                @_triggerLabel
+            </span>
+        </span>
+
+        <span class="wis-filter-btn__icon">
+            <MudIcon Icon="@(_open ? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
+                     Size="Size.Small" />
+        </span>
+    </button>
+
+    @* ── Overlay ── *@
+    @if (_open)
+    {
+        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
+    }
+
+    @* ── Popover ── *@
+    <MudPopover Open="_open"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="true"
+                Style="z-index: 1400; padding: 0; overflow: hidden;">
+
+        @if (OpenTo == OpenTo.Month)
+        {
+            @* ── Custom month grid (one-click month selection) ── *@
+            <div class="wis-dp-month-grid">
+
+                <div class="wis-dp-month-nav">
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _viewYear--)" />
+                    <span class="wis-dp-month-year">@_viewYear</span>
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _viewYear++)" />
+                </div>
+
+                <div class="wis-dp-month-cells">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        var month = m;
+                        var dt = new DateTime(_viewYear, month, 1);
+                        bool isSelected = _localDate.HasValue
+                            && _localDate.Value.Year == _viewYear
+                            && _localDate.Value.Month == month;
+                        bool isDisabled = MaxDate.HasValue && dt > MaxDate.Value;
+
+                        <button type="button"
+                                class="wis-dp-month-cell @(isSelected ? "wis-dp-month-cell--selected" : "")"
+                                disabled="@isDisabled"
+                                @onclick="@(() => SelectMonth(month))">
+                            @dt.ToString("MMM")
+                        </button>
+                    }
+                </div>
+
+            </div>
+        }
+        else
+        {
+            @* ── Standard day picker ── *@
+            <div class="wis-dp-calendar">
+                <MudDatePicker Date="@_localDate"
+                               DateChanged="OnDateChanged"
+                               PickerVariant="PickerVariant.Static"
+                               Variant="Variant.Text"
+                               Margin="Margin.None"
+                               DateFormat="@DateFormat"
+                               OpenTo="@OpenTo"
+                               MaxDate="@MaxDate"
+                               Elevation="0"
+                               Class="wis-date-static" />
+            </div>
+        }
+
+    </MudPopover>
+
+</div>
+
+@code {
+    [Parameter] public DateTime? Date { get; set; }
+    [Parameter] public EventCallback<DateTime?> DateChanged { get; set; }
+    [Parameter] public string DateFormat { get; set; } = "dd MMM yyyy";
+    [Parameter] public string Label { get; set; } = string.Empty;
+    [Parameter] public OpenTo OpenTo { get; set; } = OpenTo.Date;
+    [Parameter] public DateTime? MaxDate { get; set; }
+
+    private bool _open;
+    private DateTime? _localDate;
+    private DateTime? _lastSeenDate;
+    private int _viewYear = DateTime.Today.Year;
+
+    protected override void OnParametersSet()
+    {
+        if (Date != _lastSeenDate)
+        {
+            _lastSeenDate = Date;
+            _localDate = Date;
+        }
+    }
+
+    private bool _isActive => _localDate.HasValue;
+
+    private string _triggerLabel => _localDate.HasValue
+        ? _localDate.Value.ToString(DateFormat)
+        : Label;
+
+    private void Toggle()
+    {
+        _open = !_open;
+        if (_open)
+            _viewYear = _localDate?.Year ?? DateTime.Today.Year;
+    }
+
+    private void Close() => _open = false;
+
+    private async Task OnDateChanged(DateTime? date)
+    {
+        _localDate = date;
+        _open = false;
+        await DateChanged.InvokeAsync(date);
+    }
+
+    private async Task SelectMonth(int month)
+    {
+        var date = new DateTime(_viewYear, month, 1);
+        _localDate = date;
+        _open = false;
+        await DateChanged.InvokeAsync(date);
+    }
+}

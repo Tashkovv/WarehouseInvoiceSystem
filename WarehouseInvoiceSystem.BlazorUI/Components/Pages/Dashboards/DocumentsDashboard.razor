@@ -1,4 +1,4 @@
-﻿@page "/documents-dashboard"
+@page "/documents-dashboard"
 @implements IDisposable
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
@@ -24,20 +24,50 @@ else
 {
     <MudGrid>
 
+        <!-- ── Financial Position ── -->
+        <MudItem xs="12" Class="mb-2">
+            <MudText Typo="Typo.h6">@Localization.GetString("FinancialPosition")</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("FinancialPositionSubtitle")</MudText>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
+                           Value="@_totalReceivablesOutstanding.ToString("C")"
+                           Subtitle="@($"{_receivableInvoicesOutstandingCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.AccountBalance"
+                           IconColor="@(_totalReceivablesOutstanding > 0 ? Color.Success : Color.Default)" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalPayables")"
+                           Value="@_totalPayablesOutstanding.ToString("C")"
+                           Subtitle="@($"{_unpaidPurchaseNotesCount} {Localization.GetString("PurchaseNotes")} · {_payableInvoicesOutstandingCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                           IconColor="@(_totalPayablesOutstanding > 0 ? Color.Warning : Color.Default)" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("NetBalance")"
+                           Value="@_netBalanceOutstanding.ToString("C")"
+                           Icon="@Icons.Material.Filled.Balance"
+                           IconColor="@(_netBalanceOutstanding > 0 ? Color.Success : _netBalanceOutstanding < 0 ? Color.Error : Color.Default)" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("OverdueReceivables")"
+                           Value="@_overdueReceivablesAmount.ToString("C")"
+                           Subtitle="@($"{_overdueReceivablesCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.RunningWithErrors"
+                           IconColor="@(_overdueReceivablesCount > 0 ? Color.Error : Color.Default)" />
+        </MudItem>
+
         <!-- ── Today's Activity ── -->
-        <MudItem xs="12">
+        <MudItem xs="12" Class="mt-6">
             <div class="d-flex align-center flex-wrap gap-2 mb-4">
                 <MudText Typo="Typo.h6">@Localization.GetString("TodaysActivity")</MudText>
-                <div>
-                    <MudDatePicker @bind-Date="_selectedDay"
-                                   Variant="Variant.Outlined"
-                                   Margin="Margin.Dense"
-                                   DateFormat="dd MMM yyyy"
-                                   Label="@Localization.GetString("SelectDay")"
-                                   MaxDate="DateTime.Today"
-                                   PickerVariant="PickerVariant.Inline"
-                                   Style="min-width: 315px;" />
-                </div>
+                <WisDatePicker @bind-Date="_selectedDay"
+                               Label="@Localization.GetString("SelectDay")"
+                               MaxDate="DateTime.Today" />
             </div>
         </MudItem>
 
@@ -46,8 +76,7 @@ else
                            Value="@_purchaseNotesDay.Count().ToString()"
                            Subtitle="@_purchaseNotesDay.Sum(pn => pn.TotalAmount).ToString("C")"
                            Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="Color.Info"
-                           Link="/purchase-notes" />
+                           IconColor="Color.Info" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -55,8 +84,7 @@ else
                            Value="@_invoicesPayableDay.Count().ToString()"
                            Subtitle="@_amountPayableInvoicesDay.ToString("C")"
                            Icon="@Icons.Material.Filled.ShoppingCart"
-                           IconColor="Color.Warning"
-                           Link="/invoices" />
+                           IconColor="Color.Warning" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -64,8 +92,7 @@ else
                            Value="@_invoicesReceivableDay.Count().ToString()"
                            Subtitle="@_amountToReceiveDay.ToString("C")"
                            Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Success"
-                           Link="/invoices" />
+                           IconColor="Color.Success" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -81,17 +108,11 @@ else
                 <MudText Typo="Typo.h6">
                     @Localization.GetString("FinancialSummary") — @_selectedMonth.ToString("MMMM yyyy")
                 </MudText>
-                <div>
-                    <MudDatePicker @bind-Date="_selectedMonthDate"
-                                   Variant="Variant.Outlined"
-                                   Margin="Margin.Dense"
-                                   DateFormat="MMM yyyy"
-                                   OpenTo="OpenTo.Month"
-                                   Label="@Localization.GetString("SelectMonth")"
-                                   MaxDate="DateTime.Today"
-                                   PickerVariant="PickerVariant.Inline"
-                                   Style="min-width: 315px;" />
-                </div>
+                <WisDatePicker @bind-Date="_selectedMonthDate"
+                               DateFormat="MMM yyyy"
+                               OpenTo="OpenTo.Month"
+                               Label="@Localization.GetString("SelectMonth")"
+                               MaxDate="DateTime.Today" />
             </div>
         </MudItem>
 
@@ -123,8 +144,7 @@ else
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
                            Value="@_attentionCount.ToString()"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_attentionCount > 0 ? Color.Error : Color.Default)"
-                           Link="@($"/invoices?status={InvoiceStatus.Overdue}")" />
+                           IconColor="@(_attentionCount > 0 ? Color.Error : Color.Default)" />
         </MudItem>
 
         <!-- ── Recent Activity (Tabbed) ── -->
@@ -143,8 +163,6 @@ else
                     <!-- ── Purchase Notes Tab ── -->
                     <MudTabPanel Text="@Localization.GetString("PurchaseNotes")"
                                  Icon="@Icons.Material.Filled.Receipt"
-                                 BadgeData="@_recentPurchaseNotes.Count()"
-                                 BadgeColor="Color.Info"
                                  Class="mr-5">
                         <MudCardHeader>
                             <CardHeaderContent>
@@ -153,13 +171,7 @@ else
                                 </MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <MudButton Href="/purchase-notes/create"
-                                           Color="Color.Primary"
-                                           Variant="Variant.Filled"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Add">
-                                    @Localization.GetString("NewPurchaseNote")
-                                </MudButton>
+                                <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Add, Label = Localization.GetString("PurchaseNote"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo("/purchase-notes/create")) })" />
                             </CardHeaderActions>
                         </MudCardHeader>
                         @if (_recentPurchaseNotes.Any())
@@ -168,6 +180,7 @@ else
                                       Hover="true"
                                       Dense="true"
                                       Elevation="0"
+                                      Class="wis-secondary-list"
                                       T="PurchaseNoteDto"
                                       RowClass="table-row-clickable"
                                       OnRowClick="@((TableRowClickEventArgs<PurchaseNoteDto> args) => Navigation.NavigateTo($"/purchase-notes/{args.Item!.Id}"))">
@@ -183,16 +196,16 @@ else
                                         <MudText Typo="Typo.body2" Class="font-weight-medium">@context.NoteNumber</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Individual")">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.IndividualFullName</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IndividualFullName</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                         <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Date")">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Status")">
-                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)">
+                                        <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)" Variant="Variant.Outlined">
                                             @GetPurchaseNoteStatusText(context.Status)
                                         </MudChip>
                                     </MudTd>
@@ -207,20 +220,13 @@ else
                             </div>
                         }
                         <MudCardActions Class="pa-4">
-                            <MudButton Href="/purchase-notes"
-                                       Color="Color.Default"
-                                       Variant="Variant.Outlined"
-                                       StartIcon="@Icons.Material.Filled.List">
-                                @Localization.GetString("AllPurchaseNotes")
-                            </MudButton>
+                            <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("PurchaseNotes"), "/purchase-notes", Color.Secondary)" />
                         </MudCardActions>
                     </MudTabPanel>
 
                     <!-- ── Invoices Tab ── -->
                     <MudTabPanel Text="@Localization.GetString("Invoices")"
                                  Icon="@Icons.Material.Filled.RequestQuote"
-                                 BadgeData="@_recentInvoices.Count()"
-                                 BadgeColor="Color.Warning"
                                  Class="mr-5">
                         <MudCardHeader>
                             <CardHeaderContent>
@@ -229,13 +235,7 @@ else
                                 </MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <MudButton Href="/invoices/create"
-                                           Color="Color.Primary"
-                                           Variant="Variant.Filled"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Add">
-                                    @Localization.GetString("NewInvoice")
-                                </MudButton>
+                                <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Add, Label = Localization.GetString("Invoice"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo("/invoices/create")) })" />
                             </CardHeaderActions>
                         </MudCardHeader>
                         @if (_recentInvoices.Any())
@@ -244,6 +244,7 @@ else
                                       Hover="true"
                                       Dense="true"
                                       Elevation="0"
+                                      Class="wis-secondary-list"
                                       T="InvoiceDto"
                                       RowClass="table-row-clickable"
                                       OnRowClick="@((TableRowClickEventArgs<InvoiceDto> args) => Navigation.NavigateTo($"/invoices/{args.Item!.Id}"))">
@@ -260,11 +261,12 @@ else
                                         <MudText Typo="Typo.body2" Class="font-weight-medium">@context.InvoiceNumber</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Company")">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CompanyName</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.CompanyName</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Type")">
                                         <MudChip T="string"
                                                  Size="Size.Small"
+                                                 Variant="Variant.Outlined"
                                                  Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
                                             @(Localization.GetString(context.Type.ToString()))
                                         </MudChip>
@@ -273,10 +275,10 @@ else
                                         <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Date")">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.IssueDate.ToString("dd MMM yyyy")</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IssueDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Status")">
-                                        <MudChip T="string" Size="Size.Small" Color="GetInvoiceStatusColor(context.Status)">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="GetInvoiceStatusColor(context.Status)">
                                             @GetInvoiceStatusText(context.Status)
                                         </MudChip>
                                     </MudTd>
@@ -291,20 +293,13 @@ else
                             </div>
                         }
                         <MudCardActions Class="pa-4">
-                            <MudButton Href="/invoices"
-                                       Color="Color.Default"
-                                       Variant="Variant.Outlined"
-                                       StartIcon="@Icons.Material.Filled.List">
-                                @Localization.GetString("AllInvoices")
-                            </MudButton>
+                            <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Invoices"), "/invoices", Color.Secondary)" />
                         </MudCardActions>
                     </MudTabPanel>
 
                     <!-- ── Payments Tab ── -->
                     <MudTabPanel Text="@Localization.GetString("Payments")"
                                  Icon="@Icons.Material.Filled.Payment"
-                                 BadgeData="@_recentPayments.Count()"
-                                 BadgeColor="Color.Success"
                                  Class="mr-5">
                         <MudCardHeader>
                             <CardHeaderContent>
@@ -313,13 +308,7 @@ else
                                 </MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <MudButton OnClick="OpenPaymentDialog"
-                                           Color="Color.Primary"
-                                           Variant="Variant.Filled"
-                                           Size="Size.Small"
-                                           StartIcon="@Icons.Material.Filled.Add">
-                                    @Localization.GetString("RecordPayment")
-                                </MudButton>
+                                <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Add, Label = Localization.GetString("Payment"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, async () => await OpenPaymentDialog()) })" />
                             </CardHeaderActions>
                         </MudCardHeader>
                         @if (_recentPayments.Any())
@@ -328,6 +317,7 @@ else
                                       Hover="true"
                                       Dense="true"
                                       Elevation="0"
+                                      Class="wis-secondary-list"
                                       T="PaymentDto"
                                       RowClass="table-row-clickable"
                                       OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => Navigation.NavigateTo($"/payments/{args.Item!.Id}"))">
@@ -345,7 +335,7 @@ else
                                         </MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Invoice")">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.InvoiceNumber</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.InvoiceNumber</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                         <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
@@ -353,10 +343,10 @@ else
                                         </MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Date")">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
-                                        <MudChip T="string" Size="Size.Small" Color="@GetMethodColor(context.PaymentMethod)">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@GetMethodColor(context.PaymentMethod)">
                                             @GetPaymentMethodText(context.PaymentMethod)
                                         </MudChip>
                                     </MudTd>
@@ -371,12 +361,7 @@ else
                             </div>
                         }
                         <MudCardActions Class="pa-4">
-                            <MudButton Href="/payments"
-                                       Color="Color.Default"
-                                       Variant="Variant.Outlined"
-                                       StartIcon="@Icons.Material.Filled.List">
-                                @Localization.GetString("AllPayments")
-                            </MudButton>
+                            <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Payments"), "/payments", Color.Secondary)" />
                         </MudCardActions>
                     </MudTabPanel>
 
@@ -454,6 +439,45 @@ else
     private int _attentionCount =>
         _invoices.Count(i => i.Status == InvoiceStatus.Overdue);
 
+    // ── Outstanding Balances (always-current, no date filter) ──
+    private int _receivableInvoicesOutstandingCount =>
+        _invoices.Count(i => i.Type == InvoiceType.Receivable &&
+                              i.Status != InvoiceStatus.Paid &&
+                              i.Status != InvoiceStatus.Cancelled);
+
+    private decimal _totalReceivablesOutstanding =>
+        _invoices.Where(i => i.Type == InvoiceType.Receivable &&
+                              i.Status != InvoiceStatus.Paid &&
+                              i.Status != InvoiceStatus.Cancelled)
+                 .Sum(i => i.AmountDue);
+
+    private int _unpaidPurchaseNotesCount =>
+        _purchaseNotes.Count(pn => pn.Status != PurchaseNoteStatus.Paid &&
+                                    pn.Status != PurchaseNoteStatus.Cancelled);
+
+    private int _payableInvoicesOutstandingCount =>
+        _invoices.Count(i => i.Type == InvoiceType.Payable &&
+                              i.Status != InvoiceStatus.Paid &&
+                              i.Status != InvoiceStatus.Cancelled);
+
+    private decimal _totalPayablesOutstanding =>
+        _invoices.Where(i => i.Type == InvoiceType.Payable &&
+                              i.Status != InvoiceStatus.Paid &&
+                              i.Status != InvoiceStatus.Cancelled)
+                 .Sum(i => i.AmountDue) +
+        _purchaseNotes.Where(pn => pn.Status != PurchaseNoteStatus.Paid &&
+                                    pn.Status != PurchaseNoteStatus.Cancelled)
+                      .Sum(pn => pn.TotalAmount);
+
+    private decimal _netBalanceOutstanding => _totalReceivablesOutstanding - _totalPayablesOutstanding;
+
+    private int _overdueReceivablesCount =>
+        _invoices.Count(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue);
+
+    private decimal _overdueReceivablesAmount =>
+        _invoices.Where(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue)
+                 .Sum(i => i.AmountDue);
+
     // ── Recent activity (always last 5, unfiltered) ──
     private IEnumerable<PurchaseNoteDto> _recentPurchaseNotes =>
         _purchaseNotes.OrderByDescending(pn => pn.PurchaseDate).Take(5);
@@ -501,6 +525,14 @@ else
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private WisDetailActionItem NavAction(string icon, string label, string href, Color color = Color.Default) => new()
+    {
+        Icon = icon,
+        Label = label,
+        Color = color,
+        OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo(href)),
+    };
 
     private Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
     {

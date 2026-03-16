@@ -535,6 +535,116 @@ html {
     justify-content: center;
 }
 
+/* WisDatePicker — static picker chrome reset */
+.wis-date-static {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+    .wis-date-static .mud-picker-static {
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    .wis-date-static .mud-picker-content {
+        padding: 0 !important;
+    }
+
+    /* Hide the big date header banner — trigger button already shows the date */
+    .wis-date-static .mud-picker-date-header,
+    .wis-date-static .mud-picker-datepicker-toolbar,
+    .wis-date-static .mud-toolbar,
+    .wis-date-static .mud-picker-toolbar {
+        display: none !important;
+    }
+
+    /* Tighten month navigation row */
+    .wis-date-static .mud-picker-calendar-header {
+        padding-top: 4px !important;
+        padding-bottom: 0 !important;
+        min-height: unset !important;
+    }
+
+    /* Remove padding around the calendar grid */
+    .wis-date-static .mud-picker-calendar-content {
+        padding: 0 6px 4px 6px !important;
+    }
+
+    /* Compact day-of-week header */
+    .wis-date-static .mud-day-of-week,
+    .wis-date-static th {
+        padding: 2px 0 !important;
+        height: 28px !important;
+    }
+
+    /* Smaller day cells */
+    .wis-date-static .mud-button-date,
+    .wis-date-static .mud-picker-calendar-day {
+        height: 34px !important;
+        width: 34px !important;
+        min-width: 34px !important;
+        font-size: 0.75rem !important;
+    }
+
+/* Single-month calendar wrapper */
+.wis-dp-calendar {
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* WisDatePicker — month-only grid */
+.wis-dp-month-grid {
+    padding: 8px;
+    width: 224px;
+}
+
+.wis-dp-month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px 6px 4px;
+}
+
+.wis-dp-month-year {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.wis-dp-month-cells {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+}
+
+.wis-dp-month-cell {
+    height: 36px;
+    border: none;
+    border-radius: 18px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: inherit;
+    transition: background 0.15s;
+}
+
+    .wis-dp-month-cell:hover:not(:disabled) {
+        background: var(--mud-palette-action-default-hover);
+    }
+
+    .wis-dp-month-cell--selected {
+        background: var(--mud-palette-primary) !important;
+        color: var(--mud-palette-primary-text) !important;
+    }
+
+    .wis-dp-month-cell:disabled {
+        opacity: 0.38;
+        cursor: default;
+    }
+
 /* Preset footer row */
 .wis-drf-footer {
     display: flex;
