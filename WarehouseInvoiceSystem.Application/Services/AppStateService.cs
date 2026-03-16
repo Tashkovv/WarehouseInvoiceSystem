@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Infrastructure.Common
 {
+    using System.Globalization;
     using System.Text.Json;
     using Microsoft.Extensions.Hosting;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -11,6 +12,7 @@
     /// </summary>
     public class AppStateService(IHostEnvironment environment) : IAppStateService
     {
+        private readonly JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
         private readonly string _filePath = Path.Combine(
             environment.ContentRootPath, "app-state.json");
 
@@ -19,9 +21,10 @@
         public async Task<DateTime?> GetDateAsync(string key, CancellationToken ct = default)
         {
             Dictionary<string, string> state = await ReadAsync();
-            return state.TryGetValue(key, out string? value) && DateTime.TryParse(value, out DateTime result)
-                ? result
-                : null;
+            return state.TryGetValue(key, out string? value) &&
+                   DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime result)
+                     ? result
+                     : null;
         }
 
         public async Task SetDateAsync(string key, DateTime value)
@@ -30,8 +33,8 @@
             try
             {
                 Dictionary<string, string> state = await ReadAsync();
-                state[key] = value.ToString("O"); // Round-trip ISO 8601
-                string json = JsonSerializer.Serialize(state, new JsonSerializerOptions { WriteIndented = true });
+                state[key] = value.ToString("O");
+                string json = JsonSerializer.Serialize(state, jsonSerializerOptions);
                 await File.WriteAllTextAsync(_filePath, json);
             }
             finally
@@ -43,18 +46,16 @@
         private async Task<Dictionary<string, string>> ReadAsync()
         {
             if (!File.Exists(_filePath))
-                return new Dictionary<string, string>();
+                return [];
 
             try
             {
                 string json = await File.ReadAllTextAsync(_filePath);
-                return JsonSerializer.Deserialize<Dictionary<string, string>>(json)
-                       ?? new Dictionary<string, string>();
+                return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
             }
             catch (JsonException)
             {
-                // Corrupted file — start fresh
-                return new Dictionary<string, string>();
+                return [];
             }
         }
     }

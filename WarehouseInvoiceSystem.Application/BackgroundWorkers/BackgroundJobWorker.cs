@@ -1,4 +1,4 @@
-﻿namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
+namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
 {
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.Extensions.Hosting;
@@ -9,7 +9,7 @@
     /// Background worker that executes background jobs on a schedule
     /// Currently configured to run overdue check at 7 AM every day
     /// </summary>
-    public class BackgroundJobWorker(
+    public partial class BackgroundJobWorker(
         IServiceProvider serviceProvider,
         IAppStateService appState,
         ILogger<BackgroundJobWorker> logger) : BackgroundService
@@ -23,8 +23,7 @@
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            logger.LogInformation("Overdue invoice check scheduled for {Hour}:{Minute:00} every day",
-                _overdueCheckHour, _overdueCheckMinute);
+            LogScheduled(logger, _overdueCheckHour, _overdueCheckMinute);
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -41,7 +40,7 @@
                     // Only run once per day at the specified time
                     if (now >= todayAtCheckTime && lastCheckDate?.Date != now.Date)
                     {
-                        logger.LogInformation("Running scheduled overdue invoice check at {Timestamp}", now);
+                        LogRunning(logger, now);
 
                         using (IServiceScope scope = serviceProvider.CreateScope())
                         {
@@ -50,8 +49,7 @@
                         }
 
                         await appState.SetDateAsync(LastOverdueCheckKey, now.Date);
-                        logger.LogInformation("Overdue invoice check completed. Next check tomorrow at {Hour}:{Minute:00}",
-                            _overdueCheckHour, _overdueCheckMinute);
+                        LogCompleted(logger, _overdueCheckHour, _overdueCheckMinute);
                     }
 
                     // Run check every 1 minute to see if it's time to execute scheduled jobs
@@ -59,7 +57,7 @@
                 }
                 catch (OperationCanceledException ex)
                 {
-                    logger.LogInformation($"Background job worker is shutting down with exception: {ex.ToString()}");
+                    LogShuttingDown(logger, ex);
                     break;
                 }
                 catch (Exception ex)
@@ -72,5 +70,17 @@
 
             logger.LogInformation("Background job worker stopped");
         }
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Overdue invoice check scheduled for {Hour}:{Minute:00} every day")]
+        private static partial void LogScheduled(ILogger logger, int hour, int minute);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Running scheduled overdue invoice check at {Timestamp}")]
+        private static partial void LogRunning(ILogger logger, DateTime timestamp);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Overdue invoice check completed. Next check tomorrow at {Hour}:{Minute:00}")]
+        private static partial void LogCompleted(ILogger logger, int hour, int minute);
+
+        [LoggerMessage(Level = LogLevel.Information, Message = "Background job worker is shutting down")]
+        private static partial void LogShuttingDown(ILogger logger, Exception ex);
     }
 }
