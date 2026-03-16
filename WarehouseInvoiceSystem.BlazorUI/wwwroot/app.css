@@ -77,9 +77,6 @@ html {
     padding: 4px 0;
 }
 
-.text-secondary {
-    color: var(--mud-palette-text-secondary);
-}
 
 .table-row-clickable td:not(:last-child) {
     cursor: pointer;
@@ -103,21 +100,6 @@ html {
     box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
 }
 
-.dashboard-card-arrow {
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(-10px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
 
 /* =============================================
    FilterPopoverList — vertical radio group
@@ -326,20 +308,6 @@ html {
     margin-bottom: 0 !important;
 }
 
-/* Clear All button in the filter strip */
-.wis-toolbar-clearall-btn {
-    text-transform: none !important;
-    font-size: 0.8rem !important;
-    height: 32px !important;
-    padding: 0 10px !important;
-    min-width: 0 !important;
-    color: var(--mud-palette-text-secondary) !important;
-    margin-left: 4px;
-}
-
-    .wis-toolbar-clearall-btn:hover {
-        color: var(--mud-palette-error) !important;
-    }
 
 /* Labeled filter pill button */
 .wis-filter-btn {
@@ -700,14 +668,6 @@ html {
     flex-shrink: 0;
 }
 
-/* Advanced filter toggle row */
-.wis-toolbar-filter-divider {
-    width: 1px;
-    height: 20px;
-    background: rgba(var(--mud-palette-text-primary-rgb), 0.15);
-    margin: 0 4px;
-    align-self: center;
-}
 
 .wis-toolbar-advanced-btn {
     text-transform: none !important;
@@ -822,10 +782,6 @@ html {
     color: var(--mud-palette-success);
 }
 
-/* Secondary weight — medium, e.g. warehouse name in a stack */
-.wis-cell-semibold {
-    font-weight: 500;
-}
 
 /* =============================================
    WIS Grid empty state — NoRecordsContent
@@ -916,37 +872,6 @@ html {
     line-height: 1.2 !important;
 }
 
-/* Gmail-style To / Message rows */
-.wis-email-field-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 6px 0;
-}
-
-.wis-email-field-row--message {
-    align-items: flex-start;
-    min-height: 120px;
-}
-
-.wis-email-field-label {
-    width: 72px;
-    flex-shrink: 0;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    color: var(--mud-palette-text-secondary);
-    padding-top: 10px;
-}
-
-.wis-email-field-input {
-    flex: 1;
-    min-width: 0;
-}
-
-    .wis-email-field-input .mud-input-root {
-        padding: 6px 0 !important;
-        font-size: 0.9375rem !important;
-    }
 
 /* ── WisDetailHeader — back button & split button ── */
 
@@ -996,16 +921,6 @@ html {
         border-color: var(--mud-palette-success-darken);
     }
 
-/* ── Rounded filter inputs (MudSelect / MudDatePicker in filter bars) ────────────────────── */
-.wis-filter-input .mud-input-outlined .mud-input-outlined-border {
-    border-radius: 20px;
-}
-
-.wis-filter-input .mud-input-outlined input,
-.wis-filter-input .mud-input-outlined .mud-input-adornment {
-    padding-left: 14px;
-    padding-right: 14px;
-}
 
 /* ── WisSplitButton ── */
 
