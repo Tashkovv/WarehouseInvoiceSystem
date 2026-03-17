@@ -1,12 +1,15 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
     using ClosedXML.Excel;
+    using ClosedXML.Excel.Drawings;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
+    using WarehouseInvoiceSystem.Application.DTOs.Tenant;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Enums;
 
     public class ExcelExportService(IInvoiceService invoiceService,
-                                    ILocalizationService translations) : IExcelExportService
+                                    ILocalizationService translations,
+                                    ITenantService tenantService) : IExcelExportService
     {
         private readonly string dateFormat = "dd/MM/yyyy";
 
@@ -14,13 +17,16 @@
         {
             InvoiceDto invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId)
                 ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
-            return ExportInvoiceForPrinting(invoice);
+            return await ExportInvoiceForPrintingAsync(invoice);
         }
 
-        public Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice) =>
-            Task.FromResult(ExportInvoiceForPrinting(invoice));
+        public async Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice)
+        {
+            TenantDto tenant = await tenantService.GetAsync();
+            return ExportInvoiceForPrinting(invoice, tenant);
+        }
 
-        private byte[] ExportInvoiceForPrinting(InvoiceDto invoice)
+        private byte[] ExportInvoiceForPrinting(InvoiceDto invoice, TenantDto tenant)
         {
             using XLWorkbook workbook = new();
             IXLWorksheet worksheet = workbook.Worksheets.Add(translations.GetString("Invoice"));
@@ -34,15 +40,24 @@
             worksheet.PageSetup.Margins.Bottom = 0.75;
             worksheet.PageSetup.CenterHorizontally = true;
 
-            // Company Header (you can customize this)
-            worksheet.Range("A1:G1").Merge().Value = translations.GetString("InvoiceSystem");
+            // Company header from tenant settings
+            worksheet.Range("A1:G1").Merge().Value = tenant.CompanyName;
             worksheet.Range("A1:G1").Style.Font.Bold = true;
             worksheet.Range("A1:G1").Style.Font.FontSize = 18;
             worksheet.Range("A1:G1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            worksheet.Range("A2:G2").Merge().Value = translations.GetString("Brajkovci");
+            worksheet.Range("A2:G2").Merge().Value = tenant.Address ?? string.Empty;
             worksheet.Range("A2:G2").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             worksheet.Range("A2:G2").Style.Font.FontSize = 10;
+
+            // Embed logo in top-right corner when one is stored
+            if (tenant.LogoData is { Length: > 0 })
+            {
+                using MemoryStream logoStream = new(tenant.LogoData);
+                IXLPicture picture = worksheet.AddPicture(logoStream)
+                    .MoveTo(worksheet.Cell("F1"))
+                    .WithSize(80, 40);
+            }
 
             // Invoice title
             int row = 4;
@@ -56,7 +71,7 @@
             row += 2;
             int detailsStartRow = row;
             worksheet.Cell(row, 1).Value = invoice.Type.Equals(InvoiceType.Receivable)
-                                             ? $"{translations.GetString("BillFrom")}:" 
+                                             ? $"{translations.GetString("BillFrom")}:"
                                              : $"{translations.GetString("BillTo")}:";
             worksheet.Cell(row, 1).Style.Font.Bold = true;
             row++;
@@ -253,10 +268,9 @@
         public async Task<byte[]> ExportInvoicesByDateRangeAsync(List<InvoiceDto> invoicesToExport, DateTime startDate, DateTime endDate)
         {
             string headerName = "A1:K1";
-            List<InvoiceDto> filteredInvoices = invoicesToExport
+            List<InvoiceDto> filteredInvoices = [.. invoicesToExport
                 .Where(i => i.IssueDate >= startDate && i.IssueDate <= endDate)
-                .OrderBy(i => i.IssueDate)
-                .ToList();
+                .OrderBy(i => i.IssueDate)];
 
             using XLWorkbook workbook = new();
             IXLWorksheet worksheet = workbook.Worksheets.Add(translations.GetString("Invoices"));

@@ -1,0 +1,329 @@
+﻿@page "/profile"
+@inherits PageBase
+@using WarehouseInvoiceSystem.Application.DTOs.Tenant
+@inject ITenantService TenantService
+
+<PageTitle>@Localization.GetString("Profile") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<div class="wis-page-header">
+    <MudText Typo="Typo.h3" Class="wis-page-title">
+        @Localization.GetString("Profile")
+    </MudText>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+}
+else
+{
+    <MudStack Spacing="4" Class="pb-8">
+
+        @* ── Company Info ─────────────────────────────────────────────────── *@
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("CompanyInfo")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudDivider />
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_companyName"
+                                      Label="@Localization.GetString("CompanyName")"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      RequiredError="@Localization.GetString("CompanyName")"
+                                      MaxLength="200"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_website"
+                                      Label="@Localization.GetString("Website")"
+                                      Variant="Variant.Outlined"
+                                      MaxLength="200"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_phone"
+                                      Label="@Localization.GetString("Phone")"
+                                      Variant="Variant.Outlined"
+                                      MaxLength="50"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_address"
+                                      Label="@Localization.GetString("Address")"
+                                      Variant="Variant.Outlined"
+                                      MaxLength="500"
+                                      FullWidth="true" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+
+        @* ── Operator ─────────────────────────────────────────────────────── *@
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("OperatorSection")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudDivider />
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_operatorName"
+                                      Label="@Localization.GetString("OperatorName")"
+                                      Variant="Variant.Outlined"
+                                      MaxLength="100"
+                                      FullWidth="true"
+                                      HelperText="@Localization.GetString("OperatorNameHelp")" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+
+        @* ── Email ────────────────────────────────────────────────────────── *@
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("EmailSection")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudDivider />
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_email"
+                                      Label="@Localization.GetString("Email")"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Email"
+                                      MaxLength="100"
+                                      FullWidth="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_emailPassword"
+                                      Label="@Localization.GetString("EmailPassword")"
+                                      Variant="Variant.Outlined"
+                                      InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                      MaxLength="200"
+                                      FullWidth="true"
+                                      HelperText="@PasswordHelperText"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                      AdornmentAriaLabel="Toggle password visibility"
+                                      OnAdornmentClick="() => _showPassword = !_showPassword" />
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+
+        @* ── Logo ─────────────────────────────────────────────────────────── *@
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("LogoSection")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudDivider />
+            <MudCardContent>
+                <MudStack Spacing="3">
+                    @if (_logoPreviewUrl is not null)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                            <img src="@_logoPreviewUrl"
+                                 alt="Logo preview"
+                                 style="max-height: 80px; max-width: 240px; object-fit: contain; border: 1px solid var(--mud-palette-lines-default); border-radius: 8px; padding: 8px;" />
+                            <WisButton Action="@_removeLogo" ButtonSize="Size.Small"/>
+                        </MudStack>
+                    }
+                    <MudFileUpload T="IBrowserFile"
+                                   Accept=".png,.jpg,.jpeg"
+                                   FilesChanged="OnLogoSelected"
+                                   MaximumFileCount="1">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CloudUpload">
+                                @Localization.GetString("UploadLogo")
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                    @if (_logoValidationError is not null)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">@_logoValidationError</MudText>
+                    }
+                </MudStack>
+            </MudCardContent>
+        </MudCard>
+
+        @* ── Save ─────────────────────────────────────────────────────────── *@
+        <MudStack Row="true" Justify="Justify.FlexEnd">
+            <WisButton Action="@_saveAction" ButtonSize="Size.Large"/>
+        </MudStack>
+
+    </MudStack>
+}
+
+@code {
+    // Form state
+    private string _companyName = string.Empty;
+    private string? _operatorName;
+    private string? _address;
+    private string? _phone;
+    private string? _website;
+    private string? _email;
+    private string? _emailPassword;
+    private bool _showPassword;
+    private bool _hasExistingPassword;
+
+    // Logo state
+    private string? _logoPreviewUrl;
+    private byte[]? _pendingLogoData;
+    private string? _pendingLogoMime;
+    private bool _logoRemoved; 
+    private string? _logoValidationError;
+
+    private bool _saving;
+
+    private WisDetailActionItem _saveAction => new()
+    {
+        Icon = Icons.Material.Filled.Save,
+        Label = Localization.GetString("SaveProfile"),
+        Color = Color.Primary,
+        Disabled = _saving || string.IsNullOrWhiteSpace(_companyName),
+        OnClick = EventCallback.Factory.Create(this, SaveAsync)
+    };
+
+    private WisDetailActionItem _removeLogo => new()
+    {
+        Icon = Icons.Material.Filled.DeleteForever,
+        Label = Localization.GetString("RemoveLogo"),
+        Color = Color.Error,
+        OnClick = EventCallback.Factory.Create(this, RemoveLogo)
+    };
+
+    // private WisDetailActionItem _uploadLogo => new()
+    // {
+    //     Icon = Icons.Material.Filled.CloudUpload,
+    //     Label = Localization.GetString("UploadLogo"),
+    //     Color = Color.Primary,
+    //     OnClick = EventCallback.Factory.Create(this, (IBrowserFile file) => OnLogoSelected(file))
+    // };
+
+    private string PasswordHelperText =>
+        _hasExistingPassword && string.IsNullOrEmpty(_emailPassword)
+            ? $"({Localization.GetString("EmailPasswordSaved")}) {Localization.GetString("EmailPasswordHelp")}"
+            : Localization.GetString("EmailPasswordHelp");
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SafeLoadAsync(async () =>
+        {
+            TenantDto tenant = await TenantService.GetAsync(_cts.Token);
+            PopulateForm(tenant);
+        });
+    }
+
+    private void PopulateForm(TenantDto tenant)
+    {
+        _companyName         = tenant.CompanyName;
+        _operatorName        = tenant.OperatorName;
+        _address             = tenant.Address;
+        _phone               = tenant.Phone;
+        _website             = tenant.Website;
+        _email               = tenant.Email;
+        _hasExistingPassword = tenant.HasEmailPassword;
+
+        if (tenant.LogoData is { Length: > 0 })
+            _logoPreviewUrl = $"data:{tenant.LogoMimeType};base64,{Convert.ToBase64String(tenant.LogoData)}";
+    }
+
+    private async Task OnLogoSelected(IBrowserFile file)
+    {
+        _logoValidationError = null;
+        const long maxBytes = 1 * 1024 * 1024;
+
+        if (file.Size > maxBytes)
+        {
+            _logoValidationError = $"{file.Name} exceeds 1 MB limit.";
+            return;
+        }
+
+        using MemoryStream ms = new();
+        await using Stream stream = file.OpenReadStream(maxBytes);
+        await stream.CopyToAsync(ms);
+
+        _pendingLogoData = ms.ToArray();
+        _pendingLogoMime = file.ContentType;
+        _logoPreviewUrl  = $"data:{_pendingLogoMime};base64,{Convert.ToBase64String(_pendingLogoData)}";
+        _logoRemoved     = false;
+    }
+
+    private void RemoveLogo()
+    {
+        _logoPreviewUrl  = null;
+        _pendingLogoData = null;
+        _pendingLogoMime = null;
+        _logoRemoved     = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_companyName)) return;
+
+        _saving = true;
+        try
+        {
+            // 1. Save all scalar fields
+            await TenantService.UpdateAsync(new UpdateTenantDto
+            {
+                CompanyName   = _companyName.Trim(),
+                OperatorName  = _operatorName?.Trim(),
+                Address       = _address?.Trim(),
+                Phone         = _phone?.Trim(),
+                Website       = _website?.Trim(),
+                Email         = _email?.Trim(),
+                EmailPassword = _emailPassword,
+            }, _cts.Token);
+
+            // 2. Logo: upload new, remove existing, or leave untouched
+            if (_pendingLogoData is not null)
+                await TenantService.UpdateLogoAsync(_pendingLogoData, _pendingLogoMime!, _cts.Token);
+            else if (_logoRemoved)
+                await TenantService.RemoveLogoAsync(_cts.Token);
+
+            // 3. Clear transient state
+            _emailPassword       = null;
+            _hasExistingPassword = !string.IsNullOrEmpty(_email);
+            _pendingLogoData     = null;
+            _pendingLogoMime     = null;
+            _logoRemoved         = false;
+
+            NotifySuccess("ProfileSaved");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving profile: {ex.Message}");
+            NotifyError("ProfileSaveError");
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}
