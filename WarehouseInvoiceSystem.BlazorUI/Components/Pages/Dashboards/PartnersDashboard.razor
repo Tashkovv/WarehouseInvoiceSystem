@@ -84,7 +84,7 @@ else
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
                                 <MudTh>@Localization.GetString("Invoices")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("TotalSpend")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Spent")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="#">
@@ -98,7 +98,7 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Invoices")">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@context.DocumentCount</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
+                                <MudTd DataLabel="@Localization.GetString("Spent")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
                                         @context.TotalAmount.ToString("C")
                                     </MudText>
@@ -148,7 +148,7 @@ else
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
                                 <MudTh>@Localization.GetString("Invoices")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("TotalRevenue")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Revenue")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="#">
@@ -162,7 +162,7 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Invoices")">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@context.DocumentCount</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalRevenue")" Class="text-right">
+                                <MudTd DataLabel="@Localization.GetString("Revenue")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
                                         @context.TotalAmount.ToString("C")
                                     </MudText>
@@ -211,8 +211,8 @@ else
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
-                                <MudTh>@Localization.GetString("PurchaseNotes")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("TotalSpend")</MudTh>
+                                <MudTh>@Localization.GetString("PurchaseNotesShort")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Spent")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="#">
@@ -223,10 +223,10 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Name")">
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("PurchaseNotes")">
+                                <MudTd DataLabel="@Localization.GetString("PurchaseNotesShort")">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@context.DocumentCount</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
+                                <MudTd DataLabel="@Localization.GetString("Spent")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Warning">
                                         @context.TotalAmount.ToString("C")
                                     </MudText>

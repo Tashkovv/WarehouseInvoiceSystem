@@ -132,7 +132,7 @@
                 ["Apply"] = "Apply",
                 ["ByTotalSpend"] = "By total spend",
                 ["ByTotalRevenue"] = "By total revenue",
-                ["TotalSpend"] = "Total Spend",
+                ["Spent"] = "Spent",
                 ["PayableInvoicesToday"] = "Payable Invoices",
                 ["DaysOverdue"] = "Days overdue",
                 ["WarehouseHealth"] = "Warehouse health",
@@ -412,7 +412,7 @@
                 ["AveragePurchasePrice"] = "Avg. Purchase Price",
                 ["CurrentSellingPrice"] = "Current Selling Price",
                 ["EstimatedProfit"] = "Estimated Profit",
-                ["TotalRevenue"] = "Total Revenue",
+                ["Revenue"] = "Revenue",
                 ["Profitability"] = "Profitability",
                 ["TransactionHistory"] = "Transaction history",
                 ["DocumentHistory"] = "Document history",
@@ -584,6 +584,7 @@
 
                 // Purchase Notes
                 [cancelledString] = cancelledString,
+                ["PurchaseNotesShort"] = "Purchases",
                 ["PurchaseNotes"] = "Purchase Notes",
                 ["PurchaseNote"] = "Purchase Note",
                 ["CreatePurchaseNote"] = "Create Purchase Note",
@@ -733,7 +734,7 @@
                 ["Apply"] = "Примени",
                 ["ByTotalSpend"] = "По вкупна потрошувачка",
                 ["ByTotalRevenue"] = "По вкупен приход",
-                ["TotalSpend"] = "Вкупна потрошувачка",
+                ["Spent"] = "Потрошувачка",
                 ["PayableInvoicesToday"] = "Фактури за плаќање",
                 ["DaysOverdue"] = "Денови задоцнување",
                 ["WarehouseHealth"] = "Состојба на магацин",
@@ -1013,7 +1014,7 @@
                 ["AveragePurchasePrice"] = "Прос. Откупна Цена",
                 ["CurrentSellingPrice"] = "Тековна Продажна Цена",
                 ["EstimatedProfit"] = "Проценет Профит",
-                ["TotalRevenue"] = "Вкупен Приход",
+                ["Revenue"] = "Приход",
                 ["Profitability"] = "Профитабилност",
                 ["TransactionHistory"] = "Историја на трансакции",
                 ["DocumentHistory"] = "Историја на документи",
@@ -1174,6 +1175,7 @@
 
                 // Purchase Notes
                 [cancelledString] = "Откажани",
+                ["PurchaseNotesShort"] = "Откупи",
                 ["PurchaseNotes"] = "Откупни Белешки",
                 ["PurchaseNote"] = "Откупна Белешка",
                 ["CreatePurchaseNote"] = "Креирај Откупна Белешка",

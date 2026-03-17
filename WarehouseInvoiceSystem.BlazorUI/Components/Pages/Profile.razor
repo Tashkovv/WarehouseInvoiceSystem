@@ -189,15 +189,15 @@ else
     private bool _hasExistingPassword;
 
     // Logo state
-    private string? _logoPreviewUrl;
-    private byte[]? _pendingLogoData;
-    private string? _pendingLogoMime;
-    private bool _logoRemoved; 
-    private string? _logoValidationError;
+    // private string? _logoPreviewUrl;
+    // private byte[]? _pendingLogoData;
+    // private string? _pendingLogoMime;
+    // private bool _logoRemoved; 
+    // private string? _logoValidationError;
 
     private bool _saving;
 
-    private MudFileUpload<IBrowserFile>? _fileUploadRef;
+    // private MudFileUpload<IBrowserFile>? _fileUploadRef;
 
     private WisDetailActionItem _saveAction => new()
     {
@@ -208,21 +208,21 @@ else
         OnClick = EventCallback.Factory.Create(this, SaveAsync)
     };
 
-    private WisDetailActionItem _removeLogo => new()
-    {
-        Icon = Icons.Material.Filled.DeleteForever,
-        Label = Localization.GetString("RemoveLogo"),
-        Color = Color.Error,
-        OnClick = EventCallback.Factory.Create(this, RemoveLogo)
-    };
+    // private WisDetailActionItem _removeLogo => new()
+    // {
+    //     Icon = Icons.Material.Filled.DeleteForever,
+    //     Label = Localization.GetString("RemoveLogo"),
+    //     Color = Color.Error,
+    //     OnClick = EventCallback.Factory.Create(this, RemoveLogo)
+    // };
 
-    private WisDetailActionItem _uploadLogoAction => new()
-    {
-        Icon = Icons.Material.Filled.CloudUpload,
-        Label = Localization.GetString("UploadLogo"),
-        Color = Color.Primary,
-        OnClick = EventCallback.Factory.Create(this, OpenFilePickerAsync)
-    };
+    // private WisDetailActionItem _uploadLogoAction => new()
+    // {
+    //     Icon = Icons.Material.Filled.CloudUpload,
+    //     Label = Localization.GetString("UploadLogo"),
+    //     Color = Color.Primary,
+    //     OnClick = EventCallback.Factory.Create(this, OpenFilePickerAsync)
+    // };
 
     private string PasswordHelperText =>
         _hasExistingPassword && string.IsNullOrEmpty(_emailPassword)
@@ -248,41 +248,41 @@ else
         _email               = tenant.Email;
         _hasExistingPassword = tenant.HasEmailPassword;
 
-        if (tenant.LogoData is { Length: > 0 })
-            _logoPreviewUrl = $"data:{tenant.LogoMimeType};base64,{Convert.ToBase64String(tenant.LogoData)}";
+        // if (tenant.LogoData is { Length: > 0 })
+        //     _logoPreviewUrl = $"data:{tenant.LogoMimeType};base64,{Convert.ToBase64String(tenant.LogoData)}";
     }
 
-    private async Task OnLogoSelected(IBrowserFile? file)
-    {
-        if (file == null)
-            return;
+    // private async Task OnLogoSelected(IBrowserFile? file)
+    // {
+    //     if (file == null)
+    //         return;
 
-        _logoValidationError = null;
-        const long maxBytes = 1 * 1024 * 1024;
+    //     _logoValidationError = null;
+    //     const long maxBytes = 1 * 1024 * 1024;
 
-        if (file.Size > maxBytes)
-        {
-            _logoValidationError = $"{file.Name} exceeds 1 MB limit.";
-            return;
-        }
+    //     if (file.Size > maxBytes)
+    //     {
+    //         _logoValidationError = $"{file.Name} exceeds 1 MB limit.";
+    //         return;
+    //     }
 
-        using MemoryStream ms = new();
-        await using Stream stream = file.OpenReadStream(maxBytes);
-        await stream.CopyToAsync(ms);
+    //     using MemoryStream ms = new();
+    //     await using Stream stream = file.OpenReadStream(maxBytes);
+    //     await stream.CopyToAsync(ms);
 
-        _pendingLogoData = ms.ToArray();
-        _pendingLogoMime = file.ContentType;
-        _logoPreviewUrl  = $"data:{_pendingLogoMime};base64,{Convert.ToBase64String(_pendingLogoData)}";
-        _logoRemoved     = false;
-    }
+    //     _pendingLogoData = ms.ToArray();
+    //     _pendingLogoMime = file.ContentType;
+    //     _logoPreviewUrl  = $"data:{_pendingLogoMime};base64,{Convert.ToBase64String(_pendingLogoData)}";
+    //     _logoRemoved     = false;
+    // }
 
-    private void RemoveLogo()
-    {
-        _logoPreviewUrl  = null;
-        _pendingLogoData = null;
-        _pendingLogoMime = null;
-        _logoRemoved     = true;
-    }
+    // private void RemoveLogo()
+    // {
+    //     _logoPreviewUrl  = null;
+    //     _pendingLogoData = null;
+    //     _pendingLogoMime = null;
+    //     _logoRemoved     = true;
+    // }
 
     private async Task SaveAsync()
     {
@@ -304,17 +304,17 @@ else
             }, _cts.Token);
 
             // 2. Logo: upload new, remove existing, or leave untouched
-            if (_pendingLogoData is not null)
-                await TenantService.UpdateLogoAsync(_pendingLogoData, _pendingLogoMime!, _cts.Token);
-            else if (_logoRemoved)
-                await TenantService.RemoveLogoAsync(_cts.Token);
+            // if (_pendingLogoData is not null)
+            //     await TenantService.UpdateLogoAsync(_pendingLogoData, _pendingLogoMime!, _cts.Token);
+            // else if (_logoRemoved)
+            //     await TenantService.RemoveLogoAsync(_cts.Token);
 
             // 3. Clear transient state
             _emailPassword       = null;
             _hasExistingPassword = !string.IsNullOrEmpty(_email);
-            _pendingLogoData     = null;
-            _pendingLogoMime     = null;
-            _logoRemoved         = false;
+            // _pendingLogoData     = null;
+            // _pendingLogoMime     = null;
+            // _logoRemoved         = false;
 
             NotifySuccess("ProfileSaved");
             await InvokeAsync(StateHasChanged);
@@ -330,9 +330,9 @@ else
         }
     }
 
-    private async Task OpenFilePickerAsync()
-    {
-        if (_fileUploadRef != null)
-            await _fileUploadRef.OpenFilePickerAsync();
-    }
+    // private async Task OpenFilePickerAsync()
+    // {
+    //     if (_fileUploadRef != null)
+    //         await _fileUploadRef.OpenFilePickerAsync();
+    // }
 }

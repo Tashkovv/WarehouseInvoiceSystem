@@ -76,16 +76,6 @@ builder.Services.AddSingleton<IAppStateService, AppStateService>();
 builder.Services.AddScoped<IBackgroundJobService, BackgroundJobService>();
 builder.Services.AddHostedService<BackgroundJobWorker>();
 
-// Add HttpClient
-builder.Services.AddScoped(sp =>
-{
-    IConfiguration config = sp.GetRequiredService<IConfiguration>();
-    return new HttpClient()
-    {
-        BaseAddress = new Uri(config["ApiBaseUrl"]!)
-    };
-});
-
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
