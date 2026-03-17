@@ -34,7 +34,7 @@ else
                 <MudGrid>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="_companyName"
-                                      Label="@Localization.GetString("CompanyName")"
+                                      Label="@Localization.GetString("Name")"
                                       Variant="Variant.Outlined"
                                       Required="true"
                                       RequiredError="@Localization.GetString("CompanyName")"
@@ -81,7 +81,7 @@ else
                 <MudGrid>
                     <MudItem xs="12" sm="6">
                         <MudTextField @bind-Value="_operatorName"
-                                      Label="@Localization.GetString("OperatorName")"
+                                      Label="@Localization.GetString("Name")"
                                       Variant="Variant.Outlined"
                                       MaxLength="100"
                                       FullWidth="true"
@@ -130,7 +130,7 @@ else
         </MudCard>
 
         @* ── Logo ─────────────────────────────────────────────────────────── *@
-        <MudCard Elevation="2">
+        @*<MudCard Elevation="2">
             <MudCardHeader>
                 <CardHeaderAvatar>
                     <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Primary" />
@@ -151,17 +151,14 @@ else
                             <WisButton Action="@_removeLogo" ButtonSize="Size.Small"/>
                         </MudStack>
                     }
-                    <MudFileUpload T="IBrowserFile"
-                                   Accept=".png,.jpg,.jpeg"
+                    <MudFileUpload @ref="_fileUploadRef"
+                                   T="IBrowserFile"
+                                   Accept=".png,.jpg,.jpeg" 
                                    FilesChanged="OnLogoSelected"
                                    MaximumFileCount="1">
-                        <ActivatorContent>
-                            <MudButton Variant="Variant.Outlined"
-                                       Color="Color.Primary"
-                                       StartIcon="@Icons.Material.Filled.CloudUpload">
-                                @Localization.GetString("UploadLogo")
-                            </MudButton>
-                        </ActivatorContent>
+                        <CustomContent>
+                            <WisButton Action="@_uploadLogoAction"/>
+                        </CustomContent>
                     </MudFileUpload>
                     @if (_logoValidationError is not null)
                     {
@@ -169,7 +166,7 @@ else
                     }
                 </MudStack>
             </MudCardContent>
-        </MudCard>
+        </MudCard>*@
 
         @* ── Save ─────────────────────────────────────────────────────────── *@
         <MudStack Row="true" Justify="Justify.FlexEnd">
@@ -200,6 +197,8 @@ else
 
     private bool _saving;
 
+    private MudFileUpload<IBrowserFile>? _fileUploadRef;
+
     private WisDetailActionItem _saveAction => new()
     {
         Icon = Icons.Material.Filled.Save,
@@ -217,13 +216,13 @@ else
         OnClick = EventCallback.Factory.Create(this, RemoveLogo)
     };
 
-    // private WisDetailActionItem _uploadLogo => new()
-    // {
-    //     Icon = Icons.Material.Filled.CloudUpload,
-    //     Label = Localization.GetString("UploadLogo"),
-    //     Color = Color.Primary,
-    //     OnClick = EventCallback.Factory.Create(this, (IBrowserFile file) => OnLogoSelected(file))
-    // };
+    private WisDetailActionItem _uploadLogoAction => new()
+    {
+        Icon = Icons.Material.Filled.CloudUpload,
+        Label = Localization.GetString("UploadLogo"),
+        Color = Color.Primary,
+        OnClick = EventCallback.Factory.Create(this, OpenFilePickerAsync)
+    };
 
     private string PasswordHelperText =>
         _hasExistingPassword && string.IsNullOrEmpty(_emailPassword)
@@ -253,8 +252,11 @@ else
             _logoPreviewUrl = $"data:{tenant.LogoMimeType};base64,{Convert.ToBase64String(tenant.LogoData)}";
     }
 
-    private async Task OnLogoSelected(IBrowserFile file)
+    private async Task OnLogoSelected(IBrowserFile? file)
     {
+        if (file == null)
+            return;
+
         _logoValidationError = null;
         const long maxBytes = 1 * 1024 * 1024;
 
@@ -315,6 +317,7 @@ else
             _logoRemoved         = false;
 
             NotifySuccess("ProfileSaved");
+            await InvokeAsync(StateHasChanged);
         }
         catch (Exception ex)
         {
@@ -325,5 +328,11 @@ else
         {
             _saving = false;
         }
+    }
+
+    private async Task OpenFilePickerAsync()
+    {
+        if (_fileUploadRef != null)
+            await _fileUploadRef.OpenFilePickerAsync();
     }
 }
