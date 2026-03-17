@@ -351,7 +351,6 @@ else
 
     private enum Tab { StockMovements, DocumentHistory }
 
-    private bool _loading = true;
     private ProductDto? _product;
     private ProductDetailsDto _details = new();
     private Guid? _selectedWarehouseId;
@@ -414,30 +413,17 @@ else
             _selectedWarehouseId = WarehouseQueryParam;
     }
 
-    private async Task LoadAsync()
-    {
-        _loading = true;
-
-        try
+    private async Task LoadAsync() =>
+        await SafeLoadAsync(async () =>
         {
-            _product = await ProductService.GetProductByIdAsync(Id, _cts.Token);
+            _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
             // GetProductDetailsAsync is used only for the stock summary header —
             // document history and movements are loaded by the tables via ServerData.
-            _details = await ProductService.GetProductDetailsAsync(Id, _cts.Token);
+            _details = await ProductService.GetProductDetailsAsync(Id, CancellationToken.None);
 
             if (_product != null && WarehouseQueryParam.HasValue)
                 _selectedWarehouseId = WarehouseQueryParam;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading product transactions: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingProduct"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+        }, "ErrorLoadingProduct");
 
     // ── Interactions ──────────────────────────────────────────────────────────
 

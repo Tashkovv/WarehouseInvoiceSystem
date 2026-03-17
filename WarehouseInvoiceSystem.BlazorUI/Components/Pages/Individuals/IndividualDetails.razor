@@ -207,7 +207,6 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private bool _loading = true;
     private IndividualDto? _individual;
     private IndividualAnalyticsDto _analytics = new();
 
@@ -227,11 +226,8 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadIndividual()
-    {
-        _loading = true;
-
-        try
+    private async Task LoadIndividual() =>
+        await SafeLoadAsync(async () =>
         {
             _individual = await IndividualService.GetIndividualByIdAsync(Id, CancellationToken.None);
             if (_individual != null)
@@ -239,17 +235,7 @@ else
                 _analytics = await IndividualService.GetIndividualAnalyticsAsync(Id, CancellationToken.None);
                 BuildActions();
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading individual: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingIndividual"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+        }, "ErrorLoadingIndividual");
 
     private void BuildActions()
     {
@@ -270,39 +256,10 @@ else
     private async Task OpenEditDialog()
     {
         if (_individual is null) return;
-
-        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
-            Localization.GetString("EditIndividual"),
-            p => p.Add(x => x.Individual, _individual));
-
-        if (dto is null) return;
-
-        try
-        {
-            UpdateIndividualDto updateDto = new()
-            {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                IdentificationNumber = dto.IdentificationNumber,
-                Phone = dto.Phone,
-                Email = dto.Email,
-                Address = dto.Address,
-                IsActive = dto.IsActive,
-            };
-
-            await IndividualService.UpdateIndividualAsync(Id, updateDto);
-            Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<IndividualDialog, bool>(
+                Localization.GetString("EditIndividual"),
+                p => p.Add(x => x.Individual, _individual)) == true)
             await LoadIndividual();
-        }
-        catch (InvalidOperationException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating individual: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
-        }
     }
 
     private void ViewPurchaseNote(TableRowClickEventArgs<RecentPurchaseNoteDto> args)
@@ -322,31 +279,15 @@ else
 
     private async Task DeactivateIndividual()
     {
-        bool hasOpenNotes = _analytics.UnpaidCount > 0;
-
-        string message = hasOpenNotes
+        string message = _analytics.UnpaidCount > 0
             ? string.Format(Localization.GetString("DeactivateIndividualWithOpenNotes"), _analytics.UnpaidCount)
             : Localization.GetString("DeactivateIndividualConfirm");
 
-        bool confirmed = await WisDialog.ConfirmAsync(
-            Localization.GetString("DeactivateIndividual"),
-            message,
-            Localization.GetString("Deactivate"),
-            Localization.GetString("Cancel"));
-
-        if (!confirmed) return;
-
-        try
-        {
-            await IndividualService.SetActiveStatusAsync(Id, false);
-            Snackbar.Add(Localization.GetString("IndividualDeactivated"), Severity.Success);
-            await LoadIndividual();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deactivating individual: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorDeactivatingIndividual"), Severity.Error);
-        }
+        await ConfirmAndExecuteAsync(
+            Localization.GetString("DeactivateIndividual"), message,
+            async () => { await IndividualService.SetActiveStatusAsync(Id, false); await LoadIndividual(); },
+            "IndividualDeactivated", "ErrorDeactivatingIndividual",
+            Localization.GetString("Deactivate"), Localization.GetString("Cancel"));
     }
 
     private async Task ActivateIndividual()

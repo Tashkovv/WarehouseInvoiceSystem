@@ -348,8 +348,6 @@ else
 }
 
 @code {
-    private bool _loading = true;
-
     private List<InvoiceDto> _invoices = [];
     private List<PurchaseNoteDto> _purchaseNotes = [];
     private List<PaymentDto> _payments = [];
@@ -522,23 +520,11 @@ else
 
     private async Task OpenAdjustStockDialog()
     {
-        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
-            Localization.GetString("AdjustStock"), MaxWidth.Small);
-
-        if (dto is not null)
+        if (await WisDialog.ShowFormAsync<AdjustStockDialog, bool>(
+                Localization.GetString("AdjustStock"), MaxWidth.Small) == true)
         {
-            try
-            {
-                await InventoryService.AdjustStockAsync(dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
-                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
-                IEnumerable<StockLevelDto> updated = await InventoryService.GetAllStockLevelAsync(_cts.Token);
-                _allStockLevels = updated.ToList();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adjusting stock: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
-            }
+            IEnumerable<StockLevelDto> updated = await InventoryService.GetAllStockLevelAsync(_cts.Token);
+            _allStockLevels = updated.ToList();
         }
     }
 

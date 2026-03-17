@@ -168,7 +168,6 @@ else
     [Parameter]
     public Guid Id { get; set; }
 
-    private bool _loading = true;
     private bool _loadingInvoice = true;
     private PaymentDto? _payment;
     private InvoiceDto? _invoice;
@@ -199,23 +198,11 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadPayment()
-    {
-        _loading = true;
-        try
+    private async Task LoadPayment() =>
+        await SafeLoadAsync(async () =>
         {
             _payment = await PaymentService.GetPaymentByIdAsync(Id, CancellationToken.None);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading payment: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingPayment"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+        }, "ErrorLoadingPayment");
 
     private async Task LoadInvoice()
     {

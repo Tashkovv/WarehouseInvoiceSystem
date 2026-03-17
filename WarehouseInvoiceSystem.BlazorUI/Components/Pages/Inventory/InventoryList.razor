@@ -376,124 +376,51 @@
 
     private async Task OpenAdjustDialogRow(StockLevelDto item)
     {
-        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
-            Localization.GetString("AdjustStock"),
-            p =>
-            {
-                p.Add(x => x.PreSelectedProductId, item.ProductId);
-                p.Add(x => x.PreSelectedWarehouseId, item.WarehouseId);
-            },
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.AdjustStockAsync(
-                    dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
-                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adjusting stock: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<AdjustStockDialog, bool>(
+                Localization.GetString("AdjustStock"),
+                p =>
+                {
+                    p.Add(x => x.PreSelectedProductId, item.ProductId);
+                    p.Add(x => x.PreSelectedWarehouseId, item.WarehouseId);
+                },
+                MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task OpenAdjustDialog()
     {
-        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
-            Localization.GetString("AdjustStock"), MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.AdjustStockAsync(
-                    dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
-                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adjusting stock: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<AdjustStockDialog, bool>(
+                Localization.GetString("AdjustStock"), MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task OpenTransferDialogRow(StockLevelDto item)
     {
-        TransferStockDialog.TransferStockResult? dto = await WisDialog.ShowFormAsync<TransferStockDialog, TransferStockDialog.TransferStockResult>(
-            Localization.GetString("TransferStock"),
-            p =>
-            {
-                p.Add(x => x.PreSelectedProductId, item.ProductId);
-                p.Add(x => x.PreSelectedSourceWarehouseId, item.WarehouseId);
-            },
-            MaxWidth.Small);
-
-        if (dto is not null)
-            await ExecuteTransfer(dto);
+        if (await WisDialog.ShowFormAsync<TransferStockDialog, bool>(
+                Localization.GetString("TransferStock"),
+                p =>
+                {
+                    p.Add(x => x.PreSelectedProductId, item.ProductId);
+                    p.Add(x => x.PreSelectedSourceWarehouseId, item.WarehouseId);
+                },
+                MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task OpenTransferDialog()
     {
-        TransferStockDialog.TransferStockResult? dto = await WisDialog.ShowFormAsync<TransferStockDialog, TransferStockDialog.TransferStockResult>(
-            Localization.GetString("TransferStock"), MaxWidth.Small);
-
-        if (dto is not null)
-            await ExecuteTransfer(dto);
-    }
-
-    private async Task ExecuteTransfer(TransferStockDialog.TransferStockResult dto)
-    {
-        try
-        {
-            await InventoryService.TransferStockAsync(
-                dto.ProductId, dto.SourceWarehouseId, dto.DestinationWarehouseId, dto.Quantity, dto.Note);
-            Snackbar.Add(Localization.GetString("StockTransferred"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<TransferStockDialog, bool>(
+                Localization.GetString("TransferStock"), MaxWidth.Small) == true)
             await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error transferring stock: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorTransferringStock"), Severity.Error);
-        }
     }
 
     private async Task OpenSetThresholdsDialog(StockLevelDto stockLevel)
     {
-        SetThresholdsDialog.SetThresholdsResult? dto = await WisDialog.ShowFormAsync<SetThresholdsDialog, SetThresholdsDialog.SetThresholdsResult>(
-            Localization.GetString("EditThresholds"),
-            p => p.Add(x => x.StockLevel, stockLevel),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.UpdateStockLevelAsync(
-                    stockLevel.ProductId,
-                    stockLevel.WarehouseId,
-                    new UpdateStockLevelDto
-                    {
-                        Quantity = stockLevel.Quantity,
-                        MinimumQuantity = dto.MinimumQuantity,
-                        ReorderPoint = dto.ReorderPoint
-                    });
-
-                Snackbar.Add(Localization.GetString("ThresholdsUpdated"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating thresholds: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingThresholds"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<SetThresholdsDialog, bool>(
+                Localization.GetString("EditThresholds"),
+                p => p.Add(x => x.StockLevel, stockLevel),
+                MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
 }

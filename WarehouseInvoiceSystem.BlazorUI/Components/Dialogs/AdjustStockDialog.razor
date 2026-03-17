@@ -5,6 +5,7 @@
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -155,7 +156,7 @@
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Save"
                           SaveLabel="@(Localization.GetString("Adjust"))"
-                          SaveDisabled="@(!IsValid || _loading)" />
+                          SaveDisabled="@(!IsValid || _loading || _saving)" />
     </DialogActions>
 </MudDialog>
 
@@ -171,13 +172,8 @@
 
     public enum AdjustmentDirection { Add, Remove }
 
-    public record AdjustStockResult(
-        Guid ProductId,
-        Guid WarehouseId,
-        decimal QuantityChange,
-        string Reason);
-
     private bool _loading = true;
+    private bool _saving;
     private bool _productLocked;
     private bool _warehouseLocked;
 
@@ -275,15 +271,26 @@
     private bool IsLowStock(StockLevelDto stock) =>
         stock.MinimumQuantity.HasValue && stock.Quantity <= stock.MinimumQuantity.Value;
 
-    private void Save()
+    private async Task Save()
     {
-        decimal change = _direction == AdjustmentDirection.Add ? _quantity : -_quantity;
-
-        MudDialog.Close(DialogResult.Ok(new AdjustStockResult(
-            _selectedProduct!.Id,
-            _selectedWarehouseId!.Value,
-            change,
-            _reason ?? string.Empty)));
+        _saving = true;
+        try
+        {
+            decimal change = _direction == AdjustmentDirection.Add ? _quantity : -_quantity;
+            await InventoryService.AdjustStockAsync(
+                _selectedProduct!.Id, _selectedWarehouseId!.Value, change, _reason ?? string.Empty);
+            Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error adjusting stock: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();

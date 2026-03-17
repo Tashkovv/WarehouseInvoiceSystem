@@ -383,76 +383,29 @@
             Navigation.NavigateTo($"/purchase-notes/{args.Item.Id}");
     }
 
-    private async Task ReceiveGoods(PurchaseNoteDto note)
-    {
-        bool confirm = await WisDialog.ConfirmAsync(
+    private async Task ReceiveGoods(PurchaseNoteDto note) =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("ReceiveGoods"),
             $"{note.NoteNumber} — {note.IndividualFullName}",
-            Localization.GetString("ReceiveGoods"),
-            Localization.GetString("Cancel"));
+            async () => { await PurchaseNoteService.ReceiveAsync(note.Id); await _grid.ReloadServerData(); },
+            "PurchaseNoteReceived", "ErrorUpdatingPurchaseNote",
+            Localization.GetString("ReceiveGoods"), Localization.GetString("Cancel"));
 
-        if (confirm)
-        {
-            try
-            {
-                await PurchaseNoteService.ReceiveAsync(note.Id);
-                Snackbar.Add(Localization.GetString("PurchaseNoteReceived"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error receiving purchase note: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
-            }
-        }
-    }
-
-    private async Task MarkAsPaid(PurchaseNoteDto note)
-    {
-        bool confirm = await WisDialog.ConfirmAsync(
+    private async Task MarkAsPaid(PurchaseNoteDto note) =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("MarkAsPaidQuestion"),
             $"{note.NoteNumber} — {note.IndividualFullName}",
-            Localization.GetString("MarkAsPaid"),
-            Localization.GetString("Cancel"));
+            async () => { await PurchaseNoteService.MarkAsPaidAsync(note.Id); await _grid.ReloadServerData(); },
+            "PurchaseNoteMarkedPaid", "ErrorUpdatingPurchaseNote",
+            Localization.GetString("MarkAsPaid"), Localization.GetString("Cancel"));
 
-        if (confirm == true)
-        {
-            try
-            {
-                await PurchaseNoteService.MarkAsPaidAsync(note.Id);
-                Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error marking as paid: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
-            }
-        }
-    }
-
-    private async Task DeleteNote(PurchaseNoteDto note)
-    {
-        bool confirmed = await WisDialog.ConfirmAsync(
+    private async Task DeleteNote(PurchaseNoteDto note) =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("ConfirmDelete"),
             Localization.GetString("DeletePurchaseNoteConfirm"),
-            Localization.GetString("Delete"),
-            Localization.GetString("Back"));
-
-        if (!confirmed) return;
-
-        try
-        {
-            await PurchaseNoteService.DeletePurchaseNoteAsync(note.Id);
-            Snackbar.Add(Localization.GetString("PurchaseNoteDeleted"), Severity.Success);
-            await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deleting purchase note: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
-        }
-    }
+            async () => { await PurchaseNoteService.DeletePurchaseNoteAsync(note.Id); await _grid.ReloadServerData(); },
+            "PurchaseNoteDeleted", "ErrorUpdatingPurchaseNote",
+            Localization.GetString("Delete"), Localization.GetString("Back"));
 
     private string GetRowClass(PurchaseNoteDto item, int index) => item.Status switch
     {
@@ -542,25 +495,11 @@
             ? Localization.GetString("CancelPendingNoteConfirm")
             : Localization.GetString("CancelDraftNoteConfirm");
 
-        bool confirmed = await WisDialog.ConfirmAsync(
-            Localization.GetString("CancelPurchaseNote"),
-            message,
-            Localization.GetString("Cancel"),
-            Localization.GetString("Back"));
-
-        if (!confirmed) return;
-
-        try
-        {
-            await PurchaseNoteService.CancelAsync(note.Id);
-            Snackbar.Add(Localization.GetString("PurchaseNoteCancelled"), Severity.Success);
-            await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error cancelling purchase note: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
-        }
+        await ConfirmAndExecuteAsync(
+            Localization.GetString("CancelPurchaseNote"), message,
+            async () => { await PurchaseNoteService.CancelAsync(note.Id); await _grid.ReloadServerData(); },
+            "PurchaseNoteCancelled", "ErrorUpdatingPurchaseNote",
+            Localization.GetString("Cancel"), Localization.GetString("Back"));
     }
 
 }

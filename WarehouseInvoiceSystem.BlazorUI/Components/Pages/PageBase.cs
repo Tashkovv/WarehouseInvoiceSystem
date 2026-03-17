@@ -16,6 +16,26 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 
         protected readonly CancellationTokenSource _cts = new();
         protected WisActionItem _act = null!;
+        protected bool _loading = true;
+
+        protected async Task SafeLoadAsync(Func<Task> work, string? errorKey = null)
+        {
+            _loading = true;
+            try
+            {
+                await work();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                if (errorKey is not null)
+                    Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
+            }
+            finally
+            {
+                _loading = false;
+            }
+        }
 
         protected override void OnInitialized()
         {
@@ -134,6 +154,32 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             CompanyType.Both   => Localization.GetString("ClientAndVendor"),
             _                  => type.ToString()
         };
+
+        // ── Confirm-and-execute helper ────────────────────────────────────────
+
+        protected async Task ConfirmAndExecuteAsync(
+            string title,
+            string message,
+            Func<Task> action,
+            string successKey,
+            string errorKey,
+            string confirmLabel,
+            string cancelLabel)
+        {
+            bool confirmed = await WisDialog.ConfirmAsync(title, message, confirmLabel, cancelLabel);
+            if (!confirmed) return;
+
+            try
+            {
+                await action();
+                Snackbar.Add(Localization.GetString(successKey), Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
+            }
+        }
 
         // ── Inline notes editing ──────────────────────────────────────────────
 

@@ -239,78 +239,16 @@
 
     private async Task OpenCreateDialog()
     {
-        CompanyDto? created = await WisDialog.ShowFormAsync<CompanyDialog, CompanyDto>(
-            Localization.GetString("CreateCompany"));
-
-        if (created is not null)
-            await CreateCompany(created);
+        if (await WisDialog.ShowFormAsync<CompanyDialog, bool>(Localization.GetString("CreateCompany")) == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task OpenEditDialog(CompanyDto company)
     {
-        CompanyDto? edited = await WisDialog.ShowFormAsync<CompanyDialog, CompanyDto>(
-            Localization.GetString("EditCompany"),
-            p => p.Add(x => x.Company, company));
-
-        if (edited is not null)
-            await SaveCompany(edited);
-    }
-
-    private async Task CreateCompany(CompanyDto item)
-    {
-        try
-        {
-            CreateCompanyDto createDto = new()
-            {
-                Name = item.Name,
-                Type = item.Type,
-                ContactPerson = item.ContactPerson,
-                Email = item.Email,
-                Phone = item.Phone,
-                Address = item.Address,
-                TaxId = item.TaxId,
-                PaymentTermsDays = item.PaymentTermsDays,
-                CreditLimit = item.CreditLimit
-            };
-
-            await CompanyService.CreateCompanyAsync(createDto);
-            Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<CompanyDialog, bool>(
+                Localization.GetString("EditCompany"),
+                p => p.Add(x => x.Company, company)) == true)
             await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error creating company: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorCreatingCompany"), Severity.Error);
-        }
-    }
-
-    private async Task SaveCompany(CompanyDto item)
-    {
-        try
-        {
-            UpdateCompanyDto updateDto = new()
-            {
-                Name = item.Name,
-                Type = item.Type,
-                ContactPerson = item.ContactPerson,
-                Email = item.Email,
-                Phone = item.Phone,
-                Address = item.Address,
-                TaxId = item.TaxId,
-                PaymentTermsDays = item.PaymentTermsDays,
-                CreditLimit = item.CreditLimit,
-                IsActive = item.IsActive
-            };
-
-            await CompanyService.UpdateCompanyAsync(item.Id, updateDto);
-            Snackbar.Add(Localization.GetString("CompanyUpdated"), Severity.Success);
-            await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving company: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
-        }
     }
 
     private async Task ClearAllFilters()

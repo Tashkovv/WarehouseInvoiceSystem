@@ -1,5 +1,7 @@
 ﻿@using WarehouseInvoiceSystem.Application.DTOs.Product
 @inject ILocalizationService Localization
+@inject IProductService ProductService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -63,7 +65,7 @@
     <DialogActions>
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Save"
-                          SaveDisabled="@(!IsValid)" />
+                          SaveDisabled="@(!IsValid || _saving)" />
     </DialogActions>
 </MudDialog>
 
@@ -109,6 +111,55 @@
         }
     }
 
-    private void Save() => MudDialog.Close(DialogResult.Ok(_product));
+    private bool _saving;
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                await ProductService.UpdateProductAsync(_product.Id, new UpdateProductDto
+                {
+                    Code = _product.Code,
+                    Name = _product.Name,
+                    Description = _product.Description,
+                    Unit = _product.Unit,
+                    DefaultPrice = _product.DefaultPrice,
+                    IsActive = _product.IsActive
+                });
+                Snackbar.Add(Localization.GetString("ProductUpdated"), Severity.Success);
+            }
+            else
+            {
+                await ProductService.CreateProductAsync(new CreateProductDto
+                {
+                    Code = _product.Code,
+                    Name = _product.Name,
+                    Description = _product.Description,
+                    Unit = _product.Unit,
+                    DefaultPrice = _product.DefaultPrice,
+                    IsActive = _product.IsActive
+                });
+                Snackbar.Add(Localization.GetString("ProductCreated"), Severity.Success);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving product: {ex.Message}");
+            Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingProduct" : "ErrorCreatingProduct"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
     private void Cancel() => MudDialog.Cancel();
 }

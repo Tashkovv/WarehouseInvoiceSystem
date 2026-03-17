@@ -201,73 +201,17 @@
 
     private async Task OpenCreateDialog()
     {
-        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
-            Localization.GetString("CreateIndividual"));
-
-        if (dto is null) return;
-
-        try
-        {
-            CreateIndividualDto createDto = new()
-            {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                IdentificationNumber = dto.IdentificationNumber,
-                Phone = dto.Phone,
-                Email = dto.Email,
-                Address = dto.Address,
-                IsActive = dto.IsActive,
-            };
-
-            await IndividualService.CreateIndividualAsync(createDto);
-            Snackbar.Add(Localization.GetString("IndividualCreated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<IndividualDialog, bool>(
+                Localization.GetString("CreateIndividual")) == true)
             await _grid.ReloadServerData();
-        }
-        catch (InvalidOperationException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error creating individual: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorCreatingIndividual"), Severity.Error);
-        }
     }
 
     private async Task OpenEditDialog(IndividualDto individual)
     {
-        IndividualDto? dto = await WisDialog.ShowFormAsync<IndividualDialog, IndividualDto>(
-            Localization.GetString("EditIndividual"),
-            p => p.Add(x => x.Individual, individual));
-
-        if (dto is null) return;
-
-        try
-        {
-            UpdateIndividualDto updateDto = new()
-            {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                IdentificationNumber = dto.IdentificationNumber,
-                Phone = dto.Phone,
-                Email = dto.Email,
-                Address = dto.Address,
-                IsActive = dto.IsActive,
-            };
-
-            await IndividualService.UpdateIndividualAsync(dto.Id, updateDto);
-            Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<IndividualDialog, bool>(
+                Localization.GetString("EditIndividual"),
+                p => p.Add(x => x.Individual, individual)) == true)
             await _grid.ReloadServerData();
-        }
-        catch (InvalidOperationException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating individual: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingIndividual"), Severity.Error);
-        }
     }
 
     private List<WisDetailActionItem> BuildRowActions(IndividualDto item) =>

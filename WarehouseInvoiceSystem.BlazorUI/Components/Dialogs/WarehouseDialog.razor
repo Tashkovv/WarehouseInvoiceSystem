@@ -1,5 +1,7 @@
 ﻿@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @inject ILocalizationService Localization
+@inject IWarehouseService WarehouseService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -25,7 +27,7 @@
     <DialogActions>
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Save"
-                          SaveDisabled="@(!IsValid)" />
+                          SaveDisabled="@(!IsValid || _saving)" />
     </DialogActions>
 </MudDialog>
 
@@ -43,6 +45,7 @@
     private string? _address;
 
     private bool IsValid => !string.IsNullOrWhiteSpace(_name);
+    private bool _saving;
 
     protected override void OnParametersSet()
     {
@@ -58,24 +61,41 @@
         }
     }
 
-    private void Save()
+    private async Task Save()
     {
-        if (IsEditMode)
+        _saving = true;
+        try
         {
-            MudDialog.Close(DialogResult.Ok(new UpdateWarehouseDto
+            string trimmedName = _name.Trim();
+            string? trimmedAddress = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim();
+
+            if (IsEditMode)
             {
-                Name = _name.Trim(),
-                Address = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim(),
-            }));
+                await WarehouseService.UpdateWarehouseAsync(Warehouse!.Id, new UpdateWarehouseDto
+                {
+                    Name = trimmedName,
+                    Address = trimmedAddress,
+                });
+                Snackbar.Add(Localization.GetString("WarehouseUpdated"), Severity.Success);
+            }
+            else
+            {
+                await WarehouseService.CreateWarehouseAsync(new CreateWarehouseDto
+                {
+                    Name = trimmedName,
+                    Address = trimmedAddress,
+                });
+                Snackbar.Add(Localization.GetString("WarehouseCreated"), Severity.Success);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
         }
-        else
+        catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
+        catch (Exception ex)
         {
-            MudDialog.Close(DialogResult.Ok(new CreateWarehouseDto
-            {
-                Name = _name.Trim(),
-                Address = string.IsNullOrWhiteSpace(_address) ? null : _address.Trim(),
-            }));
+            Console.WriteLine($"Error saving warehouse: {ex.Message}");
+            Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingWarehouse" : "ErrorCreatingWarehouse"), Severity.Error);
         }
+        finally { _saving = false; }
     }
 
     private void Cancel() => MudDialog.Cancel();

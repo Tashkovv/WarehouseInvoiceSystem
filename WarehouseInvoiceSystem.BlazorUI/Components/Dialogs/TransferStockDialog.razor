@@ -5,6 +5,7 @@
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -150,7 +151,7 @@
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Save"
                           SaveLabel="@(Localization.GetString("Transfer"))"
-                          SaveDisabled="@(!IsValid || _loading)" />
+                          SaveDisabled="@(!IsValid || _loading || _saving)" />
     </DialogActions>
 </MudDialog>
 
@@ -161,14 +162,8 @@
     [Parameter] public Guid? PreSelectedProductId { get; set; }
     [Parameter] public Guid? PreSelectedSourceWarehouseId { get; set; }
 
-    public record TransferStockResult(
-        Guid ProductId,
-        Guid SourceWarehouseId,
-        Guid DestinationWarehouseId,
-        decimal Quantity,
-        string? Note);
-
     private bool _loading = true;
+    private bool _saving;
     private bool _productLocked;
     private bool _sourceWarehouseLocked;
 
@@ -277,14 +272,26 @@
         _destinationWarehouseId = id;
     }
 
-    private void Save()
+    private async Task Save()
     {
-        MudDialog.Close(DialogResult.Ok(new TransferStockResult(
-            _selectedProduct!.Id,
-            _sourceWarehouseId!.Value,
-            _destinationWarehouseId!.Value,
-            _quantity,
-            _note)));
+        _saving = true;
+        try
+        {
+            await InventoryService.TransferStockAsync(
+                _selectedProduct!.Id, _sourceWarehouseId!.Value,
+                _destinationWarehouseId!.Value, _quantity, _note);
+            Snackbar.Add(Localization.GetString("StockTransferred"), Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error transferring stock: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorTransferringStock"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();

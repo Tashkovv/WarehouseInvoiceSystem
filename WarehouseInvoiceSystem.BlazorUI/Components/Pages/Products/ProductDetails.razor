@@ -10,7 +10,6 @@
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
-@inject IInventoryService InventoryService
 
 <PageTitle>@Localization.GetString("ProductDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -269,7 +268,6 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private bool _loading = true;
     private ProductDto? _product;
     private ProductDetailsDto _details = new();
 
@@ -401,33 +399,18 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadProduct()
-    {
-        _loading = true;
-
-        try
+    private async Task LoadProduct() =>
+        await SafeLoadAsync(async () =>
         {
             _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
             if (_product != null)
             {
                 // Single call — replaces GetProductAnalyticsAsync + GetAllWarehousesAsync + GetProductTransactionHistoryAsync
                 _details = await ProductService.GetProductDetailsAsync(Id, CancellationToken.None);
-
                 _selectedWarehouseId = null;
-
                 BuildActions();
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading product: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingProduct"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+        }, "ErrorLoadingProduct");
 
     private void BuildActions()
     {
@@ -453,38 +436,10 @@ else
     private async Task OpenEditDialog()
     {
         if (_product is null) return;
-
-        ProductDto? dto = await WisDialog.ShowFormAsync<ProductDialog, ProductDto>(
-            Localization.GetString("EditProduct"),
-            p => p.Add(x => x.Product, _product));
-
-        if (dto is null) return;
-
-        try
-        {
-            UpdateProductDto updateDto = new()
-            {
-                Name = dto.Name,
-                Code = dto.Code,
-                Description = dto.Description,
-                Unit = dto.Unit,
-                DefaultPrice = dto.DefaultPrice,
-                IsActive = _product.IsActive,
-            };
-
-            await ProductService.UpdateProductAsync(Id, updateDto);
-            Snackbar.Add(Localization.GetString("ProductUpdated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<ProductDialog, bool>(
+                Localization.GetString("EditProduct"),
+                p => p.Add(x => x.Product, _product)) == true)
             await LoadProduct();
-        }
-        catch (InvalidOperationException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating product: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingProduct"), Severity.Error);
-        }
     }
 
     private async Task ToggleActiveStatus()
@@ -497,51 +452,21 @@ else
             await ActivateProduct();
     }
 
-    private async Task DeactivateProduct()
-    {
-        bool confirmed = await WisDialog.ConfirmAsync(
+    private async Task DeactivateProduct() =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("DeactivateProduct"),
             Localization.GetString("DeactivateProductConfirm"),
-            Localization.GetString("Deactivate"),
-            Localization.GetString("Cancel"));
+            async () => { await ProductService.SetActiveStatusAsync(Id, false); await LoadProduct(); },
+            "ProductDeactivated", "ErrorUpdatingProduct",
+            Localization.GetString("Deactivate"), Localization.GetString("Cancel"));
 
-        if (!confirmed) return;
-
-        try
-        {
-            await ProductService.SetActiveStatusAsync(Id, false);
-            Snackbar.Add(Localization.GetString("ProductDeactivated"), Severity.Success);
-            await LoadProduct();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deactivating product: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingProduct"), Severity.Error);
-        }
-    }
-
-    private async Task ActivateProduct()
-    {
-        bool confirmed = await WisDialog.ConfirmAsync(
+    private async Task ActivateProduct() =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("ActivateProduct"),
             Localization.GetString("ActivateProductConfirm"),
-            Localization.GetString("Activate"),
-            Localization.GetString("Cancel"));
-
-        if (!confirmed) return;
-
-        try
-        {
-            await ProductService.SetActiveStatusAsync(Id, true);
-            Snackbar.Add(Localization.GetString("ProductActivated"), Severity.Success);
-            await LoadProduct();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error activating product: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingProduct"), Severity.Error);
-        }
-    }
+            async () => { await ProductService.SetActiveStatusAsync(Id, true); await LoadProduct(); },
+            "ProductActivated", "ErrorUpdatingProduct",
+            Localization.GetString("Activate"), Localization.GetString("Cancel"));
 
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
@@ -552,31 +477,16 @@ else
 
     private async Task OpenAdjustDialog()
     {
-        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
-            Localization.GetString("AdjustStock"),
-            p =>
-            {
-                p.Add(x => x.PreSelectedProductId, Id);
-                if (_selectedWarehouseId.HasValue)
-                    p.Add(x => x.PreSelectedWarehouseId, _selectedWarehouseId.Value);
-            },
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.AdjustStockAsync(
-                    dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
-                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
-                await LoadProduct();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adjusting stock: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<AdjustStockDialog, bool>(
+                Localization.GetString("AdjustStock"),
+                p =>
+                {
+                    p.Add(x => x.PreSelectedProductId, Id);
+                    if (_selectedWarehouseId.HasValue)
+                        p.Add(x => x.PreSelectedWarehouseId, _selectedWarehouseId.Value);
+                },
+                MaxWidth.Small) == true)
+            await LoadProduct();
     }
 
     private async Task OpenSetThresholdsFromAction()
@@ -602,34 +512,11 @@ else
             LastRestockedAt = row.LastRestockedAt ?? DateTime.MinValue
         };
 
-        SetThresholdsDialog.SetThresholdsResult? dto = await WisDialog.ShowFormAsync<SetThresholdsDialog, SetThresholdsDialog.SetThresholdsResult>(
-            Localization.GetString("EditThresholds"),
-            p => p.Add(x => x.StockLevel, stockLevel),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.UpdateStockLevelAsync(
-                    Id,
-                    row.WarehouseId,
-                    new UpdateStockLevelDto
-                    {
-                        Quantity = row.Quantity,
-                        MinimumQuantity = dto.MinimumQuantity,
-                        ReorderPoint = dto.ReorderPoint
-                    });
-
-                Snackbar.Add(Localization.GetString("ThresholdsUpdated"), Severity.Success);
-                await LoadProduct();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating thresholds: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingThresholds"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<SetThresholdsDialog, bool>(
+                Localization.GetString("EditThresholds"),
+                p => p.Add(x => x.StockLevel, stockLevel),
+                MaxWidth.Small) == true)
+            await LoadProduct();
     }
 
 }

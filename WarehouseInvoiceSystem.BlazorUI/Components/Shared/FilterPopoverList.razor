@@ -2,28 +2,17 @@
 
 <div style="position: relative; display: inline-flex; align-items: center;">
 
-    @* Labeled trigger (toolbar mode) vs icon-only trigger (legacy/header mode) *@
-    @if (Label is not null)
-    {
-        <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "") @(_isFilterActive && _selectedItem is not null ? GetColorClass(_selectedItem.Color) : "")"
-                @onclick="TogglePopover"
-                type="button">
-            <span class="wis-filter-btn__label @(_isFilterActive ? "wis-filter-btn__label--selected" : "")">
-                @(_selectedItem is not null ? _selectedItem.Label : Label)
-            </span>
-            <span class="wis-filter-btn__icon">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowDropDown"
-                         Size="Size.Small" />
-            </span>
-        </button>
-    }
-    else
-    {
-        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
-                       Size="Size.Small"
-                       Color="@(_isFilterActive ? Color.Primary : Color.Default)"
-                       OnClick="TogglePopover" />
-    }
+    <button class="wis-filter-btn @(_isFilterActive ? "wis-filter-btn--active" : "") @(_isFilterActive && _selectedItem is not null ? GetColorClass(_selectedItem.Color) : "")"
+            @onclick="TogglePopover"
+            type="button">
+        <span class="wis-filter-btn__label @(_isFilterActive ? "wis-filter-btn__label--selected" : "")">
+            @(_selectedItem is not null ? _selectedItem.Label : Label)
+        </span>
+        <span class="wis-filter-btn__icon">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowDropDown"
+                     Size="Size.Small" />
+        </span>
+    </button>
 
     @if (_open)
     {
@@ -100,9 +89,8 @@
 </div>
 
 @code {
-    /// <summary>  When set, renders a labeled pill button instead of a bare icon. </summary>
-    [Parameter]
-    public string? Label { get; set; }
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
 
     [Parameter, EditorRequired]
     public IEnumerable<FilterPopoverItem<TValue>> Items { get; set; } = [];

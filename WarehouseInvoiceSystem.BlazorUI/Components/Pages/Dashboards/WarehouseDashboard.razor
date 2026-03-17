@@ -490,8 +490,6 @@ else
 }
 
 @code {
-    private bool _loading = true;
-
     private List<ProductDto> _products = [];
     private List<WarehouseDto> _warehouses = [];
     private List<StockLevelDto> _stockLevels = [];
@@ -712,49 +710,20 @@ else
 
     private async Task OpenAdjustDialog()
     {
-        AdjustStockDialog.AdjustStockResult? dto = await WisDialog.ShowFormAsync<AdjustStockDialog, AdjustStockDialog.AdjustStockResult>(
-            Localization.GetString("AdjustStock"),
-            p => p.Add(x => x.PreSelectedWarehouseId, _selectedWarehouseId),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.AdjustStockAsync(dto.ProductId, dto.WarehouseId, dto.QuantityChange, dto.Reason);
-                Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
-                await LoadData(false);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error adjusting stock: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<AdjustStockDialog, bool>(
+                Localization.GetString("AdjustStock"),
+                p => p.Add(x => x.PreSelectedWarehouseId, _selectedWarehouseId),
+                MaxWidth.Small) == true)
+            await LoadData(false);
     }
 
     private async Task OpenTransferDialog()
     {
-        TransferStockDialog.TransferStockResult? dto = await WisDialog.ShowFormAsync<TransferStockDialog, TransferStockDialog.TransferStockResult>(
-            Localization.GetString("TransferStock"),
-            p => p.Add(x => x.PreSelectedSourceWarehouseId, _selectedWarehouseId),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.TransferStockAsync(
-                    dto.ProductId, dto.SourceWarehouseId, dto.DestinationWarehouseId, dto.Quantity, dto.Note);
-                Snackbar.Add(Localization.GetString("StockTransferred"), Severity.Success);
-                await LoadData(false);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error transferring stock: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorTransferringStock"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<TransferStockDialog, bool>(
+                Localization.GetString("TransferStock"),
+                p => p.Add(x => x.PreSelectedSourceWarehouseId, _selectedWarehouseId),
+                MaxWidth.Small) == true)
+            await LoadData(false);
     }
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(

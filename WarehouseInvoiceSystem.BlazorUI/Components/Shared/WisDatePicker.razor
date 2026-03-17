@@ -2,44 +2,15 @@
    pattern as WisDateRangeFilter.
    When OpenTo="OpenTo.Month", clicking a month immediately selects it (no day step). *@
 
-<div style="position: relative; display: inline-flex; align-items: center;">
+<WisFilterPopover @ref="_popover"
+                  IsActive="@_isActive"
+                  TriggerLabel="@_triggerLabel"
+                  TriggerIcon="@Icons.Material.Filled.CalendarMonth"
+                  MinWidth="160px"
+                  OnOpen="@OnPopoverOpen">
 
-    @* ── Trigger pill ── *@
-    <button type="button"
-            class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
-            @onclick="Toggle"
-            style="min-width: 160px; justify-content: space-between; gap: 6px;">
-
-        <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth"
-                     Size="Size.Small"
-                     Style="opacity: 0.7; flex-shrink: 0;" />
-            <span class="wis-filter-btn__label @(_isActive ? "wis-filter-btn__label--selected" : "")">
-                @_triggerLabel
-            </span>
-        </span>
-
-        <span class="wis-filter-btn__icon">
-            <MudIcon Icon="@(_open ? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
-                     Size="Size.Small" />
-        </span>
-    </button>
-
-    @* ── Overlay ── *@
-    @if (_open)
+    @if (OpenTo == OpenTo.Month)
     {
-        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
-    }
-
-    @* ── Popover ── *@
-    <MudPopover Open="_open"
-                AnchorOrigin="Origin.BottomLeft"
-                TransformOrigin="Origin.TopLeft"
-                Paper="true"
-                Style="z-index: 1400; padding: 0; overflow: hidden;">
-
-        @if (OpenTo == OpenTo.Month)
-        {
             @* ── Custom month grid (one-click month selection) ── *@
             <div class="wis-dp-month-grid">
 
@@ -91,9 +62,7 @@
             </div>
         }
 
-    </MudPopover>
-
-</div>
+</WisFilterPopover>
 
 @code {
     [Parameter] public DateTime? Date { get; set; }
@@ -103,7 +72,8 @@
     [Parameter] public OpenTo OpenTo { get; set; } = OpenTo.Date;
     [Parameter] public DateTime? MaxDate { get; set; }
 
-    private bool _open;
+    private WisFilterPopover _popover = null!;
+
     private DateTime? _localDate;
     private DateTime? _lastSeenDate;
     private int _viewYear = DateTime.Today.Year;
@@ -123,19 +93,12 @@
         ? _localDate.Value.ToString(DateFormat)
         : Label;
 
-    private void Toggle()
-    {
-        _open = !_open;
-        if (_open)
-            _viewYear = _localDate?.Year ?? DateTime.Today.Year;
-    }
-
-    private void Close() => _open = false;
+    private void OnPopoverOpen() => _viewYear = _localDate?.Year ?? DateTime.Today.Year;
 
     private async Task OnDateChanged(DateTime? date)
     {
         _localDate = date;
-        _open = false;
+        await _popover.CloseAsync();
         await DateChanged.InvokeAsync(date);
     }
 
@@ -143,7 +106,7 @@
     {
         var date = new DateTime(_viewYear, month, 1);
         _localDate = date;
-        _open = false;
+        await _popover.CloseAsync();
         await DateChanged.InvokeAsync(date);
     }
 }

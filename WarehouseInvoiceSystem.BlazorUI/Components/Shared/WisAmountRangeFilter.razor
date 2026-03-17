@@ -1,86 +1,55 @@
 ﻿@inject ILocalizationService Localization
 
-<div style="position: relative; display: inline-flex; align-items: center;">
+<WisFilterPopover @ref="_popover"
+                  IsActive="@_isActive"
+                  TriggerLabel="@_triggerLabel"
+                  TriggerIcon="@Icons.Material.Filled.AttachMoney"
+                  MinWidth="150px"
+                  TriggerPadding="0 10px"
+                  TruncateLabel="true">
 
-    @* Trigger pill *@
-    <button type="button"
-            class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
-            @onclick="Toggle"
-            style="min-width: 150px; justify-content: space-between; gap: 6px; padding: 0 10px;">
+    <div class="wis-arf-layout">
 
-        <span style="display: inline-flex; align-items: center; gap: 6px; overflow: hidden;">
-            <MudIcon Icon="@Icons.Material.Filled.AttachMoney"
-                     Size="Size.Small"
-                     Style="opacity: 0.7; flex-shrink: 0;" />
-            <span class="wis-filter-btn__label @(_isActive ? "wis-filter-btn__label--selected" : "")"
-                  style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                @_triggerLabel
-            </span>
-        </span>
+        @* Left: min / max inputs *@
+        <div class="wis-arf-inputs">
+            <WisAmountInput Label="@Localization.GetString("Min")"
+                            Value="_localMin"
+                            ValueChanged="OnMinChanged"
+                            AdornmentText="@AdornmentText"
+                            OnApply="@(() => _popover.CloseAsync())" />
 
-        <span class="wis-filter-btn__icon" style="flex-shrink: 0;">
-            <MudIcon Icon="@(_open? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
-                     Size="Size.Small" />
-        </span>
-    </button>
-
-    @* Overlay *@
-    @if (_open)
-    {
-        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
-    }
-
-    @* Popover *@
-    <MudPopover Open="_open"
-                AnchorOrigin="Origin.BottomLeft"
-                TransformOrigin="Origin.TopLeft"
-                Paper="true"
-                Style="z-index: 1400; padding: 0; overflow: hidden;">
-
-        <div class="wis-arf-layout">
-
-            @* Left: min / max inputs *@
-            <div class="wis-arf-inputs">
-                <WisAmountInput Label="@Localization.GetString("Min")"
-                                Value="_localMin"
-                                ValueChanged="OnMinChanged"
-                                AdornmentText="@AdornmentText"
-                                OnApply="Close" />
-
-                <WisAmountInput Label="@Localization.GetString("Max")"
-                                Value="_localMax"
-                                ValueChanged="OnMaxChanged"
-                                AdornmentText="@AdornmentText"
-                                OnApply="Close" />
-            </div>
-
-            @* Vertical divider *@
-            <div style="width: 1px; background: var(--mud-palette-divider); align-self: stretch; flex-shrink: 0;"></div>
-
-            @* Right: presets *@
-            <div class="wis-arf-presets">
-                @foreach (var preset in _presets)
-                {
-                    bool isSelected = _localPreset == preset.Key;
-                    <button type="button"
-                            class="wis-arf-preset @(isSelected ? "wis-arf-preset--selected" : "")"
-                            @onclick="@(() => OnPresetClicked(preset.Key))">
-                        @if (isSelected)
-                        {
-                            <MudIcon Icon="@Icons.Material.Filled.Check"
-                                     Size="Size.Small"
-                                     Class="wis-drf-preset__check" />
-                        }
-                        @preset.Label
-                    </button>
-                }
-            </div>
-
+            <WisAmountInput Label="@Localization.GetString("Max")"
+                            Value="_localMax"
+                            ValueChanged="OnMaxChanged"
+                            AdornmentText="@AdornmentText"
+                            OnApply="@(() => _popover.CloseAsync())" />
         </div>
 
-    </MudPopover>
+        @* Vertical divider *@
+        <div style="width: 1px; background: var(--mud-palette-divider); align-self: stretch; flex-shrink: 0;"></div>
 
-</div>
+        @* Right: presets *@
+        <div class="wis-arf-presets">
+            @foreach (var preset in _presets)
+            {
+                bool isSelected = _localPreset == preset.Key;
+                <button type="button"
+                        class="wis-arf-preset @(isSelected ? "wis-arf-preset--selected" : "")"
+                        @onclick="@(() => OnPresetClicked(preset.Key))">
+                    @if (isSelected)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Check"
+                                 Size="Size.Small"
+                                 Class="wis-drf-preset__check" />
+                    }
+                    @preset.Label
+                </button>
+            }
+        </div>
+
+    </div>
+
+</WisFilterPopover>
 
 @code {
 
@@ -116,7 +85,8 @@
     [Parameter]
     public EventCallback OnChanged { get; set; }
 
-    private bool _open;
+    private WisFilterPopover _popover = null!;
+
     private decimal? _localMin;
     private decimal? _localMax;
     private string? _localPreset;
@@ -171,9 +141,6 @@
         new("gt500000",        "> 500.000",         500000m,    null),
     ];
 
-    private void Toggle() => _open = !_open;
-    private void Close() => _open = false;
-
     private async Task OnMinChanged(decimal? value)
     {
         _localMin = value;
@@ -208,7 +175,7 @@
             await AmountPresetChanged.InvokeAsync(null);
             await AmountMinChanged.InvokeAsync(null);
             await AmountMaxChanged.InvokeAsync(null);
-            _open = false;
+            await _popover.CloseAsync();
             await OnChanged.InvokeAsync();
             return;
         }
@@ -221,17 +188,16 @@
         await AmountPresetChanged.InvokeAsync(key);
         await AmountMinChanged.InvokeAsync(p.Min);
         await AmountMaxChanged.InvokeAsync(p.Max);
-        _open = false;
+        await _popover.CloseAsync();
         await OnChanged.InvokeAsync();
     }
 
-    public Task ClearAsync()
+    public async Task ClearAsync()
     {
         _localPreset = null; _lastSeenPreset = null;
         _localMin = null; _lastSeenMin = null;
         _localMax = null; _lastSeenMax = null;
-        _open = false;
+        await _popover.CloseAsync();
         StateHasChanged();
-        return Task.CompletedTask;
     }
 }

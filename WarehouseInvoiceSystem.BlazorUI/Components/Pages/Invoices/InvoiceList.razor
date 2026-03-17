@@ -594,51 +594,21 @@
         }
     }
 
-    private async Task DeleteInvoice(InvoiceDto invoice)
-    {
-        bool confirmed = await WisDialog.ConfirmAsync(
+    private async Task DeleteInvoice(InvoiceDto invoice) =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("ConfirmDelete"),
             Localization.GetString("DeleteInvoiceConfirm"),
-            Localization.GetString("Delete"),
-            Localization.GetString("Back"));
+            async () => { await InvoiceService.DeleteInvoiceAsync(invoice.Id); await _grid.ReloadServerData(); },
+            "InvoiceDeleted", "ErrorUpdatingInvoice",
+            Localization.GetString("Delete"), Localization.GetString("Back"));
 
-        if (!confirmed) return;
-
-        try
-        {
-            await InvoiceService.DeleteInvoiceAsync(invoice.Id);
-            Snackbar.Add(Localization.GetString("InvoiceDeleted"), Severity.Success);
-            await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deleting invoice: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
-        }
-    }
-
-    private async Task CancelInvoice(InvoiceDto invoice)
-    {
-        bool confirmed = await WisDialog.ConfirmAsync(
+    private async Task CancelInvoice(InvoiceDto invoice) =>
+        await ConfirmAndExecuteAsync(
             Localization.GetString("CancelInvoice"),
             Localization.GetString("CancelInvoiceConfirm"),
-            Localization.GetString("Cancel"),
-            Localization.GetString("Back"));
-
-        if (!confirmed) return;
-
-        try
-        {
-            await InvoiceService.CancelAsync(invoice.Id);
-            Snackbar.Add(Localization.GetString("InvoiceCancelled"), Severity.Success);
-            await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error cancelling invoice: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
-        }
-    }
+            async () => { await InvoiceService.CancelAsync(invoice.Id); await _grid.ReloadServerData(); },
+            "InvoiceCancelled", "ErrorUpdatingInvoice",
+            Localization.GetString("Cancel"), Localization.GetString("Back"));
 
     private bool CanPay(InvoiceStatus status) =>
         status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;

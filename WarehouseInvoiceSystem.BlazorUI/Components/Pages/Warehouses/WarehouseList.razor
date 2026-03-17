@@ -218,46 +218,18 @@
 
     private async Task OpenCreateDialog()
     {
-        CreateWarehouseDto? dto = await WisDialog.ShowFormAsync<WarehouseDialog, CreateWarehouseDto>(
-            Localization.GetString("CreateWarehouse"), MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await WarehouseService.CreateWarehouseAsync(dto);
-                Snackbar.Add(Localization.GetString("WarehouseCreated"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error creating warehouse: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorCreatingWarehouse"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<WarehouseDialog, bool>(
+                Localization.GetString("CreateWarehouse"), MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task OpenEditDialog(WarehouseDto warehouse)
     {
-        UpdateWarehouseDto? dto = await WisDialog.ShowFormAsync<WarehouseDialog, UpdateWarehouseDto>(
-            Localization.GetString("EditWarehouse"),
-            p => p.Add(x => x.Warehouse, warehouse),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await WarehouseService.UpdateWarehouseAsync(warehouse.Id, dto);
-                Snackbar.Add(Localization.GetString("WarehouseUpdated"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating warehouse: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingWarehouse"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<WarehouseDialog, bool>(
+                Localization.GetString("EditWarehouse"),
+                p => p.Add(x => x.Warehouse, warehouse),
+                MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
     private List<WisDetailActionItem> BuildRowActions(WarehouseDto item) =>

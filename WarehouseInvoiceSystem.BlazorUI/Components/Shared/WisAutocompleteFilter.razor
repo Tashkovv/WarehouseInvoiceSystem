@@ -4,44 +4,19 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<div style="position: relative; display: inline-flex; align-items: center; min-width: @MinWidth;">
-
-    @* ── Trigger pill ── *@
-    <button type="button"
-            class="wis-filter-btn @(_selectedItem is not null ? "wis-filter-btn--active" : "")"
-            @onclick="OpenAsync"
-            style="@($"min-width: {MinWidth}; justify-content: space-between; gap: 6px; padding: 0 10px;")">
-
-        <span style="display: inline-flex; align-items: center; gap: 6px; overflow: hidden;">
-            @if (Icon is not null)
-            {
-                <MudIcon Icon="@Icon" Size="Size.Small" Style="opacity: 0.7; flex-shrink: 0;" />
-            }
-            <span class="wis-filter-btn__label @(_selectedItem is not null ? "wis-filter-btn__label--selected" : "")"
-                  style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                @(_selectedItem is not null ? _selectedItem.Label : Label)
-            </span>
-        </span>
-
-        <span class="wis-filter-btn__icon" style="flex-shrink: 0;">
-            <MudIcon Icon="@(_open? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
-                     Size="Size.Small" />
-        </span>
-    </button>
-
-    @* ── Overlay ── *@
-    @if (_open)
-    {
-        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
-    }
-
-    @* ── Popover ── *@
-    <MudPopover Open="_open"
-                AnchorOrigin="@PopoverAnchorOrigin"
-                TransformOrigin="@PopoverTransformOrigin"
-                Fixed="true"
-                Paper="true"
-                style="@($"z-index: 1400; min-width: {MinWidth}; overflow: hidden; padding: 8px;")">
+<WisFilterPopover @ref="_popover"
+                  IsActive="@(_selectedItem is not null)"
+                  TriggerLabel="@(_selectedItem is not null ? _selectedItem.Label : Label)"
+                  TriggerIcon="@Icon"
+                  MinWidth="@MinWidth"
+                  TriggerPadding="0 10px"
+                  TruncateLabel="true"
+                  Fixed="true"
+                  AnchorOrigin="@PopoverAnchorOrigin"
+                  TransformOrigin="@PopoverTransformOrigin"
+                  PopoverStyle="@($"min-width: {MinWidth}; overflow: hidden; padding: 8px;")"
+                  OnOpen="@OnOpenAsync"
+                  OnClose="@CloseInternal">
 
         <MudStack Spacing="1">
 
@@ -120,9 +95,8 @@
             }
 
         </MudStack>
-    </MudPopover>
 
-</div>
+</WisFilterPopover>
 
 @code {
     // ── Parameters ────────────────────────────────────────────────────────────
@@ -188,7 +162,8 @@
 
     // ── Internal state ────────────────────────────────────────────────────────
 
-    private bool _open;
+    private WisFilterPopover _popover = null!;
+
     private bool _loading;
     private bool _isLoadingMore;
     private bool _hasMore;
@@ -259,11 +234,8 @@
 
     // ── Open / Close ──────────────────────────────────────────────────────────
 
-    private async Task OpenAsync()
+    private async Task OnOpenAsync()
     {
-        _open = true;
-        StateHasChanged();
-
         // Initial load — first page, empty search
         await FetchPageAsync(searchTerm: "", page: 1, replace: true);
 
@@ -277,9 +249,8 @@
             await _searchField.FocusAsync();
     }
 
-    private void Close()
+    private void CloseInternal()
     {
-        _open = false;
         _searchText = string.Empty;
         _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
         _ = JS.InvokeVoidAsync("wisAutocomplete.removeScrollListener", _scrollContainerId);
@@ -379,14 +350,16 @@
     private async Task SelectItemAsync(WisAutocompleteItem<TValue> item)
     {
         _selectedItem = item;
-        Close();
+        CloseInternal();
+        await _popover.CloseAsync();
         await SelectedValueChanged.InvokeAsync(item.Value);
     }
 
     private async Task ClearSelectionAsync()
     {
         _selectedItem = null;
-        Close();
+        CloseInternal();
+        await _popover.CloseAsync();
         await SelectedValueChanged.InvokeAsync(default);
     }
 

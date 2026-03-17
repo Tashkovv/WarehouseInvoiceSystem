@@ -175,7 +175,6 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private bool _loading = true;
     private WarehouseDto? _warehouse;
     private List<StockLevelDto> _stock = [];
 
@@ -207,11 +206,8 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadWarehouse()
-    {
-        _loading = true;
-
-        try
+    private async Task LoadWarehouse() =>
+        await SafeLoadAsync(async () =>
         {
             _warehouse = await WarehouseService.GetWarehouseByIdAsync(Id, CancellationToken.None);
             if (_warehouse != null)
@@ -220,17 +216,7 @@ else
                 _stock = levels.OrderBy(s => s.ProductCode).ToList();
                 BuildActions();
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading warehouse: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingWarehouse"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+        }, "ErrorLoadingWarehouse");
 
     private void BuildActions()
     {
@@ -263,26 +249,11 @@ else
     private async Task OpenEditDialog()
     {
         if (_warehouse is null) return;
-
-        UpdateWarehouseDto? dto = await WisDialog.ShowFormAsync<WarehouseDialog, UpdateWarehouseDto>(
-            Localization.GetString("EditWarehouse"),
-            p => p.Add(x => x.Warehouse, _warehouse),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await WarehouseService.UpdateWarehouseAsync(Id, dto);
-                Snackbar.Add(Localization.GetString("WarehouseUpdated"), Severity.Success);
-                await LoadWarehouse();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating warehouse: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingWarehouse"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<WarehouseDialog, bool>(
+                Localization.GetString("EditWarehouse"),
+                p => p.Add(x => x.Warehouse, _warehouse),
+                MaxWidth.Small) == true)
+            await LoadWarehouse();
     }
 
     private async Task SetAsDefault()
@@ -330,34 +301,11 @@ else
 
     private async Task OpenSetThresholdsDialog(StockLevelDto stockLevel)
     {
-        SetThresholdsDialog.SetThresholdsResult? dto = await WisDialog.ShowFormAsync<SetThresholdsDialog, SetThresholdsDialog.SetThresholdsResult>(
-            Localization.GetString("EditThresholds"),
-            p => p.Add(x => x.StockLevel, stockLevel),
-            MaxWidth.Small);
-
-        if (dto is not null)
-        {
-            try
-            {
-                await InventoryService.UpdateStockLevelAsync(
-                    stockLevel.ProductId,
-                    stockLevel.WarehouseId,
-                    new UpdateStockLevelDto
-                    {
-                        Quantity = stockLevel.Quantity,
-                        MinimumQuantity = dto.MinimumQuantity,
-                        ReorderPoint = dto.ReorderPoint
-                    });
-
-                Snackbar.Add(Localization.GetString("ThresholdsUpdated"), Severity.Success);
-                await LoadWarehouse();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error updating thresholds: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingThresholds"), Severity.Error);
-            }
-        }
+        if (await WisDialog.ShowFormAsync<SetThresholdsDialog, bool>(
+                Localization.GetString("EditThresholds"),
+                p => p.Add(x => x.StockLevel, stockLevel),
+                MaxWidth.Small) == true)
+            await LoadWarehouse();
     }
 
 }

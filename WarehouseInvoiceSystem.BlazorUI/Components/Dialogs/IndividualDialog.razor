@@ -1,5 +1,7 @@
 ﻿@using WarehouseInvoiceSystem.Application.DTOs.Individual
 @inject ILocalizationService Localization
+@inject IIndividualService IndividualService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -58,7 +60,7 @@
     <DialogActions>
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Save"
-                          SaveDisabled="@(!IsValid)" />
+                          SaveDisabled="@(!IsValid || _saving)" />
     </DialogActions>
 </MudDialog>
 
@@ -104,6 +106,57 @@
         }
     }
 
-    private void Save() => MudDialog.Close(DialogResult.Ok(_model));
+    private bool _saving;
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                await IndividualService.UpdateIndividualAsync(_model.Id, new UpdateIndividualDto
+                {
+                    FirstName = _model.FirstName,
+                    LastName = _model.LastName,
+                    IdentificationNumber = _model.IdentificationNumber,
+                    Phone = _model.Phone,
+                    Email = _model.Email,
+                    Address = _model.Address,
+                    IsActive = _model.IsActive
+                });
+                Snackbar.Add(Localization.GetString("IndividualUpdated"), Severity.Success);
+            }
+            else
+            {
+                await IndividualService.CreateIndividualAsync(new CreateIndividualDto
+                {
+                    FirstName = _model.FirstName,
+                    LastName = _model.LastName,
+                    IdentificationNumber = _model.IdentificationNumber,
+                    Phone = _model.Phone,
+                    Email = _model.Email,
+                    Address = _model.Address,
+                    IsActive = _model.IsActive
+                });
+                Snackbar.Add(Localization.GetString("IndividualCreated"), Severity.Success);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving individual: {ex.Message}");
+            Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingIndividual" : "ErrorCreatingIndividual"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
     private void Cancel() => MudDialog.Cancel();
 }

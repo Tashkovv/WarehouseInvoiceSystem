@@ -208,72 +208,18 @@
 
     private async Task OpenCreateDialog()
     {
-        ProductDto? created = await WisDialog.ShowFormAsync<ProductDialog, ProductDto>(
-            Localization.GetString("CreateProduct"), MaxWidth.Small);
-
-        if (created is not null)
-            await CreateProduct(created);
+        if (await WisDialog.ShowFormAsync<ProductDialog, bool>(
+                Localization.GetString("CreateProduct"), MaxWidth.Small) == true)
+            await _grid.ReloadServerData();
     }
 
     private async Task OpenEditDialog(ProductDto product)
     {
-        ProductDto? edited = await WisDialog.ShowFormAsync<ProductDialog, ProductDto>(
-            Localization.GetString("EditProduct"),
-            p => p.Add(x => x.Product, product),
-            MaxWidth.Small);
-
-        if (edited is not null)
-            await SaveProduct(edited);
-    }
-
-    private async Task SaveProduct(ProductDto item)
-    {
-        try
-        {
-            UpdateProductDto updateDto = new()
-            {
-                Code = item.Code,
-                Name = item.Name,
-                Description = item.Description,
-                Unit = item.Unit,
-                DefaultPrice = item.DefaultPrice,
-                IsActive = item.IsActive
-            };
-
-            await ProductService.UpdateProductAsync(item.Id, updateDto);
-            Snackbar.Add(Localization.GetString("ProductUpdated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<ProductDialog, bool>(
+                Localization.GetString("EditProduct"),
+                p => p.Add(x => x.Product, product),
+                MaxWidth.Small) == true)
             await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving product: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingProduct"), Severity.Error);
-        }
-    }
-
-    private async Task CreateProduct(ProductDto item)
-    {
-        try
-        {
-            CreateProductDto createDto = new()
-            {
-                Code = item.Code,
-                Name = item.Name,
-                Description = item.Description,
-                Unit = item.Unit,
-                DefaultPrice = item.DefaultPrice,
-                IsActive = item.IsActive
-            };
-
-            await ProductService.CreateProductAsync(createDto);
-            Snackbar.Add(Localization.GetString("ProductCreated"), Severity.Success);
-            await _grid.ReloadServerData();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error creating product: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorCreatingProduct"), Severity.Error);
-        }
     }
 
     private async Task ClearAllFilters()

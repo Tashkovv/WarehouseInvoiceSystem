@@ -1,75 +1,43 @@
 ﻿@inject ILocalizationService Localization
 
-<div style="position: relative; display: inline-flex; align-items: center;">
+<WisFilterPopover @ref="_popover"
+                  IsActive="@_isActive"
+                  TriggerLabel="@_triggerLabel"
+                  TriggerIcon="@Icons.Material.Filled.CalendarMonth"
+                  MinWidth="130px">
 
-    @* ── Trigger pill ── *@
-    <button type="button"
-            class="wis-filter-btn @(_isActive ? "wis-filter-btn--active" : "")"
-            @onclick="Toggle"
-            style="min-width: 130px; justify-content: space-between; gap: 6px;">
+    @* Static inline calendar *@
+    <div class="wis-drf-calendar">
+        <MudDateRangePicker DateRange="_localRange"
+                            DateRangeChanged="OnRangeChanged"
+                            PickerVariant="PickerVariant.Static"
+                            Variant="Variant.Text"
+                            Margin="Margin.None"
+                            DateFormat="dd MMM yy"
+                            MaxDate="@MaxDate"
+                            PickerMonth="@(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1))"
+                            Elevation="0"
+                            Class="wis-daterange-static" />
+    </div>
 
-        <span style="display: inline-flex; align-items: center; gap: 6px;">
-            <MudIcon Icon="@Icons.Material.Filled.CalendarMonth"
-                     Size="Size.Small"
-                     Style="opacity: 0.7; flex-shrink: 0;" />
-            <span class="wis-filter-btn__label @(_isActive ? "wis-filter-btn__label--selected" : "")">
-                @_triggerLabel
-            </span>
-        </span>
+    @* ── Preset footer ── *@
+    <div class="wis-drf-footer justify-space-between">
+        @foreach (var preset in _datePresets)
+        {
+            bool isSelected = _localPreset != null && _localPreset == preset.Value;
+            <button type="button"
+                    class="wis-drf-preset @(isSelected ? "wis-drf-preset--selected" : "")"
+                    @onclick="@(() => OnPresetClicked(preset.Value))">
+                @if (isSelected)
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="wis-drf-preset__check" />
+                }
+                @preset.Label
+            </button>
+        }
+    </div>
 
-        <span class="wis-filter-btn__icon">
-            <MudIcon Icon="@(_open? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
-                     Size="Size.Small" />
-        </span>
-    </button>
-
-    @* ── Overlay ── *@
-    @if (_open)
-    {
-        <MudOverlay Visible="true" OnClick="Close" ZIndex="1399" AutoClose="false" />
-    }
-
-    @* ── Popover ── *@
-    <MudPopover Open="_open"
-                AnchorOrigin="Origin.BottomLeft"
-                TransformOrigin="Origin.TopLeft"
-                Paper="true"
-                Style="z-index: 1400; padding: 0; overflow: hidden;">
-
-        @* Static inline calendar *@
-        <div class="wis-drf-calendar">
-            <MudDateRangePicker DateRange="_localRange"
-                                DateRangeChanged="OnRangeChanged"
-                                PickerVariant="PickerVariant.Static"
-                                Variant="Variant.Text"
-                                Margin="Margin.None"
-                                DateFormat="dd MMM yy"
-                                MaxDate="@MaxDate"
-                                PickerMonth="@(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1))"
-                                Elevation="0"
-                                Class="wis-daterange-static" />
-        </div>
-
-        @* ── Preset footer ── *@
-        <div class="wis-drf-footer justify-space-between">
-            @foreach (var preset in _datePresets)
-            {
-                bool isSelected = _localPreset != null && _localPreset == preset.Value;
-                <button type="button"
-                        class="wis-drf-preset @(isSelected ? "wis-drf-preset--selected" : "")"
-                        @onclick="@(() => OnPresetClicked(preset.Value))">
-                    @if (isSelected)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Class="wis-drf-preset__check" />
-                    }
-                    @preset.Label
-                </button>
-            }
-        </div>
-
-    </MudPopover>
-
-</div>
+</WisFilterPopover>
 
 @code {
     [Parameter, EditorRequired]
@@ -109,10 +77,11 @@
     [Parameter]
     public bool FuturePresets { get; set; } = false;
 
+    private WisFilterPopover _popover = null!;
+
     // Shadow fields — synced in OnParametersSet so external resets
     // (e.g. ClearAllFilters) are always reflected in the UI,
     // matching the same pattern used by WisAmountRangeFilter.
-    private bool _open;
     private int? _localPreset;
     private DateRange _localRange = new(null, null);
     // Track last-seen parameter values so OnParametersSet only syncs
@@ -168,9 +137,6 @@
         new() { Label = Localization.GetString(FuturePresets ? "PeriodNextYear" : "PeriodLastYear"), Value = 730 },
     ];
 
-    private void Toggle() => _open = !_open;
-    private void Close() => _open = false;
-
     private async Task OnPresetClicked(int? days)
     {
         if (_localPreset != null && _localPreset == days)
@@ -181,7 +147,7 @@
             await DatePresetChanged.InvokeAsync(null);
             await DateRangeChanged.InvokeAsync(new(null, null));
             _suppressRangeChanged = false;
-            _open = false;
+            await _popover.CloseAsync();
             await OnChanged.InvokeAsync();
             return;
         }
@@ -210,7 +176,7 @@
         await DatePresetChanged.InvokeAsync(days);
         await DateRangeChanged.InvokeAsync(range);
         _suppressRangeChanged = false;
-        _open = false;
+        await _popover.CloseAsync();
         await OnChanged.InvokeAsync();
     }
 
@@ -227,19 +193,18 @@
         await DateRangeChanged.InvokeAsync(range);
         if (range.Start != null && range.End != null)
         {
-            _open = false;
+            await _popover.CloseAsync();
             await OnChanged.InvokeAsync();
         }
     }
 
-    public Task ClearAsync()
+    public async Task ClearAsync()
     {
         _localPreset = null;
         _localRange = new(null, null);
         _lastSeenPreset = null;
         _lastSeenRange = new(null, null);
-        _open = false;
+        await _popover.CloseAsync();
         StateHasChanged();
-        return Task.CompletedTask;
     }
 }

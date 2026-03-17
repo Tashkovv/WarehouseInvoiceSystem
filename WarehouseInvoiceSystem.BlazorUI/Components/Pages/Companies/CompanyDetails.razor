@@ -343,7 +343,6 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private bool _loading = true;
     private bool _loadingAnalytics = true;
     private bool _loadingInvoices = true;
     private CompanyDto? _company;
@@ -366,26 +365,13 @@ else
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task LoadCompany()
-    {
-        _loading = true;
-
-        try
+    private async Task LoadCompany() =>
+        await SafeLoadAsync(async () =>
         {
             _company = await CompanyService.GetCompanyByIdAsync(Id, CancellationToken.None);
             if (_company != null)
                 BuildActions();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading company: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorLoadingCompany"), Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
-    }
+        }, "ErrorLoadingCompany");
 
     private async Task LoadAnalytics()
     {
@@ -426,42 +412,10 @@ else
     private async Task OpenEditDialog()
     {
         if (_company is null) return;
-
-        CompanyDto? dto = await WisDialog.ShowFormAsync<CompanyDialog, CompanyDto>(
-            Localization.GetString("EditCompany"),
-            p => p.Add(x => x.Company, _company));
-
-        if (dto is null) return;
-
-        try
-        {
-            UpdateCompanyDto updateDto = new()
-            {
-                Name = dto.Name,
-                Type = dto.Type,
-                ContactPerson = dto.ContactPerson,
-                Email = dto.Email,
-                Phone = dto.Phone,
-                Address = dto.Address,
-                TaxId = dto.TaxId,
-                PaymentTermsDays = dto.PaymentTermsDays,
-                CreditLimit = dto.CreditLimit,
-                IsActive = dto.IsActive,
-            };
-
-            await CompanyService.UpdateCompanyAsync(Id, updateDto);
-            Snackbar.Add(Localization.GetString("CompanyUpdated"), Severity.Success);
+        if (await WisDialog.ShowFormAsync<CompanyDialog, bool>(
+                Localization.GetString("EditCompany"),
+                p => p.Add(x => x.Company, _company)) == true)
             await LoadCompany();
-        }
-        catch (InvalidOperationException ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating company: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
-        }
     }
 
     private void ViewInvoice(TableRowClickEventArgs<RecentInvoiceDto> args)
@@ -482,30 +436,15 @@ else
     private async Task DeactivateCompany()
     {
         int openCount = _analytics.ReceivableOpenCount + _analytics.PayableOpenCount;
-
         string message = openCount > 0
             ? string.Format(Localization.GetString("DeactivateCompanyWithOpenInvoices"), openCount)
             : Localization.GetString("DeactivateCompanyConfirm");
 
-        bool confirmed = await WisDialog.ConfirmAsync(
-            Localization.GetString("DeactivateCompany"),
-            message,
-            Localization.GetString("Deactivate"),
-            Localization.GetString("Cancel"));
-
-        if (!confirmed) return;
-
-        try
-        {
-            await CompanyService.SetActiveStatusAsync(Id, false);
-            Snackbar.Add(Localization.GetString("CompanyDeactivated"), Severity.Success);
-            await LoadCompany();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error deactivating company: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorDeactivatingCompany"), Severity.Error);
-        }
+        await ConfirmAndExecuteAsync(
+            Localization.GetString("DeactivateCompany"), message,
+            async () => { await CompanyService.SetActiveStatusAsync(Id, false); await LoadCompany(); },
+            "CompanyDeactivated", "ErrorDeactivatingCompany",
+            Localization.GetString("Deactivate"), Localization.GetString("Cancel"));
     }
 
     private async Task ActivateCompany()

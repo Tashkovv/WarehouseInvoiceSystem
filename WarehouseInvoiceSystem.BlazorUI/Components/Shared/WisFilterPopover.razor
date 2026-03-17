@@ -1,0 +1,114 @@
+@* Shared trigger-pill + overlay + MudPopover shell used by all filter components.
+   Each filter component owns its own business logic and passes IsActive/TriggerLabel
+   as computed properties. Use @ref to call CloseAsync() from within the content. *@
+
+<div style="position: relative; display: inline-flex; align-items: center;">
+
+    @* ── Trigger pill ── *@
+    <button type="button"
+            class="wis-filter-btn @(IsActive ? "wis-filter-btn--active" : "")"
+            @onclick="OnTriggerClickAsync"
+            style="min-width: @MinWidth; justify-content: space-between; gap: 6px; @(TriggerPadding is not null ? $"padding: {TriggerPadding};" : "")">
+
+        <span style="display: inline-flex; align-items: center; gap: 6px; @(TruncateLabel ? "overflow: hidden;" : "")">
+            @if (TriggerIcon is not null)
+            {
+                <MudIcon Icon="@TriggerIcon" Size="Size.Small" Style="opacity: 0.7; flex-shrink: 0;" />
+            }
+            <span class="wis-filter-btn__label @(IsActive ? "wis-filter-btn__label--selected" : "")"
+                  style="@(TruncateLabel ? "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" : "")">
+                @TriggerLabel
+            </span>
+        </span>
+
+        <span class="wis-filter-btn__icon" style="@(TruncateLabel ? "flex-shrink: 0;" : "")">
+            <MudIcon Icon="@(_open ? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
+                     Size="Size.Small" />
+        </span>
+
+    </button>
+
+    @* ── Overlay ── *@
+    @if (_open)
+    {
+        <MudOverlay Visible="true" OnClick="OnOverlayClickAsync" ZIndex="1399" AutoClose="false" />
+    }
+
+    @* ── Popover ── *@
+    <MudPopover Open="_open"
+                AnchorOrigin="@AnchorOrigin"
+                TransformOrigin="@TransformOrigin"
+                Fixed="@Fixed"
+                Paper="true"
+                Style="@($"z-index: 1400; {PopoverStyle}")">
+        @ChildContent
+    </MudPopover>
+
+</div>
+
+@code {
+    /// <summary>Drives the active (highlighted) state of the trigger pill.</summary>
+    [Parameter, EditorRequired] public bool IsActive { get; set; }
+
+    /// <summary>Text shown on the trigger pill.</summary>
+    [Parameter, EditorRequired] public string TriggerLabel { get; set; } = string.Empty;
+
+    /// <summary>Optional leading icon inside the trigger pill.</summary>
+    [Parameter] public string? TriggerIcon { get; set; }
+
+    /// <summary>Minimum width of the trigger pill. Default: "150px".</summary>
+    [Parameter] public string MinWidth { get; set; } = "150px";
+
+    /// <summary>Optional padding override for the trigger button (e.g. "0 10px").</summary>
+    [Parameter] public string? TriggerPadding { get; set; }
+
+    /// <summary>When true, adds overflow/ellipsis on the label and flex-shrink on the chevron.</summary>
+    [Parameter] public bool TruncateLabel { get; set; }
+
+    /// <summary>Whether the popover uses fixed positioning. Default: false.</summary>
+    [Parameter] public bool Fixed { get; set; }
+
+    [Parameter] public Origin AnchorOrigin { get; set; } = Origin.BottomLeft;
+    [Parameter] public Origin TransformOrigin { get; set; } = Origin.TopLeft;
+
+    /// <summary>Inline style appended after "z-index: 1400;" on the MudPopover.</summary>
+    [Parameter] public string PopoverStyle { get; set; } = "padding: 0; overflow: hidden;";
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// <summary>Fired when the popover opens (after _open is set to true).</summary>
+    [Parameter] public EventCallback OnOpen { get; set; }
+
+    /// <summary>Fired when the popover closes via overlay click or trigger toggle.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private bool _open;
+
+    private async Task OnTriggerClickAsync()
+    {
+        if (_open)
+        {
+            _open = false;
+            await OnClose.InvokeAsync();
+        }
+        else
+        {
+            _open = true;
+            await OnOpen.InvokeAsync();
+        }
+    }
+
+    private async Task OnOverlayClickAsync()
+    {
+        _open = false;
+        await OnClose.InvokeAsync();
+    }
+
+    /// <summary>Closes the popover from content inside (e.g. after a selection).</summary>
+    public Task CloseAsync()
+    {
+        _open = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

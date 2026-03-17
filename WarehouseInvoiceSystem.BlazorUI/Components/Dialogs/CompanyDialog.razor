@@ -1,6 +1,8 @@
 ﻿@using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject ILocalizationService Localization
+@inject ICompanyService CompanyService
+@inject ISnackbar Snackbar
 
 <MudDialog>
     <DialogContent>
@@ -106,7 +108,7 @@
     <DialogActions>
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Save"
-                          SaveDisabled="@(!IsValid)" />
+                          SaveDisabled="@(!IsValid || _saving)" />
     </DialogActions>
 </MudDialog>
 
@@ -156,6 +158,62 @@
         }
     }
 
-    private void Save() => MudDialog.Close(DialogResult.Ok(_company));
+    private bool _saving;
+
+    private async Task Save()
+    {
+        _saving = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                await CompanyService.UpdateCompanyAsync(_company.Id, new UpdateCompanyDto
+                {
+                    Name = _company.Name,
+                    Type = _company.Type,
+                    ContactPerson = _company.ContactPerson,
+                    Email = _company.Email,
+                    Phone = _company.Phone,
+                    Address = _company.Address,
+                    TaxId = _company.TaxId,
+                    PaymentTermsDays = _company.PaymentTermsDays,
+                    CreditLimit = _company.CreditLimit,
+                    IsActive = _company.IsActive
+                });
+                Snackbar.Add(Localization.GetString("CompanyUpdated"), Severity.Success);
+            }
+            else
+            {
+                await CompanyService.CreateCompanyAsync(new CreateCompanyDto
+                {
+                    Name = _company.Name,
+                    Type = _company.Type,
+                    ContactPerson = _company.ContactPerson,
+                    Email = _company.Email,
+                    Phone = _company.Phone,
+                    Address = _company.Address,
+                    TaxId = _company.TaxId,
+                    PaymentTermsDays = _company.PaymentTermsDays,
+                    CreditLimit = _company.CreditLimit
+                });
+                Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving company: {ex.Message}");
+            Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingCompany" : "ErrorCreatingCompany"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
     private void Cancel() => MudDialog.Cancel();
 }
