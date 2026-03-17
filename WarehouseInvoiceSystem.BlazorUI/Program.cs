@@ -32,6 +32,9 @@ builder.Services.AddOptions<EmailSettings>()
                 .Bind(builder.Configuration.GetSection("EmailSettings"))
                 .ValidateOnStart();
 
+builder.Services.Configure<EncryptionSettings>(
+    builder.Configuration.GetSection("EncryptionSettings"));
+
 // Add MudBlazor services
 builder.Services.AddMudServices();
 builder.Services.AddScoped<MudBlazor.MudLocalizer, WarehouseInvoiceSystem.BlazorUI.Localization.CustomMudLocalizer>();
@@ -50,6 +53,7 @@ builder.Services.AddTransient<IStockLevelRepository, StockLevelRepository>();
 builder.Services.AddTransient<IInventoryTransactionRepository, InventoryTransactionRepository>();
 builder.Services.AddTransient<IIndividualRepository, IndividualRepository>();
 builder.Services.AddTransient<IPurchaseNoteRepository, PurchaseNoteRepository>();
+builder.Services.AddTransient<ITenantRepository, TenantRepository>();
 
 // Register Services
 builder.Services.AddScoped<ICompanyService, CompanyService>();
@@ -60,9 +64,11 @@ builder.Services.AddScoped<IWarehouseService, WarehouseService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IIndividualService, IndividualService>();
 builder.Services.AddScoped<IPurchaseNoteService, PurchaseNoteService>();
+builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddScoped<WisDialogService>();
 
 // Background job infrastructure
