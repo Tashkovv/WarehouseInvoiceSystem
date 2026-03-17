@@ -468,6 +468,115 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     });
             });
 
+        public Task<CompanyAnalyticsResult> GetCompanyAnalyticsDataAsync(Guid companyId, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Invoice> base_q = All<Invoice>(context).Where(i => i.CompanyId == companyId);
+
+                // ── 1. Grouped stats by (Type, Status) ───────────────────────────
+                var statRows = await base_q
+                    .GroupBy(i => new { i.Type, i.Status })
+                    .Select(g => new CompanyInvoiceStatRow
+                    {
+                        Type        = g.Key.Type,
+                        Status      = g.Key.Status,
+                        Count       = g.Count(),
+                        TotalAmount = g.Sum(i => i.TotalAmount),
+                        AmountPaid  = g.Sum(i => i.AmountPaid),
+                        AmountDue   = g.Sum(i => i.TotalAmount - i.AmountPaid)
+                    })
+                    .ToListAsync(ct);
+
+                // ── 2. Most traded product (non-cancelled invoices) ───────────────
+                var mostTraded = await All<InvoiceLine>(context)
+                    .Where(li => li.Invoice.CompanyId == companyId &&
+                                 li.Invoice.Status != InvoiceStatus.Cancelled)
+                    .GroupBy(li => new { li.ProductId, li.Product.Name, li.Product.Unit })
+                    .Select(g => new
+                    {
+                        g.Key.Name,
+                        g.Key.Unit,
+                        TotalQuantity = g.Sum(li => li.Quantity)
+                    })
+                    .OrderByDescending(x => x.TotalQuantity)
+                    .FirstOrDefaultAsync(ct);
+
+                // ── 3. First / last invoice date (non-cancelled) ──────────────────
+                var dates = await base_q
+                    .Where(i => i.Status != InvoiceStatus.Cancelled)
+                    .GroupBy(_ => 1)
+                    .Select(g => new { First = g.Min(i => i.IssueDate), Last = g.Max(i => i.IssueDate) })
+                    .FirstOrDefaultAsync(ct);
+
+                // ── 4. Recent 5 invoices ──────────────────────────────────────────
+                var recent = await base_q
+                    .OrderByDescending(i => i.IssueDate)
+                    .Take(5)
+                    .Select(i => new CompanyRecentInvoiceRow
+                    {
+                        Id            = i.Id,
+                        InvoiceNumber = i.InvoiceNumber,
+                        Type          = i.Type,
+                        Status        = i.Status,
+                        IssueDate     = i.IssueDate,
+                        DueDate       = i.DueDate,
+                        TotalAmount   = i.TotalAmount,
+                        AmountDue     = i.TotalAmount - i.AmountPaid
+                    })
+                    .ToListAsync(ct);
+
+                return new CompanyAnalyticsResult
+                {
+                    StatRows                 = statRows,
+                    MostTradedProductName    = mostTraded?.Name,
+                    MostTradedProductQuantity = mostTraded?.TotalQuantity ?? 0,
+                    MostTradedProductUnit    = mostTraded?.Unit,
+                    FirstInvoiceDate         = dates?.First,
+                    LastInvoiceDate          = dates?.Last,
+                    RecentInvoices           = recent
+                };
+            });
+
+        public Task<PagedResult<ProductPurchaseHistoryView>> GetPagedPurchasedHistoryAsync(
+            GetProductHistoryQuery query, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<ProductPurchaseHistoryView> q = context.Set<ProductPurchaseHistoryView>()
+                    .Where(v => v.ProductId == query.ProductId);
+
+                if (query.WarehouseId.HasValue)
+                    q = q.Where(v => v.WarehouseId == query.WarehouseId.Value);
+
+                if (query.CompanyId.HasValue)
+                    q = q.Where(v => v.CompanyId == query.CompanyId.Value);
+
+                if (query.IndividualId.HasValue)
+                    q = q.Where(v => v.IndividualId == query.IndividualId.Value);
+
+                if (query.DateFrom.HasValue)
+                    q = q.Where(v => v.Date >= query.DateFrom.Value.Date);
+
+                if (query.DateTo.HasValue)
+                    q = q.Where(v => v.Date < query.DateTo.Value.Date.AddDays(1));
+
+                q = q.OrderByDescending(v => v.Date);
+
+                int totalCount = await q.CountAsync(ct);
+
+                List<ProductPurchaseHistoryView> items = await q
+                    .Skip((query.Page - 1) * query.PageSize)
+                    .Take(query.PageSize)
+                    .ToListAsync(ct);
+
+                return new PagedResult<ProductPurchaseHistoryView>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    Page = query.Page,
+                    PageSize = query.PageSize
+                };
+            });
+
         private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)
         {
             if (query.Statuses is { Count: > 0 })

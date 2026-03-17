@@ -1,7 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
     using WarehouseInvoiceSystem.Application.DTOs.Company;
-    using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
@@ -11,7 +10,7 @@
     using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class CompanyService(ICompanyRepository companyRepository,
-                                IInvoiceService invoiceService) : ICompanyService
+                                IInvoiceRepository invoiceRepository) : ICompanyService
     {
         public async Task<IEnumerable<CompanyDto>> GetAllCompaniesAsync(CancellationToken ct = default)
         {
@@ -118,102 +117,80 @@
 
         public async Task<CompanyAnalyticsDto> GetCompanyAnalyticsAsync(Guid id, CancellationToken ct = default)
         {
+            var data = await invoiceRepository.GetCompanyAnalyticsDataAsync(id, ct);
+
+            if (data.StatRows.Count == 0 && data.RecentInvoices.Count == 0)
+                return new CompanyAnalyticsDto();
+
             var analytics = new CompanyAnalyticsDto();
-
-            IEnumerable<InvoiceDto> allInvoices = await invoiceService.GetInvoicesByCompanyAsync(id);
-            var invoiceList = allInvoices.ToList();
-
-            if (invoiceList.Count == 0)
-                return analytics;
-
-            // ── Split by type ─────────────────────────────────────────────────
-            var receivables = invoiceList.Where(i => i.Type == InvoiceType.Receivable).ToList();
-            var payables = invoiceList.Where(i => i.Type == InvoiceType.Payable).ToList();
+            var rows = data.StatRows;
 
             // ── Receivables ───────────────────────────────────────────────────
-            var receivableCancelled = receivables.Where(i => i.Status == InvoiceStatus.Cancelled).ToList();
-            var receivableActive = receivables.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
-            var receivablePaid = receivables.Where(i => i.Status == InvoiceStatus.Paid).ToList();
-            var receivableOpen = receivables.Where(i => i.Status is InvoiceStatus.Draft
-                                                                       or InvoiceStatus.Sent
-                                                                       or InvoiceStatus.PartiallyPaid
-                                                                       or InvoiceStatus.Overdue).ToList();
-            var receivableOverdue = receivables.Where(i => i.Status == InvoiceStatus.Overdue).ToList();
+            var recActive = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status != InvoiceStatus.Cancelled).ToList();
+            var recPaid   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Paid).ToList();
+            var recOpen   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status is InvoiceStatus.Draft
+                                                                                             or InvoiceStatus.Sent
+                                                                                             or InvoiceStatus.PartiallyPaid
+                                                                                             or InvoiceStatus.Overdue).ToList();
+            var recOverdue    = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Overdue).ToList();
+            var recCancelled  = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Cancelled).ToList();
 
-            analytics.ReceivableTotalCount = receivableActive.Count;
-            analytics.ReceivableTotalAmount = receivableActive.Sum(i => i.TotalAmount);
-            analytics.ReceivablePaidCount = receivablePaid.Count;
-            analytics.ReceivablePaidAmount = receivableActive.Sum(i => i.AmountPaid);
-            analytics.ReceivableOpenCount = receivableOpen.Count;
-            analytics.ReceivableAmountDue = receivableOpen.Sum(i => i.AmountDue);
-            analytics.ReceivableOverdueCount = receivableOverdue.Count;
-            analytics.ReceivableOverdueAmountDue = receivableOverdue.Sum(i => i.AmountDue);
-            analytics.ReceivableCancelledCount = receivableCancelled.Count;
-            analytics.ReceivableCancelledAmount = receivableCancelled.Sum(i => i.TotalAmount);
+            analytics.ReceivableTotalCount      = recActive.Sum(r => r.Count);
+            analytics.ReceivableTotalAmount     = recActive.Sum(r => r.TotalAmount);
+            analytics.ReceivablePaidCount       = recPaid.Sum(r => r.Count);
+            analytics.ReceivablePaidAmount      = recActive.Sum(r => r.AmountPaid);
+            analytics.ReceivableOpenCount       = recOpen.Sum(r => r.Count);
+            analytics.ReceivableAmountDue       = recOpen.Sum(r => r.AmountDue);
+            analytics.ReceivableOverdueCount    = recOverdue.Sum(r => r.Count);
+            analytics.ReceivableOverdueAmountDue = recOverdue.Sum(r => r.AmountDue);
+            analytics.ReceivableCancelledCount  = recCancelled.Sum(r => r.Count);
+            analytics.ReceivableCancelledAmount = recCancelled.Sum(r => r.TotalAmount);
 
             // ── Payables ──────────────────────────────────────────────────────
-            var payableCancelled = payables.Where(i => i.Status == InvoiceStatus.Cancelled).ToList();
-            var payableActive = payables.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
-            var payablePaid = payables.Where(i => i.Status == InvoiceStatus.Paid).ToList();
-            var payableOpen = payables.Where(i => i.Status is InvoiceStatus.Draft
-                                                                  or InvoiceStatus.Sent
-                                                                  or InvoiceStatus.PartiallyPaid
-                                                                  or InvoiceStatus.Overdue).ToList();
-            var payableOverdue = payables.Where(i => i.Status == InvoiceStatus.Overdue).ToList();
+            var payActive = rows.Where(r => r.Type == InvoiceType.Payable && r.Status != InvoiceStatus.Cancelled).ToList();
+            var payPaid   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Paid).ToList();
+            var payOpen   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status is InvoiceStatus.Draft
+                                                                                          or InvoiceStatus.Sent
+                                                                                          or InvoiceStatus.PartiallyPaid
+                                                                                          or InvoiceStatus.Overdue).ToList();
+            var payOverdue   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Overdue).ToList();
+            var payCancelled = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Cancelled).ToList();
 
-            analytics.PayableTotalCount = payableActive.Count;
-            analytics.PayableTotalAmount = payableActive.Sum(i => i.TotalAmount);
-            analytics.PayablePaidCount = payablePaid.Count;
-            analytics.PayablePaidAmount = payableActive.Sum(i => i.AmountPaid);
-            analytics.PayableOpenCount = payableOpen.Count;
-            analytics.PayableAmountDue = payableOpen.Sum(i => i.AmountDue);
-            analytics.PayableOverdueCount = payableOverdue.Count;
-            analytics.PayableOverdueAmountDue = payableOverdue.Sum(i => i.AmountDue);
-            analytics.PayableCancelledCount = payableCancelled.Count;
-            analytics.PayableCancelledAmount = payableCancelled.Sum(i => i.TotalAmount);
+            analytics.PayableTotalCount      = payActive.Sum(r => r.Count);
+            analytics.PayableTotalAmount     = payActive.Sum(r => r.TotalAmount);
+            analytics.PayablePaidCount       = payPaid.Sum(r => r.Count);
+            analytics.PayablePaidAmount      = payActive.Sum(r => r.AmountPaid);
+            analytics.PayableOpenCount       = payOpen.Sum(r => r.Count);
+            analytics.PayableAmountDue       = payOpen.Sum(r => r.AmountDue);
+            analytics.PayableOverdueCount    = payOverdue.Sum(r => r.Count);
+            analytics.PayableOverdueAmountDue = payOverdue.Sum(r => r.AmountDue);
+            analytics.PayableCancelledCount  = payCancelled.Sum(r => r.Count);
+            analytics.PayableCancelledAmount = payCancelled.Sum(r => r.TotalAmount);
 
             // ── Invoice history ───────────────────────────────────────────────
-            var activeInvoices = invoiceList.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
-            if (activeInvoices.Count > 0)
-            {
-                analytics.FirstInvoiceDate = activeInvoices.Min(i => i.IssueDate);
-                analytics.LastInvoiceDate = activeInvoices.Max(i => i.IssueDate);
-            }
+            analytics.FirstInvoiceDate = data.FirstInvoiceDate;
+            analytics.LastInvoiceDate  = data.LastInvoiceDate;
 
-            // ── Most traded product (active invoices, both types) ─────────────
-            var productStats = activeInvoices
-                .SelectMany(i => i.LineItems)
-                .GroupBy(li => new { li.ProductId, li.ProductName, li.ProductUnit })
-                .Select(g => new
-                {
-                    g.Key.ProductName,
-                    g.Key.ProductUnit,
-                    TotalQuantity = g.Sum(li => li.Quantity)
-                })
-                .OrderByDescending(p => p.TotalQuantity)
-                .FirstOrDefault();
-
-            if (productStats != null)
+            // ── Most traded product ───────────────────────────────────────────
+            if (data.MostTradedProductName is not null)
             {
-                analytics.MostTradedProduct = productStats.ProductName;
-                analytics.MostTradedProductQuantity = productStats.TotalQuantity;
-                analytics.MostTradedProductUnit = productStats.ProductUnit;
+                analytics.MostTradedProduct         = data.MostTradedProductName;
+                analytics.MostTradedProductQuantity = data.MostTradedProductQuantity;
+                analytics.MostTradedProductUnit     = data.MostTradedProductUnit;
             }
 
             // ── Recent invoices ───────────────────────────────────────────────
-            analytics.RecentInvoices = invoiceList
-                .OrderByDescending(i => i.IssueDate)
-                .Take(5)
-                .Select(i => new RecentInvoiceDto
+            analytics.RecentInvoices = data.RecentInvoices
+                .Select(r => new RecentInvoiceDto
                 {
-                    Id = i.Id,
-                    InvoiceNumber = i.InvoiceNumber,
-                    Type = i.Type,
-                    Status = i.Status,
-                    IssueDate = i.IssueDate,
-                    DueDate = i.DueDate,
-                    TotalAmount = i.TotalAmount,
-                    AmountDue = i.AmountDue
+                    Id            = r.Id,
+                    InvoiceNumber = r.InvoiceNumber,
+                    Type          = r.Type,
+                    Status        = r.Status,
+                    IssueDate     = r.IssueDate,
+                    DueDate       = r.DueDate,
+                    TotalAmount   = r.TotalAmount,
+                    AmountDue     = r.AmountDue
                 })
                 .ToList();
 

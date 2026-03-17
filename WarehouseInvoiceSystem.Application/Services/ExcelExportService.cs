@@ -12,8 +12,16 @@
 
         public async Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId)
         {
-            InvoiceDto? invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId) ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
+            InvoiceDto invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId)
+                ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
+            return ExportInvoiceForPrinting(invoice);
+        }
 
+        public Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice) =>
+            Task.FromResult(ExportInvoiceForPrinting(invoice));
+
+        private byte[] ExportInvoiceForPrinting(InvoiceDto invoice)
+        {
             using XLWorkbook workbook = new();
             IXLWorksheet worksheet = workbook.Worksheets.Add(translations.GetString("Invoice"));
 

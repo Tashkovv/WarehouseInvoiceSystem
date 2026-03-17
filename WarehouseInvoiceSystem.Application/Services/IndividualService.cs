@@ -1,7 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
     using WarehouseInvoiceSystem.Application.DTOs.Individual;
-    using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
@@ -10,7 +9,7 @@
     using WarehouseInvoiceSystem.Domain.Queries.Common;
 
     public class IndividualService(IIndividualRepository individualRepository,
-                                   IPurchaseNoteService purchaseNoteService) : IIndividualService
+                                   IPurchaseNoteRepository purchaseNoteRepository) : IIndividualService
     {
         public async Task<IEnumerable<IndividualDto>> GetAllIndividualsAsync(CancellationToken ct = default)
         {
@@ -50,73 +49,48 @@
 
         public async Task<IndividualAnalyticsDto> GetIndividualAnalyticsAsync(Guid individualId, CancellationToken ct = default)
         {
+            var data = await purchaseNoteRepository.GetIndividualAnalyticsDataAsync(individualId, ct);
+
+            if (data.StatRows.Count == 0 && data.RecentNotes.Count == 0)
+                return new IndividualAnalyticsDto();
+
             var analytics = new IndividualAnalyticsDto();
+            var rows = data.StatRows;
 
-            // Get all purchase notes for this individual
-            IEnumerable<PurchaseNoteDto> allPurchaseNotes = await purchaseNoteService.GetPurchaseNotesByIndividualAsync(individualId);
-            var purchaseNotesList = allPurchaseNotes.ToList();
+            var cancelled = rows.Where(r => r.Status == PurchaseNoteStatus.Cancelled).ToList();
+            analytics.CancelledCount  = cancelled.Sum(r => r.Count);
+            analytics.CancelledAmount = cancelled.Sum(r => r.TotalAmount);
 
-            if (purchaseNotesList.Count == 0)
+            var active = rows.Where(r => r.Status != PurchaseNoteStatus.Cancelled).ToList();
+            analytics.TotalPurchaseNotes = active.Sum(r => r.Count);
+            analytics.TotalAmount        = active.Sum(r => r.TotalAmount);
+
+            var paid = rows.Where(r => r.Status == PurchaseNoteStatus.Paid).ToList();
+            analytics.PaidCount  = paid.Sum(r => r.Count);
+            analytics.PaidAmount = paid.Sum(r => r.TotalAmount);
+
+            var unpaid = rows.Where(r => r.Status == PurchaseNoteStatus.Draft || r.Status == PurchaseNoteStatus.Pending).ToList();
+            analytics.UnpaidCount  = unpaid.Sum(r => r.Count);
+            analytics.UnpaidAmount = unpaid.Sum(r => r.TotalAmount);
+
+            analytics.FirstPurchaseDate = data.FirstPurchaseDate;
+            analytics.LastPurchaseDate  = data.LastPurchaseDate;
+
+            if (data.MostPurchasedProductName is not null)
             {
-                return analytics;
+                analytics.MostPurchasedProduct         = data.MostPurchasedProductName;
+                analytics.MostPurchasedProductQuantity = data.MostPurchasedProductQuantity;
+                analytics.MostPurchasedProductUnit     = data.MostPurchasedProductUnit;
             }
 
-            // Overall statistics — cancelled notes excluded from totals
-            var cancelledNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Cancelled).ToList();
-            analytics.CancelledCount = cancelledNotes.Count;
-            analytics.CancelledAmount = cancelledNotes.Sum(pn => pn.TotalAmount);
-
-            var activeNotes = purchaseNotesList.Where(pn => pn.Status != PurchaseNoteStatus.Cancelled).ToList();
-            analytics.TotalPurchaseNotes = activeNotes.Count;
-            analytics.TotalAmount = activeNotes.Sum(pn => pn.TotalAmount);
-
-            // Payment status
-            var paidNotes = purchaseNotesList.Where(pn => pn.Status == PurchaseNoteStatus.Paid).ToList();
-            analytics.PaidCount = paidNotes.Count;
-            analytics.PaidAmount = paidNotes.Sum(pn => pn.TotalAmount);
-
-            var unpaidNotes = purchaseNotesList.Where(pn =>
-                pn.Status == PurchaseNoteStatus.Draft ||
-                pn.Status == PurchaseNoteStatus.Pending).ToList();
-            analytics.UnpaidCount = unpaidNotes.Count;
-            analytics.UnpaidAmount = unpaidNotes.Sum(pn => pn.TotalAmount);
-
-            // Date range
-            analytics.FirstPurchaseDate = purchaseNotesList.Min(pn => pn.PurchaseDate);
-            analytics.LastPurchaseDate = purchaseNotesList.Max(pn => pn.PurchaseDate);
-
-            // Most purchased product
-            var productStats = purchaseNotesList
-                .SelectMany(pn => pn.LineItems)
-                .GroupBy(li => new { li.ProductId, li.ProductName, li.ProductCode, li.ProductUnit })
-                .Select(g => new
+            analytics.RecentPurchaseNotes = data.RecentNotes
+                .Select(r => new RecentPurchaseNoteDto
                 {
-                    g.Key.ProductName,
-                    g.Key.ProductCode,
-                    TotalQuantity = g.Sum(li => li.Quantity),
-                    Unit = g.Key.ProductUnit
-                })
-                .OrderByDescending(p => p.TotalQuantity)
-                .FirstOrDefault();
-
-            if (productStats != null)
-            {
-                analytics.MostPurchasedProduct = productStats.ProductName;
-                analytics.MostPurchasedProductQuantity = productStats.TotalQuantity;
-                analytics.MostPurchasedProductUnit = productStats.Unit;
-            }
-
-            // Recent purchase notes
-            analytics.RecentPurchaseNotes = purchaseNotesList
-                .OrderByDescending(pn => pn.PurchaseDate)
-                .Take(5)
-                .Select(pn => new RecentPurchaseNoteDto
-                {
-                    Id = pn.Id,
-                    NoteNumber = pn.NoteNumber,
-                    PurchaseDate = pn.PurchaseDate,
-                    TotalAmount = pn.TotalAmount,
-                    Status = pn.Status
+                    Id           = r.Id,
+                    NoteNumber   = r.NoteNumber,
+                    PurchaseDate = r.PurchaseDate,
+                    TotalAmount  = r.TotalAmount,
+                    Status       = r.Status
                 })
                 .ToList();
 

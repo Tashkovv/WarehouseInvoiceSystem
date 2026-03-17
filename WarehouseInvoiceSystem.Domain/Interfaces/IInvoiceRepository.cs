@@ -46,5 +46,9 @@
         Task<IEnumerable<PartnerSummaryResult>> GetOverdueClientSummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<PartnerSummaryResult>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<ProductMovementResult>> GetProductMovementByWarehouseAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default);
+
+        Task<CompanyAnalyticsResult> GetCompanyAnalyticsDataAsync(Guid companyId, CancellationToken ct = default);
+
+        Task<PagedResult<ProductPurchaseHistoryView>> GetPagedPurchasedHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
     }
 }

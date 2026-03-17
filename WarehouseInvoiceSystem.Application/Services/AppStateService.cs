@@ -17,6 +17,7 @@
             environment.ContentRootPath, "app-state.json");
 
         private readonly SemaphoreSlim _lock = new(1, 1);
+        private Dictionary<string, string>? _cache;
 
         public async Task<DateTime?> GetDateAsync(string key, CancellationToken ct = default)
         {
@@ -34,6 +35,7 @@
             {
                 Dictionary<string, string> state = await ReadAsync();
                 state[key] = value.ToString("O");
+                _cache = state;
                 string json = JsonSerializer.Serialize(state, jsonSerializerOptions);
                 await File.WriteAllTextAsync(_filePath, json);
             }
@@ -45,17 +47,20 @@
 
         private async Task<Dictionary<string, string>> ReadAsync()
         {
+            if (_cache is not null)
+                return _cache;
+
             if (!File.Exists(_filePath))
-                return [];
+                return _cache = [];
 
             try
             {
                 string json = await File.ReadAllTextAsync(_filePath);
-                return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
+                return _cache = JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? [];
             }
             catch (JsonException)
             {
-                return [];
+                return _cache = [];
             }
         }
     }

@@ -403,6 +403,68 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     });
             });
 
+        public Task<IndividualAnalyticsResult> GetIndividualAnalyticsDataAsync(Guid individualId, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<PurchaseNote> base_q = All<PurchaseNote>(context).Where(pn => pn.IndividualId == individualId);
+
+                // ── 1. Grouped stats by Status ────────────────────────────────
+                var statRows = await base_q
+                    .GroupBy(pn => pn.Status)
+                    .Select(g => new IndividualNoteStatRow
+                    {
+                        Status      = g.Key,
+                        Count       = g.Count(),
+                        TotalAmount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .ToListAsync(ct);
+
+                // ── 2. Most purchased product (non-cancelled) ─────────────────
+                var mostPurchased = await All<PurchaseNoteLine>(context)
+                    .Where(li => li.PurchaseNote.IndividualId == individualId &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled)
+                    .GroupBy(li => new { li.ProductId, li.Product.Name, li.Product.Unit })
+                    .Select(g => new
+                    {
+                        g.Key.Name,
+                        g.Key.Unit,
+                        TotalQuantity = g.Sum(li => li.Quantity)
+                    })
+                    .OrderByDescending(x => x.TotalQuantity)
+                    .FirstOrDefaultAsync(ct);
+
+                // ── 3. First / last purchase date ─────────────────────────────
+                var dates = await base_q
+                    .GroupBy(_ => 1)
+                    .Select(g => new { First = g.Min(pn => pn.PurchaseDate), Last = g.Max(pn => pn.PurchaseDate) })
+                    .FirstOrDefaultAsync(ct);
+
+                // ── 4. Recent 5 purchase notes ────────────────────────────────
+                var recent = await base_q
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .Take(5)
+                    .Select(pn => new IndividualRecentNoteRow
+                    {
+                        Id           = pn.Id,
+                        NoteNumber   = pn.NoteNumber,
+                        PurchaseDate = pn.PurchaseDate,
+                        TotalAmount  = pn.TotalAmount,
+                        Status       = pn.Status
+                    })
+                    .ToListAsync(ct);
+
+                return new IndividualAnalyticsResult
+                {
+                    StatRows                    = statRows,
+                    MostPurchasedProductName    = mostPurchased?.Name,
+                    MostPurchasedProductQuantity = mostPurchased?.TotalQuantity ?? 0,
+                    MostPurchasedProductUnit    = mostPurchased?.Unit,
+                    FirstPurchaseDate           = dates?.First,
+                    LastPurchaseDate            = dates?.Last,
+                    RecentNotes                 = recent
+                };
+            });
+
         private static IQueryable<PurchaseNote> ApplySort(IQueryable<PurchaseNote> q, string? sortBy, bool ascending)
             => sortBy switch
             {

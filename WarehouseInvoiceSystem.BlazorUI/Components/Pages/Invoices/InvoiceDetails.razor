@@ -322,8 +322,7 @@ else
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        await LoadInvoice();
-        await LoadPayments();
+        await Task.WhenAll(LoadInvoice(), LoadPayments());
     }
 
     protected override async void OnLanguageChanged() => await InvokeAsync(() =>
@@ -355,8 +354,7 @@ else
 
     private async Task Reload()
     {
-        await LoadInvoice();
-        await LoadPayments();
+        await Task.WhenAll(LoadInvoice(), LoadPayments());
     }
 
     // ── Stock check ───────────────────────────────────────────────────────────
@@ -538,7 +536,7 @@ else
     {
         try
         {
-            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(Id);
+            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(_invoice!);
             string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
 
             await JSRuntime.InvokeVoidAsync(
