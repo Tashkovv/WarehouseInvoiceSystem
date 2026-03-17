@@ -9,6 +9,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class ProductService(IProductRepository productRepository,
                                 IInventoryService inventoryService,
@@ -198,71 +199,29 @@
             }
             else
             {
-                // Purchased — purchase note lines + payable invoice lines merged.
-                // Both repos are queried with filters applied, then merged in memory and re-paged.
-                // This is necessary because the two sources have different date fields and party types.
-                var unpaged = new GetProductHistoryQuery
-                {
-                    ProductId = query.ProductId,
-                    WarehouseId = query.WarehouseId,
-                    Purchased = true,
-                    PartyName = query.PartyName,
-                    CompanyId = query.CompanyId,
-                    IndividualId = query.IndividualId,
-                    DateFrom = query.DateFrom,
-                    DateTo = query.DateTo,
-                    Page = 1,
-                    PageSize = int.MaxValue
-                };
-
-                PagedResult<PurchaseNoteLine> noteResult =
-                    await purchaseNoteRepository.GetPagedLineItemsByProductIdAsync(unpaged, ct);
-
-                PagedResult<InvoiceLine> invoiceResult =
-                    await invoiceRepository.GetPagedLineItemsByProductIdAsync(unpaged, ct);
-
-                List<ProductTransactionRowDto> allRows =
-                [
-                    .. noteResult.Items.Select(li => new ProductTransactionRowDto
-                    {
-                        Date = li.PurchaseNote.PurchaseDate,
-                        DocumentNumber = li.PurchaseNote.NoteNumber,
-                        DocumentUrl = $"/purchase-notes/{li.PurchaseNote.Id}",
-                        PartyName = li.PurchaseNote.Individual.FullName,
-                        WarehouseId = li.PurchaseNote.WarehouseId,
-                        WarehouseName = li.PurchaseNote.Warehouse.Name,
-                        Quantity = li.Quantity,
-                        UnitPrice = li.UnitPrice,
-                        TotalPrice = li.Amount
-                    }),
-                    .. invoiceResult.Items.Select(li => new ProductTransactionRowDto
-                    {
-                        Date = li.Invoice.IssueDate,
-                        DocumentNumber = li.Invoice.InvoiceNumber,
-                        DocumentUrl = $"/invoices/{li.Invoice.Id}",
-                        PartyName = li.Invoice.Company.Name,
-                        WarehouseId = li.Invoice.WarehouseId,
-                        WarehouseName = li.Invoice.Warehouse.Name,
-                        Quantity = li.Quantity,
-                        UnitPrice = li.UnitPrice,
-                        TotalPrice = li.TotalAmount
-                    })
-                ];
-
-                List<ProductTransactionRowDto> sorted = [.. allRows.OrderByDescending(r => r.Date)];
-                int totalCount = sorted.Count;
-
-                List<ProductTransactionRowDto> page = sorted
-                    .Skip((query.Page - 1) * query.PageSize)
-                    .Take(query.PageSize)
-                    .ToList();
+                // Purchased — query the vw_product_purchase_history view which UNIONs
+                // purchase-note lines and payable invoice lines. All filtering, sorting,
+                // and pagination happen in SQL — no in-memory merge needed.
+                PagedResult<ProductPurchaseHistoryView> result =
+                    await invoiceRepository.GetPagedPurchasedHistoryAsync(query, ct);
 
                 return new PagedResult<ProductTransactionRowDto>
                 {
-                    Items = page,
-                    TotalCount = totalCount,
-                    Page = query.Page,
-                    PageSize = query.PageSize
+                    Items = result.Items.Select(v => new ProductTransactionRowDto
+                    {
+                        Date           = v.Date,
+                        DocumentNumber = v.DocumentNumber,
+                        DocumentUrl    = v.DocumentUrl,
+                        PartyName      = v.PartyName,
+                        WarehouseId    = v.WarehouseId,
+                        WarehouseName  = v.WarehouseName,
+                        Quantity       = v.Quantity,
+                        UnitPrice      = v.UnitPrice,
+                        TotalPrice     = v.TotalPrice
+                    }).ToList(),
+                    TotalCount = result.TotalCount,
+                    Page       = result.Page,
+                    PageSize   = result.PageSize
                 };
             }
         }

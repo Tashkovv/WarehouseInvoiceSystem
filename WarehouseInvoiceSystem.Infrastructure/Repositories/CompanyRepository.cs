@@ -144,17 +144,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<PartnerCountsResult> GetPartnerCountsAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
-                IQueryable<Company> q = All<Company>(context);
-                int total = await q.CountAsync(ct);
-                int active = await q.CountAsync(c => c.IsActive, ct);
-                int clients = await q.CountAsync(c => c.Type == CompanyType.Client || c.Type == CompanyType.Both, ct);
-                int vendors = await q.CountAsync(c => c.Type == CompanyType.Vendor || c.Type == CompanyType.Both, ct);
+                var rows = await All<Company>(context)
+                    .Select(c => new { c.IsActive, c.Type })
+                    .ToListAsync(ct);
+
                 return new PartnerCountsResult
                 {
-                    Total = total,
-                    Active = active,
-                    Clients = clients,
-                    Vendors = vendors
+                    Total   = rows.Count,
+                    Active  = rows.Count(r => r.IsActive),
+                    Clients = rows.Count(r => r.Type == CompanyType.Client || r.Type == CompanyType.Both),
+                    Vendors = rows.Count(r => r.Type == CompanyType.Vendor || r.Type == CompanyType.Both)
                 };
             });
 

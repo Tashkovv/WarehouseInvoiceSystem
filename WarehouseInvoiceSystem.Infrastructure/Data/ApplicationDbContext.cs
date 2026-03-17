@@ -3,6 +3,7 @@
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data.Configuration;
 
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
@@ -19,6 +20,7 @@
         public DbSet<Individual> Individuals { get; set; }
         public DbSet<PurchaseNote> PurchaseNotes { get; set; }
         public DbSet<PurchaseNoteLine> PurchaseNoteLines { get; set; }
+        public DbSet<ProductPurchaseHistoryView> ProductPurchaseHistory { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,6 +39,12 @@
             modelBuilder.ApplyConfiguration(new PurchaseNoteConfiguration());
             modelBuilder.ApplyConfiguration(new PurchaseNoteLineConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
+
+            modelBuilder.Entity<ProductPurchaseHistoryView>(e =>
+            {
+                e.HasNoKey();
+                e.ToView("vw_product_purchase_history");
+            });
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

@@ -37,8 +37,8 @@
                                : BuildEnglishInvoiceEmailHtml(invoice, customMessage)
                 };
 
-                // Attach invoice as Excel (print-ready format)
-                byte[] invoiceExcel = await excelExportService.ExportInvoiceForPrintingAsync(invoiceId);
+                // Attach invoice as Excel (print-ready format) — reuse already-loaded DTO
+                byte[] invoiceExcel = await excelExportService.ExportInvoiceForPrintingAsync(invoice);
                 bodyBuilder.Attachments.Add($"{translations.GetString("Invoice")}_{invoice.InvoiceNumber}.xlsx", invoiceExcel);
 
                 message.Body = bodyBuilder.ToMessageBody();

@@ -40,5 +40,7 @@
         Task<IEnumerable<PartnerSummaryResult>> GetTopVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
         Task<IEnumerable<PartnerSummaryResult>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<ProductMovementResult>> GetProductPurchasesByWarehouseAsync(Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default);
+
+        Task<IndividualAnalyticsResult> GetIndividualAnalyticsDataAsync(Guid individualId, CancellationToken ct = default);
     }
 }
