@@ -1,12 +1,8 @@
 ﻿@page "/individuals/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IIndividualService IndividualService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("IndividualDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -187,7 +183,7 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined">@GetStatusText(context.Status)</MudChip>
+                                    <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)" Variant="Variant.Outlined">@GetPurchaseNoteStatusText(context.Status)</MudChip>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -209,7 +205,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -218,17 +213,15 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
-    private WisActionItem _act = null!;
     private WisDetailActionItem? _purchaseNotesAction;
 
     protected override async Task OnInitializedAsync()
     {
-        _act = new WisActionItem(this);
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadIndividual();
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildActions();
         await InvokeAsync(StateHasChanged);
@@ -240,10 +233,10 @@ else
 
         try
         {
-            _individual = await IndividualService.GetIndividualByIdAsync(Id, _cts.Token);
+            _individual = await IndividualService.GetIndividualByIdAsync(Id, CancellationToken.None);
             if (_individual != null)
             {
-                _analytics = await IndividualService.GetIndividualAnalyticsAsync(Id, _cts.Token);
+                _analytics = await IndividualService.GetIndividualAnalyticsAsync(Id, CancellationToken.None);
                 BuildActions();
             }
         }
@@ -371,30 +364,4 @@ else
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private Color GetStatusColor(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Color.Default,
-        PurchaseNoteStatus.Pending => Color.Warning,
-        PurchaseNoteStatus.Paid => Color.Success,
-        PurchaseNoteStatus.Cancelled => Color.Error,
-        _ => Color.Default
-    };
-
-    private string GetStatusText(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
-        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
-        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
-        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

@@ -17,6 +17,6 @@
         Task UpdateAsync(Payment payment);
         Task<bool> DeleteAsync(Guid id);
         Task<decimal> GetTotalPaymentsByInvoiceAsync(Guid invoiceId, CancellationToken ct = default);
-
+        Task<IEnumerable<Payment>> GetRecentAsync(int count, CancellationToken ct = default);
     }
 }

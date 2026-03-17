@@ -1,13 +1,9 @@
 @page "/warehouses"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IWarehouseService WarehouseService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Warehouses") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -139,7 +135,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<WarehouseDto> _grid = null!;
     private string _searchString = string.Empty;
     private bool? _filterIsActive = null;
@@ -148,7 +143,7 @@
 
     protected override void OnInitialized()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        base.OnInitialized();
         BuildFilterItems();
     }
 
@@ -162,7 +157,7 @@
     ];
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildFilterItems();
         await InvokeAsync(StateHasChanged);
@@ -339,10 +334,4 @@
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

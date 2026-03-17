@@ -1,16 +1,11 @@
 @page "/partners-dashboard"
-@implements IDisposable
-@using WarehouseInvoiceSystem.Application.DTOs.Company
-@using WarehouseInvoiceSystem.Application.DTOs.Individual
-@using WarehouseInvoiceSystem.Application.DTOs.Invoice
-@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@inherits PageBase
+@using WarehouseInvoiceSystem.Application.DTOs.Dashboard
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject ICompanyService CompanyService
 @inject IIndividualService IndividualService
 @inject IInvoiceService InvoiceService
 @inject IPurchaseNoteService PurchaseNoteService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
 
 <PageTitle>@Localization.GetString("PartnersDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -27,8 +22,8 @@ else
         <!-- ── Summary Cards ── -->
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalCompanies")"
-                           Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompanies.Count()}")"
-                           Value="@_companies.Count.ToString()"
+                           Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompaniesCount}")"
+                           Value="@_totalCompanies.ToString()"
                            Icon="@Icons.Material.Filled.Business"
                            IconColor="Color.Primary" />
         </MudItem>
@@ -43,8 +38,8 @@ else
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalIndividuals")"
-                           Value="@_individuals.Count.ToString()"
-                           Subtitle="@($"{Localization.GetString("DashboardActiveIndividuals")}: {_activeIndividuals.Count()}")"
+                           Value="@_totalIndividuals.ToString()"
+                           Subtitle="@($"{Localization.GetString("DashboardActiveIndividuals")}: {_activeIndividualsCount}")"
                            Icon="@Icons.Material.Filled.Person"
                            IconColor="Color.Secondary" />
         </MudItem>
@@ -61,7 +56,71 @@ else
             </div>
         </MudItem>
 
-        <MudItem xs="12" md="6">
+        <MudItem xs="12" md="4">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("TopPayableVendorsBySpend")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("ByTotalSpend")
+                        </MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Companies"), "/companies")" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    @if (_topPayableVendors.Any())
+                    {
+                        <MudTable Items="_topPayableVendors"
+                                  Hover="true"
+                                  Dense="true"
+                                  Elevation="0"
+                                  Class="wis-secondary-list"
+                                  T="PartnerSummaryDto"
+                                  RowClass="table-row-clickable"
+                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummaryDto> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
+                            <HeaderContent>
+                                <MudTh>#</MudTh>
+                                <MudTh>@Localization.GetString("Name")</MudTh>
+                                <MudTh>@Localization.GetString("Invoices")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalSpend")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="#">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                                        @(_topPayableVendors.IndexOf(context) + 1)
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Name")">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Invoices")">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@context.DocumentCount</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
+                                        @context.TotalAmount.ToString("C")
+                                    </MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="pa-6 text-center d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Business"
+                                     Size="Size.Large"
+                                     Color="Color.Secondary"
+                                     Class="mb-2" />
+                            <MudText Color="Color.Secondary">@Localization.GetString("NoInvoicesFound")</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
@@ -71,13 +130,7 @@ else
                         </MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Href="/companies"
-                                   Color="Color.Default"
-                                   Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.List">
-                            @Localization.GetString("Companies")
-                        </MudButton>
+                        <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Companies"), "/companies")" />
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -87,9 +140,10 @@ else
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
-                                  T="PartnerSummary"
+                                  Class="wis-secondary-list"
+                                  T="PartnerSummaryDto"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummary> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummaryDto> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
@@ -106,7 +160,7 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Invoices")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DocumentCount</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@context.DocumentCount</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("TotalRevenue")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
@@ -118,7 +172,7 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.Business"
                                      Size="Size.Large"
                                      Color="Color.Secondary"
@@ -130,7 +184,7 @@ else
             </MudCard>
         </MudItem>
 
-        <MudItem xs="12" md="6">
+        <MudItem xs="12" md="4">
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
@@ -140,13 +194,7 @@ else
                         </MudText>
                     </CardHeaderContent>
                     <CardHeaderActions>
-                        <MudButton Href="/individuals"
-                                   Color="Color.Default"
-                                   Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.List">
-                            @Localization.GetString("Individuals")
-                        </MudButton>
+                        <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Individuals"), "/individuals")" />
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
@@ -156,9 +204,10 @@ else
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
-                                  T="PartnerSummary"
+                                  Class="wis-secondary-list"
+                                  T="PartnerSummaryDto"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummary> args) => NavigateTo($"/individuals/{args.Item!.PartnerId}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<PartnerSummaryDto> args) => NavigateTo($"/individuals/{args.Item!.PartnerId}"))">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
@@ -175,10 +224,10 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("PurchaseNotes")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DocumentCount</MudText>
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@context.DocumentCount</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
-                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Warning">
                                         @context.TotalAmount.ToString("C")
                                     </MudText>
                                 </MudTd>
@@ -187,7 +236,7 @@ else
                     }
                     else
                     {
-                        <div class="pa-6 text-center">
+                        <div class="pa-6 text-center d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.Person"
                                      Size="Size.Large"
                                      Color="Color.Secondary"
@@ -200,14 +249,17 @@ else
         </MudItem>
 
         <!-- ── Partners Needing Attention ── -->
-        @if (_overdueClients.Any() || _unpaidVendors.Any())
-        {
-            <MudItem xs="12" Class="mt-2">
+        <MudItem xs="12" Class="mt-2">
                 <MudCard Elevation="2">
                     <MudCardHeader>
                         <CardHeaderContent>
+                            @{
+                                    bool anyAttention = _overdueClients.Any() || _unpaidVendors.Any() || _unpaidPayableCompanies.Any();
+                                }
                             <MudText Typo="Typo.h6" Class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Warning" Class="mr-2" Color="Color.Warning" />
+                                <MudIcon Icon="@(anyAttention ? Icons.Material.Filled.Warning : Icons.Material.Filled.CheckCircle)"
+                                         Class="mr-2"
+                                         Color="@(anyAttention ? Color.Warning : Color.Success)" />
                                 @Localization.GetString("AttentionNeeded")
                             </MudText>
                         </CardHeaderContent>
@@ -215,8 +267,57 @@ else
                     <MudCardContent Class="pa-0">
                         <MudGrid Spacing="0">
 
+                            @* Companies with open payable invoices *@
+                            <MudItem xs="12" md="4" Style="border-right: 2px solid var(--mud-palette-divider)">
+                                <div class="pa-3 pb-1">
+                                    <MudText Typo="Typo.subtitle2" Color="Color.Info" Class="mb-2 d-flex align-center">
+                                        <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Size="Size.Small" Class="mr-1" />
+                                        @Localization.GetString("CompaniesWithOpenPayables")
+                                    </MudText>
+                                </div>
+                                @if (_unpaidPayableCompanies.Any())
+                                {
+                                    <MudTable Items="_unpaidPayableCompanies"
+                                              Hover="true"
+                                              Dense="true"
+                                              Elevation="0"
+                                              Class="wis-secondary-list"
+                                              T="PartnerAttentionDto"
+                                              RowClass="table-row-clickable"
+                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttentionDto> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
+                                        <HeaderContent>
+                                            <MudTh>@Localization.GetString("Company")</MudTh>
+                                            <MudTh>@Localization.GetString("Invoices")</MudTh>
+                                            <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate>
+                                            <MudTd DataLabel="@Localization.GetString("Company")">
+                                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
+                                            </MudTd>
+                                            <MudTd DataLabel="@Localization.GetString("Invoices")">
+                                                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">
+                                                    @context.Count
+                                                </MudChip>
+                                            </MudTd>
+                                            <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                                <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
+                                                    @context.Amount.ToString("C")
+                                                </MudText>
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                }
+                                else
+                                {
+                                    <div class="pa-4 pb-3 d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                                        <MudText Typo="Typo.caption" Color="Color.Success">@Localization.GetString("NoOpenPayables")</MudText>
+                                    </div>
+                                }
+                            </MudItem>
+                            
                             @* Clients with overdue invoices *@
-                            <MudItem xs="12" md="6">
+                            <MudItem xs="12" md="4" Style="border-right: 2px solid var(--mud-palette-divider)">
                                 <div class="pa-3 pb-1">
                                     <MudText Typo="Typo.subtitle2" Color="Color.Error" Class="mb-2 d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.RequestQuote" Size="Size.Small" Class="mr-1" />
@@ -229,9 +330,10 @@ else
                                               Hover="true"
                                               Dense="true"
                                               Elevation="0"
-                                              T="PartnerAttention"
+                                              Class="wis-secondary-list"
+                                              T="PartnerAttentionDto"
                                               RowClass="table-row-clickable"
-                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttention> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
+                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttentionDto> args) => NavigateTo($"/companies/{args.Item!.PartnerId}"))">
                                         <HeaderContent>
                                             <MudTh>@Localization.GetString("Company")</MudTh>
                                             <MudTh>@Localization.GetString("Invoices")</MudTh>
@@ -256,14 +358,15 @@ else
                                 }
                                 else
                                 {
-                                    <div class="pa-4 pb-3">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("NoAttentionNeeded")</MudText>
+                                    <div class="pa-4 pb-3 d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                                        <MudText Typo="Typo.caption" Color="Color.Success">@Localization.GetString("NoOverdueClients")</MudText>
                                     </div>
                                 }
                             </MudItem>
-
+                            
                             @* Vendors with unpaid purchase notes *@
-                            <MudItem xs="12" md="6">
+                            <MudItem xs="12" md="4">
                                 <div class="pa-3 pb-1">
                                     <MudText Typo="Typo.subtitle2" Color="Color.Warning" Class="mb-2 d-flex align-center">
                                         <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Small" Class="mr-1" />
@@ -276,9 +379,10 @@ else
                                               Hover="true"
                                               Dense="true"
                                               Elevation="0"
-                                              T="PartnerAttention"
+                                              Class="wis-secondary-list"
+                                              T="PartnerAttentionDto"
                                               RowClass="table-row-clickable"
-                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttention> args) => NavigateTo($"/individuals/{args.Item!.PartnerId}"))">
+                                              OnRowClick="@((TableRowClickEventArgs<PartnerAttentionDto> args) => NavigateTo($"/individuals/{args.Item!.PartnerId}"))">
                                         <HeaderContent>
                                             <MudTh>@Localization.GetString("Individual")</MudTh>
                                             <MudTh>@Localization.GetString("PurchaseNotes")</MudTh>
@@ -303,8 +407,9 @@ else
                                 }
                                 else
                                 {
-                                    <div class="pa-4 pb-3">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("NoAttentionNeeded")</MudText>
+                                    <div class="pa-4 pb-3 d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                                        <MudText Typo="Typo.caption" Color="Color.Success">@Localization.GetString("NoUnpaidVendors")</MudText>
                                     </div>
                                 }
                             </MudItem>
@@ -312,30 +417,27 @@ else
                         </MudGrid>
                     </MudCardContent>
                 </MudCard>
-            </MudItem>
-        }
+        </MudItem>
 
     </MudGrid>
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
-    private List<CompanyDto> _companies = [];
-    private List<IndividualDto> _individuals = [];
-    private List<InvoiceDto> _invoices = [];
-    private List<PurchaseNoteDto> _purchaseNotes = [];
 
-    private IEnumerable<CompanyDto> _activeCompanies => _companies.Where(c => c.IsActive);
-    private IEnumerable<IndividualDto> _activeIndividuals => _individuals.Where(i => i.IsActive);
-
+    private int _totalCompanies;
+    private int _activeCompaniesCount;
     private int _clientCount;
     private int _vendorCount;
+    private int _totalIndividuals;
+    private int _activeIndividualsCount;
 
-    private List<PartnerSummary> _topClients = [];
-    private List<PartnerSummary> _topVendors = [];
-    private List<PartnerAttention> _overdueClients = [];
-    private List<PartnerAttention> _unpaidVendors = [];
+    private List<PartnerSummaryDto> _topPayableVendors = [];
+    private List<PartnerSummaryDto> _topClients = [];
+    private List<PartnerSummaryDto> _topVendors = [];
+    private List<PartnerAttentionDto> _overdueClients = [];
+    private List<PartnerAttentionDto> _unpaidVendors = [];
+    private List<PartnerAttentionDto> _unpaidPayableCompanies = [];
 
     // ── Partner stats date range ──
     private int? _partnerDatePreset = 30;
@@ -345,13 +447,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadData();
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadData()
@@ -360,26 +457,21 @@ else
 
         try
         {
-            (IEnumerable<CompanyDto> companies,
-             IEnumerable<IndividualDto> individuals,
-             IEnumerable<InvoiceDto> invoices,
-             IEnumerable<PurchaseNoteDto> purchaseNotes) =
-            (
-                await CompanyService.GetAllCompaniesAsync(_cts.Token),
-                await IndividualService.GetAllIndividualsAsync(_cts.Token),
-                await InvoiceService.GetAllInvoicesAsync(_cts.Token),
-                await PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token)
-            );
+            var countsTask = CompanyService.GetPartnerCountsAsync(_cts.Token);
+            var indsTask = IndividualService.GetCountsAsync(_cts.Token);
+            var summariesTask = LoadPartnerSummaries();
 
-            _companies = companies.ToList();
-            _individuals = individuals.ToList();
-            _invoices = invoices.ToList();
-            _purchaseNotes = purchaseNotes.ToList();
+            await Task.WhenAll(countsTask, indsTask, summariesTask);
 
-            _clientCount = _companies.Count(c => c.Type == CompanyType.Client || c.Type == CompanyType.Both);
-            _vendorCount = _companies.Count(c => c.Type == CompanyType.Vendor || c.Type == CompanyType.Both);
+            var counts = countsTask.Result;
+            _totalCompanies = counts.Total;
+            _activeCompaniesCount = counts.Active;
+            _clientCount = counts.Clients;
+            _vendorCount = counts.Vendors;
 
-            CalculateSummaries();
+            var (indTotal, indActive) = indsTask.Result;
+            _totalIndividuals = indTotal;
+            _activeIndividualsCount = indActive;
         }
         catch (Exception ex)
         {
@@ -391,94 +483,28 @@ else
         }
     }
 
-    private void RecalculateSummaries() => CalculateSummaries();
-
-    private void CalculateSummaries()
+    private async Task LoadPartnerSummaries()
     {
-        // Top 5 clients by total invoiced revenue (receivable invoices)
-        _topClients = _invoices
-            .Where(i => i.Type == InvoiceType.Receivable
-                     && i.IssueDate.Date >= _partnerFromDate.Date
-                     && i.IssueDate.Date <= _partnerToDate.Date)
-            .GroupBy(i => i.CompanyId)
-            .Select(g => new PartnerSummary
-            {
-                PartnerId = g.Key,
-                PartnerName = g.First().CompanyName,
-                DocumentCount = g.Count(),
-                TotalAmount = g.Sum(i => i.TotalAmount)
-            })
-            .OrderByDescending(p => p.TotalAmount)
-            .Take(5)
-            .ToList();
+        var t1 = InvoiceService.GetTopPayableVendorsBySpendAsync(_partnerFromDate, _partnerToDate, 5, _cts.Token);
+        var t2 = InvoiceService.GetTopClientsByRevenueAsync(_partnerFromDate, _partnerToDate, 5, _cts.Token);
+        var t3 = PurchaseNoteService.GetTopVendorsBySpendAsync(_partnerFromDate, _partnerToDate, 5, _cts.Token);
+        var t4 = InvoiceService.GetOverdueClientSummariesAsync(_cts.Token);
+        var t5 = PurchaseNoteService.GetUnpaidVendorSummariesAsync(_cts.Token);
+        var t6 = InvoiceService.GetUnpaidPayableCompanySummariesAsync(_cts.Token);
 
-        // Top 5 vendors by total purchase spend
-        _topVendors = _purchaseNotes
-            .Where(pn => pn.PurchaseDate.Date >= _partnerFromDate.Date
-                      && pn.PurchaseDate.Date <= _partnerToDate.Date)
-            .GroupBy(pn => pn.IndividualId)
-            .Select(g => new PartnerSummary
-            {
-                PartnerId = g.Key,
-                PartnerName = g.First().IndividualFullName,
-                DocumentCount = g.Count(),
-                TotalAmount = g.Sum(pn => pn.TotalAmount)
-            })
-            .OrderByDescending(p => p.TotalAmount)
-            .Take(5)
-            .ToList();
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6);
 
-        // Clients with overdue invoices (receivable, overdue status)
-        _overdueClients = _invoices
-            .Where(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue)
-            .GroupBy(i => i.CompanyId)
-            .Select(g => new PartnerAttention
-            {
-                PartnerId = g.Key,
-                PartnerName = g.First().CompanyName,
-                Count = g.Count(),
-                Amount = g.Sum(i => i.AmountDue)
-            })
-            .OrderByDescending(p => p.Amount)
-            .ToList();
-
-        // Vendors with unpaid purchase notes (pending or draft)
-        _unpaidVendors = _purchaseNotes
-            .Where(pn => pn.Status == PurchaseNoteStatus.Pending || pn.Status == PurchaseNoteStatus.Draft)
-            .GroupBy(pn => pn.IndividualId)
-            .Select(g => new PartnerAttention
-            {
-                PartnerId = g.Key,
-                PartnerName = g.First().IndividualFullName,
-                Count = g.Count(),
-                Amount = g.Sum(pn => pn.TotalAmount)
-            })
-            .OrderByDescending(p => p.Amount)
-            .ToList();
+        _topPayableVendors = t1.Result.ToList();
+        _topClients = t2.Result.ToList();
+        _topVendors = t3.Result.ToList();
+        _overdueClients = t4.Result.ToList();
+        _unpaidVendors = t5.Result.ToList();
+        _unpaidPayableCompanies = t6.Result.ToList();
     }
 
-    private void NavigateTo(string url) => Navigation.NavigateTo(url);
-
-    public void Dispose()
+    private async Task RecalculateSummaries()
     {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
+        await LoadPartnerSummaries();
     }
 
-    private class PartnerSummary
-    {
-        public Guid PartnerId { get; set; }
-        public string PartnerName { get; set; } = string.Empty;
-        public int DocumentCount { get; set; }
-        public decimal TotalAmount { get; set; }
-    }
-
-    private class PartnerAttention
-    {
-        public Guid PartnerId { get; set; }
-        public string PartnerName { get; set; } = string.Empty;
-        public int Count { get; set; }
-        public decimal Amount { get; set; }
-    }
 }

@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Interfaces
 {
+    using WarehouseInvoiceSystem.Application.DTOs.Dashboard;
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
@@ -33,5 +34,14 @@
 
         /// <summary>Soft-deletes a Cancelled purchase note.</summary>
         Task<bool> DeletePurchaseNoteAsync(Guid id);
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────
+        Task<IEnumerable<PurchaseNoteDto>> GetRecentAsync(int count, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetByPurchaseDateAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetByPurchaseDateMonthAsync(int year, int month, CancellationToken ct = default);
+        Task<(int unpaidCount, decimal unpaidAmount)> GetOutstandingPositionAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryDto>> GetTopVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
+        Task<IEnumerable<PartnerAttentionDto>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementDto>> GetProductPurchasesByWarehouseAsync(Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default);
     }
 }

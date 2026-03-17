@@ -6,6 +6,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class PurchaseNoteRepository(IDbContextFactory<ApplicationDbContext> factory)
@@ -287,6 +288,120 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
             return q;
         }
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────
+
+        public Task<IEnumerable<PurchaseNote>> GetRecentAsync(int count, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .OrderByDescending(pn => pn.CreatedAt)
+                    .Take(count)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PurchaseNote>> GetByPurchaseDateAsync(DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Date == date.Date)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PurchaseNote>> GetByPurchaseDateMonthAsync(int year, int month, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Year == year && pn.PurchaseDate.Month == month)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse)
+                    .OrderByDescending(pn => pn.PurchaseDate)
+                    .ToListAsync(ct);
+            });
+
+        public Task<(int unpaidCount, decimal unpaidAmount)> GetOutstandingPositionAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var result = await All<PurchaseNote>(context)
+                    .Where(pn => pn.Status != PurchaseNoteStatus.Paid && pn.Status != PurchaseNoteStatus.Cancelled)
+                    .GroupBy(_ => 1)
+                    .Select(g => new { Count = g.Count(), Amount = g.Sum(pn => pn.TotalAmount) })
+                    .FirstOrDefaultAsync(ct);
+
+                return (result?.Count ?? 0, result?.Amount ?? 0m);
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetTopVendorsBySpendAsync(
+            DateTime from, DateTime to, int topCount, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.Status != PurchaseNoteStatus.Draft &&
+                                 pn.Status != PurchaseNoteStatus.Cancelled &&
+                                 pn.PurchaseDate.Date >= from.Date &&
+                                 pn.PurchaseDate.Date <= to.Date)
+                    .GroupBy(pn => new { pn.IndividualId, pn.Individual.FirstName, pn.Individual.LastName })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.IndividualId,
+                        PartnerName = g.Key.FirstName + " " + g.Key.LastName,
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .Take(topCount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<PurchaseNote>(context)
+                    .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
+                    .GroupBy(pn => new { pn.IndividualId, pn.Individual.FirstName, pn.Individual.LastName })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.IndividualId,
+                        PartnerName = g.Key.FirstName + " " + g.Key.LastName,
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<ProductMovementResult>> GetProductPurchasesByWarehouseAsync(
+            Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var results = await All<PurchaseNoteLine>(context)
+                    .Where(li => li.PurchaseNote.WarehouseId == warehouseId &&
+                                 li.PurchaseNote.DeletedOn == null &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.PurchaseDate.Date >= from.Date &&
+                                 li.PurchaseNote.PurchaseDate.Date <= to.Date)
+                    .GroupBy(li => li.ProductId)
+                    .Select(g => new
+                    {
+                        ProductId = g.Key,
+                        Quantity = (decimal)g.Sum(li => li.Quantity),
+                        TotalAmount = g.Sum(li => li.Quantity * li.UnitPrice)
+                    })
+                    .ToListAsync(ct);
+
+                return results
+                    .Select(r => new ProductMovementResult
+                    {
+                        ProductId = r.ProductId,
+                        Quantity = r.Quantity,
+                        TotalAmount = r.TotalAmount
+                    });
+            });
 
         private static IQueryable<PurchaseNote> ApplySort(IQueryable<PurchaseNote> q, string? sortBy, bool ascending)
             => sortBy switch

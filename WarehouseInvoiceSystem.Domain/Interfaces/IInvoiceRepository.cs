@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IInvoiceRepository
     {
@@ -34,5 +35,16 @@
 
         Task<(int total, int paid, int unpaid, int overdue)> GetPayableInvoiceCountsAsync(CancellationToken ct = default);
         Task<(decimal totalAmount, decimal totalPaid, decimal totalDue)> GetPayableInvoiceTotalsAsync(CancellationToken ct = default);
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────
+        Task<IEnumerable<Invoice>> GetRecentAsync(int count, CancellationToken ct = default);
+        Task<IEnumerable<Invoice>> GetByIssueDateAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<Invoice>> GetByIssueDateMonthAsync(int year, int month, CancellationToken ct = default);
+        Task<InvoiceOutstandingResult> GetOutstandingPositionAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetTopClientsByRevenueAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetTopPayableVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetOverdueClientSummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementResult>> GetProductMovementByWarehouseAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default);
     }
 }

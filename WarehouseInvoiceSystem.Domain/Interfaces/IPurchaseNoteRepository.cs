@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IPurchaseNoteRepository
     {
@@ -30,5 +31,14 @@
         Task CreateAsync(PurchaseNote purchaseNote);
         Task UpdateAsync(PurchaseNote purchaseNote);
         Task<bool> DeleteAsync(Guid id);
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────
+        Task<IEnumerable<PurchaseNote>> GetRecentAsync(int count, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNote>> GetByPurchaseDateAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNote>> GetByPurchaseDateMonthAsync(int year, int month, CancellationToken ct = default);
+        Task<(int unpaidCount, decimal unpaidAmount)> GetOutstandingPositionAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetTopVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementResult>> GetProductPurchasesByWarehouseAsync(Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default);
     }
 }

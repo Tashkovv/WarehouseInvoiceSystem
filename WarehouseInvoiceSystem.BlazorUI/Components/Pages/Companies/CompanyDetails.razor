@@ -1,5 +1,5 @@
 ﻿@page "/companies/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -7,10 +7,6 @@
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject ICompanyService CompanyService
 @inject IInvoiceService InvoiceService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("CompanyDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -38,8 +34,8 @@ else
                     <!-- Row 1: Name + type chip + status chip -->
                     <div class="wis-detail-identity mb-3">
                         <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">@_company.Name</MudText>
-                        <MudChip T="string" Size="Size.Small" Color="@GetTypeColor(_company.Type)">
-                            @GetTypeText(_company.Type)
+                        <MudChip T="string" Size="Size.Small" Color="@GetCompanyTypeColor(_company.Type)">
+                            @GetCompanyTypeText(_company.Type)
                         </MudChip>
                         <MudChip T="string" Size="Size.Small"
                                  Color="@(_company.IsActive ? Color.Success : Color.Default)">
@@ -321,8 +317,8 @@ else
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Outlined">
-                                        @GetStatusText(context.Status)
+                                    <MudChip T="string" Size="Size.Small" Color="@GetInvoiceStatusColor(context.Status)" Variant="Variant.Outlined">
+                                        @GetInvoiceStatusText(context.Status)
                                     </MudChip>
                                 </MudTd>
                             </RowTemplate>
@@ -345,8 +341,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
-
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -357,18 +351,16 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
-    private WisActionItem _act = null!;
     private WisDetailActionItem? _invoicesAction;
 
     protected override async Task OnInitializedAsync()
     {
-        _act = new WisActionItem(this);
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadCompany();
         await LoadAnalytics();
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildActions();
         await InvokeAsync(StateHasChanged);
@@ -380,7 +372,7 @@ else
 
         try
         {
-            _company = await CompanyService.GetCompanyByIdAsync(Id, _cts.Token);
+            _company = await CompanyService.GetCompanyByIdAsync(Id, CancellationToken.None);
             if (_company != null)
                 BuildActions();
         }
@@ -402,7 +394,7 @@ else
 
         try
         {
-            _analytics = await CompanyService.GetCompanyAnalyticsAsync(Id, _cts.Token);
+            _analytics = await CompanyService.GetCompanyAnalyticsAsync(Id, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -531,50 +523,4 @@ else
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private Color GetTypeColor(CompanyType type) => type switch
-    {
-        CompanyType.Client => Color.Success,
-        CompanyType.Vendor => Color.Warning,
-        CompanyType.Both => Color.Primary,
-        _ => Color.Default
-    };
-
-    private string GetTypeText(CompanyType type) => type switch
-    {
-        CompanyType.Client => Localization.GetString("Client"),
-        CompanyType.Vendor => Localization.GetString("Vendor"),
-        CompanyType.Both => Localization.GetString("ClientAndVendor"),
-        _ => type.ToString()
-    };
-
-    private Color GetStatusColor(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Color.Default,
-        InvoiceStatus.Sent => Color.Info,
-        InvoiceStatus.PartiallyPaid => Color.Warning,
-        InvoiceStatus.Paid => Color.Success,
-        InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Dark,
-        _ => Color.Default
-    };
-
-    private string GetStatusText(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Localization.GetString("Draft"),
-        InvoiceStatus.Sent => Localization.GetString("Sent"),
-        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-        InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

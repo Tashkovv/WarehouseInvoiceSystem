@@ -1,5 +1,5 @@
 ﻿@page "/invoices"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
@@ -9,10 +9,6 @@
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 @inject IExcelExportService ExcelExportService
 
@@ -200,8 +196,8 @@
                                 IsEditable="false">
                     <CellTemplate>
                         <MudChip T="string" Size="Size.Small"
-                                 Color="@GetStatusColor(context.Item.Status)">
-                            @GetStatusText(context.Item.Status)
+                                 Color="@GetInvoiceStatusColor(context.Item.Status)">
+                            @GetInvoiceStatusText(context.Item.Status)
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -227,7 +223,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     [SupplyParameterFromQuery(Name = "companyId")]
     public string? CompanyIdParam { get; set; }
@@ -272,7 +267,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         BuildFilterItems();
         BuildCreateActions();
         ApplyQueryParams();
@@ -282,7 +277,7 @@
         {
             try
             {
-                CompanyDto? company = await CompanyService.GetCompanyByIdAsync(_filterCompanyId.Value, _cts.Token);
+                CompanyDto? company = await CompanyService.GetCompanyByIdAsync(_filterCompanyId.Value, CancellationToken.None);
                 if (company is not null)
                     _filterCompanyInitialLabel = company.Name;
             }
@@ -342,7 +337,7 @@
         ];
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildFilterItems();
         await InvokeAsync(StateHasChanged);
@@ -393,28 +388,6 @@
         _ => "row-status-default"
     };
 
-    private Color GetStatusColor(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Color.Default,
-        InvoiceStatus.Sent => Color.Info,
-        InvoiceStatus.PartiallyPaid => Color.Warning,
-        InvoiceStatus.Paid => Color.Success,
-        InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Dark,
-        _ => Color.Default
-    };
-
-    private string GetStatusText(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Localization.GetString("Draft"),
-        InvoiceStatus.Sent => Localization.GetString("Sent"),
-        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-        InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
-
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadCompanyItems(
         string search, int page, CancellationToken ct)
     {
@@ -444,7 +417,7 @@
     private async Task OnCompanyFilterChanged(Guid value)
     {
         _filterCompanyId = value == default ? null : value;
-        _filterCompanyInitialLabel = null; // user changed the filter, no longer need the initial label
+        _filterCompanyInitialLabel = null;
         await _grid.ReloadServerData();
     }
 
@@ -573,10 +546,10 @@
 
         try
         {
-            InvoiceDto? full = await InvoiceService.GetInvoiceByIdAsync(invoice.Id, _cts.Token);
+            InvoiceDto? full = await InvoiceService.GetInvoiceByIdAsync(invoice.Id, CancellationToken.None);
             if (full == null || !full.LineItems.Any()) return true;
 
-            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(invoice.WarehouseId, _cts.Token);
+            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(invoice.WarehouseId, CancellationToken.None);
             Dictionary<Guid, decimal> stockByProduct = levels.ToDictionary(s => s.ProductId, s => s.AvailableQuantity);
 
             return !full.LineItems.Any(li =>
@@ -585,7 +558,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error checking stock: {ex.Message}");
-            return true; // don't block on error
+            return true;
         }
     }
 
@@ -597,7 +570,7 @@
         try
         {
             GetInvoicesQuery exportQuery = BuildQuery();
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllFilteredAsync(exportQuery, _cts.Token);
+            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllFilteredAsync(exportQuery, CancellationToken.None);
 
             byte[] fileBytes = await ExcelExportService.ExportInvoicesToExcelAsync(invoices);
             string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
@@ -780,10 +753,4 @@
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

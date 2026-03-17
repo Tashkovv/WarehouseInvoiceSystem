@@ -21,5 +21,6 @@
         Task UpdateAsync(Individual individual);
         Task<bool> DeleteAsync(Guid id);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
+        Task<(int total, int active)> GetCountsAsync(CancellationToken ct = default);
     }
 }

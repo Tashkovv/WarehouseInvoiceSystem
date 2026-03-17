@@ -1,13 +1,9 @@
 ﻿@page "/individuals"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IIndividualService IndividualService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Individuals") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -124,7 +120,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<IndividualDto> _grid = null!;
     private string _searchString = string.Empty;
     private bool? _filterIsActive = null;
@@ -133,7 +128,7 @@
 
     protected override void OnInitialized()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        base.OnInitialized();
         BuildFilterItems();
     }
 
@@ -147,7 +142,7 @@
         ];
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildFilterItems();
         await InvokeAsync(StateHasChanged);
@@ -326,10 +321,4 @@
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

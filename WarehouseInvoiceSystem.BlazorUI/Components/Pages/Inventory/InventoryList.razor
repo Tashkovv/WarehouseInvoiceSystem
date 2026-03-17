@@ -1,5 +1,5 @@
 @page "/inventory"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
@@ -8,10 +8,6 @@
 @inject IInventoryService InventoryService
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
-@inject ILocalizationService Localization
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
-@inject NavigationManager Navigation
 
 <PageTitle>@Localization.GetString("Inventory") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -202,7 +198,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<StockLevelDto> _grid = null!;
     private string _searchString = string.Empty;
     private List<WisDetailActionItem> _toolbarActions = [];
@@ -220,7 +215,7 @@
 
     protected override void OnInitialized()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        base.OnInitialized();
         _toolbarActions =
         [
             new WisDetailActionItem
@@ -230,11 +225,6 @@
                 OnClick = EventCallback.Factory.Create(this, OpenTransferDialog)
             }
         ];
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task<GridData<StockLevelDto>> LoadServerData(GridState<StockLevelDto> state, CancellationToken ct)
@@ -506,10 +496,4 @@
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

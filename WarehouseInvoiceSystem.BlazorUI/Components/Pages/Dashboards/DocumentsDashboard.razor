@@ -1,16 +1,12 @@
 @page "/documents-dashboard"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IInvoiceService InvoiceService
 @inject IPurchaseNoteService PurchaseNoteService
-@inject ILocalizationService Localization
 @inject IPaymentService PaymentService
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("DocumentsDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -32,16 +28,16 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalReceivables")"
-                           Value="@_totalReceivablesOutstanding.ToString("C")"
-                           Subtitle="@($"{_receivableInvoicesOutstandingCount} {Localization.GetString("Invoices")}")"
+                           Value="@_receivableOutstandingAmount.ToString("C")"
+                           Subtitle="@($"{_receivableOutstandingCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.AccountBalance"
-                           IconColor="@(_totalReceivablesOutstanding > 0 ? Color.Success : Color.Default)" />
+                           IconColor="@(_receivableOutstandingAmount > 0 ? Color.Success : Color.Default)" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayablesOutstanding.ToString("C")"
-                           Subtitle="@($"{_unpaidPurchaseNotesCount} {Localization.GetString("PurchaseNotes")} · {_payableInvoicesOutstandingCount} {Localization.GetString("Invoices")}")"
+                           Subtitle="@($"{_unpaidPurchaseNoteCount} {Localization.GetString("PurchaseNotes")} · {_payableOutstandingCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.AccountBalanceWallet"
                            IconColor="@(_totalPayablesOutstanding > 0 ? Color.Warning : Color.Default)" />
         </MudItem>
@@ -55,10 +51,10 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OverdueReceivables")"
-                           Value="@_overdueReceivablesAmount.ToString("C")"
-                           Subtitle="@($"{_overdueReceivablesCount} {Localization.GetString("Invoices")}")"
+                           Value="@_overdueReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_overdueReceivableCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.RunningWithErrors"
-                           IconColor="@(_overdueReceivablesCount > 0 ? Color.Error : Color.Default)" />
+                           IconColor="@(_overdueReceivableCount > 0 ? Color.Error : Color.Default)" />
         </MudItem>
 
         <!-- ── Today's Activity ── -->
@@ -66,6 +62,7 @@ else
             <div class="d-flex align-center flex-wrap gap-2 mb-4">
                 <MudText Typo="Typo.h6">@Localization.GetString("TodaysActivity")</MudText>
                 <WisDatePicker @bind-Date="_selectedDay"
+                               @bind-Date:after="OnDayChanged"
                                Label="@Localization.GetString("SelectDay")"
                                MaxDate="DateTime.Today" />
             </div>
@@ -73,15 +70,15 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
-                           Value="@_purchaseNotesDay.Count().ToString()"
-                           Subtitle="@_purchaseNotesDay.Sum(pn => pn.TotalAmount).ToString("C")"
+                           Value="@_purchaseNotesDay.Count.ToString()"
+                           Subtitle="@_purchaseNotesDayAmount.ToString("C")"
                            Icon="@Icons.Material.Filled.Receipt"
                            IconColor="Color.Info" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("PayableInvoicesToday")"
-                           Value="@_invoicesPayableDay.Count().ToString()"
+                           Value="@_invoicesPayableDayCount.ToString()"
                            Subtitle="@_amountPayableInvoicesDay.ToString("C")"
                            Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Warning" />
@@ -89,7 +86,7 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
-                           Value="@_invoicesReceivableDay.Count().ToString()"
+                           Value="@_invoicesReceivableDayCount.ToString()"
                            Subtitle="@_amountToReceiveDay.ToString("C")"
                            Icon="@Icons.Material.Filled.RequestQuote"
                            IconColor="Color.Success" />
@@ -109,6 +106,7 @@ else
                     @Localization.GetString("FinancialSummary") — @_selectedMonth.ToString("MMMM yyyy")
                 </MudText>
                 <WisDatePicker @bind-Date="_selectedMonthDate"
+                               @bind-Date:after="OnMonthChanged"
                                DateFormat="MMM yyyy"
                                OpenTo="OpenTo.Month"
                                Label="@Localization.GetString("SelectMonth")"
@@ -119,7 +117,7 @@ else
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalToPay")"
                            Value="@_totalPurchasesMonth.ToString("C")"
-                           Subtitle="@($"{_purchaseNotesMonth.Count()} {Localization.GetString("PurchaseNotes")} | {_invoicesToPayMonth.Count()} {Localization.GetString("Invoices")}")"
+                           Subtitle="@($"{_purchaseNotesMonth.Count} {Localization.GetString("PurchaseNotes")} | {_invoicesToPayMonthCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Primary" />
         </MudItem>
@@ -127,7 +125,7 @@ else
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalSales")"
                            Value="@_totalSalesMonth.ToString("C")"
-                           Subtitle="@($"{_invoicesToReceiveMonth.Count()} {Localization.GetString("Invoices")}")"
+                           Subtitle="@($"{_invoicesToReceiveMonthCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.PointOfSale"
                            IconColor="Color.Success" />
         </MudItem>
@@ -142,9 +140,9 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                           Value="@_attentionCount.ToString()"
+                           Value="@_totalOverdueCount.ToString()"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_attentionCount > 0 ? Color.Error : Color.Default)" />
+                           IconColor="@(_totalOverdueCount > 0 ? Color.Error : Color.Default)" />
         </MudItem>
 
         <!-- ── Recent Activity (Tabbed) ── -->
@@ -346,7 +344,7 @@ else
                                         <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
-                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@GetMethodColor(context.PaymentMethod)">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@GetPaymentMethodColor(context.PaymentMethod)">
                                             @GetPaymentMethodText(context.PaymentMethod)
                                         </MudChip>
                                     </MudTd>
@@ -373,11 +371,21 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
-    private List<InvoiceDto> _invoices = [];
-    private List<PurchaseNoteDto> _purchaseNotes = [];
-    private List<PaymentDto> _payments = [];
+
+    // ── Financial position (DB aggregate) ──
+    private int _receivableOutstandingCount;
+    private decimal _receivableOutstandingAmount;
+    private int _overdueReceivableCount;
+    private decimal _overdueReceivableAmount;
+    private int _payableOutstandingCount;
+    private decimal _payableOutstandingAmount;
+    private int _unpaidPurchaseNoteCount;
+    private decimal _unpaidPurchaseNoteAmount;
+    private int _totalOverdueCount;
+
+    private decimal _totalPayablesOutstanding => _payableOutstandingAmount + _unpaidPurchaseNoteAmount;
+    private decimal _netBalanceOutstanding => _receivableOutstandingAmount - _totalPayablesOutstanding;
 
     // ── Day filter ──
     private DateTime? _selectedDay = DateTime.Today;
@@ -387,116 +395,37 @@ else
     private DateTime? _selectedMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime _selectedMonth => _selectedMonthDate ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
-    // ── Day computed ──
-    private IEnumerable<PurchaseNoteDto> _purchaseNotesDay =>
-        _purchaseNotes.Where(pn => pn.PurchaseDate.Date == _selectedDate.Date);
+    // ── Day data (reloaded on day change) ──
+    private List<InvoiceDto> _invoicesDay = [];
+    private List<PurchaseNoteDto> _purchaseNotesDay = [];
 
-    private IEnumerable<InvoiceDto> _invoicesDay =>
-        _invoices.Where(i => i.IssueDate.Date == _selectedDate.Date);
+    private int _invoicesPayableDayCount;
+    private decimal _amountPayableInvoicesDay;
+    private int _invoicesReceivableDayCount;
+    private decimal _amountToReceiveDay;
+    private decimal _purchaseNotesDayAmount;
+    private decimal _profitDay;
 
-    private IEnumerable<InvoiceDto> _invoicesPayableDay =>
-        _invoicesDay.Where(i => i.Type == InvoiceType.Payable);
+    // ── Month data (reloaded on month change) ──
+    private List<InvoiceDto> _invoicesMonth = [];
+    private List<PurchaseNoteDto> _purchaseNotesMonth = [];
 
-    private IEnumerable<InvoiceDto> _invoicesReceivableDay =>
-        _invoicesDay.Where(i => i.Type == InvoiceType.Receivable);
+    private int _invoicesToPayMonthCount;
+    private int _invoicesToReceiveMonthCount;
+    private decimal _totalPurchasesMonth;
+    private decimal _totalSalesMonth;
+    private decimal _profitMonth;
+    private decimal _marginMonth;
 
-    private decimal _amountPurchaseNotesDay =>
-        _purchaseNotesDay.Sum(pn => pn.TotalAmount);
-
-    private decimal _amountToReceiveDay =>
-        _invoicesReceivableDay.Sum(i => i.TotalAmount);
-
-    private decimal _amountPayableInvoicesDay =>
-        _invoicesPayableDay.Sum(i => i.TotalAmount);
-
-    private decimal _profitDay => _amountToReceiveDay - _amountPurchaseNotesDay - _amountPayableInvoicesDay;
-
-    // ── Month computed ──
-    private IEnumerable<PurchaseNoteDto> _purchaseNotesMonth =>
-        _purchaseNotes.Where(pn => pn.PurchaseDate.Year == _selectedMonth.Year && pn.PurchaseDate.Month == _selectedMonth.Month);
-
-    private IEnumerable<InvoiceDto> _invoicesMonth =>
-        _invoices.Where(i => i.IssueDate.Year == _selectedMonth.Year && i.IssueDate.Month == _selectedMonth.Month);
-
-    private IEnumerable<InvoiceDto> _invoicesToPayMonth =>
-        _invoicesMonth.Where(i => i.Type == InvoiceType.Payable);
-
-    private IEnumerable<InvoiceDto> _invoicesToReceiveMonth =>
-        _invoicesMonth.Where(i => i.Type == InvoiceType.Receivable);
-
-    private decimal _totalPurchasesMonth =>
-        _purchaseNotesMonth.Sum(pn => pn.TotalAmount) + _invoicesToPayMonth.Sum(i => i.TotalAmount);
-
-    private decimal _totalSalesMonth =>
-        _invoicesToReceiveMonth.Sum(i => i.TotalAmount);
-
-    private decimal _profitMonth => _totalSalesMonth - _totalPurchasesMonth;
-
-    private decimal _marginMonth =>
-        _totalSalesMonth > 0 ? _profitMonth / _totalSalesMonth : 0;
-
-    // ── Overdue ──
-    private int _attentionCount =>
-        _invoices.Count(i => i.Status == InvoiceStatus.Overdue);
-
-    // ── Outstanding Balances (always-current, no date filter) ──
-    private int _receivableInvoicesOutstandingCount =>
-        _invoices.Count(i => i.Type == InvoiceType.Receivable &&
-                              i.Status != InvoiceStatus.Paid &&
-                              i.Status != InvoiceStatus.Cancelled);
-
-    private decimal _totalReceivablesOutstanding =>
-        _invoices.Where(i => i.Type == InvoiceType.Receivable &&
-                              i.Status != InvoiceStatus.Paid &&
-                              i.Status != InvoiceStatus.Cancelled)
-                 .Sum(i => i.AmountDue);
-
-    private int _unpaidPurchaseNotesCount =>
-        _purchaseNotes.Count(pn => pn.Status != PurchaseNoteStatus.Paid &&
-                                    pn.Status != PurchaseNoteStatus.Cancelled);
-
-    private int _payableInvoicesOutstandingCount =>
-        _invoices.Count(i => i.Type == InvoiceType.Payable &&
-                              i.Status != InvoiceStatus.Paid &&
-                              i.Status != InvoiceStatus.Cancelled);
-
-    private decimal _totalPayablesOutstanding =>
-        _invoices.Where(i => i.Type == InvoiceType.Payable &&
-                              i.Status != InvoiceStatus.Paid &&
-                              i.Status != InvoiceStatus.Cancelled)
-                 .Sum(i => i.AmountDue) +
-        _purchaseNotes.Where(pn => pn.Status != PurchaseNoteStatus.Paid &&
-                                    pn.Status != PurchaseNoteStatus.Cancelled)
-                      .Sum(pn => pn.TotalAmount);
-
-    private decimal _netBalanceOutstanding => _totalReceivablesOutstanding - _totalPayablesOutstanding;
-
-    private int _overdueReceivablesCount =>
-        _invoices.Count(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue);
-
-    private decimal _overdueReceivablesAmount =>
-        _invoices.Where(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue)
-                 .Sum(i => i.AmountDue);
-
-    // ── Recent activity (always last 5, unfiltered) ──
-    private IEnumerable<PurchaseNoteDto> _recentPurchaseNotes =>
-        _purchaseNotes.OrderByDescending(pn => pn.PurchaseDate).Take(5);
-
-    private IEnumerable<InvoiceDto> _recentInvoices =>
-        _invoices.OrderByDescending(i => i.IssueDate).Take(5);
-
-    private IEnumerable<PaymentDto> _recentPayments =>
-        _payments.OrderByDescending(p => p.PaymentDate).Take(5);
+    // ── Recent activity (last 5, loaded once) ──
+    private List<InvoiceDto> _recentInvoices = [];
+    private List<PurchaseNoteDto> _recentPurchaseNotes = [];
+    private List<PaymentDto> _recentPayments = [];
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadData();
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadData()
@@ -505,14 +434,12 @@ else
 
         try
         {
-            IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync(_cts.Token);
-            _invoices = invoices.ToList();
-
-            IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token);
-            _purchaseNotes = purchaseNotes.ToList();
-
-            IEnumerable<PaymentDto> payments = await PaymentService.GetAllPaymentsAsync(_cts.Token);
-            _payments = payments.ToList();
+            await Task.WhenAll(
+                LoadFinancialPosition(),
+                LoadDayData(),
+                LoadMonthData(),
+                LoadRecentActivity()
+            );
         }
         catch (Exception ex)
         {
@@ -524,73 +451,89 @@ else
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private WisDetailActionItem NavAction(string icon, string label, string href, Color color = Color.Default) => new()
+    private async Task LoadFinancialPosition()
     {
-        Icon = icon,
-        Label = label,
-        Color = color,
-        OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo(href)),
-    };
+        var posTask = InvoiceService.GetOutstandingPositionAsync(CancellationToken.None);
+        var pnTask = PurchaseNoteService.GetOutstandingPositionAsync(CancellationToken.None);
 
-    private Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Color.Default,
-        PurchaseNoteStatus.Pending => Color.Warning,
-        PurchaseNoteStatus.Paid => Color.Success,
-        PurchaseNoteStatus.Cancelled => Color.Error,
-        _ => Color.Default
-    };
+        await Task.WhenAll(posTask, pnTask);
 
-    private string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
-        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
-        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
-        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
+        var pos = posTask.Result;
+        _receivableOutstandingCount = pos.ReceivableCount;
+        _receivableOutstandingAmount = pos.ReceivableAmount;
+        _overdueReceivableCount = pos.OverdueReceivableCount;
+        _overdueReceivableAmount = pos.OverdueReceivableAmount;
+        _payableOutstandingCount = pos.PayableCount;
+        _payableOutstandingAmount = pos.PayableAmount;
+        _totalOverdueCount = pos.TotalOverdueCount;
 
-    private Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Color.Default,
-        InvoiceStatus.Sent => Color.Info,
-        InvoiceStatus.PartiallyPaid => Color.Warning,
-        InvoiceStatus.Paid => Color.Success,
-        InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Dark,
-        _ => Color.Default
-    };
+        var (unpaidCount, unpaidAmount) = pnTask.Result;
+        _unpaidPurchaseNoteCount = unpaidCount;
+        _unpaidPurchaseNoteAmount = unpaidAmount;
+    }
 
-    private string GetInvoiceStatusText(InvoiceStatus status) => status switch
+    private async Task LoadDayData()
     {
-        InvoiceStatus.Draft => Localization.GetString("Draft"),
-        InvoiceStatus.Sent => Localization.GetString("Sent"),
-        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-        InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
+        var invoicesTask = InvoiceService.GetByIssueDateAsync(_selectedDate, CancellationToken.None);
+        var notesTask = PurchaseNoteService.GetByPurchaseDateAsync(_selectedDate, CancellationToken.None);
 
-    private string GetPaymentMethodText(PaymentMethod method) => method switch
-    {
-        PaymentMethod.Cash => Localization.GetString("Cash"),
-        PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
-        PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
-        PaymentMethod.Other => Localization.GetString("Other"),
-        _ => method.ToString()
-    };
+        await Task.WhenAll(invoicesTask, notesTask);
 
-    private Color GetMethodColor(PaymentMethod method) => method switch
+        _invoicesDay = invoicesTask.Result.ToList();
+        _purchaseNotesDay = notesTask.Result.ToList();
+
+        var payableDay = _invoicesDay.Where(i => i.Type == InvoiceType.Payable).ToList();
+        var receivableDay = _invoicesDay.Where(i => i.Type == InvoiceType.Receivable).ToList();
+        _invoicesPayableDayCount = payableDay.Count;
+        _amountPayableInvoicesDay = payableDay.Sum(i => i.TotalAmount);
+        _invoicesReceivableDayCount = receivableDay.Count;
+        _amountToReceiveDay = receivableDay.Sum(i => i.TotalAmount);
+        _purchaseNotesDayAmount = _purchaseNotesDay.Sum(pn => pn.TotalAmount);
+        _profitDay = _amountToReceiveDay - _purchaseNotesDayAmount - _amountPayableInvoicesDay;
+    }
+
+    private async Task LoadMonthData()
     {
-        PaymentMethod.Cash => Color.Success,
-        PaymentMethod.BankTransfer => Color.Primary,
-        PaymentMethod.CreditCard => Color.Secondary,
-        PaymentMethod.Other => Color.Default,
-        _ => Color.Default
-    };
+        var invoicesTask = InvoiceService.GetByIssueDateMonthAsync(_selectedMonth.Year, _selectedMonth.Month, CancellationToken.None);
+        var notesTask = PurchaseNoteService.GetByPurchaseDateMonthAsync(_selectedMonth.Year, _selectedMonth.Month, CancellationToken.None);
+
+        await Task.WhenAll(invoicesTask, notesTask);
+
+        _invoicesMonth = invoicesTask.Result.ToList();
+        _purchaseNotesMonth = notesTask.Result.ToList();
+
+        var payableMonth = _invoicesMonth.Where(i => i.Type == InvoiceType.Payable).ToList();
+        var receivableMonth = _invoicesMonth.Where(i => i.Type == InvoiceType.Receivable).ToList();
+        _invoicesToPayMonthCount = payableMonth.Count;
+        _invoicesToReceiveMonthCount = receivableMonth.Count;
+        _totalSalesMonth = receivableMonth.Sum(i => i.TotalAmount);
+        _totalPurchasesMonth = _purchaseNotesMonth.Sum(pn => pn.TotalAmount) + payableMonth.Sum(i => i.TotalAmount);
+        _profitMonth = _totalSalesMonth - _totalPurchasesMonth;
+        _marginMonth = _totalSalesMonth > 0 ? _profitMonth / _totalSalesMonth : 0;
+    }
+
+    private async Task LoadRecentActivity()
+    {
+        var invoicesTask = InvoiceService.GetRecentAsync(5, CancellationToken.None);
+        var notesTask = PurchaseNoteService.GetRecentAsync(5, CancellationToken.None);
+        var paymentsTask = PaymentService.GetRecentAsync(5, CancellationToken.None);
+
+        await Task.WhenAll(invoicesTask, notesTask, paymentsTask);
+
+        _recentInvoices = invoicesTask.Result.ToList();
+        _recentPurchaseNotes = notesTask.Result.ToList();
+        _recentPayments = paymentsTask.Result.ToList();
+    }
+
+    private async Task OnDayChanged()
+    {
+        await LoadDayData();
+    }
+
+    private async Task OnMonthChanged()
+    {
+        await LoadMonthData();
+    }
 
     private async Task OpenPaymentDialog()
     {
@@ -600,7 +543,7 @@ else
             if (paid)
             {
                 Snackbar.Add(Localization.GetString("PaymentRecorded"), Severity.Success);
-                await LoadData();
+                await LoadRecentActivity();
             }
         }
         catch (Exception ex)
@@ -610,10 +553,4 @@ else
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

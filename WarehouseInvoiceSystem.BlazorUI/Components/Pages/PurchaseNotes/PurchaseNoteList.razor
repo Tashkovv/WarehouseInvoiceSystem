@@ -1,5 +1,5 @@
 ﻿@page "/purchase-notes"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -7,10 +7,6 @@
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IIndividualService IndividualService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -162,8 +158,8 @@
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Color="@GetStatusColor(context.Item.Status)">
-                            @GetStatusText(context.Item.Status)
+                                 Color="@GetPurchaseNoteStatusColor(context.Item.Status)">
+                            @GetPurchaseNoteStatusText(context.Item.Status)
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -188,7 +184,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     [SupplyParameterFromQuery(Name = "individualId")]
     public Guid? IndividualIdParam { get; set; }
@@ -219,7 +214,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         BuildFilterItems();
 
         // Set IndividualId filter from ?individualId= query param
@@ -228,7 +223,7 @@
             _filterIndividualId = IndividualIdParam.Value;
             try
             {
-                IndividualDto? match = await IndividualService.GetIndividualByIdAsync(IndividualIdParam.Value, _cts.Token);
+                IndividualDto? match = await IndividualService.GetIndividualByIdAsync(IndividualIdParam.Value, CancellationToken.None);
                 if (match is not null)
                     _filterIndividualInitialLabel = match.FullName;
             }
@@ -251,7 +246,7 @@
         ];
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildFilterItems();
         await InvokeAsync(StateHasChanged);
@@ -468,15 +463,6 @@
         _ => string.Empty
     };
 
-    private Color GetStatusColor(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Color.Default,
-        PurchaseNoteStatus.Pending => Color.Warning,
-        PurchaseNoteStatus.Paid => Color.Success,
-        PurchaseNoteStatus.Cancelled => Color.Error,
-        _ => Color.Default
-    };
-
     private List<WisDetailActionItem> BuildRowActions(PurchaseNoteDto item)
     {
         bool isDraft     = item.Status == PurchaseNoteStatus.Draft;
@@ -577,19 +563,4 @@
         }
     }
 
-    private string GetStatusText(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
-        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
-        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
-        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

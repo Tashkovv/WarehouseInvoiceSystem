@@ -1,13 +1,9 @@
 @page "/warehouses/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("WarehouseDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -177,7 +173,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -186,8 +181,6 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
-    private WisActionItem _act = null!;
-
     // ── Computed ──────────────────────────────────────────────────────────────
 
     private int _lowStockCount => _stock.Count(s =>
@@ -204,12 +197,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _act = new WisActionItem(this);
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadWarehouse();
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildActions();
         await InvokeAsync(StateHasChanged);
@@ -221,10 +213,10 @@ else
 
         try
         {
-            _warehouse = await WarehouseService.GetWarehouseByIdAsync(Id, _cts.Token);
+            _warehouse = await WarehouseService.GetWarehouseByIdAsync(Id, CancellationToken.None);
             if (_warehouse != null)
             {
-                IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(Id, _cts.Token);
+                IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(Id, CancellationToken.None);
                 _stock = levels.OrderBy(s => s.ProductCode).ToList();
                 BuildActions();
             }
@@ -368,10 +360,4 @@ else
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

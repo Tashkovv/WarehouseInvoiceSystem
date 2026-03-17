@@ -1,13 +1,9 @@
 ﻿@page "/payments/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @inject IPaymentService PaymentService
 @inject IInvoiceService InvoiceService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("PaymentDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -40,7 +36,7 @@ else
                             <MudText Typo="Typo.h3" Color="Color.Success">@_payment.Amount.ToString("C")</MudText>
                             <MudChip T="string"
                                      Size="Size.Small"
-                                     Color="@GetMethodColor(_payment.PaymentMethod)"
+                                     Color="@GetPaymentMethodColor(_payment.PaymentMethod)"
                                      Variant="Variant.Filled">
                                 @GetPaymentMethodText(_payment.PaymentMethod)
                             </MudChip>
@@ -107,7 +103,7 @@ else
                             <MudIconButton Icon="@(string.IsNullOrWhiteSpace(_payment.Notes) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
                                            Size="Size.Small"
                                            Title="@Localization.GetString("Edit")"
-                                           OnClick="StartNotesEdit" />
+                                           OnClick="@(() => StartNotesEdit(_payment?.Notes))" />
                         </div>
                         <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
                             @(string.IsNullOrWhiteSpace(_payment.Notes) ? "—" : _payment.Notes)
@@ -155,9 +151,9 @@ else
                         <div>
                             <MudChip T="string"
                                      Size="Size.Small"
-                                     Color="@GetStatusColor(_invoice.Status)"
+                                     Color="@GetInvoiceStatusColor(_invoice.Status)"
                                      Variant="Variant.Outlined">
-                                @GetStatusText(_invoice.Status)
+                                @GetInvoiceStatusText(_invoice.Status)
                             </MudChip>
                         </div>
                     </MudItem>
@@ -169,7 +165,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     public Guid Id { get; set; }
 
@@ -178,20 +173,14 @@ else
     private PaymentDto? _payment;
     private InvoiceDto? _invoice;
 
-    // Inline notes editing
-    private bool _notesEditMode;
-    private bool _notesSaving;
-    private string? _notesEditValue;
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
-    private WisActionItem _act = null!;
     private WisDetailActionItem? _invoiceAction;
 
     protected override async Task OnInitializedAsync()
     {
-        _act = new WisActionItem(this);
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadPayment();
         await LoadInvoice();
         BuildActions();
@@ -204,7 +193,7 @@ else
         BuildActions();
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildActions();
         await InvokeAsync(StateHasChanged);
@@ -215,7 +204,7 @@ else
         _loading = true;
         try
         {
-            _payment = await PaymentService.GetPaymentByIdAsync(Id, _cts.Token);
+            _payment = await PaymentService.GetPaymentByIdAsync(Id, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -234,7 +223,7 @@ else
         try
         {
             if (_payment != null)
-                _invoice = await InvoiceService.GetInvoiceByIdAsync(_payment.InvoiceId, _cts.Token);
+                _invoice = await InvoiceService.GetInvoiceByIdAsync(_payment.InvoiceId, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -313,83 +302,14 @@ else
 
     // ── Inline notes editing ──────────────────────────────────────────────────
 
-    private void StartNotesEdit()
-    {
-        _notesEditValue = _payment?.Notes;
-        _notesEditMode = true;
-    }
-
-    private void CancelNotesEdit()
-    {
-        _notesEditMode = false;
-        _notesEditValue = null;
-    }
-
     private async Task SaveNotes()
     {
         if (_payment is null) return;
-        _notesSaving = true;
-        try
+        await SaveNotesAsync(async notes =>
         {
-            await PaymentService.UpdateNotesAsync(Id, _notesEditValue, _cts.Token);
-            _payment.Notes = _notesEditValue;
-            _notesEditMode = false;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating notes: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingPayment"), Severity.Error);
-        }
-        finally
-        {
-            _notesSaving = false;
-        }
+            await PaymentService.UpdateNotesAsync(Id, notes, CancellationToken.None);
+            _payment.Notes = notes;
+        }, "ErrorUpdatingPayment");
     }
 
-    private string GetPaymentMethodText(PaymentMethod method) => method switch
-    {
-        PaymentMethod.Cash => Localization.GetString("Cash"),
-        PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
-        PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
-        PaymentMethod.Other => Localization.GetString("Other"),
-        _ => method.ToString()
-    };
-
-    private Color GetMethodColor(PaymentMethod method) => method switch
-    {
-        PaymentMethod.Cash => Color.Success,
-        PaymentMethod.BankTransfer => Color.Primary,
-        PaymentMethod.CreditCard => Color.Secondary,
-        PaymentMethod.Other => Color.Default,
-        _ => Color.Default
-    };
-
-    private Color GetStatusColor(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Color.Default,
-        InvoiceStatus.Sent => Color.Info,
-        InvoiceStatus.PartiallyPaid => Color.Warning,
-        InvoiceStatus.Paid => Color.Success,
-        InvoiceStatus.Overdue => Color.Error,
-        InvoiceStatus.Cancelled => Color.Dark,
-        _ => Color.Default
-    };
-
-    private string GetStatusText(InvoiceStatus status) => status switch
-    {
-        InvoiceStatus.Draft => Localization.GetString("Draft"),
-        InvoiceStatus.Sent => Localization.GetString("Sent"),
-        InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-        InvoiceStatus.Paid => Localization.GetString("PaidStatus"),
-        InvoiceStatus.Overdue => Localization.GetString("OverdueStatus"),
-        InvoiceStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

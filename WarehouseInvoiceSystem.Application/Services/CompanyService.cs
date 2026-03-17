@@ -8,6 +8,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class CompanyService(ICompanyRepository companyRepository,
                                 IInvoiceService invoiceService) : ICompanyService
@@ -218,6 +219,9 @@
 
             return analytics;
         }
+
+        public Task<PartnerCountsResult> GetPartnerCountsAsync(CancellationToken ct = default)
+            => companyRepository.GetPartnerCountsAsync(ct);
 
         private static CompanyDto MapToDto(Company company)
         {

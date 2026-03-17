@@ -1,14 +1,10 @@
 ﻿@page "/companies"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject ICompanyService CompanyService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Companies") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -87,8 +83,8 @@
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Color="@GetTypeColor(context.Item.Type)">
-                            @GetTypeText(context.Item.Type)
+                                 Color="@GetCompanyTypeColor(context.Item.Type)">
+                            @GetCompanyTypeText(context.Item.Type)
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -143,7 +139,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private MudDataGrid<CompanyDto> _grid = null!;
     private string _searchString = string.Empty;
     private CompanyType? _filterType = null;
@@ -154,7 +149,7 @@
 
     protected override void OnInitialized()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        base.OnInitialized();
         BuildFilterItems();
     }
 
@@ -176,7 +171,7 @@
         ];
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildFilterItems();
         await InvokeAsync(StateHasChanged);
@@ -213,22 +208,6 @@
         CompanyType.Vendor => "row-status-warning",
         CompanyType.Both => "row-status-primary",
         _ => "row-status-default"
-    };
-
-    private Color GetTypeColor(CompanyType type) => type switch
-    {
-        CompanyType.Client => Color.Success,
-        CompanyType.Vendor => Color.Warning,
-        CompanyType.Both => Color.Primary,
-        _ => Color.Default
-    };
-
-    private string GetTypeText(CompanyType type) => type switch
-    {
-        CompanyType.Client => Localization.GetString("Client"),
-        CompanyType.Vendor => Localization.GetString("Vendor"),
-        CompanyType.Both => Localization.GetString("ClientAndVendor"),
-        _ => type.ToString()
     };
 
     private async Task OnSearch(string text)
@@ -392,10 +371,4 @@
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

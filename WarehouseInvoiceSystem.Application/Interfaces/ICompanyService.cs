@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface ICompanyService
     {
@@ -18,5 +19,6 @@
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<CompanyBalanceDto> GetCompanyBalanceAsync(Guid id, CancellationToken ct = default);
         Task<CompanyAnalyticsDto> GetCompanyAnalyticsAsync(Guid id, CancellationToken ct = default);
+        Task<PartnerCountsResult> GetPartnerCountsAsync(CancellationToken ct = default);
     }
 }

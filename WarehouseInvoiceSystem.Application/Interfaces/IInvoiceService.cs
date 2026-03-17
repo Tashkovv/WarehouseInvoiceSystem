@@ -1,10 +1,12 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Interfaces
 {
+    using WarehouseInvoiceSystem.Application.DTOs.Dashboard;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IInvoiceService
     {
@@ -44,5 +46,16 @@
         Task CreateInventoryTransactionsIfNeededAsync(Invoice invoice);
         Task CreateReverseTransactionsIfNeeded(Invoice invoice, string? reason = null);
         Task<InvoiceSummaryDto> GetPayableInvoiceSummaryAsync(CancellationToken ct = default);
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────
+        Task<IEnumerable<InvoiceDto>> GetRecentAsync(int count, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetByIssueDateAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetByIssueDateMonthAsync(int year, int month, CancellationToken ct = default);
+        Task<InvoiceOutstandingResult> GetOutstandingPositionAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryDto>> GetTopClientsByRevenueAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryDto>> GetTopPayableVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
+        Task<IEnumerable<PartnerAttentionDto>> GetOverdueClientSummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerAttentionDto>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementDto>> GetProductMovementByWarehouseAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default);
     }
 }

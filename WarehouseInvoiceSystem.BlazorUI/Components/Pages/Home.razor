@@ -1,5 +1,5 @@
 @page "/"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
@@ -18,10 +18,6 @@
 @inject IIndividualService IndividualService
 @inject ICompanyService CompanyService
 @inject IWarehouseService WarehouseService
-@inject ILocalizationService Localization
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
-@inject NavigationManager Navigation
 
 <PageTitle>@Localization.GetString("Overview") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -352,7 +348,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
 
     private List<InvoiceDto> _invoices = [];
@@ -457,11 +452,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadData();
     }
-
-    private async void OnLanguageChanged() => await InvokeAsync(StateHasChanged);
 
     private async Task LoadData()
     {
@@ -523,14 +516,6 @@ else
     {
         _filterWarehouseId = value == default ? null : value;
     }
-
-    private WisDetailActionItem NavAction(string icon, string label, string href, Color color = Color.Default) => new()
-    {
-        Icon = icon,
-        Label = label,
-        Color = color,
-        OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo(href)),
-    };
 
     private decimal GetProductPrice(Guid productId) =>
         _products.FirstOrDefault(p => p.Id == productId)?.DefaultPrice ?? 0;
@@ -657,30 +642,4 @@ else
         }
     }
 
-    // ── Status helpers ─────────────────────────────────────────────────────────
-
-    private Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft     => Color.Default,
-        PurchaseNoteStatus.Pending   => Color.Warning,
-        PurchaseNoteStatus.Paid      => Color.Success,
-        PurchaseNoteStatus.Cancelled => Color.Error,
-        _                            => Color.Default
-    };
-
-    private string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft     => Localization.GetString("Draft"),
-        PurchaseNoteStatus.Pending   => Localization.GetString("PendingStatus"),
-        PurchaseNoteStatus.Paid      => Localization.GetString("PaidStatus"),
-        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _                            => status.ToString()
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

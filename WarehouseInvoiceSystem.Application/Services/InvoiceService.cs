@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
+    using WarehouseInvoiceSystem.Application.DTOs.Dashboard;
     using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -8,6 +9,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class InvoiceService(IInvoiceRepository invoiceRepository,
                                 ICompanyRepository companyRepository,
@@ -473,6 +475,94 @@
                 TotalPaid = totalPaid,
                 TotalDue = totalDue
             };
+        }
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────────
+
+        public async Task<IEnumerable<InvoiceDto>> GetRecentAsync(int count, CancellationToken ct = default)
+        {
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetRecentAsync(count, ct);
+            return invoices.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<InvoiceDto>> GetByIssueDateAsync(DateTime date, CancellationToken ct = default)
+        {
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetByIssueDateAsync(date, ct);
+            return invoices.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<InvoiceDto>> GetByIssueDateMonthAsync(int year, int month, CancellationToken ct = default)
+        {
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetByIssueDateMonthAsync(year, month, ct);
+            return invoices.Select(MapToDto);
+        }
+
+        public Task<InvoiceOutstandingResult> GetOutstandingPositionAsync(CancellationToken ct = default)
+            => invoiceRepository.GetOutstandingPositionAsync(ct);
+
+        public async Task<IEnumerable<PartnerSummaryDto>> GetTopClientsByRevenueAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await invoiceRepository.GetTopClientsByRevenueAsync(from, to, topCount, ct);
+            return results.Select(r => new PartnerSummaryDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                DocumentCount = r.Count,
+                TotalAmount = r.Amount
+            });
+        }
+
+        public async Task<IEnumerable<PartnerSummaryDto>> GetTopPayableVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await invoiceRepository.GetTopPayableVendorsBySpendAsync(from, to, topCount, ct);
+            return results.Select(r => new PartnerSummaryDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                DocumentCount = r.Count,
+                TotalAmount = r.Amount
+            });
+        }
+
+        public async Task<IEnumerable<PartnerAttentionDto>> GetOverdueClientSummariesAsync(CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await invoiceRepository.GetOverdueClientSummariesAsync(ct);
+            return results.Select(r => new PartnerAttentionDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                Count = r.Count,
+                Amount = r.Amount
+            });
+        }
+
+        public async Task<IEnumerable<PartnerAttentionDto>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await invoiceRepository.GetUnpaidPayableCompanySummariesAsync(ct);
+            return results.Select(r => new PartnerAttentionDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                Count = r.Count,
+                Amount = r.Amount
+            });
+        }
+
+        public async Task<IEnumerable<ProductMovementDto>> GetProductMovementByWarehouseAsync(
+            Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            IEnumerable<ProductMovementResult> results =
+                await invoiceRepository.GetProductMovementByWarehouseAsync(warehouseId, type, from, to, ct);
+            return results.Select(r => new ProductMovementDto
+            {
+                ProductId = r.ProductId,
+                Quantity = r.Quantity,
+                TotalAmount = r.TotalAmount
+            });
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────────

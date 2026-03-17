@@ -1,14 +1,10 @@
 ﻿@page "/payments"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IPaymentService PaymentService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("Payments") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -133,8 +129,8 @@
                                 Sortable="false"
                                 IsEditable="false">
                     <CellTemplate>
-                        <MudChip T="string" Size="Size.Small" Color="@GetMethodColor(context.Item.PaymentMethod)">
-                            @GetMethodText(context.Item.PaymentMethod)
+                        <MudChip T="string" Size="Size.Small" Color="@GetPaymentMethodColor(context.Item.PaymentMethod)">
+                            @GetPaymentMethodText(context.Item.PaymentMethod)
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
@@ -169,7 +165,6 @@
 </MudCard>
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     [SupplyParameterFromQuery(Name = "invoiceId")]
     public Guid? InvoiceIdParam { get; set; }
@@ -197,7 +192,7 @@
 
     protected override void OnInitialized()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        base.OnInitialized();
         BuildFilterItems();
     }
 
@@ -213,7 +208,7 @@
         ];
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildFilterItems();
         await InvokeAsync(StateHasChanged);
@@ -412,28 +407,4 @@
         _ => "row-status-default"
     };
 
-    private string GetMethodText(PaymentMethod method) => method switch
-    {
-        PaymentMethod.Cash => Localization.GetString("Cash"),
-        PaymentMethod.BankTransfer => Localization.GetString("BankTransfer"),
-        PaymentMethod.CreditCard => Localization.GetString("CreditCard"),
-        PaymentMethod.Other => Localization.GetString("Other"),
-        _ => method.ToString()
-    };
-
-    private Color GetMethodColor(PaymentMethod method) => method switch
-    {
-        PaymentMethod.Cash => Color.Success,
-        PaymentMethod.BankTransfer => Color.Primary,
-        PaymentMethod.CreditCard => Color.Secondary,
-        PaymentMethod.Other => Color.Default,
-        _ => Color.Default
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

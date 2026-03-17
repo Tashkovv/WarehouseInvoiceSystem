@@ -1,5 +1,6 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
+    using WarehouseInvoiceSystem.Application.DTOs.Dashboard;
     using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -8,6 +9,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class PurchaseNoteService(
         IPurchaseNoteRepository purchaseNoteRepository,
@@ -363,6 +365,68 @@
                 });
 
             await inventoryService.CreateBatchAsync(purchaseNote.WarehouseId, items);
+        }
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────────
+
+        public async Task<IEnumerable<PurchaseNoteDto>> GetRecentAsync(int count, CancellationToken ct = default)
+        {
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetRecentAsync(count, ct);
+            return notes.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<PurchaseNoteDto>> GetByPurchaseDateAsync(DateTime date, CancellationToken ct = default)
+        {
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByPurchaseDateAsync(date, ct);
+            return notes.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<PurchaseNoteDto>> GetByPurchaseDateMonthAsync(int year, int month, CancellationToken ct = default)
+        {
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetByPurchaseDateMonthAsync(year, month, ct);
+            return notes.Select(MapToDto);
+        }
+
+        public Task<(int unpaidCount, decimal unpaidAmount)> GetOutstandingPositionAsync(CancellationToken ct = default)
+            => purchaseNoteRepository.GetOutstandingPositionAsync(ct);
+
+        public async Task<IEnumerable<PartnerSummaryDto>> GetTopVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await purchaseNoteRepository.GetTopVendorsBySpendAsync(from, to, topCount, ct);
+            return results.Select(r => new PartnerSummaryDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                DocumentCount = r.Count,
+                TotalAmount = r.Amount
+            });
+        }
+
+        public async Task<IEnumerable<PartnerAttentionDto>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await purchaseNoteRepository.GetUnpaidVendorSummariesAsync(ct);
+            return results.Select(r => new PartnerAttentionDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                Count = r.Count,
+                Amount = r.Amount
+            });
+        }
+
+        public async Task<IEnumerable<ProductMovementDto>> GetProductPurchasesByWarehouseAsync(
+            Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            IEnumerable<ProductMovementResult> results =
+                await purchaseNoteRepository.GetProductPurchasesByWarehouseAsync(warehouseId, from, to, ct);
+            return results.Select(r => new ProductMovementDto
+            {
+                ProductId = r.ProductId,
+                Quantity = r.Quantity,
+                TotalAmount = r.TotalAmount
+            });
         }
 
         private static PurchaseNoteDto MapToDto(PurchaseNote note) => new()

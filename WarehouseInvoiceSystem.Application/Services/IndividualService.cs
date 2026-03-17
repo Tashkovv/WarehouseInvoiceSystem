@@ -173,6 +173,9 @@
             return await individualRepository.SetActiveStatusAsync(id, isActive);
         }
 
+        public Task<(int total, int active)> GetCountsAsync(CancellationToken ct = default)
+            => individualRepository.GetCountsAsync(ct);
+
         private static IndividualDto MapToDto(Individual individual)
         {
             return new IndividualDto

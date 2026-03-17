@@ -1,12 +1,8 @@
 ﻿@page "/purchase-notes/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IPurchaseNoteService PurchaseNoteService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("PurchaseNoteDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -41,8 +37,8 @@ else
                                 <MudText Typo="Typo.h4" Class="font-weight-bold mb-0" Style="font-family: monospace;">
                                     @_note.NoteNumber
                                 </MudText>
-                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_note.Status)">
-                                    @GetStatusText(_note.Status)
+                                <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(_note.Status)">
+                                    @GetPurchaseNoteStatusText(_note.Status)
                                 </MudChip>
                             </div>
 
@@ -97,7 +93,7 @@ else
                                     <MudIconButton Icon="@(string.IsNullOrWhiteSpace(_note.Notes) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
                                                    Size="Size.Small"
                                                    Title="@Localization.GetString("Edit")"
-                                                   OnClick="StartNotesEdit" />
+                                                   OnClick="@(() => StartNotesEdit(_note?.Notes))" />
                                 </div>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
                                     @(string.IsNullOrWhiteSpace(_note.Notes) ? "—" : _note.Notes)
@@ -187,28 +183,20 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
     private PurchaseNoteDto? _note;
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
-    private WisActionItem _act = null!;
-
-    // Inline notes editing (Pending status only)
-    private bool _notesEditMode;
-    private bool _notesSaving;
-    private string? _notesEditValue;
 
     protected override async Task OnInitializedAsync()
     {
-        _act = new WisActionItem(this);
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadNote();
     }
 
-    private async void OnLanguageChanged() => await InvokeAsync(() =>
+    protected override async void OnLanguageChanged() => await InvokeAsync(() =>
     {
         BuildActions();
         StateHasChanged();
@@ -219,7 +207,7 @@ else
         _loading = true;
         try
         {
-            _note = await PurchaseNoteService.GetPurchaseNoteByIdAsync(Id, _cts.Token);
+            _note = await PurchaseNoteService.GetPurchaseNoteByIdAsync(Id, CancellationToken.None);
             BuildActions();
         }
         catch (Exception ex)
@@ -387,63 +375,14 @@ else
 
     // ── Inline notes editing ──────────────────────────────────────────────────
 
-    private void StartNotesEdit()
-    {
-        _notesEditValue = _note?.Notes;
-        _notesEditMode = true;
-    }
-
-    private void CancelNotesEdit()
-    {
-        _notesEditMode = false;
-        _notesEditValue = null;
-    }
-
     private async Task SaveNotes()
     {
         if (_note is null) return;
-        _notesSaving = true;
-        try
+        await SaveNotesAsync(async notes =>
         {
-            await PurchaseNoteService.UpdateNotesAsync(Id, _notesEditValue, _cts.Token);
-            _note.Notes = _notesEditValue;
-            _notesEditMode = false;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating notes: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
-        }
-        finally
-        {
-            _notesSaving = false;
-        }
+            await PurchaseNoteService.UpdateNotesAsync(Id, notes, CancellationToken.None);
+            _note.Notes = notes;
+        }, "ErrorUpdatingPurchaseNote");
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private Color GetStatusColor(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Color.Default,
-        PurchaseNoteStatus.Pending => Color.Warning,
-        PurchaseNoteStatus.Paid => Color.Success,
-        PurchaseNoteStatus.Cancelled => Color.Error,
-        _ => Color.Default
-    };
-
-    private string GetStatusText(PurchaseNoteStatus status) => status switch
-    {
-        PurchaseNoteStatus.Draft => Localization.GetString("Draft"),
-        PurchaseNoteStatus.Pending => Localization.GetString("PendingStatus"),
-        PurchaseNoteStatus.Paid => Localization.GetString("PaidStatus"),
-        PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-        _ => status.ToString()
-    };
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

@@ -1,11 +1,10 @@
 ﻿@page "/warehouse-dashboard"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
-@using WarehouseInvoiceSystem.Application.DTOs.Invoice
-@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Application.DTOs.Dashboard
 @using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
@@ -14,10 +13,6 @@
 @inject IInventoryService InventoryService
 @inject IInvoiceService InvoiceService
 @inject IPurchaseNoteService PurchaseNoteService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("WarehouseDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -111,7 +106,7 @@ else
                             </MudText>
                         </CardHeaderContent>
                         <CardHeaderActions>
-                            <WisButton Action="@NavAction(Icons.Material.Filled.Inventory2, Localization.GetString("Inventory"), "/inventory")" />
+                            <WisButton Action="@NavAction(Icons.Material.Filled.Inventory2, Localization.GetString("Inventory"), "/inventory", Color.Secondary)" />
                         </CardHeaderActions>
                     </MudCardHeader>
                     <MudCardContent Class="pa-6">
@@ -122,7 +117,7 @@ else
                                     <MudText Typo="Typo.body2">
                                         <strong>@_outOfStockItems.Count()</strong> @Localization.GetString("ProductsOutOfStock"):
                                         @string.Join(", ", _outOfStockItems.Take(5).Select(s =>
-                                        _products.FirstOrDefault(p => p.Id == s.ProductId)?.Name ?? ""))
+                                        _productDict.TryGetValue(s.ProductId, out var p) ? p.Name : ""))
                             @if (_outOfStockItems.Count() > 5)
                                         {
                                             <text> @($"{Localization.GetString("AndMore")} {_outOfStockItems.Count() - 5}")</text>
@@ -136,7 +131,7 @@ else
                                     <MudText Typo="Typo.body2">
                                         <strong>@_lowStockItems.Count()</strong> @Localization.GetString("ProductsBelowMinimum"):
                                         @string.Join(", ", _lowStockItems.Take(5).Select(s =>
-                                        _products.FirstOrDefault(p => p.Id == s.ProductId)?.Name ?? ""))
+                                        _productDict.TryGetValue(s.ProductId, out var p) ? p.Name : ""))
                             @if (_lowStockItems.Count() > 5)
                                         {
                                             <text> @($"{Localization.GetString("AndMore")} {_lowStockItems.Count() - 5}")</text>
@@ -149,7 +144,7 @@ else
                 </MudCard>
             </MudItem>
 
-            <MudItem xs="12" md="6" Style="display: flex;">
+            <MudItem xs="12" md="6" Class="d-flex align-center">
                 <MudCard Elevation="2" Style="flex: 1;">
                     <MudCardHeader>
                         <CardHeaderContent>
@@ -162,7 +157,7 @@ else
                                        ButtonSize="Size.Large" />
                             <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.CallMade, Label = Localization.GetString("TransferStock"), OnClick = EventCallback.Factory.Create(this, OpenTransferDialog) })"
                                        ButtonSize="Size.Large" />
-                            <WisButton Action="@NavAction(Icons.Material.Filled.Add, Localization.GetString("NewPurchaseNote"), "/purchase-notes/create", Color.Primary)"
+                            <WisButton Action="@NavAction(Icons.Material.Filled.Add, Localization.GetString("PurchaseNote"), "/purchase-notes/create", Color.Primary)"
                                        ButtonSize="Size.Large" />
                         </div>
                     </MudCardContent>
@@ -413,7 +408,7 @@ else
                                   Breakpoint="Breakpoint.Sm"
                                   RowClass="table-row-clickable"
                                   T="InventoryTransactionDto"
-                                  OnRowClick="OnRowClick">
+                                  OnRowClick="@((TableRowClickEventArgs<InventoryTransactionDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}/transactions?warehouse={_selectedWarehouseId}"))">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
@@ -475,7 +470,7 @@ else
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CreatedAt.ToString("HH:mm")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Note")">
-                                    <MudText Typo="Typo.caption">@(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)</MudText>
+                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)</MudText>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -495,15 +490,12 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     private bool _loading = true;
 
     private List<ProductDto> _products = [];
     private List<WarehouseDto> _warehouses = [];
     private List<StockLevelDto> _stockLevels = [];
     private List<InventoryTransactionDto> _allTransactions = [];
-    private List<InvoiceDto> _invoices = [];
-    private List<PurchaseNoteDto> _purchaseNotes = [];
 
     // ── Warehouse ──
     private Guid _selectedWarehouseId;
@@ -511,21 +503,12 @@ else
         _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name ?? "";
 
     // ── Stock filters — all already warehouse-scoped via _stockLevels ──
-    private IEnumerable<StockLevelDto> _lowStockItems =>
-        _stockLevels.Where(sl => sl.Quantity > 0 && sl.MinimumQuantity.HasValue && sl.Quantity <= sl.MinimumQuantity);
-
-    private IEnumerable<StockLevelDto> _outOfStockItems =>
-        _stockLevels.Where(sl => sl.Quantity == 0);
-
-    private decimal _totalStockValue =>
-        _stockLevels.Sum(sl => sl.Quantity * GetProductPrice(sl.ProductId));
-
-    // Only count products that have a stock level entry in this warehouse
-    private IEnumerable<ProductDto> _warehouseProducts =>
-        _products.Where(p => _stockLevels.Any(sl => sl.ProductId == p.Id));
-
-    private IEnumerable<ProductDto> _activeProducts =>
-        _warehouseProducts.Where(p => p.IsActive);
+    private List<StockLevelDto> _lowStockItems = [];
+    private List<StockLevelDto> _outOfStockItems = [];
+    private decimal _totalStockValue;
+    private List<ProductDto> _warehouseProducts = [];
+    private List<ProductDto> _activeProducts = [];
+    private Dictionary<Guid, ProductDto> _productDict = [];
 
     // ── Top by stock ──
     private List<ProductStockSummary> _topByStock = [];
@@ -537,18 +520,15 @@ else
     private DateTime _statsToDate => _statsDateRange.End ?? DateTime.Today;
 
     // ── Most purchased / most sold ──
+    private List<ProductMovementDto> _purchasedMovements = [];
+    private List<ProductMovementDto> _soldMovements = [];
     private List<ProductMovementSummary> _mostPurchased = [];
     private List<ProductMovementSummary> _mostSold = [];
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadData(true);
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadData(bool firstLoad)
@@ -569,15 +549,18 @@ else
 
             if (_selectedWarehouseId == Guid.Empty) return;
 
-            await LoadWarehouseData();
-
             if (firstLoad)
             {
-                await LoadStaticData();
+                await Task.WhenAll(LoadWarehouseData(), LoadStaticData());
+            }
+            else
+            {
+                await LoadWarehouseData();
             }
 
+            RebuildStockDerivedFields();
             CalculateTopProducts();
-            CalculateProductStatistics();
+            await LoadProductStatistics();
         }
         catch (Exception ex)
         {
@@ -591,13 +574,13 @@ else
 
     private async Task LoadWarehouseData()
     {
-        IEnumerable<StockLevelDto> stockLevels = await InventoryService
-            .GetStockByWarehouseAsync(_selectedWarehouseId);
-        _stockLevels = stockLevels.ToList();
+        var stockTask = InventoryService.GetStockByWarehouseAsync(_selectedWarehouseId);
+        var txTask = InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
 
-        IEnumerable<InventoryTransactionDto> transactions = await InventoryService
-            .GetTransactionsByWarehouseAsync(_selectedWarehouseId);
-        _allTransactions = transactions
+        await Task.WhenAll(stockTask, txTask);
+
+        _stockLevels = stockTask.Result.ToList();
+        _allTransactions = txTask.Result
             .OrderByDescending(t => t.CreatedAt)
             .ToList();
     }
@@ -606,12 +589,50 @@ else
     {
         IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync(_cts.Token);
         _products = products.ToList();
+        _productDict = _products.ToDictionary(p => p.Id);
+    }
 
-        IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllInvoicesAsync(_cts.Token);
-        _invoices = invoices.ToList();
+    private void RebuildStockDerivedFields()
+    {
+        _lowStockItems = _stockLevels
+            .Where(sl => sl.Quantity > 0 && sl.MinimumQuantity.HasValue && sl.Quantity <= sl.MinimumQuantity)
+            .ToList();
+        _outOfStockItems = _stockLevels.Where(sl => sl.Quantity == 0).ToList();
 
-        IEnumerable<PurchaseNoteDto> purchaseNotes = await PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token);
-        _purchaseNotes = purchaseNotes.ToList();
+        var stockedProductIds = _stockLevels.Select(sl => sl.ProductId).ToHashSet();
+        _warehouseProducts = _products.Where(p => stockedProductIds.Contains(p.Id)).ToList();
+        _activeProducts = _warehouseProducts.Where(p => p.IsActive).ToList();
+
+        _totalStockValue = _stockLevels.Sum(sl =>
+            sl.Quantity * (_productDict.TryGetValue(sl.ProductId, out var p) ? p.DefaultPrice : 0));
+    }
+
+    private async Task LoadProductStatistics()
+    {
+        var noteMovementsTask = PurchaseNoteService.GetProductPurchasesByWarehouseAsync(
+            _selectedWarehouseId, _statsFromDate, _statsToDate, _cts.Token);
+        var payableMovementsTask = InvoiceService.GetProductMovementByWarehouseAsync(
+            _selectedWarehouseId, InvoiceType.Payable, _statsFromDate, _statsToDate, _cts.Token);
+        var soldMovementsTask = InvoiceService.GetProductMovementByWarehouseAsync(
+            _selectedWarehouseId, InvoiceType.Receivable, _statsFromDate, _statsToDate, _cts.Token);
+
+        await Task.WhenAll(noteMovementsTask, payableMovementsTask, soldMovementsTask);
+
+        // Merge purchase note and payable invoice movements for "most purchased"
+        _purchasedMovements = noteMovementsTask.Result
+            .Concat(payableMovementsTask.Result)
+            .GroupBy(m => m.ProductId)
+            .Select(g => new ProductMovementDto
+            {
+                ProductId = g.Key,
+                Quantity = g.Sum(m => m.Quantity),
+                TotalAmount = g.Sum(m => m.TotalAmount)
+            })
+            .ToList();
+
+        _soldMovements = soldMovementsTask.Result.ToList();
+
+        CalculateProductStatistics();
     }
 
     private async Task OnWarehouseChanged(Guid id)
@@ -627,7 +648,7 @@ else
             .Select(g =>
             {
                 StockLevelDto? first = g.FirstOrDefault();
-                ProductDto? product = _products.FirstOrDefault(p => p.Id == g.Key);
+                _productDict.TryGetValue(g.Key, out ProductDto? product);
                 decimal qty = g.Sum(sl => sl.Quantity);
                 decimal min = first?.MinimumQuantity ?? 0;
 
@@ -638,7 +659,7 @@ else
                     ProductName = product?.Name ?? "",
                     ProductUnit = product?.Unit ?? "",
                     TotalQuantity = qty,
-                    TotalValue = qty * GetProductPrice(g.Key),
+                    TotalValue = qty * (product?.DefaultPrice ?? 0),
                     IsOutOfStock = qty == 0,
                     IsLowStock = qty > 0 && first?.MinimumQuantity.HasValue == true && qty <= min
                 };
@@ -649,108 +670,45 @@ else
 
     private void CalculateProductStatistics()
     {
-        var purchasedByProduct = new Dictionary<Guid, (decimal qty, decimal value)>();
-
-        foreach (PurchaseNoteDto note in _purchaseNotes.Where(pn =>
-            pn.WarehouseId == _selectedWarehouseId &&
-            pn.PurchaseDate.Date >= _statsFromDate.Date &&
-            pn.PurchaseDate.Date <= _statsToDate.Date))
-        {
-            if (note.LineItems == null) continue;
-            foreach (var item in note.LineItems)
+        _mostPurchased = _purchasedMovements
+            .Select(m =>
             {
-                if (!purchasedByProduct.ContainsKey(item.ProductId))
-                    purchasedByProduct[item.ProductId] = (0, 0);
-                var existing = purchasedByProduct[item.ProductId];
-                purchasedByProduct[item.ProductId] = (
-                    existing.qty + item.Quantity,
-                    existing.value + (item.UnitPrice * item.Quantity)
-                );
-            }
-        }
-
-        foreach (InvoiceDto invoice in _invoices.Where(i =>
-            i.WarehouseId == _selectedWarehouseId &&
-            i.Type == InvoiceType.Payable &&
-            i.IssueDate.Date >= _statsFromDate.Date &&
-            i.IssueDate.Date <= _statsToDate.Date))
-        {
-            if (invoice.LineItems == null) continue;
-            foreach (var item in invoice.LineItems)
-            {
-                if (!purchasedByProduct.ContainsKey(item.ProductId))
-                    purchasedByProduct[item.ProductId] = (0, 0);
-                var existing = purchasedByProduct[item.ProductId];
-                purchasedByProduct[item.ProductId] = (
-                    existing.qty + item.Quantity,
-                    existing.value + item.TotalAmount
-                );
-            }
-        }
-
-        _mostPurchased = purchasedByProduct
-            .Select(kvp =>
-            {
-                ProductDto? product = _products.FirstOrDefault(p => p.Id == kvp.Key);
+                _productDict.TryGetValue(m.ProductId, out ProductDto? product);
                 return new ProductMovementSummary
                 {
-                    ProductId = kvp.Key,
+                    ProductId = m.ProductId,
                     ProductCode = product?.Code ?? "",
                     ProductName = product?.Name ?? "",
                     Unit = product?.Unit ?? "",
-                    Quantity = kvp.Value.qty,
-                    TotalValue = kvp.Value.value
+                    Quantity = m.Quantity,
+                    TotalValue = m.TotalAmount
                 };
             })
             .OrderByDescending(p => p.TotalValue)
             .ToList();
 
-        var soldByProduct = new Dictionary<Guid, (decimal qty, decimal value)>();
-
-        foreach (InvoiceDto invoice in _invoices.Where(i =>
-            i.WarehouseId == _selectedWarehouseId &&
-            i.Type == InvoiceType.Receivable &&
-            i.IssueDate.Date >= _statsFromDate.Date &&
-            i.IssueDate.Date <= _statsToDate.Date))
-        {
-            if (invoice.LineItems == null) continue;
-            foreach (var item in invoice.LineItems)
+        _mostSold = _soldMovements
+            .Select(m =>
             {
-                if (!soldByProduct.ContainsKey(item.ProductId))
-                    soldByProduct[item.ProductId] = (0, 0);
-                var existing = soldByProduct[item.ProductId];
-                soldByProduct[item.ProductId] = (
-                    existing.qty + item.Quantity,
-                    existing.value + item.TotalAmount
-                );
-            }
-        }
-
-        _mostSold = soldByProduct
-            .Select(kvp =>
-            {
-                ProductDto? product = _products.FirstOrDefault(p => p.Id == kvp.Key);
+                _productDict.TryGetValue(m.ProductId, out ProductDto? product);
                 return new ProductMovementSummary
                 {
-                    ProductId = kvp.Key,
+                    ProductId = m.ProductId,
                     ProductCode = product?.Code ?? "",
                     ProductName = product?.Name ?? "",
                     Unit = product?.Unit ?? "",
-                    Quantity = kvp.Value.qty,
-                    TotalValue = kvp.Value.value
+                    Quantity = m.Quantity,
+                    TotalValue = m.TotalAmount
                 };
             })
             .OrderByDescending(p => p.TotalValue)
             .ToList();
     }
 
-    private void OnRowClick(TableRowClickEventArgs<InventoryTransactionDto> args)
+    private async Task RecalculateStatistics()
     {
-        if (args.MouseEventArgs.Detail == 2)
-            Navigation.NavigateTo($"/products/{args.Item!.ProductId}/transactions?warehouse={_selectedWarehouseId}");
+        await LoadProductStatistics();
     }
-
-    private void RecalculateStatistics() => CalculateProductStatistics();
 
     private async Task OpenAdjustDialog()
     {
@@ -799,14 +757,6 @@ else
         }
     }
 
-    private WisDetailActionItem NavAction(string icon, string label, string href, Color color = Color.Default) => new()
-    {
-        Icon = icon,
-        Label = label,
-        Color = color,
-        OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo(href)),
-    };
-
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
         string search, int page, CancellationToken ct)
     {
@@ -828,38 +778,6 @@ else
             }).ToList(),
             TotalCount = result.TotalCount
         };
-    }
-
-    private string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
-    {
-        InventoryTransactionType.Inbound    => $"+{quantity:N2}",
-        InventoryTransactionType.Outbound   => $"-{quantity:N2}",
-        InventoryTransactionType.TransferIn  => $"+{quantity:N2}",
-        InventoryTransactionType.TransferOut => $"-{quantity:N2}",
-        InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-        InventoryTransactionType.Reversed   => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-        _ => quantity.ToString("N2")
-    };
-
-    private Color GetQuantityColor(InventoryTransactionType type, decimal quantity) => type switch
-    {
-        InventoryTransactionType.Inbound    => Color.Success,
-        InventoryTransactionType.Outbound   => Color.Error,
-        InventoryTransactionType.TransferIn  => Color.Tertiary,
-        InventoryTransactionType.TransferOut => Color.Warning,
-        InventoryTransactionType.Adjustment => quantity > 0 ? Color.Success : Color.Error,
-        InventoryTransactionType.Reversed   => quantity > 0 ? Color.Success : Color.Error,
-        _ => Color.Default
-    };
-
-    private decimal GetProductPrice(Guid productId) =>
-        _products.FirstOrDefault(p => p.Id == productId)?.DefaultPrice ?? 0;
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private class ProductStockSummary

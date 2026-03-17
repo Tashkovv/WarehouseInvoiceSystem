@@ -1,5 +1,5 @@
 @page "/purchase-notes/edit/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Application.DTOs.Product
@@ -11,9 +11,6 @@
 @inject IIndividualService IndividualService
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("EditPurchaseNote") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -215,7 +212,6 @@ else
 @code {
     [Parameter] public Guid Id { get; set; }
 
-    private readonly CancellationTokenSource _cts = new();
     private MudForm _form = null!;
     private bool _isValid;
     private bool _loading = true;
@@ -243,13 +239,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadPurchaseNote();
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task<IEnumerable<IndividualDto>> SearchIndividuals(string value, CancellationToken ct)
@@ -425,13 +416,6 @@ else
     private void Cancel()
     {
         Navigation.NavigateTo($"/purchase-notes/{Id}");
-    }
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private sealed record FormSnapshot(

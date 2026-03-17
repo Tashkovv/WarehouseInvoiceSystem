@@ -6,8 +6,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
-    using static System.Runtime.InteropServices.JavaScript.JSType;
 
     public class InvoiceRepository(IDbContextFactory<ApplicationDbContext> factory)
         : BaseRepository(factory), IInvoiceRepository
@@ -278,6 +278,194 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 decimal totalDue = await invoices.SumAsync(i => i.TotalAmount - i.AmountPaid, ct);
 
                 return (totalAmount, totalPaid, totalDue);
+            });
+
+        // ── Dashboard targeted queries ────────────────────────────────────────────
+
+        public Task<IEnumerable<Invoice>> GetRecentAsync(int count, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
+                    .OrderByDescending(i => i.CreatedAt)
+                    .Take(count)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<Invoice>> GetByIssueDateAsync(DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Where(i => i.IssueDate.Date == date.Date)
+                    .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
+                    .OrderByDescending(i => i.IssueDate)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<Invoice>> GetByIssueDateMonthAsync(int year, int month, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Invoice>)await All<Invoice>(context)
+                    .Where(i => i.IssueDate.Year == year && i.IssueDate.Month == month)
+                    .Include(i => i.Company)
+                    .Include(i => i.Warehouse)
+                    .OrderByDescending(i => i.IssueDate)
+                    .ToListAsync(ct);
+            });
+
+        public Task<InvoiceOutstandingResult> GetOutstandingPositionAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var stats = await All<Invoice>(context)
+                    .Where(i => i.Status != InvoiceStatus.Draft)
+                    .GroupBy(i => new { i.Type, i.Status })
+                    .Select(g => new
+                    {
+                        g.Key.Type,
+                        g.Key.Status,
+                        Count = g.Count(),
+                        AmountDue = g.Sum(i => i.TotalAmount - i.AmountPaid)
+                    })
+                    .ToListAsync(ct);
+
+                return new InvoiceOutstandingResult
+                {
+                    ReceivableCount = stats
+                        .Where(s => s.Type == InvoiceType.Receivable && s.Status != InvoiceStatus.Paid && s.Status != InvoiceStatus.Cancelled)
+                        .Sum(s => s.Count),
+                    ReceivableAmount = stats
+                        .Where(s => s.Type == InvoiceType.Receivable && s.Status != InvoiceStatus.Paid && s.Status != InvoiceStatus.Cancelled)
+                        .Sum(s => s.AmountDue),
+                    OverdueReceivableCount = stats
+                        .Where(s => s.Type == InvoiceType.Receivable && s.Status == InvoiceStatus.Overdue)
+                        .Sum(s => s.Count),
+                    OverdueReceivableAmount = stats
+                        .Where(s => s.Type == InvoiceType.Receivable && s.Status == InvoiceStatus.Overdue)
+                        .Sum(s => s.AmountDue),
+                    PayableCount = stats
+                        .Where(s => s.Type == InvoiceType.Payable && s.Status != InvoiceStatus.Paid && s.Status != InvoiceStatus.Cancelled)
+                        .Sum(s => s.Count),
+                    PayableAmount = stats
+                        .Where(s => s.Type == InvoiceType.Payable && s.Status != InvoiceStatus.Paid && s.Status != InvoiceStatus.Cancelled)
+                        .Sum(s => s.AmountDue),
+                    TotalOverdueCount = stats
+                        .Where(s => s.Status == InvoiceStatus.Overdue)
+                        .Sum(s => s.Count)
+                };
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetTopClientsByRevenueAsync(
+            DateTime from, DateTime to, int topCount, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Receivable &&
+                                i.Status != InvoiceStatus.Draft &&
+                                i.Status != InvoiceStatus.Cancelled &&
+                                i.IssueDate.Date >= from.Date &&
+                                i.IssueDate.Date <= to.Date)
+                    .GroupBy(i => new { i.CompanyId, i.Company.Name })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.CompanyId,
+                        PartnerName = g.Key.Name,
+                        Count = g.Count(),
+                        Amount = g.Sum(i => i.TotalAmount)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .Take(topCount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetTopPayableVendorsBySpendAsync(
+            DateTime from, DateTime to, int topCount, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Payable &&
+                                i.Status != InvoiceStatus.Draft &&
+                                i.Status != InvoiceStatus.Cancelled &&
+                                i.IssueDate.Date >= from.Date &&
+                                i.IssueDate.Date <= to.Date)
+                    .GroupBy(i => new { i.CompanyId, i.Company.Name })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.CompanyId,
+                        PartnerName = g.Key.Name,
+                        Count = g.Count(),
+                        Amount = g.Sum(i => i.TotalAmount)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .Take(topCount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetOverdueClientSummariesAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue)
+                    .GroupBy(i => new { i.CompanyId, i.Company.Name })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.CompanyId,
+                        PartnerName = g.Key.Name,
+                        Count = g.Count(),
+                        Amount = g.Sum(i => i.TotalAmount - i.AmountPaid)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Payable &&
+                                (i.Status == InvoiceStatus.Sent ||
+                                 i.Status == InvoiceStatus.PartiallyPaid ||
+                                 i.Status == InvoiceStatus.Overdue))
+                    .GroupBy(i => new { i.CompanyId, i.Company.Name })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.CompanyId,
+                        PartnerName = g.Key.Name,
+                        Count = g.Count(),
+                        Amount = g.Sum(i => i.TotalAmount - i.AmountPaid)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<ProductMovementResult>> GetProductMovementByWarehouseAsync(
+            Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var results = await All<InvoiceLine>(context)
+                    .Where(li => li.Invoice.WarehouseId == warehouseId &&
+                                 li.Invoice.Type == type &&
+                                 li.Invoice.DeletedOn == null &&
+                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.IssueDate.Date >= from.Date &&
+                                 li.Invoice.IssueDate.Date <= to.Date)
+                    .GroupBy(li => li.ProductId)
+                    .Select(g => new
+                    {
+                        ProductId = g.Key,
+                        Quantity = (decimal)g.Sum(li => li.Quantity),
+                        TotalAmount = g.Sum(li => li.Quantity * li.UnitPrice * (1 + li.TaxRate / 100))
+                    })
+                    .ToListAsync(ct);
+
+                return results
+                    .Select(r => new ProductMovementResult
+                    {
+                        ProductId = r.ProductId,
+                        Quantity = r.Quantity,
+                        TotalAmount = r.TotalAmount
+                    });
             });
 
         private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)

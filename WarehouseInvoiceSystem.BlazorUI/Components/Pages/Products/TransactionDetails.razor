@@ -1,5 +1,5 @@
 ﻿@page "/products/{Id:guid}/transactions"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
@@ -12,9 +12,6 @@
 @inject IWarehouseService WarehouseService
 @inject ICompanyService CompanyService
 @inject IIndividualService IndividualService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("TransactionHistory") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -347,7 +344,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     [SupplyParameterFromQuery(Name = "warehouse")]
@@ -408,7 +404,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadAsync();
     }
 
@@ -416,11 +412,6 @@ else
     {
         if (WarehouseQueryParam.HasValue && _selectedWarehouseId == null)
             _selectedWarehouseId = WarehouseQueryParam;
-    }
-
-    private async void OnLanguageChanged()
-    {
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadAsync()
@@ -727,10 +718,4 @@ else
             await _historyTable.ReloadServerData();
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

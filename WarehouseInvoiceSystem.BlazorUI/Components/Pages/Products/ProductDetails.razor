@@ -1,5 +1,5 @@
 ﻿@page "/products/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
@@ -10,11 +10,7 @@
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject WisDialogService WisDialog
 @inject IInventoryService InventoryService
-@inject ISnackbar Snackbar
 
 <PageTitle>@Localization.GetString("ProductDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -271,7 +267,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter] public Guid Id { get; set; }
 
     private bool _loading = true;
@@ -282,7 +277,6 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
-    private WisActionItem _act = null!;
     private WisDetailActionItem? _transactionsAction;
 
     // ── Warehouse autocomplete data source ────────────────────────────────────
@@ -397,12 +391,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        _act = new WisActionItem(this);
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadProduct();
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         BuildActions();
         await InvokeAsync(StateHasChanged);
@@ -414,11 +407,11 @@ else
 
         try
         {
-            _product = await ProductService.GetProductByIdAsync(Id, _cts.Token);
+            _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
             if (_product != null)
             {
                 // Single call — replaces GetProductAnalyticsAsync + GetAllWarehousesAsync + GetProductTransactionHistoryAsync
-                _details = await ProductService.GetProductDetailsAsync(Id, _cts.Token);
+                _details = await ProductService.GetProductDetailsAsync(Id, CancellationToken.None);
 
                 _selectedWarehouseId = null;
 
@@ -639,10 +632,4 @@ else
         }
     }
 
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
-    }
 }

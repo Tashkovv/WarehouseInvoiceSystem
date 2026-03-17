@@ -16,5 +16,6 @@
         Task UpdateIndividualAsync(Guid id, UpdateIndividualDto updateDto);
         Task<bool> DeleteIndividualAsync(Guid id);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
+        Task<(int total, int active)> GetCountsAsync(CancellationToken ct = default);
     }
 }

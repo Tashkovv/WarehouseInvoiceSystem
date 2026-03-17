@@ -1,5 +1,5 @@
 @page "/invoices/edit/{Id:guid}"
-@implements IDisposable
+@inherits PageBase
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
@@ -11,9 +11,6 @@
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject ISnackbar Snackbar
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
 
@@ -341,7 +338,6 @@ else
 }
 
 @code {
-    private readonly CancellationTokenSource _cts = new();
     [Parameter]
     public Guid Id { get; set; }
 
@@ -381,11 +377,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         await LoadInvoice();
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         _currentCultureKey = CultureInfo.CurrentCulture.Name;
         await InvokeAsync(StateHasChanged);
@@ -456,7 +452,7 @@ else
 
         try
         {
-            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouse.Id, _cts.Token);
+            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouse.Id, CancellationToken.None);
             _stockByProduct = (levels ?? []).ToDictionary(s => s.ProductId);
         }
         catch (Exception ex)
@@ -484,12 +480,12 @@ else
 
         try
         {
-            _invoice = await InvoiceService.GetInvoiceByIdAsync(Id, _cts.Token);
+            _invoice = await InvoiceService.GetInvoiceByIdAsync(Id, CancellationToken.None);
 
             if (_invoice != null)
             {
-                _selectedCompany = await CompanyService.GetCompanyByIdAsync(_invoice.CompanyId, _cts.Token);
-                _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(_invoice.WarehouseId, _cts.Token);
+                _selectedCompany = await CompanyService.GetCompanyByIdAsync(_invoice.CompanyId, CancellationToken.None);
+                _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(_invoice.WarehouseId, CancellationToken.None);
                 _selectedType = _invoice.Type;
                 await LoadStockForWarehouseAsync();
 
@@ -503,7 +499,7 @@ else
                 List<LineItemModel> lineItems = [];
                 foreach (InvoiceLineDto li in _invoice.LineItems)
                 {
-                    ProductDto? product = await ProductService.GetProductByIdAsync(li.ProductId, _cts.Token);
+                    ProductDto? product = await ProductService.GetProductByIdAsync(li.ProductId, CancellationToken.None);
                     lineItems.Add(new LineItemModel
                     {
                         Id = li.Id,
@@ -658,13 +654,6 @@ else
         {
             _saving = false;
         }
-    }
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private sealed record FormSnapshot(

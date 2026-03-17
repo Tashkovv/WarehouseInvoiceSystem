@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface ICompanyRepository
     {
@@ -21,8 +22,7 @@
         Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
 
         Task<decimal> GetTotalOwedByCompanyAsync(Guid companyId, CancellationToken ct = default);
-
         Task<decimal> GetTotalOwedToCompanyAsync(Guid companyId, CancellationToken ct = default);
-
+        Task<PartnerCountsResult> GetPartnerCountsAsync(CancellationToken ct = default);
     }
 }

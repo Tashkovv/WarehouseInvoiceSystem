@@ -228,6 +228,12 @@
             await invoiceRepository.UpdateAsync(invoice);
         }
 
+        public async Task<IEnumerable<PaymentDto>> GetRecentAsync(int count, CancellationToken ct = default)
+        {
+            IEnumerable<Payment> payments = await paymentRepository.GetRecentAsync(count, ct);
+            return payments.Select(MapToDto);
+        }
+
         private async Task<bool> InvoiceHadSentStatusAsync(Invoice invoice)
         {
             IEnumerable<Payment> remainingPayments =

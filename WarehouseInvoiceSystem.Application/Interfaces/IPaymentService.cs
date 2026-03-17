@@ -14,5 +14,6 @@
         Task UpdatePaymentAsync(Guid id, UpdatePaymentDto updateDto);
         Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
         Task<bool> DeletePaymentAsync(Guid id);
+        Task<IEnumerable<PaymentDto>> GetRecentAsync(int count, CancellationToken ct = default);
     }
 }

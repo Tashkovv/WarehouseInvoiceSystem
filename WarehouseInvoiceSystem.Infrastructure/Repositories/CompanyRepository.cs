@@ -6,6 +6,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class CompanyRepository(IDbContextFactory<ApplicationDbContext> factory)
@@ -139,6 +140,23 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
             return q;
         }
+
+        public Task<PartnerCountsResult> GetPartnerCountsAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Company> q = All<Company>(context);
+                int total = await q.CountAsync(ct);
+                int active = await q.CountAsync(c => c.IsActive, ct);
+                int clients = await q.CountAsync(c => c.Type == CompanyType.Client || c.Type == CompanyType.Both, ct);
+                int vendors = await q.CountAsync(c => c.Type == CompanyType.Vendor || c.Type == CompanyType.Both, ct);
+                return new PartnerCountsResult
+                {
+                    Total = total,
+                    Active = active,
+                    Clients = clients,
+                    Vendors = vendors
+                };
+            });
 
         private static IQueryable<Company> ApplySort(IQueryable<Company> q, string? sortBy, bool ascending)
             => sortBy switch

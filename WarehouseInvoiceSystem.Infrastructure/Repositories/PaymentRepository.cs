@@ -131,6 +131,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             return q;
         }
 
+        public Task<IEnumerable<Payment>> GetRecentAsync(int count, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<Payment>)await All<Payment>(context)
+                    .Include(p => p.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .OrderByDescending(p => p.PaymentDate)
+                    .Take(count)
+                    .ToListAsync(ct);
+            });
+
         private static IQueryable<Payment> ApplySort(IQueryable<Payment> q, string? sortBy, bool ascending)
             => sortBy switch
             {

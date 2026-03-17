@@ -1,5 +1,5 @@
 @page "/invoices/create"
-@implements IDisposable
+@inherits PageBase
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
@@ -11,9 +11,6 @@
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
-@inject ILocalizationService Localization
-@inject NavigationManager Navigation
-@inject ISnackbar Snackbar
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
 
@@ -326,8 +323,6 @@ else
 @code {
     [Parameter, SupplyParameterFromQuery(Name = "copyFrom")] public Guid? CopyFrom { get; set; }
 
-    private readonly CancellationTokenSource _cts = new();
-
     private WisDetailActionItem _addLineItemAction => new()
     {
         Icon = Icons.Material.Filled.Add,
@@ -358,7 +353,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Localization.OnLanguageChanged += OnLanguageChanged;
+        await base.OnInitializedAsync();
         if (CopyFrom.HasValue)
             await PrefillFromInvoice(CopyFrom.Value);
         else
@@ -369,7 +364,7 @@ else
         }
     }
 
-    private async void OnLanguageChanged()
+    protected override async void OnLanguageChanged()
     {
         _currentCultureKey = CultureInfo.CurrentCulture.Name;
         await InvokeAsync(StateHasChanged);
@@ -380,7 +375,7 @@ else
         _loading = true;
         try
         {
-            _selectedWarehouse = await WarehouseService.GetDefaultWarehouseAsync(_cts.Token);
+            _selectedWarehouse = await WarehouseService.GetDefaultWarehouseAsync(CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -397,7 +392,7 @@ else
         _loading = true;
         try
         {
-            InvoiceDto? source = await InvoiceService.GetInvoiceByIdAsync(sourceId, _cts.Token);
+            InvoiceDto? source = await InvoiceService.GetInvoiceByIdAsync(sourceId, CancellationToken.None);
             if (source == null)
             {
                 await LoadDefaultWarehouse();
@@ -405,9 +400,9 @@ else
                 return;
             }
 
-            _selectedCompany = await CompanyService.GetCompanyByIdAsync(source.CompanyId, _cts.Token);
+            _selectedCompany = await CompanyService.GetCompanyByIdAsync(source.CompanyId, CancellationToken.None);
             _selectedType = source.Type;
-            _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(source.WarehouseId, _cts.Token);
+            _selectedWarehouse = await WarehouseService.GetWarehouseByIdAsync(source.WarehouseId, CancellationToken.None);
             await LoadStockForWarehouseAsync();
 
             int termsDays = (int)(source.DueDate - source.IssueDate).TotalDays;
@@ -496,7 +491,7 @@ else
 
         try
         {
-            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouse.Id, _cts.Token);
+            IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_selectedWarehouse.Id, CancellationToken.None);
             _stockByProduct = (levels ?? []).ToDictionary(s => s.ProductId);
         }
         catch (Exception ex)
@@ -629,13 +624,6 @@ else
         {
             _saving = false;
         }
-    }
-
-    public void Dispose()
-    {
-        _cts.Cancel();
-        _cts.Dispose();
-        Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private sealed class LineItemModel

@@ -139,6 +139,15 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             return q;
         }
 
+        public Task<(int total, int active)> GetCountsAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Individual> q = All<Individual>(context);
+                int total = await q.CountAsync(ct);
+                int active = await q.CountAsync(i => i.IsActive, ct);
+                return (total, active);
+            });
+
         private static IQueryable<Individual> ApplySort(IQueryable<Individual> q, string? sortBy, bool ascending)
             => sortBy switch
             {
