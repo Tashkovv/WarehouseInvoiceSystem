@@ -2,22 +2,22 @@
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
-@using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
-@using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
+@using WarehouseInvoiceSystem.Domain.Queries.Results
 @inject IInvoiceService InvoiceService
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IPaymentService PaymentService
 @inject IInventoryService InventoryService
-@inject IProductService ProductService
 @inject IIndividualService IndividualService
 @inject ICompanyService CompanyService
 @inject IWarehouseService WarehouseService
+@inject IProductService ProductService
 
 <PageTitle>@Localization.GetString("Overview") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -53,24 +53,24 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
-                           Value="@_invoicesReceivableToday.Count().ToString()"
-                           Subtitle="@_invoicesReceivableToday.Sum(i => i.TotalAmount).ToString("C")"
+                           Value="@_dayIssueSummary.ReceivableCount.ToString()"
+                           Subtitle="@_dayIssueSummary.ReceivableAmount.ToString("C")"
                            Icon="@Icons.Material.Filled.RequestQuote"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
-                           Value="@_purchaseNotesToday.Count().ToString()"
-                           Subtitle="@_purchaseNotesToday.Sum(pn => pn.TotalAmount).ToString("C")"
+                           Value="@_dayPurchaseNoteSummary.Count.ToString()"
+                           Subtitle="@_dayPurchaseNoteSummary.Amount.ToString("C")"
                            Icon="@Icons.Material.Filled.Receipt"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("RecentPayments")"
-                           Value="@_paymentsToday.Count().ToString()"
-                           Subtitle="@_paymentsToday.Sum(p => p.Amount).ToString("C")"
+                           Value="@_dayPaymentSummary.TotalCount.ToString()"
+                           Subtitle="@_dayPaymentSummary.TotalAmount.ToString("C")"
                            Icon="@Icons.Material.Filled.Payments"
                            IconColor="Color.Default" />
         </MudItem>
@@ -89,8 +89,8 @@ else
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalReceivables")"
-                           Value="@_totalReceivables.ToString("C")"
-                           Subtitle="@($"{_openReceivablesCount} {Localization.GetString("Invoices")}")"
+                           Value="@_invoicePosition.ReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.AccountBalanceWallet"
                            IconColor="Color.Primary" />
         </MudItem>
@@ -98,17 +98,17 @@ else
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayables.ToString("C")"
-                           Subtitle="@($"{_openPayableInvoicesCount} {Localization.GetString("Invoices")} · {_openPurchaseNotesCount} {Localization.GetString("PurchaseNotes")}")"
+                           Subtitle="@($"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")} · {_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
                            Icon="@Icons.Material.Filled.AccountBalance"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                           Value="@_overdueCount.ToString()"
-                           Subtitle="@_overdueAmount.ToString("C")"
+                           Value="@_invoicePosition.OverdueReceivableCount.ToString()"
+                           Subtitle="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_overdueCount > 0 ? Color.Error : Color.Success)" />
+                           IconColor="@(_invoicePosition.OverdueReceivableCount > 0 ? Color.Error : Color.Success)" />
         </MudItem>
 
         <!-- ── Row 3: Warehouse Health ── -->
@@ -128,33 +128,33 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalProducts")"
-                           Value="@_filteredStockLevels.Select(sl => sl.ProductId).Distinct().Count().ToString()"
-                           Subtitle="@($"{_filteredStockLevels.Count(sl => sl.Quantity > 0)} {Localization.GetString("InStock")}")"
+                           Value="@_stockSummary.TotalProducts.ToString()"
+                           Subtitle="@($"{_stockSummary.InStockCount} {Localization.GetString("InStock")}")"
                            Icon="@Icons.Material.Filled.Inventory2"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalStockValue")"
-                           Value="@_totalStockValue.ToString("C")"
-                           Subtitle="@(_filterWarehouseId.HasValue ? _filteredStockLevels.FirstOrDefault()?.WarehouseName ?? string.Empty : $"{_filteredStockLevels.Select(sl => sl.WarehouseId).Distinct().Count()} {Localization.GetString("Warehouses")}")"
+                           Value="@_stockSummary.TotalStockValue.ToString("C")"
+                           Subtitle="@_stockValueSubtitle"
                            Icon="@Icons.Material.Filled.Warehouse"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("LowStock")"
-                           Value="@_lowStockCount.ToString()"
+                           Value="@_stockSummary.LowStockCount.ToString()"
                            Subtitle="@Localization.GetString("ProductsBelowMinimum")"
                            Icon="@Icons.Material.Filled.TrendingDown"
-                           IconColor="@(_lowStockCount > 0 ? Color.Warning : Color.Default)" />
+                           IconColor="@(_stockSummary.LowStockCount > 0 ? Color.Warning : Color.Default)" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OutOfStock")"
-                           Value="@_outOfStockCount.ToString()"
+                           Value="@_stockSummary.OutOfStockCount.ToString()"
                            Icon="@Icons.Material.Filled.RemoveShoppingCart"
-                           IconColor="@(_outOfStockCount > 0 ? Color.Error : Color.Success)" />
+                           IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)" />
         </MudItem>
 
         <!-- ── Row 4: Attention Needed ── -->
@@ -348,107 +348,32 @@ else
 }
 
 @code {
-    private List<InvoiceDto> _invoices = [];
-    private List<PurchaseNoteDto> _purchaseNotes = [];
-    private List<PaymentDto> _payments = [];
-    private List<StockLevelDto> _allStockLevels = [];
-    private List<ProductDto> _products = [];
+    // ── State ──────────────────────────────────────────────────────────────────
+
+    private DayIssueSummaryResult _dayIssueSummary = new();
+    private DayPaymentSummaryResult _dayPaymentSummary = new();
+    private DayPurchaseNoteSummaryResult _dayPurchaseNoteSummary = new();
+    private InvoiceOutstandingResult _invoicePosition = new();
+    private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
+    private WarehouseStockSummaryResult _stockSummary = new();
+    private List<InvoiceDto> _overdueInvoices = [];
+    private List<PurchaseNoteDto> _unpaidPurchaseNotes = [];
+    private List<StockLevelDto> _stockAlerts = [];
     private Guid? _filterWarehouseId;
+    private string? _selectedWarehouseName;
 
-    // ── Today's pulse ──────────────────────────────────────────────────────────
-
-    private IEnumerable<InvoiceDto> _invoicesReceivableToday =>
-        _invoices.Where(i => i.Type == InvoiceType.Receivable && i.IssueDate.Date == DateTime.Today);
-
-    private IEnumerable<InvoiceDto> _invoicesPayableToday =>
-        _invoices.Where(i => i.Type == InvoiceType.Payable && i.IssueDate.Date == DateTime.Today);
-
-    private IEnumerable<PurchaseNoteDto> _purchaseNotesToday =>
-        _purchaseNotes.Where(pn => pn.PaidDate.HasValue && pn.PaidDate.Value.Date == DateTime.Today);
-
-    private IEnumerable<PaymentDto> _paymentsToday =>
-        _payments.Where(p => p.PaymentDate.Date == DateTime.Today);
+    // ── Computed display values ─────────────────────────────────────────────────
 
     private decimal _profitToday =>
-        _paymentsToday
-            .Where(p => _invoices.FirstOrDefault(i => i.Id == p.InvoiceId)?.Type == InvoiceType.Receivable)
-            .Sum(p => p.Amount)
-        - _paymentsToday
-            .Where(p => _invoices.FirstOrDefault(i => i.Id == p.InvoiceId)?.Type == InvoiceType.Payable)
-            .Sum(p => p.Amount)
-        - _purchaseNotesToday.Sum(pn => pn.TotalAmount);
-
-    // ── Financial health ───────────────────────────────────────────────────────
-
-    private decimal _totalReceivables =>
-        _invoices
-            .Where(i => i.Type == InvoiceType.Receivable &&
-                        (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue))
-            .Sum(i => i.AmountDue);
-
-    private int _openReceivablesCount =>
-        _invoices.Count(i => i.Type == InvoiceType.Receivable &&
-                             (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue));
+        _dayPaymentSummary.ReceivedAmount - _dayPaymentSummary.PaidOutAmount - _dayPurchaseNoteSummary.Amount;
 
     private decimal _totalPayables =>
-        _invoices
-            .Where(i => i.Type == InvoiceType.Payable &&
-                        (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue))
-            .Sum(i => i.AmountDue)
-        + _purchaseNotes
-            .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
-            .Sum(pn => pn.TotalAmount);
+        _invoicePosition.PayableAmount + _purchaseNotePosition.unpaidAmount;
 
-    private int _openPayableInvoicesCount =>
-        _invoices.Count(i => i.Type == InvoiceType.Payable &&
-                             (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue));
-
-    private int _openPurchaseNotesCount =>
-        _purchaseNotes.Count(pn => pn.Status == PurchaseNoteStatus.Pending);
-
-    private int _overdueCount =>
-        _invoices.Count(i => i.Status == InvoiceStatus.Overdue && i.Type == InvoiceType.Receivable);
-
-    private decimal _overdueAmount =>
-        _invoices
-            .Where(i => i.Status == InvoiceStatus.Overdue && i.Type == InvoiceType.Receivable)
-            .Sum(i => i.AmountDue);
-
-    // ── Warehouse health ───────────────────────────────────────────────────────
-
-    private IEnumerable<StockLevelDto> _filteredStockLevels =>
+    private string _stockValueSubtitle =>
         _filterWarehouseId.HasValue
-            ? _allStockLevels.Where(sl => sl.WarehouseId == _filterWarehouseId.Value)
-            : _allStockLevels;
-
-    private decimal _totalStockValue =>
-        _filteredStockLevels.Sum(sl => sl.Quantity * GetProductPrice(sl.ProductId));
-
-    private int _lowStockCount =>
-        _filteredStockLevels.Count(sl => sl.MinimumQuantity.HasValue && sl.Quantity > 0 && sl.Quantity <= sl.MinimumQuantity);
-
-    private int _outOfStockCount =>
-        _filteredStockLevels.Count(sl => sl.Quantity == 0);
-
-    // ── Attention needed ───────────────────────────────────────────────────────
-
-    private IEnumerable<InvoiceDto> _overdueInvoices =>
-        _invoices
-            .Where(i => i.Status == InvoiceStatus.Overdue && i.Type == InvoiceType.Receivable)
-            .Where(i => !_filterWarehouseId.HasValue || i.WarehouseId == _filterWarehouseId.Value)
-            .OrderByDescending(i => DateTime.Today - i.DueDate);
-
-    private IEnumerable<PurchaseNoteDto> _unpaidPurchaseNotes =>
-        _purchaseNotes
-            .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
-            .Where(pn => !_filterWarehouseId.HasValue || pn.WarehouseId == _filterWarehouseId.Value)
-            .OrderBy(pn => pn.PurchaseDate);
-
-    private IEnumerable<StockLevelDto> _stockAlerts =>
-        _filteredStockLevels
-            .Where(sl => sl.Quantity == 0 ||
-                         (sl.MinimumQuantity.HasValue && sl.Quantity > 0 && sl.Quantity <= sl.MinimumQuantity))
-            .OrderBy(sl => sl.Quantity);
+            ? _selectedWarehouseName ?? string.Empty
+            : $"{_stockSummary.WarehouseCount} {Localization.GetString("Warehouses")}";
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -464,19 +389,21 @@ else
 
         try
         {
-            Task<IEnumerable<InvoiceDto>> invoicesTask = InvoiceService.GetAllInvoicesAsync(_cts.Token);
-            Task<IEnumerable<PurchaseNoteDto>> purchaseNotesTask = PurchaseNoteService.GetAllPurchaseNotesAsync(_cts.Token);
-            Task<IEnumerable<PaymentDto>> paymentsTask = PaymentService.GetAllPaymentsAsync(_cts.Token);
-            Task<IEnumerable<StockLevelDto>> stockTask = InventoryService.GetAllStockLevelAsync(_cts.Token);
-            Task<IEnumerable<ProductDto>> productsTask = ProductService.GetAllProductsAsync(_cts.Token);
+            DateTime today = DateTime.Today;
 
-            await Task.WhenAll(invoicesTask, purchaseNotesTask, paymentsTask, stockTask, productsTask);
-
-            _invoices = invoicesTask.Result.ToList();
-            _purchaseNotes = purchaseNotesTask.Result.ToList();
-            _payments = paymentsTask.Result.ToList();
-            _allStockLevels = stockTask.Result.ToList();
-            _products = productsTask.Result.ToList();
+            await Task.WhenAll(
+                InvoiceService.GetDayIssueSummaryAsync(today, _cts.Token)
+                    .ContinueWith(t => _dayIssueSummary = t.Result),
+                PaymentService.GetDayPaymentSummaryAsync(today, _cts.Token)
+                    .ContinueWith(t => _dayPaymentSummary = t.Result),
+                PurchaseNoteService.GetDayPaidSummaryAsync(today, _cts.Token)
+                    .ContinueWith(t => _dayPurchaseNoteSummary = t.Result),
+                InvoiceService.GetOutstandingPositionAsync(_cts.Token)
+                    .ContinueWith(t => _invoicePosition = t.Result),
+                PurchaseNoteService.GetOutstandingPositionAsync(_cts.Token)
+                    .ContinueWith(t => _purchaseNotePosition = t.Result),
+                LoadWarehouseData()
+            );
         }
         catch (Exception ex)
         {
@@ -486,6 +413,20 @@ else
         {
             _loading = false;
         }
+    }
+
+    private async Task LoadWarehouseData()
+    {
+        await Task.WhenAll(
+            InventoryService.GetWarehouseStockSummaryAsync(_filterWarehouseId, _cts.Token)
+                .ContinueWith(t => _stockSummary = t.Result),
+            InvoiceService.GetTopOverdueReceivablesAsync(_filterWarehouseId, 10, _cts.Token)
+                .ContinueWith(t => _overdueInvoices = t.Result.ToList()),
+            PurchaseNoteService.GetTopUnpaidAsync(_filterWarehouseId, 10, _cts.Token)
+                .ContinueWith(t => _unpaidPurchaseNotes = t.Result.ToList()),
+            InventoryService.GetStockAlertsAsync(_filterWarehouseId, 10, _cts.Token)
+                .ContinueWith(t => _stockAlerts = t.Result.ToList())
+        );
     }
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
@@ -514,21 +455,28 @@ else
         };
     }
 
-    private void OnWarehouseFilterChanged(Guid value)
+    private async Task OnWarehouseFilterChanged(Guid value)
     {
         _filterWarehouseId = value == default ? null : value;
+        if (_filterWarehouseId.HasValue)
+        {
+            WarehouseDto? wh = await WarehouseService.GetWarehouseByIdAsync(_filterWarehouseId.Value, _cts.Token);
+            _selectedWarehouseName = wh?.Name;
+        }
+        else
+        {
+            _selectedWarehouseName = null;
+        }
+        await LoadWarehouseData();
     }
-
-    private decimal GetProductPrice(Guid productId) =>
-        _products.FirstOrDefault(p => p.Id == productId)?.DefaultPrice ?? 0;
 
     private async Task OpenAdjustStockDialog()
     {
         if (await WisDialog.ShowFormAsync<AdjustStockDialog, bool>(
                 Localization.GetString("AdjustStock"), MaxWidth.Small) == true)
         {
-            IEnumerable<StockLevelDto> updated = await InventoryService.GetAllStockLevelAsync(_cts.Token);
-            _allStockLevels = updated.ToList();
+            await LoadWarehouseData();
+            StateHasChanged();
         }
     }
 

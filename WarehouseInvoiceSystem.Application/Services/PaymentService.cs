@@ -7,6 +7,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class PaymentService(IPaymentRepository paymentRepository,
                                 IInvoiceRepository invoiceRepository,
@@ -233,6 +234,9 @@
             IEnumerable<Payment> payments = await paymentRepository.GetRecentAsync(count, ct);
             return payments.Select(MapToDto);
         }
+
+        public Task<DayPaymentSummaryResult> GetDayPaymentSummaryAsync(DateTime date, CancellationToken ct = default)
+            => paymentRepository.GetDayPaymentSummaryAsync(date, ct);
 
         private async Task<bool> InvoiceHadSentStatusAsync(Invoice invoice)
         {

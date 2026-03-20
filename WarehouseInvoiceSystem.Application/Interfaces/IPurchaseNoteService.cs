@@ -5,6 +5,7 @@
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IPurchaseNoteService
     {
@@ -43,5 +44,12 @@
         Task<IEnumerable<PartnerSummaryDto>> GetTopVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
         Task<IEnumerable<PartnerAttentionDto>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<ProductMovementDto>> GetProductPurchasesByWarehouseAsync(Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default);
+
+        // ── Dashboard aggregates ──────────────────────────────────────────────────
+        Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteDto>> GetTopUnpaidAsync(Guid? warehouseId, int top, CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementWithNameDto>> GetTopProductPurchasesAsync(Guid warehouseId, DateTime from, DateTime to, int top, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default);
     }
 }

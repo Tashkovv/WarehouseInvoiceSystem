@@ -468,6 +468,42 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     });
             });
 
+        public Task<IEnumerable<ProductMovementWithNameResult>> GetTopProductMovementByWarehouseAsync(
+            Guid warehouseId, InvoiceType type, DateTime from, DateTime to, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var results = await All<InvoiceLine>(context)
+                    .Where(li => li.Invoice.WarehouseId == warehouseId &&
+                                 li.Invoice.Type == type &&
+                                 li.Invoice.DeletedOn == null &&
+                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.IssueDate.Date >= from.Date &&
+                                 li.Invoice.IssueDate.Date <= to.Date)
+                    .GroupBy(li => new { li.ProductId, li.Product.Code, li.Product.Name, li.Product.Unit })
+                    .Select(g => new
+                    {
+                        g.Key.ProductId,
+                        g.Key.Code,
+                        g.Key.Name,
+                        g.Key.Unit,
+                        Quantity = (decimal)g.Sum(li => li.Quantity),
+                        TotalAmount = g.Sum(li => li.Quantity * li.UnitPrice * (1 + li.TaxRate / 100))
+                    })
+                    .OrderByDescending(r => r.TotalAmount)
+                    .Take(top)
+                    .ToListAsync(ct);
+
+                return (IEnumerable<ProductMovementWithNameResult>)results.Select(r => new ProductMovementWithNameResult
+                {
+                    ProductId = r.ProductId,
+                    ProductCode = r.Code,
+                    ProductName = r.Name,
+                    Unit = r.Unit,
+                    Quantity = r.Quantity,
+                    TotalAmount = r.TotalAmount
+                }).ToList();
+            });
+
         public Task<CompanyAnalyticsResult> GetCompanyAnalyticsDataAsync(Guid companyId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
@@ -574,6 +610,89 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     TotalCount = totalCount,
                     Page = query.Page,
                     PageSize = query.PageSize
+                };
+            });
+
+        // ── Home dashboard aggregates ─────────────────────────────────────────────
+
+        public Task<DayIssueSummaryResult> GetDayIssueSummaryAsync(DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime day = date.Date;
+                var result = await All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Receivable && i.IssueDate.Date == day)
+                    .GroupBy(_ => 1)
+                    .Select(g => new DayIssueSummaryResult
+                    {
+                        ReceivableCount = g.Count(),
+                        ReceivableAmount = g.Sum(i => i.TotalAmount)
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return result ?? new DayIssueSummaryResult();
+            });
+
+        public Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(
+            Guid? warehouseId, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<Invoice> q = All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Receivable && i.Status == InvoiceStatus.Overdue)
+                    .Include(i => i.Company)
+                    .Include(i => i.Warehouse);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(i => i.WarehouseId == warehouseId.Value);
+
+                return (IEnumerable<Invoice>)await q
+                    .OrderBy(i => i.DueDate)
+                    .Take(top)
+                    .ToListAsync(ct);
+            });
+
+        public Task<InvoicePeriodSummaryResult> GetDayInvoiceSummaryAsync(
+            DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var rows = await All<Invoice>(context)
+                    .Where(i => i.IssueDate.Date == date.Date &&
+                                i.Status != InvoiceStatus.Cancelled)
+                    .GroupBy(i => i.Type)
+                    .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
+                    .ToListAsync(ct);
+
+                var receivable = rows.FirstOrDefault(r => r.Type == InvoiceType.Receivable);
+                var payable    = rows.FirstOrDefault(r => r.Type == InvoiceType.Payable);
+
+                return new InvoicePeriodSummaryResult
+                {
+                    ReceivableCount  = receivable?.Count  ?? 0,
+                    ReceivableAmount = receivable?.Amount ?? 0,
+                    PayableCount     = payable?.Count     ?? 0,
+                    PayableAmount    = payable?.Amount    ?? 0
+                };
+            });
+
+        public Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(
+            int year, int month, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var rows = await All<Invoice>(context)
+                    .Where(i => i.IssueDate.Year == year &&
+                                i.IssueDate.Month == month &&
+                                i.Status != InvoiceStatus.Cancelled)
+                    .GroupBy(i => i.Type)
+                    .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
+                    .ToListAsync(ct);
+
+                var receivable = rows.FirstOrDefault(r => r.Type == InvoiceType.Receivable);
+                var payable    = rows.FirstOrDefault(r => r.Type == InvoiceType.Payable);
+
+                return new InvoicePeriodSummaryResult
+                {
+                    ReceivableCount  = receivable?.Count  ?? 0,
+                    ReceivableAmount = receivable?.Amount ?? 0,
+                    PayableCount     = payable?.Count     ?? 0,
+                    PayableAmount    = payable?.Amount    ?? 0
                 };
             });
 

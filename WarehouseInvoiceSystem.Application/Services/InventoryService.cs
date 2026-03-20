@@ -8,6 +8,7 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class InventoryService(
         IStockLevelRepository stockLevelRepository,
@@ -56,6 +57,31 @@
         {
             IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetLowStockItemsAsync(warehouseId, ct);
             return stockLevels.Select(MapStockLevelToDto);
+        }
+
+        public Task<WarehouseStockSummaryResult> GetWarehouseStockSummaryAsync(
+            Guid? warehouseId, CancellationToken ct = default)
+            => stockLevelRepository.GetWarehouseStockSummaryAsync(warehouseId, ct);
+
+        public async Task<IEnumerable<StockLevelDto>> GetStockAlertsAsync(
+            Guid? warehouseId, int top, CancellationToken ct = default)
+        {
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetStockAlertsAsync(warehouseId, top, ct);
+            return stockLevels.Select(MapStockLevelToDto);
+        }
+
+        public async Task<IEnumerable<StockLevelDto>> GetTopProductsByStockAsync(
+            Guid warehouseId, int top, CancellationToken ct = default)
+        {
+            IEnumerable<StockLevel> stockLevels = await stockLevelRepository.GetTopByStockAsync(warehouseId, top, ct);
+            return stockLevels.Select(MapStockLevelToDto);
+        }
+
+        public async Task<IEnumerable<InventoryTransactionDto>> GetRecentTransactionsAsync(
+            Guid warehouseId, int top, CancellationToken ct = default)
+        {
+            IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetTopRecentByWarehouseAsync(warehouseId, top, ct);
+            return transactions.Select(MapTransactionToDto);
         }
 
         public async Task<StockLevelDto> UpdateStockLevelAsync(Guid productId, Guid warehouseId, UpdateStockLevelDto updateDto)

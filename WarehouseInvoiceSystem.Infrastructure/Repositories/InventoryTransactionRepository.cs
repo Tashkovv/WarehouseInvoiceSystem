@@ -119,6 +119,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return transaction;
             });
 
+        public Task<IEnumerable<InventoryTransaction>> GetTopRecentByWarehouseAsync(
+            Guid warehouseId, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<InventoryTransaction>)await All<InventoryTransaction>(context)
+                    .Where(t => t.WarehouseId == warehouseId)
+                    .Include(t => t.Product)
+                    .Include(t => t.Warehouse)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Take(top)
+                    .ToListAsync(ct);
+            });
+
         public Task CreateBatchAsync(IEnumerable<InventoryTransaction> transactions) =>
             WithContextAsync(async context =>
             {

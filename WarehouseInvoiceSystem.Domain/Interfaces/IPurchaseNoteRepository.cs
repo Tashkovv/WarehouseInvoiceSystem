@@ -40,7 +40,14 @@
         Task<IEnumerable<PartnerSummaryResult>> GetTopVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
         Task<IEnumerable<PartnerSummaryResult>> GetUnpaidVendorSummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<ProductMovementResult>> GetProductPurchasesByWarehouseAsync(Guid warehouseId, DateTime from, DateTime to, CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementWithNameResult>> GetTopProductPurchasesByWarehouseAsync(Guid warehouseId, DateTime from, DateTime to, int top, CancellationToken ct = default);
 
         Task<IndividualAnalyticsResult> GetIndividualAnalyticsDataAsync(Guid individualId, CancellationToken ct = default);
+
+        // ── Dashboard aggregates ──────────────────────────────────────────────────
+        Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNote>> GetTopUnpaidAsync(Guid? warehouseId, int top, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default);
     }
 }

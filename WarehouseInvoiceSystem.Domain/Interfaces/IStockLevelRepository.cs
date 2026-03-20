@@ -3,6 +3,7 @@
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IStockLevelRepository
     {
@@ -27,5 +28,10 @@
         Task<StockLevel> CreateAsync(StockLevel stockLevel);
         Task<StockLevel> UpdateAsync(StockLevel stockLevel);
         Task<bool> DeleteAsync(Guid id);
+
+        // ── Dashboard aggregates ──────────────────────────────────────────────────
+        Task<WarehouseStockSummaryResult> GetWarehouseStockSummaryAsync(Guid? warehouseId, CancellationToken ct = default);
+        Task<IEnumerable<StockLevel>> GetStockAlertsAsync(Guid? warehouseId, int top, CancellationToken ct = default);
+        Task<IEnumerable<StockLevel>> GetTopByStockAsync(Guid warehouseId, int top, CancellationToken ct = default);
     }
 }

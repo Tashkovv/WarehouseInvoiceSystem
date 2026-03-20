@@ -403,6 +403,41 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     });
             });
 
+        public Task<IEnumerable<ProductMovementWithNameResult>> GetTopProductPurchasesByWarehouseAsync(
+            Guid warehouseId, DateTime from, DateTime to, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var results = await All<PurchaseNoteLine>(context)
+                    .Where(li => li.PurchaseNote.WarehouseId == warehouseId &&
+                                 li.PurchaseNote.DeletedOn == null &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.PurchaseDate.Date >= from.Date &&
+                                 li.PurchaseNote.PurchaseDate.Date <= to.Date)
+                    .GroupBy(li => new { li.ProductId, li.Product.Code, li.Product.Name, li.Product.Unit })
+                    .Select(g => new
+                    {
+                        g.Key.ProductId,
+                        g.Key.Code,
+                        g.Key.Name,
+                        g.Key.Unit,
+                        Quantity = (decimal)g.Sum(li => li.Quantity),
+                        TotalAmount = g.Sum(li => li.Quantity * li.UnitPrice)
+                    })
+                    .OrderByDescending(r => r.TotalAmount)
+                    .Take(top)
+                    .ToListAsync(ct);
+
+                return (IEnumerable<ProductMovementWithNameResult>)results.Select(r => new ProductMovementWithNameResult
+                {
+                    ProductId = r.ProductId,
+                    ProductCode = r.Code,
+                    ProductName = r.Name,
+                    Unit = r.Unit,
+                    Quantity = r.Quantity,
+                    TotalAmount = r.TotalAmount
+                }).ToList();
+            });
+
         public Task<IndividualAnalyticsResult> GetIndividualAnalyticsDataAsync(Guid individualId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
@@ -463,6 +498,76 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     LastPurchaseDate            = dates?.Last,
                     RecentNotes                 = recent
                 };
+            });
+
+        // ── Home dashboard aggregates ─────────────────────────────────────────────
+
+        public Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime day = date.Date;
+                var result = await All<PurchaseNote>(context)
+                    .Where(pn => pn.PaidDate.HasValue && pn.PaidDate.Value.Date == day)
+                    .GroupBy(_ => 1)
+                    .Select(g => new DayPurchaseNoteSummaryResult
+                    {
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return result ?? new DayPurchaseNoteSummaryResult();
+            });
+
+        public Task<IEnumerable<PurchaseNote>> GetTopUnpaidAsync(
+            Guid? warehouseId, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<PurchaseNote> q = All<PurchaseNote>(context)
+                    .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
+                    .Include(pn => pn.Individual)
+                    .Include(pn => pn.Warehouse);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(pn => pn.WarehouseId == warehouseId.Value);
+
+                return (IEnumerable<PurchaseNote>)await q
+                    .OrderBy(pn => pn.PurchaseDate)
+                    .Take(top)
+                    .ToListAsync(ct);
+            });
+
+        public Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime day = date.Date;
+                var result = await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Date == day &&
+                                 pn.Status != PurchaseNoteStatus.Cancelled)
+                    .GroupBy(_ => 1)
+                    .Select(g => new DayPurchaseNoteSummaryResult
+                    {
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return result ?? new DayPurchaseNoteSummaryResult();
+            });
+
+        public Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var result = await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Year == year &&
+                                 pn.PurchaseDate.Month == month &&
+                                 pn.Status != PurchaseNoteStatus.Cancelled)
+                    .GroupBy(_ => 1)
+                    .Select(g => new DayPurchaseNoteSummaryResult
+                    {
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return result ?? new DayPurchaseNoteSummaryResult();
             });
 
         private static IQueryable<PurchaseNote> ApplySort(IQueryable<PurchaseNote> q, string? sortBy, bool ascending)

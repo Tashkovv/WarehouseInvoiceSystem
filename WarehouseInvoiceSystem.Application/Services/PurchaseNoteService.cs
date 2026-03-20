@@ -429,6 +429,40 @@
             });
         }
 
+        // ── Home dashboard aggregates ─────────────────────────────────────────────
+
+        public Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default)
+            => purchaseNoteRepository.GetDayPaidSummaryAsync(date, ct);
+
+        public async Task<IEnumerable<PurchaseNoteDto>> GetTopUnpaidAsync(
+            Guid? warehouseId, int top, CancellationToken ct = default)
+        {
+            IEnumerable<PurchaseNote> notes = await purchaseNoteRepository.GetTopUnpaidAsync(warehouseId, top, ct);
+            return notes.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<ProductMovementWithNameDto>> GetTopProductPurchasesAsync(
+            Guid warehouseId, DateTime from, DateTime to, int top, CancellationToken ct = default)
+        {
+            IEnumerable<ProductMovementWithNameResult> results =
+                await purchaseNoteRepository.GetTopProductPurchasesByWarehouseAsync(warehouseId, from, to, top, ct);
+            return results.Select(r => new ProductMovementWithNameDto
+            {
+                ProductId = r.ProductId,
+                ProductCode = r.ProductCode,
+                ProductName = r.ProductName,
+                Unit = r.Unit,
+                Quantity = r.Quantity,
+                TotalValue = r.TotalAmount
+            });
+        }
+
+        public Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default)
+            => purchaseNoteRepository.GetDayIssuedSummaryAsync(date, ct);
+
+        public Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default)
+            => purchaseNoteRepository.GetMonthIssuedSummaryAsync(year, month, ct);
+
         private static PurchaseNoteDto MapToDto(PurchaseNote note) => new()
         {
             Id = note.Id,

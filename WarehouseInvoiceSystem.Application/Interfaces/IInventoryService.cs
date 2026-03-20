@@ -4,6 +4,7 @@
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IInventoryService
     {
@@ -35,5 +36,11 @@
         Task TransferStockAsync(Guid productId, Guid sourceWarehouseId, Guid destinationWarehouseId, decimal quantity, string? note);
         Task ReverseTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, string reason);
         Task SoftDeleteReversalForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType);
+
+        // ── Dashboard aggregates ──────────────────────────────────────────────────
+        Task<WarehouseStockSummaryResult> GetWarehouseStockSummaryAsync(Guid? warehouseId, CancellationToken ct = default);
+        Task<IEnumerable<StockLevelDto>> GetStockAlertsAsync(Guid? warehouseId, int top, CancellationToken ct = default);
+        Task<IEnumerable<StockLevelDto>> GetTopProductsByStockAsync(Guid warehouseId, int top, CancellationToken ct = default);
+        Task<IEnumerable<InventoryTransactionDto>> GetRecentTransactionsAsync(Guid warehouseId, int top, CancellationToken ct = default);
     }
 }

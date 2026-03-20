@@ -5,6 +5,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class StockLevelRepository(IDbContextFactory<ApplicationDbContext> factory)
@@ -184,6 +185,72 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 stockLevel.DeletedOn = DateTime.UtcNow;
                 await SaveAsync(context);
                 return true;
+            });
+
+        // ── Home dashboard aggregates ─────────────────────────────────────────────
+
+        public Task<WarehouseStockSummaryResult> GetWarehouseStockSummaryAsync(
+            Guid? warehouseId, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<StockLevel> q = All<StockLevel>(context)
+                    .Where(s => s.Product.IsActive && s.Warehouse.IsActive);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(s => s.WarehouseId == warehouseId.Value);
+
+                int totalProducts = await q.Select(s => s.ProductId).Distinct().CountAsync(ct);
+                int inStockCount = await q.CountAsync(s => s.Quantity > 0, ct);
+                decimal totalStockValue = await q.SumAsync(s => s.Quantity * s.Product.DefaultPrice, ct);
+                int lowStockCount = await q.CountAsync(
+                    s => s.MinimumQuantity.HasValue && s.Quantity > 0 && s.Quantity <= s.MinimumQuantity.Value, ct);
+                int outOfStockCount = await q.CountAsync(s => s.Quantity == 0, ct);
+                int warehouseCount = await q.Select(s => s.WarehouseId).Distinct().CountAsync(ct);
+
+                return new WarehouseStockSummaryResult
+                {
+                    TotalProducts = totalProducts,
+                    InStockCount = inStockCount,
+                    TotalStockValue = totalStockValue,
+                    LowStockCount = lowStockCount,
+                    OutOfStockCount = outOfStockCount,
+                    WarehouseCount = warehouseCount
+                };
+            });
+
+        public Task<IEnumerable<StockLevel>> GetStockAlertsAsync(
+            Guid? warehouseId, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<StockLevel> q = All<StockLevel>(context)
+                    .Where(s => s.Product.IsActive && s.Warehouse.IsActive)
+                    .Where(s => s.Quantity == 0 ||
+                                (s.MinimumQuantity.HasValue && s.Quantity > 0 && s.Quantity <= s.MinimumQuantity.Value))
+                    .Include(s => s.Product)
+                    .Include(s => s.Warehouse);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(s => s.WarehouseId == warehouseId.Value);
+
+                return (IEnumerable<StockLevel>)await q
+                    .OrderBy(s => s.Quantity)
+                    .Take(top)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<StockLevel>> GetTopByStockAsync(
+            Guid warehouseId, int top, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<StockLevel>)await All<StockLevel>(context)
+                    .Where(s => s.WarehouseId == warehouseId &&
+                                s.Product.IsActive &&
+                                s.Warehouse.IsActive)
+                    .Include(s => s.Product)
+                    .Include(s => s.Warehouse)
+                    .OrderByDescending(s => s.Quantity)
+                    .Take(top)
+                    .ToListAsync(ct);
             });
 
         private static IQueryable<StockLevel> ApplyFilters(IQueryable<StockLevel> q, GetStockQuery query)

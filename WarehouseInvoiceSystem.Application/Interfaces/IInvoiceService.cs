@@ -57,5 +57,12 @@
         Task<IEnumerable<PartnerAttentionDto>> GetOverdueClientSummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<PartnerAttentionDto>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<ProductMovementDto>> GetProductMovementByWarehouseAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default);
+
+        // ── Dashboard aggregates ──────────────────────────────────────────────────
+        Task<DayIssueSummaryResult> GetDayIssueSummaryAsync(DateTime date, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceDto>> GetTopOverdueReceivablesAsync(Guid? warehouseId, int top, CancellationToken ct = default);
+        Task<IEnumerable<ProductMovementWithNameDto>> GetTopProductMovementAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, int top, CancellationToken ct = default);
+        Task<InvoicePeriodSummaryResult> GetDayInvoiceSummaryAsync(DateTime date, CancellationToken ct = default);
+        Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(int year, int month, CancellationToken ct = default);
     }
 }

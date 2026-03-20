@@ -565,6 +565,40 @@
             });
         }
 
+        // ── Home dashboard aggregates ─────────────────────────────────────────────
+
+        public Task<DayIssueSummaryResult> GetDayIssueSummaryAsync(DateTime date, CancellationToken ct = default)
+            => invoiceRepository.GetDayIssueSummaryAsync(date, ct);
+
+        public async Task<IEnumerable<InvoiceDto>> GetTopOverdueReceivablesAsync(
+            Guid? warehouseId, int top, CancellationToken ct = default)
+        {
+            IEnumerable<Invoice> invoices = await invoiceRepository.GetTopOverdueReceivablesAsync(warehouseId, top, ct);
+            return invoices.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<ProductMovementWithNameDto>> GetTopProductMovementAsync(
+            Guid warehouseId, InvoiceType type, DateTime from, DateTime to, int top, CancellationToken ct = default)
+        {
+            IEnumerable<ProductMovementWithNameResult> results =
+                await invoiceRepository.GetTopProductMovementByWarehouseAsync(warehouseId, type, from, to, top, ct);
+            return results.Select(r => new ProductMovementWithNameDto
+            {
+                ProductId = r.ProductId,
+                ProductCode = r.ProductCode,
+                ProductName = r.ProductName,
+                Unit = r.Unit,
+                Quantity = r.Quantity,
+                TotalValue = r.TotalAmount
+            });
+        }
+
+        public Task<InvoicePeriodSummaryResult> GetDayInvoiceSummaryAsync(DateTime date, CancellationToken ct = default)
+            => invoiceRepository.GetDayInvoiceSummaryAsync(date, ct);
+
+        public Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(int year, int month, CancellationToken ct = default)
+            => invoiceRepository.GetMonthInvoiceSummaryAsync(year, month, ct);
+
         // ── Helpers ───────────────────────────────────────────────────────────────────
 
         private string GenerateNote(Invoice invoice, InventoryTransactionType transactionType)

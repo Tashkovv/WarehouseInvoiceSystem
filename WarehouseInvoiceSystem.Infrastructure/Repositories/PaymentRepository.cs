@@ -2,9 +2,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
     public class PaymentRepository(IDbContextFactory<ApplicationDbContext> factory)
@@ -140,6 +142,25 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .OrderByDescending(p => p.PaymentDate)
                     .Take(count)
                     .ToListAsync(ct);
+            });
+
+        public Task<DayPaymentSummaryResult> GetDayPaymentSummaryAsync(DateTime date, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime day = date.Date;
+                var rows = await All<Payment>(context)
+                    .Where(p => p.PaymentDate.Date == day)
+                    .GroupBy(p => p.Invoice.Type)
+                    .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(p => p.Amount) })
+                    .ToListAsync(ct);
+
+                return new DayPaymentSummaryResult
+                {
+                    TotalCount = rows.Sum(r => r.Count),
+                    TotalAmount = rows.Sum(r => r.Amount),
+                    ReceivedAmount = rows.Where(r => r.Type == InvoiceType.Receivable).Sum(r => r.Amount),
+                    PaidOutAmount = rows.Where(r => r.Type == InvoiceType.Payable).Sum(r => r.Amount)
+                };
             });
 
         private static IQueryable<Payment> ApplySort(IQueryable<Payment> q, string? sortBy, bool ascending)

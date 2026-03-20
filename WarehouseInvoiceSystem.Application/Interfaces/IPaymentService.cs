@@ -3,6 +3,7 @@
     using WarehouseInvoiceSystem.Application.DTOs.Payment;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
+    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public interface IPaymentService
     {
@@ -15,5 +16,6 @@
         Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
         Task<bool> DeletePaymentAsync(Guid id);
         Task<IEnumerable<PaymentDto>> GetRecentAsync(int count, CancellationToken ct = default);
+        Task<DayPaymentSummaryResult> GetDayPaymentSummaryAsync(DateTime date, CancellationToken ct = default);
     }
 }

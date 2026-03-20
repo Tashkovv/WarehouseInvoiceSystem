@@ -1,6 +1,5 @@
 ﻿@page "/warehouse-dashboard"
 @inherits PageBase
-@using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
@@ -8,7 +7,7 @@
 @using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
-@inject IProductService ProductService
+@using WarehouseInvoiceSystem.Domain.Queries.Results
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
 @inject IInvoiceService InvoiceService
@@ -64,33 +63,33 @@ else
         <!-- ── Summary Cards ── -->
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalProducts")"
-                           Value="@_warehouseProducts.Count().ToString()"
-                           Subtitle="@($"{Localization.GetString("ActiveProducts")}: {_activeProducts.Count()}")"
+                           Value="@_stockSummary.TotalProducts.ToString()"
+                           Subtitle="@($"{_stockSummary.InStockCount} {Localization.GetString("InStock")}")"
                            Icon="@Icons.Material.Filled.Inventory2"
-                           IconColor="Color.Primary" />
+                           IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalStockValue")"
-                           Value="@_totalStockValue.ToString("C")"
+                           Value="@_stockSummary.TotalStockValue.ToString("C")"
                            Subtitle="@_selectedWarehouseName"
                            Icon="@Icons.Material.Filled.AttachMoney"
-                           IconColor="Color.Success" />
+                           IconColor="Color.Primary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("LowStock")"
-                           Value="@_lowStockItems.Count().ToString()"
+                           Value="@_stockSummary.LowStockCount.ToString()"
                            Subtitle="@Localization.GetString("ProductsBelowMinimum")"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_lowStockItems.Any() ? Color.Error : Color.Success)" />
+                           IconColor="@(_stockSummary.LowStockCount > 0 ? Color.Error : Color.Success)" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OutOfStock")"
-                           Value="@_outOfStockItems.Count().ToString()"
+                           Value="@_stockSummary.OutOfStockCount.ToString()"
                            Icon="@Icons.Material.Filled.RemoveShoppingCart"
-                           IconColor="@(_outOfStockItems.Any() ? Color.Error : Color.Success)" />
+                           IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)" />
         </MudItem>
 
         <!-- ── Alerts & Warnings ── -->
@@ -116,8 +115,7 @@ else
                                 <MudAlert Severity="Severity.Error" Dense="true" NoIcon="false" Class="pa-2">
                                     <MudText Typo="Typo.body2">
                                         <strong>@_outOfStockItems.Count()</strong> @Localization.GetString("ProductsOutOfStock"):
-                                        @string.Join(", ", _outOfStockItems.Take(5).Select(s =>
-                                        _productDict.TryGetValue(s.ProductId, out var p) ? $"{p.Code} - {p.Name}" : ""))
+                                        @string.Join(", ", _outOfStockItems.Take(5).Select(s => $"{s.ProductCode} - {s.ProductName}"))
                             @if (_outOfStockItems.Count() > 5)
                                         {
                                             <text> @($"{Localization.GetString("AndMore")} {_outOfStockItems.Count() - 5}")</text>
@@ -130,8 +128,7 @@ else
                                 <MudAlert Severity="Severity.Warning" Dense="true" NoIcon="false" Class="pa-2">
                                     <MudText Typo="Typo.body2">
                                         <strong>@_lowStockItems.Count()</strong> @Localization.GetString("ProductsBelowMinimum"):
-                                        @string.Join(", ", _lowStockItems.Take(5).Select(s =>
-                                        _productDict.TryGetValue(s.ProductId, out var p) ? $"{p.Code} - {p.Name}" : ""))
+                                        @string.Join(", ", _lowStockItems.Take(5).Select(s => $"{s.ProductCode} - {s.ProductName}"))
                             @if (_lowStockItems.Count() > 5)
                                         {
                                             <text> @($"{Localization.GetString("AndMore")} {_lowStockItems.Count() - 5}")</text>
@@ -177,22 +174,25 @@ else
                 <MudCardContent Class="pa-0">
                     @if (_topByStock.Any())
                     {
-                        <MudTable Items="_topByStock.Take(10)"
+                        <MudTable Items="_topByStock"
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
                                   Class="wis-secondary-list"
-                                  T="ProductStockSummary"
+                                  T="StockLevelDto"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<ProductStockSummary> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<StockLevelDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("Value")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
+                                @{
+                                    bool isOutOfStock = item.Quantity == 0;
+                                    bool isLowStock = !isOutOfStock && item.MinimumQuantity.HasValue && item.Quantity <= item.MinimumQuantity.Value;
+                                }
                                 <MudTd DataLabel="#">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">
                                         @(_topByStock.IndexOf(item) + 1)
@@ -203,18 +203,18 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
-                                             Color="@(item.IsOutOfStock ? Color.Error : item.IsLowStock ? Color.Warning : Color.Default)">
-                                        @item.TotalQuantity.ToString("N2") @item.ProductUnit
+                                             Color="@(isOutOfStock ? Color.Error : isLowStock ? Color.Warning : Color.Default)">
+                                        @item.Quantity.ToString("N2") @item.ProductUnit
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
-                                    @if (item.IsOutOfStock)
+                                    @if (isOutOfStock)
                                     {
                                         <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
                                             @Localization.GetString("OutOfStock")
                                         </MudChip>
                                     }
-                                    else if (item.IsLowStock)
+                                    else if (isLowStock)
                                     {
                                         <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">
                                             @Localization.GetString("LowStock")
@@ -226,9 +226,6 @@ else
                                             @Localization.GetString("InStock")
                                         </MudChip>
                                     }
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Value")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@item.TotalValue.ToString("C")</MudText>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -273,14 +270,14 @@ else
                 <MudCardContent Class="pa-0">
                     @if (_mostPurchased.Any())
                     {
-                        <MudTable Items="_mostPurchased.Take(5)"
+                        <MudTable Items="_mostPurchased"
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
                                   Class="wis-secondary-list"
-                                  T="ProductMovementSummary"
+                                  T="ProductMovementWithNameDto"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<ProductMovementSummary> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<ProductMovementWithNameDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
@@ -334,14 +331,14 @@ else
                 <MudCardContent Class="pa-0">
                     @if (_mostSold.Any())
                     {
-                        <MudTable Items="_mostSold.Take(5)"
+                        <MudTable Items="_mostSold"
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
                                   Class="wis-secondary-list"
-                                  T="ProductMovementSummary"
+                                  T="ProductMovementWithNameDto"
                                   RowClass="table-row-clickable"
-                                  OnRowClick="@((TableRowClickEventArgs<ProductMovementSummary> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
+                                  OnRowClick="@((TableRowClickEventArgs<ProductMovementWithNameDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
@@ -397,7 +394,7 @@ else
                 <MudCardContent Class="pa-0">
                     @if (_allTransactions.Any())
                     {
-                        <MudTable Items="_allTransactions.Take(10)"
+                        <MudTable Items="_allTransactions"
                                   Hover="true"
                                   Dense="true"
                                   Elevation="0"
@@ -453,38 +450,27 @@ else
 }
 
 @code {
-    private List<ProductDto> _products = [];
+    // ── State ──────────────────────────────────────────────────────────────────
     private List<WarehouseDto> _warehouses = [];
-    private List<StockLevelDto> _stockLevels = [];
-    private List<InventoryTransactionDto> _allTransactions = [];
-
-    // ── Warehouse ──
     private Guid _selectedWarehouseId;
-    private string _selectedWarehouseName =>
-        _warehouses.FirstOrDefault(w => w.Id == _selectedWarehouseId)?.Name ?? "";
+    private string _selectedWarehouseName = string.Empty;
 
-    // ── Stock filters — all already warehouse-scoped via _stockLevels ──
-    private List<StockLevelDto> _lowStockItems = [];
-    private List<StockLevelDto> _outOfStockItems = [];
-    private decimal _totalStockValue;
-    private List<ProductDto> _warehouseProducts = [];
-    private List<ProductDto> _activeProducts = [];
-    private Dictionary<Guid, ProductDto> _productDict = [];
+    private WarehouseStockSummaryResult _stockSummary = new();
+    private List<StockLevelDto> _stockAlerts = [];
+    private List<StockLevelDto> _topByStock = [];
+    private List<InventoryTransactionDto> _allTransactions = [];
+    private List<ProductMovementWithNameDto> _mostPurchased = [];
+    private List<ProductMovementWithNameDto> _mostSold = [];
 
-    // ── Top by stock ──
-    private List<ProductStockSummary> _topByStock = [];
+    // ── Computed alert lists (split from _stockAlerts) ─────────────────────────
+    private IEnumerable<StockLevelDto> _outOfStockItems => _stockAlerts.Where(s => s.Quantity == 0);
+    private IEnumerable<StockLevelDto> _lowStockItems => _stockAlerts.Where(s => s.Quantity > 0);
 
-    // ── Statistics date range ──
+    // ── Statistics date range ──────────────────────────────────────────────────
     private int? _statsDatePreset = 30;
     private DateRange _statsDateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
     private DateTime _statsFromDate => _statsDateRange.Start ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime _statsToDate => _statsDateRange.End ?? DateTime.Today;
-
-    // ── Most purchased / most sold ──
-    private List<ProductMovementDto> _purchasedMovements = [];
-    private List<ProductMovementDto> _soldMovements = [];
-    private List<ProductMovementSummary> _mostPurchased = [];
-    private List<ProductMovementSummary> _mostSold = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -503,25 +489,14 @@ else
 
             if (firstLoad)
             {
-                _selectedWarehouseId = _warehouses.FirstOrDefault(w => w.IsDefault)?.Id
-                    ?? _warehouses.FirstOrDefault()?.Id
-                    ?? Guid.Empty;
+                WarehouseDto? defaultWh = _warehouses.FirstOrDefault(w => w.IsDefault) ?? _warehouses.FirstOrDefault();
+                _selectedWarehouseId = defaultWh?.Id ?? Guid.Empty;
+                _selectedWarehouseName = defaultWh?.Name ?? string.Empty;
             }
 
             if (_selectedWarehouseId == Guid.Empty) return;
 
-            if (firstLoad)
-            {
-                await Task.WhenAll(LoadWarehouseData(), LoadStaticData());
-            }
-            else
-            {
-                await LoadWarehouseData();
-            }
-
-            RebuildStockDerivedFields();
-            CalculateTopProducts();
-            await LoadProductStatistics();
+            await Task.WhenAll(LoadWarehouseData(), LoadProductStatistics());
         }
         catch (Exception ex)
         {
@@ -535,140 +510,39 @@ else
 
     private async Task LoadWarehouseData()
     {
-        var stockTask = InventoryService.GetStockByWarehouseAsync(_selectedWarehouseId);
-        var txTask = InventoryService.GetTransactionsByWarehouseAsync(_selectedWarehouseId);
-
-        await Task.WhenAll(stockTask, txTask);
-
-        _stockLevels = stockTask.Result.ToList();
-        _allTransactions = txTask.Result
-            .OrderByDescending(t => t.CreatedAt)
-            .ToList();
-    }
-
-    private async Task LoadStaticData()
-    {
-        IEnumerable<ProductDto> products = await ProductService.GetAllProductsAsync(_cts.Token);
-        _products = products.ToList();
-        _productDict = _products.ToDictionary(p => p.Id);
-    }
-
-    private void RebuildStockDerivedFields()
-    {
-        _lowStockItems = _stockLevels
-            .Where(sl => sl.Quantity > 0 && sl.MinimumQuantity.HasValue && sl.Quantity <= sl.MinimumQuantity)
-            .ToList();
-        _outOfStockItems = _stockLevels.Where(sl => sl.Quantity == 0).ToList();
-
-        var stockedProductIds = _stockLevels.Select(sl => sl.ProductId).ToHashSet();
-        _warehouseProducts = _products.Where(p => stockedProductIds.Contains(p.Id)).ToList();
-        _activeProducts = _warehouseProducts.Where(p => p.IsActive).ToList();
-
-        _totalStockValue = _stockLevels.Sum(sl =>
-            sl.Quantity * (_productDict.TryGetValue(sl.ProductId, out var p) ? p.DefaultPrice : 0));
+        await Task.WhenAll(
+            InventoryService.GetWarehouseStockSummaryAsync(_selectedWarehouseId, _cts.Token)
+                .ContinueWith(t => _stockSummary = t.Result),
+            InventoryService.GetStockAlertsAsync(_selectedWarehouseId, 20, _cts.Token)
+                .ContinueWith(t => _stockAlerts = t.Result.ToList()),
+            InventoryService.GetTopProductsByStockAsync(_selectedWarehouseId, 10, _cts.Token)
+                .ContinueWith(t => _topByStock = t.Result.ToList()),
+            InventoryService.GetRecentTransactionsAsync(_selectedWarehouseId, 10, _cts.Token)
+                .ContinueWith(t => _allTransactions = t.Result.ToList())
+        );
     }
 
     private async Task LoadProductStatistics()
     {
-        var noteMovementsTask = PurchaseNoteService.GetProductPurchasesByWarehouseAsync(
-            _selectedWarehouseId, _statsFromDate, _statsToDate, _cts.Token);
-        var payableMovementsTask = InvoiceService.GetProductMovementByWarehouseAsync(
-            _selectedWarehouseId, InvoiceType.Payable, _statsFromDate, _statsToDate, _cts.Token);
-        var soldMovementsTask = InvoiceService.GetProductMovementByWarehouseAsync(
-            _selectedWarehouseId, InvoiceType.Receivable, _statsFromDate, _statsToDate, _cts.Token);
-
-        await Task.WhenAll(noteMovementsTask, payableMovementsTask, soldMovementsTask);
-
-        // Merge purchase note and payable invoice movements for "most purchased"
-        _purchasedMovements = noteMovementsTask.Result
-            .Concat(payableMovementsTask.Result)
-            .GroupBy(m => m.ProductId)
-            .Select(g => new ProductMovementDto
-            {
-                ProductId = g.Key,
-                Quantity = g.Sum(m => m.Quantity),
-                TotalAmount = g.Sum(m => m.TotalAmount)
-            })
-            .ToList();
-
-        _soldMovements = soldMovementsTask.Result.ToList();
-
-        CalculateProductStatistics();
+        await Task.WhenAll(
+            PurchaseNoteService.GetTopProductPurchasesAsync(_selectedWarehouseId, _statsFromDate, _statsToDate, 5, _cts.Token)
+                .ContinueWith(t => _mostPurchased = t.Result.ToList()),
+            InvoiceService.GetTopProductMovementAsync(_selectedWarehouseId, InvoiceType.Receivable, _statsFromDate, _statsToDate, 5, _cts.Token)
+                .ContinueWith(t => _mostSold = t.Result.ToList())
+        );
     }
 
     private async Task OnWarehouseChanged(Guid id)
     {
         _selectedWarehouseId = id;
+        _selectedWarehouseName = _warehouses.FirstOrDefault(w => w.Id == id)?.Name ?? string.Empty;
         await LoadData(false);
-    }
-
-    private void CalculateTopProducts()
-    {
-        _topByStock = _stockLevels
-            .GroupBy(sl => sl.ProductId)
-            .Select(g =>
-            {
-                StockLevelDto? first = g.FirstOrDefault();
-                _productDict.TryGetValue(g.Key, out ProductDto? product);
-                decimal qty = g.Sum(sl => sl.Quantity);
-                decimal min = first?.MinimumQuantity ?? 0;
-
-                return new ProductStockSummary
-                {
-                    ProductId = g.Key,
-                    ProductCode = product?.Code ?? "",
-                    ProductName = product?.Name ?? "",
-                    ProductUnit = product?.Unit ?? "",
-                    TotalQuantity = qty,
-                    TotalValue = qty * (product?.DefaultPrice ?? 0),
-                    IsOutOfStock = qty == 0,
-                    IsLowStock = qty > 0 && first?.MinimumQuantity.HasValue == true && qty <= min
-                };
-            })
-            .OrderByDescending(p => p.TotalQuantity)
-            .ToList();
-    }
-
-    private void CalculateProductStatistics()
-    {
-        _mostPurchased = _purchasedMovements
-            .Select(m =>
-            {
-                _productDict.TryGetValue(m.ProductId, out ProductDto? product);
-                return new ProductMovementSummary
-                {
-                    ProductId = m.ProductId,
-                    ProductCode = product?.Code ?? "",
-                    ProductName = product?.Name ?? "",
-                    Unit = product?.Unit ?? "",
-                    Quantity = m.Quantity,
-                    TotalValue = m.TotalAmount
-                };
-            })
-            .OrderByDescending(p => p.TotalValue)
-            .ToList();
-
-        _mostSold = _soldMovements
-            .Select(m =>
-            {
-                _productDict.TryGetValue(m.ProductId, out ProductDto? product);
-                return new ProductMovementSummary
-                {
-                    ProductId = m.ProductId,
-                    ProductCode = product?.Code ?? "",
-                    ProductName = product?.Name ?? "",
-                    Unit = product?.Unit ?? "",
-                    Quantity = m.Quantity,
-                    TotalValue = m.TotalAmount
-                };
-            })
-            .OrderByDescending(p => p.TotalValue)
-            .ToList();
     }
 
     private async Task RecalculateStatistics()
     {
         await LoadProductStatistics();
+        StateHasChanged();
     }
 
     private async Task OpenAdjustDialog()
@@ -710,27 +584,5 @@ else
             }).ToList(),
             TotalCount = result.TotalCount
         };
-    }
-
-    private class ProductStockSummary
-    {
-        public Guid ProductId { get; set; }
-        public string ProductCode { get; set; } = string.Empty;
-        public string ProductName { get; set; } = string.Empty;
-        public string ProductUnit { get; set; } = string.Empty;
-        public decimal TotalQuantity { get; set; }
-        public decimal TotalValue { get; set; }
-        public bool IsOutOfStock { get; set; }
-        public bool IsLowStock { get; set; }
-    }
-
-    private class ProductMovementSummary
-    {
-        public Guid ProductId { get; set; }
-        public string ProductCode { get; set; } = string.Empty;
-        public string ProductName { get; set; } = string.Empty;
-        public string Unit { get; set; } = string.Empty;
-        public decimal Quantity { get; set; }
-        public decimal TotalValue { get; set; }
     }
 }

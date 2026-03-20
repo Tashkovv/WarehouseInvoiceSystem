@@ -24,5 +24,8 @@
 
         Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction);
         Task CreateBatchAsync(IEnumerable<InventoryTransaction> transactions);
+
+        // ── Dashboard aggregates ──────────────────────────────────────────────────
+        Task<IEnumerable<InventoryTransaction>> GetTopRecentByWarehouseAsync(Guid warehouseId, int top, CancellationToken ct = default);
     }
 }
