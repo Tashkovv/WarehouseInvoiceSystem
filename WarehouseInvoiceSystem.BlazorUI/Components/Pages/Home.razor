@@ -52,18 +52,11 @@ else
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("Profit")"
-                           Value="@_profitToday.ToString("C")"
-                           Icon="@Icons.Material.Filled.TrendingUp"
-                           IconColor="@(_profitToday >= 0 ? Color.Success : Color.Error)" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
                            Value="@_invoicesReceivableToday.Count().ToString()"
                            Subtitle="@_invoicesReceivableToday.Sum(i => i.TotalAmount).ToString("C")"
                            Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Primary" />
+                           IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -71,7 +64,7 @@ else
                            Value="@_purchaseNotesToday.Count().ToString()"
                            Subtitle="@_purchaseNotesToday.Sum(pn => pn.TotalAmount).ToString("C")"
                            Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="Color.Info" />
+                           IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -79,7 +72,14 @@ else
                            Value="@_paymentsToday.Count().ToString()"
                            Subtitle="@_paymentsToday.Sum(p => p.Amount).ToString("C")"
                            Icon="@Icons.Material.Filled.Payments"
-                           IconColor="Color.Success" />
+                           IconColor="Color.Default" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("Profit")"
+                           Value="@_profitToday.ToString("C")"
+                           Icon="@Icons.Material.Filled.TrendingUp"
+                           IconColor="@(_profitToday >= 0 ? Color.Success : Color.Error)" />
         </MudItem>
 
         <!-- ── Row 2: Financial Health ── -->
@@ -92,7 +92,7 @@ else
                            Value="@_totalReceivables.ToString("C")"
                            Subtitle="@($"{_openReceivablesCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.AccountBalanceWallet"
-                           IconColor="Color.Success" />
+                           IconColor="Color.Primary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
@@ -100,7 +100,7 @@ else
                            Value="@_totalPayables.ToString("C")"
                            Subtitle="@($"{_openPayableInvoicesCount} {Localization.GetString("Invoices")} · {_openPurchaseNotesCount} {Localization.GetString("PurchaseNotes")}")"
                            Icon="@Icons.Material.Filled.AccountBalance"
-                           IconColor="Color.Warning" />
+                           IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="4">
@@ -131,7 +131,7 @@ else
                            Value="@_filteredStockLevels.Select(sl => sl.ProductId).Distinct().Count().ToString()"
                            Subtitle="@($"{_filteredStockLevels.Count(sl => sl.Quantity > 0)} {Localization.GetString("InStock")}")"
                            Icon="@Icons.Material.Filled.Inventory2"
-                           IconColor="Color.Info" />
+                           IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -139,7 +139,7 @@ else
                            Value="@_totalStockValue.ToString("C")"
                            Subtitle="@(_filterWarehouseId.HasValue ? _filteredStockLevels.FirstOrDefault()?.WarehouseName ?? string.Empty : $"{_filteredStockLevels.Select(sl => sl.WarehouseId).Distinct().Count()} {Localization.GetString("Warehouses")}")"
                            Icon="@Icons.Material.Filled.Warehouse"
-                           IconColor="Color.Primary" />
+                           IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -364,14 +364,18 @@ else
         _invoices.Where(i => i.Type == InvoiceType.Payable && i.IssueDate.Date == DateTime.Today);
 
     private IEnumerable<PurchaseNoteDto> _purchaseNotesToday =>
-        _purchaseNotes.Where(pn => pn.PurchaseDate.Date == DateTime.Today);
+        _purchaseNotes.Where(pn => pn.PaidDate.HasValue && pn.PaidDate.Value.Date == DateTime.Today);
 
     private IEnumerable<PaymentDto> _paymentsToday =>
         _payments.Where(p => p.PaymentDate.Date == DateTime.Today);
 
     private decimal _profitToday =>
-        _invoicesReceivableToday.Sum(i => i.TotalAmount)
-        - _invoicesPayableToday.Sum(i => i.TotalAmount)
+        _paymentsToday
+            .Where(p => _invoices.FirstOrDefault(i => i.Id == p.InvoiceId)?.Type == InvoiceType.Receivable)
+            .Sum(p => p.Amount)
+        - _paymentsToday
+            .Where(p => _invoices.FirstOrDefault(i => i.Id == p.InvoiceId)?.Type == InvoiceType.Payable)
+            .Sum(p => p.Amount)
         - _purchaseNotesToday.Sum(pn => pn.TotalAmount);
 
     // ── Financial health ───────────────────────────────────────────────────────
