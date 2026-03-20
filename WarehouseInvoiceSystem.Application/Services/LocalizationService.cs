@@ -203,7 +203,7 @@
                 // Companies
                 ["AllCompanies"] = "All Companies",
                 ["AllVendors"] = "All Vendors",
-                ["AllBuyers"] = "All Buyers",
+                ["AllClients"] = "All Clients",
                 ["TaxId"] = "Tax ID",
                 ["Clients"] = "Clients",
                 ["Vendors"] = "Vendors",
@@ -805,7 +805,7 @@
                 // Companies
                 ["AllCompanies"] = "Сите компании",
                 ["AllVendors"] = "Сите Добавувачи",
-                ["AllBuyers"] = "Сите Откупувачи",
+                ["AllClients"] = "Сите Клиенти",
                 ["TaxId"] = "Даночен број",
                 ["Clients"] = "Клиенти",
                 ["Vendors"] = "Добавувачи",

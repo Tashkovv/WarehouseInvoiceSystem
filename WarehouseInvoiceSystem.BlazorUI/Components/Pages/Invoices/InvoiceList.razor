@@ -126,11 +126,6 @@
                                 IsEditable="false"
                                 CellClass="wis-cell-mono" />
 
-                <PropertyColumn Property="x => x.CompanyName"
-                                Title="@Localization.GetString("Company")"
-                                Sortable="true"
-                                IsEditable="false" />
-
                 <PropertyColumn Property="x => x.Type"
                                 Title="@Localization.GetString("Type")"
                                 Sortable="false"
@@ -140,12 +135,29 @@
                                  Variant="Variant.Outlined"
                                  Color="@(context.Item.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)">
                             @(context.Item.Type == InvoiceType.Receivable
-                                                        ? Localization.GetString("Receivable")
-                                                        : Localization.GetString("Payable"))
+                                                     ? Localization.GetString("Receivable")
+                                                     : Localization.GetString("Payable"))
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
 
+                <PropertyColumn Property="x => x.CompanyName"
+                                Title="@Localization.GetString("Company")"
+                                Sortable="true"
+                                IsEditable="false" />
+
+                <PropertyColumn Property="x => x.Status"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="false"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small"
+                                 Color="@GetInvoiceStatusColor(context.Item.Status)">
+                            @GetInvoiceStatusText(context.Item.Status)
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+                
                 <PropertyColumn Property="x => x.IssueDate"
                                 Title="@Localization.GetString("IssueDate")"
                                 Sortable="true"
@@ -189,19 +201,6 @@
                         </MudText>
                     </CellTemplate>
                 </PropertyColumn>
-
-                <PropertyColumn Property="x => x.Status"
-                                Title="@Localization.GetString("Status")"
-                                Sortable="false"
-                                IsEditable="false">
-                    <CellTemplate>
-                        <MudChip T="string" Size="Size.Small"
-                                 Color="@GetInvoiceStatusColor(context.Item.Status)">
-                            @GetInvoiceStatusText(context.Item.Status)
-                        </MudChip>
-                    </CellTemplate>
-                </PropertyColumn>
-
 
             </Columns>
 

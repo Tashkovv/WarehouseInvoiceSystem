@@ -88,15 +88,6 @@
                     </CellTemplate>
                 </TemplateColumn>
 
-                <PropertyColumn Property="x => x.PaymentDate"
-                                Title="@Localization.GetString("PaymentDate")"
-                                Sortable="true"
-                                IsEditable="false">
-                    <CellTemplate>
-                        @context.Item.PaymentDate.ToString("dd MMM yyyy")
-                    </CellTemplate>
-                </PropertyColumn>
-
                 <PropertyColumn Property="x => x.InvoiceNumber"
                                 Title="@Localization.GetString("InvoiceNumber")"
                                 Sortable="true"
@@ -111,18 +102,15 @@
                     </CellTemplate>
                 </PropertyColumn>
 
-                <PropertyColumn Property="x => x.Amount"
-                                Title="@Localization.GetString("Amount")"
-                                Sortable="true"
-                                HeaderClass="text-right"
-                                CellClass="text-right"
-                                IsEditable="false">
-                    <CellTemplate>
-                        <MudText Typo="Typo.body2" Class="wis-cell-amount-success">
-                            @context.Item.Amount.ToString("C")
-                        </MudText>
-                    </CellTemplate>
-                </PropertyColumn>
+                <PropertyColumn Property="x => x.ReferenceNumber"
+                                Title="@Localization.GetString("ReferenceNumber")"
+                                Sortable="false"
+                                IsEditable="false" />
+
+                <PropertyColumn Property="x => x.RecordedBy"
+                                Title="@Localization.GetString("RecordedBy")"
+                                Sortable="false"
+                                IsEditable="false" />
 
                 <PropertyColumn Property="x => x.PaymentMethod"
                                 Title="@Localization.GetString("PaymentMethod")"
@@ -135,15 +123,27 @@
                     </CellTemplate>
                 </PropertyColumn>
 
-                <PropertyColumn Property="x => x.ReferenceNumber"
-                                Title="@Localization.GetString("ReferenceNumber")"
-                                Sortable="false"
-                                IsEditable="false" />
+                <PropertyColumn Property="x => x.PaymentDate"
+                                Title="@Localization.GetString("PaymentDate")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        @context.Item.PaymentDate.ToString("dd MMM yyyy")
+                    </CellTemplate>
+                </PropertyColumn>                
 
-                <PropertyColumn Property="x => x.RecordedBy"
-                                Title="@Localization.GetString("RecordedBy")"
-                                Sortable="false"
-                                IsEditable="false" />
+                <PropertyColumn Property="x => x.Amount"
+                                Title="@Localization.GetString("Amount")"
+                                Sortable="true"
+                                HeaderClass="text-right"
+                                CellClass="text-right"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Class="wis-cell-amount-success">
+                            @context.Item.Amount.ToString("C")
+                        </MudText>
+                    </CellTemplate>
+                </PropertyColumn>                              
 
             </Columns>
 

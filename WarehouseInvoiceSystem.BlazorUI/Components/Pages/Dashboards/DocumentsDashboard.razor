@@ -135,7 +135,7 @@ else
                            Value="@_profitMonth.ToString("C")"
                            Subtitle="@_marginMonth.ToString("P1")"
                            Icon="@Icons.Material.Filled.Savings"
-                           IconColor="Color.Tertiary" />
+                           IconColor="_profitMonth < 0 ? Color.Error : Color.Tertiary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -185,9 +185,9 @@ else
                                 <HeaderContent>
                                     <MudTh>@Localization.GetString("NoteNumber")</MudTh>
                                     <MudTh>@Localization.GetString("Individual")</MudTh>
-                                    <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
-                                    <MudTh>@Localization.GetString("Date")</MudTh>
                                     <MudTh>@Localization.GetString("Status")</MudTh>
+                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
                                 </HeaderContent>
                                 <RowTemplate>
                                     <MudTd DataLabel="@Localization.GetString("NoteNumber")">
@@ -196,16 +196,16 @@ else
                                     <MudTd DataLabel="@Localization.GetString("Individual")">
                                         <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IndividualFullName</MudText>
                                     </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
-                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
-                                    </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Date")">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
-                                    </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Status")">
                                         <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)" Variant="Variant.Outlined">
                                             @GetPurchaseNoteStatusText(context.Status)
                                         </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Date")">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PurchaseDate.ToString("dd MMM yyyy")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                     </MudTd>
                                 </RowTemplate>
                             </MudTable>
@@ -248,18 +248,15 @@ else
                                       OnRowClick="@((TableRowClickEventArgs<InvoiceDto> args) => Navigation.NavigateTo($"/invoices/{args.Item!.Id}"))">
                                 <HeaderContent>
                                     <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
-                                    <MudTh>@Localization.GetString("Company")</MudTh>
                                     <MudTh>@Localization.GetString("Type")</MudTh>
-                                    <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
-                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh>@Localization.GetString("Company")</MudTh>
                                     <MudTh>@Localization.GetString("Status")</MudTh>
+                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
                                 </HeaderContent>
                                 <RowTemplate>
                                     <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
                                         <MudText Typo="Typo.body2" Class="font-weight-medium">@context.InvoiceNumber</MudText>
-                                    </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Company")">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.CompanyName</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Type")">
                                         <MudChip T="string"
@@ -269,16 +266,19 @@ else
                                             @(Localization.GetString(context.Type.ToString()))
                                         </MudChip>
                                     </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
-                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
-                                    </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Date")">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IssueDate.ToString("dd MMM yyyy")</MudText>
+                                    <MudTd DataLabel="@Localization.GetString("Company")">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.CompanyName</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Status")">
                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="GetInvoiceStatusColor(context.Status)">
                                             @GetInvoiceStatusText(context.Status)
                                         </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Date")">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IssueDate.ToString("dd MMM yyyy")</MudText>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
                                     </MudTd>
                                 </RowTemplate>
                             </MudTable>
@@ -320,33 +320,33 @@ else
                                       RowClass="table-row-clickable"
                                       OnRowClick="@((TableRowClickEventArgs<PaymentDto> args) => Navigation.NavigateTo($"/payments/{args.Item!.Id}"))">
                                 <HeaderContent>
-                                    <MudTh>@Localization.GetString("ReferenceNumber")</MudTh>
                                     <MudTh>@Localization.GetString("Invoice")</MudTh>
-                                    <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
-                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh>@Localization.GetString("ReferenceNumber")</MudTh>
                                     <MudTh>@Localization.GetString("PaymentMethod")</MudTh>
+                                    <MudTh>@Localization.GetString("Date")</MudTh>
+                                    <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
                                 </HeaderContent>
                                 <RowTemplate>
+                                    <MudTd DataLabel="@Localization.GetString("Invoice")">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.InvoiceNumber</MudText>
+                                    </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("ReferenceNumber")">
                                         <MudText Typo="Typo.body2" Class="font-weight-medium">
                                             @(string.IsNullOrEmpty(context.ReferenceNumber) ? "-" : context.ReferenceNumber)
                                         </MudText>
                                     </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Invoice")">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.InvoiceNumber</MudText>
+                                    <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@GetPaymentMethodColor(context.PaymentMethod)">
+                                            @GetPaymentMethodText(context.PaymentMethod)
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd DataLabel="@Localization.GetString("Date")">
+                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
                                     </MudTd>
                                     <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                         <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
                                             @context.Amount.ToString("C")
                                         </MudText>
-                                    </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("Date")">
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
-                                    </MudTd>
-                                    <MudTd DataLabel="@Localization.GetString("PaymentMethod")">
-                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="@GetPaymentMethodColor(context.PaymentMethod)">
-                                            @GetPaymentMethodText(context.PaymentMethod)
-                                        </MudChip>
                                     </MudTd>
                                 </RowTemplate>
                             </MudTable>

@@ -155,6 +155,57 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                  => type.ToString()
         };
 
+        // ── Stock Movement helpers ────────────────────────────────────────────────
+
+        protected static Color GetMovementTypeColor(InventoryTransactionType type) => type switch
+        {
+            InventoryTransactionType.Inbound => Color.Success,
+            InventoryTransactionType.TransferIn => Color.Tertiary,
+            InventoryTransactionType.Outbound => Color.Error,
+            InventoryTransactionType.TransferOut => Color.Warning,
+            InventoryTransactionType.Adjustment => Color.Info,
+            InventoryTransactionType.Reversed => Color.Dark,
+            _ => Color.Default
+        };
+
+        protected static string GetMovementTypeIcon(InventoryTransactionType type) => type switch
+        {
+            InventoryTransactionType.Inbound => Icons.Material.Filled.ArrowDownward,
+            InventoryTransactionType.Outbound => Icons.Material.Filled.ArrowUpward,
+            InventoryTransactionType.TransferIn => Icons.Material.Filled.CallReceived,
+            InventoryTransactionType.TransferOut => Icons.Material.Filled.CallMade,
+            InventoryTransactionType.Adjustment => Icons.Material.Filled.Tune,
+            InventoryTransactionType.Reversed => Icons.Material.Filled.Undo,
+            _ => Icons.Material.Filled.SwapVert
+        };
+
+        protected string GetMovementTypeLabel(InventoryTransactionType type) =>
+            Localization.GetString(type.ToString());
+
+        // ── InventoryTransactionType helpers ──────────────────────────────────
+
+        protected static string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
+        {
+            InventoryTransactionType.Inbound => $"+{quantity:N2}",
+            InventoryTransactionType.Outbound => $"-{quantity:N2}",
+            InventoryTransactionType.TransferIn => $"+{quantity:N2}",
+            InventoryTransactionType.TransferOut => $"-{quantity:N2}",
+            InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
+            InventoryTransactionType.Reversed => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
+            _ => quantity.ToString("N2")
+        };
+
+        protected static Color GetQuantityColor(InventoryTransactionType type, decimal quantity) => type switch
+        {
+            InventoryTransactionType.Inbound => Color.Success,
+            InventoryTransactionType.Outbound => Color.Error,
+            InventoryTransactionType.TransferIn => Color.Tertiary,
+            InventoryTransactionType.TransferOut => Color.Warning,
+            InventoryTransactionType.Adjustment => quantity > 0 ? Color.Success : Color.Error,
+            InventoryTransactionType.Reversed => quantity > 0 ? Color.Success : Color.Error,
+            _ => Color.Default
+        };
+
         // ── Confirm-and-execute helper ────────────────────────────────────────
 
         protected async Task ConfirmAndExecuteAsync(
@@ -217,30 +268,6 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
                 _notesSaving = false;
             }
         }
-
-        // ── InventoryTransactionType helpers ──────────────────────────────────
-
-        protected static string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
-        {
-            InventoryTransactionType.Inbound     => $"+{quantity:N2}",
-            InventoryTransactionType.Outbound    => $"-{quantity:N2}",
-            InventoryTransactionType.TransferIn  => $"+{quantity:N2}",
-            InventoryTransactionType.TransferOut => $"-{quantity:N2}",
-            InventoryTransactionType.Adjustment  => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-            InventoryTransactionType.Reversed    => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-            _                                    => quantity.ToString("N2")
-        };
-
-        protected static Color GetQuantityColor(InventoryTransactionType type, decimal quantity) => type switch
-        {
-            InventoryTransactionType.Inbound     => Color.Success,
-            InventoryTransactionType.Outbound    => Color.Error,
-            InventoryTransactionType.TransferIn  => Color.Tertiary,
-            InventoryTransactionType.TransferOut => Color.Warning,
-            InventoryTransactionType.Adjustment  => quantity > 0 ? Color.Success : Color.Error,
-            InventoryTransactionType.Reversed    => quantity > 0 ? Color.Success : Color.Error,
-            _                                    => Color.Default
-        };
 
         // ── Dispose ───────────────────────────────────────────────────────────
 

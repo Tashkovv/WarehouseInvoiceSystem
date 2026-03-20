@@ -47,7 +47,7 @@ else
                     @* ── Address ── *@
                     @if (!string.IsNullOrWhiteSpace(_warehouse.Address))
                     {
-                        <div class="wis-detail-contact wis-product-meta-row mb-4">
+                        <div class="wis-detail-contact wis-product-meta-row">
                             <div class="wis-detail-contact-item">
                                 <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">@_warehouse.Address</MudText>
@@ -94,10 +94,9 @@ else
                                 <MudTh>@Localization.GetString("Code")</MudTh>
                                 <MudTh>@Localization.GetString("Name")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("Available")</MudTh>
+                                <MudTh>@Localization.GetString("LastRestocked")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("MinimumQuantity")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("ReorderPoint")</MudTh>
-                                <MudTh>@Localization.GetString("LastRestocked")</MudTh>
                                 <MudTh />
                             </HeaderContent>
                             <RowTemplate>
@@ -112,11 +111,9 @@ else
                                              Color="@GetQuantityColor(context)">
                                         @context.Quantity.ToString("N2") @context.ProductUnit
                                     </MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Available")" Class="text-right">
-                                    <MudText Typo="Typo.body2">
-                                        @context.AvailableQuantity.ToString("N2") @context.ProductUnit
-                                    </MudText>
+                                </MudTd>                                
+                                <MudTd DataLabel="@Localization.GetString("LastRestocked")">
+                                    <MudText Typo="Typo.body2">@(context.LastRestockedAt.ToString("dd MMM yyyy") ?? "—")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("MinimumQuantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">
@@ -141,9 +138,6 @@ else
                                             <text>—</text>
                                         }
                                     </MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("LastRestocked")">
-                                    <MudText Typo="Typo.body2">@(context.LastRestockedAt.ToString("dd MMM yyyy") ?? "—")</MudText>
                                 </MudTd>
                                 <MudTd>
                                     <MudIconButton Icon="@Icons.Material.Filled.Tune"

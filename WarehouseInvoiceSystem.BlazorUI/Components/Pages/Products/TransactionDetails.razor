@@ -151,9 +151,9 @@ else
                                   RowClassFunc="GetMovementRowClass">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
-                                <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Note")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
@@ -163,15 +163,6 @@ else
                                         @context.CreatedAt.ToString("dd MMM yyyy HH:mm")
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Type")">
-                                    <MudChip T="string"
-                                             Size="Size.Small"
-                                             Color="@GetMovementTypeColor(context)"
-                                             Variant="Variant.Outlined"
-                                             Icon="@GetMovementTypeIcon(context)">
-                                        @GetMovementTypeLabel(context)
-                                    </MudChip>
-                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Warehouse")">
                                     <MudText Typo="Typo.body2"
                                              Color="Color.Default">
@@ -180,12 +171,21 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
-                                             Color="Color.Default">
-                                        @context.Quantity.ToString("N2") @_product!.Unit
+                                             Color="@GetQuantityColor(context.Type, context.Quantity)">
+                                        @GetQuantityText(context.Type, context.Quantity) @_product!.Unit
                                     </MudText>
                                 </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Type")">
+                                    <MudChip T="string"
+                                             Size="Size.Small"
+                                             Color="@GetMovementTypeColor(context.Type)"
+                                             Variant="Variant.Outlined"
+                                             Icon="@GetMovementTypeIcon(context.Type)">
+                                        @GetMovementTypeLabel(context.Type)
+                                    </MudChip>
+                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Note")">
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">
                                         @(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)
                                     </MudText>
                                 </MudTd>
@@ -258,16 +258,16 @@ else
                             else
                             {
                                 <WisAutocompleteFilter TValue="Guid"
-                                                       Label="@Localization.GetString("AllBuyers")"
-                                                       AllLabel="@Localization.GetString("AllBuyers")"
+                                                       Label="@Localization.GetString("AllClients")"
+                                                       AllLabel="@Localization.GetString("AllClients")"
                                                        Icon="@Icons.Material.Filled.Business"
-                                                       LoadItems="LoadBuyerItems"
-                                                       SelectedValue="@(_historyBuyerId ?? default)"
-                                                       SelectedValueChanged="@(async (Guid v) => await OnHistoryBuyerChanged(v == default ? (Guid?)null : v))"
+                                                       LoadItems="LoadClientItems"
+                                                       SelectedValue="@(_historyClientId ?? default)"
+                                                       SelectedValueChanged="@(async (Guid v) => await OnHistoryClientChanged(v == default ? (Guid?)null : v))"
                                                        MinWidth="180px" />
                             }
 
-                            @if (_historyDateRange.Start != null || _historyDateRange.End != null || _historyVendorId.HasValue || _historyBuyerId.HasValue)
+                            @if (_historyDateRange.Start != null || _historyDateRange.End != null || _historyVendorId.HasValue || _historyClientId.HasValue)
                             {
                                 <button type="button"
                                         class="wis-filter-btn wis-filter-btn--clear"
@@ -292,18 +292,15 @@ else
                                   Class="wis-secondary-list"
                                   OnRowClick="@((TableRowClickEventArgs<ProductTransactionRowDto> args) => Navigation.NavigateTo(args.Item!.DocumentUrl))">
                             <HeaderContent>
-                                <MudTh>@Localization.GetString("Date")</MudTh>
                                 <MudTh>@Localization.GetString("DocumentNumber")</MudTh>
                                 <MudTh>@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))</MudTh>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
+                                <MudTh>@Localization.GetString("Date")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Total")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
-                                <MudTd DataLabel="@Localization.GetString("Date")">
-                                    <MudText Typo="Typo.body2">@context.Date.ToString("dd MMM yyyy")</MudText>
-                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("DocumentNumber")">
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@context.DocumentNumber</MudText>
                                 </MudTd>
@@ -312,6 +309,9 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Warehouse")">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@context.WarehouseName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    <MudText Typo="Typo.body2">@context.Date.ToString("dd MMM yyyy")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.Quantity.ToString("N2") @_product!.Unit</MudText>
@@ -519,41 +519,16 @@ else
 
     // ── Stock Movement helpers ────────────────────────────────────────────────
 
-    private string GetMovementRowClass(InventoryTransactionDto t, int _) => t.Type switch
+    private static string GetMovementRowClass(InventoryTransactionDto dto, int _) => dto.Type switch
     {
-        InventoryTransactionType.Inbound     => "row-status-success",
-        InventoryTransactionType.TransferIn  => "row-status-tertiary",
-        InventoryTransactionType.Outbound    => "row-status-warning",
+        InventoryTransactionType.Inbound => "row-status-success",
+        InventoryTransactionType.TransferIn => "row-status-tertiary",
+        InventoryTransactionType.Outbound => "row-status-error",
         InventoryTransactionType.TransferOut => "row-status-warning",
-        InventoryTransactionType.Adjustment  => "row-status-info",
-        InventoryTransactionType.Reversed    => "row-status-dark",
-        _                                    => ""
+        InventoryTransactionType.Adjustment => "row-status-info",
+        InventoryTransactionType.Reversed => "row-status-dark",
+        _ => ""
     };
-
-    private Color GetMovementTypeColor(InventoryTransactionDto t) => t.Type switch
-    {
-        InventoryTransactionType.Inbound     => Color.Success,
-        InventoryTransactionType.TransferIn  => Color.Tertiary,
-        InventoryTransactionType.Outbound    => Color.Warning,
-        InventoryTransactionType.TransferOut => Color.Warning,
-        InventoryTransactionType.Adjustment  => Color.Info,
-        InventoryTransactionType.Reversed    => Color.Dark,
-        _                                    => Color.Default
-    };
-
-    private string GetMovementTypeIcon(InventoryTransactionDto t) => t.Type switch
-    {
-        InventoryTransactionType.Inbound     => Icons.Material.Filled.ArrowDownward,
-        InventoryTransactionType.Outbound    => Icons.Material.Filled.ArrowUpward,
-        InventoryTransactionType.TransferIn  => Icons.Material.Filled.CallReceived,
-        InventoryTransactionType.TransferOut => Icons.Material.Filled.CallMade,
-        InventoryTransactionType.Adjustment  => Icons.Material.Filled.Tune,
-        InventoryTransactionType.Reversed    => Icons.Material.Filled.Undo,
-        _                                    => Icons.Material.Filled.SwapVert
-    };
-
-    private string GetMovementTypeLabel(InventoryTransactionDto t) =>
-        Localization.GetString(t.Type.ToString());
 
     // ── Document History ──────────────────────────────────────────────────────
 
@@ -568,12 +543,12 @@ else
     private readonly Dictionary<Guid, bool> _vendorTypeMap = new(); // true = individual
 
     // SOLD filter state (companies only)
-    private Guid? _historyBuyerId;
+    private Guid? _historyClientId;
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadVendorItems(string search, int page, CancellationToken ct)
     {
         Task<PagedResult<CompanyDto>> companiesTask = CompanyService.GetPagedAsync(
-            new GetCompaniesQuery { Search = search, Page = page, PageSize = 10, SortBy = "Name", SortAscending = true, SearchByNameOnly = true }, ct);
+            new GetCompaniesQuery { Search = search, Page = page, PageSize = 10, SortBy = "Name", SortAscending = true, Type = CompanyType.Vendor, SearchByNameOnly = true }, ct);
 
         Task<PagedResult<IndividualDto>> individualsTask = IndividualService.GetPagedAsync(
             new GetIndividualsQuery { Search = search, Page = page, PageSize = 10, SortBy = "LastName", SortAscending = true, SearchByNameOnly = true }, ct);
@@ -606,10 +581,10 @@ else
         };
     }
 
-    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadBuyerItems(string search, int page, CancellationToken ct)
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadClientItems(string search, int page, CancellationToken ct)
     {
         PagedResult<CompanyDto> companies = await CompanyService.GetPagedAsync(
-            new GetCompaniesQuery { Search = search, Page = page, PageSize = 20, SortBy = "Name", SortAscending = true, SearchByNameOnly = true }, ct);
+            new GetCompaniesQuery { Search = search, Page = page, PageSize = 20, SortBy = "Name", SortAscending = true, Type = CompanyType.Client, SearchByNameOnly = true }, ct);
 
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
@@ -627,9 +602,9 @@ else
             await _historyTable.ReloadServerData();
     }
 
-    private async Task OnHistoryBuyerChanged(Guid? buyerId)
+    private async Task OnHistoryClientChanged(Guid? buyerId)
     {
-        _historyBuyerId = buyerId;
+        _historyClientId = buyerId;
         if (_historyTable is not null)
             await _historyTable.ReloadServerData();
     }
@@ -646,7 +621,7 @@ else
                 WarehouseId = _selectedWarehouseId,
                 Purchased = _historyMode == HistoryMode.Purchased,
                 CompanyId = _historyMode == HistoryMode.Sold
-                    ? _historyBuyerId
+                    ? _historyClientId
                     : (_historyVendorId.HasValue && !vendorIsIndividual ? _historyVendorId : null),
                 IndividualId = _historyMode == HistoryMode.Purchased && vendorIsIndividual
                     ? _historyVendorId
@@ -669,7 +644,7 @@ else
         if (_historyMode == mode) return;
         _historyMode = mode;
         _historyVendorId = null;
-        _historyBuyerId = null;
+        _historyClientId = null;
         if (_historyTable is not null)
             await _historyTable.ReloadServerData();
     }
@@ -697,7 +672,7 @@ else
         _historyDateRange = new(null, null);
         _historyDatePreset = null;
         _historyVendorId = null;
-        _historyBuyerId = null;
+        _historyClientId = null;
         if (_historyDateRangeFilter is not null)
             await _historyDateRangeFilter.ClearAsync();
         if (_historyTable is not null)

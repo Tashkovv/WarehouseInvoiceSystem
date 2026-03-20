@@ -120,6 +120,19 @@
                     </CellTemplate>
                 </PropertyColumn>
 
+                <PropertyColumn Property="x => x.Status"
+                                Title="@Localization.GetString("Status")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Color="@GetPurchaseNoteStatusColor(context.Item.Status)">
+                            @GetPurchaseNoteStatusText(context.Item.Status)
+                        </MudChip>
+                    </CellTemplate>
+                </PropertyColumn>
+
                 <PropertyColumn Property="x => x.PurchaseDate"
                                 Title="@Localization.GetString("PurchaseDate")"
                                 Sortable="true"
@@ -148,19 +161,6 @@
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
                             @context.Item.TotalAmount.ToString("C")
                         </MudText>
-                    </CellTemplate>
-                </PropertyColumn>
-
-                <PropertyColumn Property="x => x.Status"
-                                Title="@Localization.GetString("Status")"
-                                Sortable="true"
-                                IsEditable="false">
-                    <CellTemplate>
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Color="@GetPurchaseNoteStatusColor(context.Item.Status)">
-                            @GetPurchaseNoteStatusText(context.Item.Status)
-                        </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
 
@@ -412,7 +412,7 @@
         PurchaseNoteStatus.Draft => "row-status-default",
         PurchaseNoteStatus.Pending => "row-status-warning",
         PurchaseNoteStatus.Paid => "row-status-success",
-        PurchaseNoteStatus.Cancelled => "row-status-default",
+        PurchaseNoteStatus.Cancelled => "row-status-error",
         _ => string.Empty
     };
 

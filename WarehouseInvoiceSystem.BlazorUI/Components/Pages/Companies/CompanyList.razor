@@ -76,6 +76,11 @@
                                 IsEditable="false"
                                 CellClass="wis-cell-primary" />
 
+                <PropertyColumn Property="x => x.ContactPerson"
+                                Title="@Localization.GetString("ContactPerson")"
+                                Sortable="true"
+                                IsEditable="false" />
+
                 <PropertyColumn Property="x => x.Type"
                                 Title="@Localization.GetString("Type")"
                                 Sortable="false"
@@ -88,11 +93,6 @@
                         </MudChip>
                     </CellTemplate>
                 </PropertyColumn>
-
-                <PropertyColumn Property="x => x.ContactPerson"
-                                Title="@Localization.GetString("ContactPerson")"
-                                Sortable="true"
-                                IsEditable="false" />
 
                 <PropertyColumn Property="x => x.Email"
                                 Title="@Localization.GetString("Email")"

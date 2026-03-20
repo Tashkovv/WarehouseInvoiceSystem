@@ -118,106 +118,115 @@ else
 
                     </div>
 
-                    <MudDivider Class="mb-6" />
-
                     @if (_loadingAnalytics)
                     {
                         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
                     }
                     else if (_analytics.ReceivableTotalCount > 0 || _analytics.PayableTotalCount > 0 || _analytics.PayableCancelledCount > 0 || _analytics.ReceivableCancelledCount > 0)
                     {
+                        <MudDivider Class="mb-6" />
+
                         <div class="wis-ca-outer">
 
                             <!-- Left col: receivables row + payables row -->
                             <div class="wis-ca-left">
 
-                                <!-- Receivables -->
-                                <div class="wis-ca-row">
-                                    <div class="wis-ca-stat">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalReceivables")</MudText>
-                                        <div class="wis-stat-value mud-info-text">@_analytics.ReceivableTotalAmount.ToString("C")</div>
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.ReceivableTotalCount @Localization.GetString("Invoices")</MudText>
-                                    </div>
-                                    <div class="wis-ca-stat">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Paid")</MudText>
-                                        <div class="wis-stat-value mud-success-text">@_analytics.ReceivablePaidAmount.ToString("C")</div>
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.ReceivablePaidCount @Localization.GetString("FullyPaidInvoices")</MudText>
-                                    </div>
-                                    <div class="wis-ca-stat">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OpenReceivables")</MudText>
-                                        @if (_analytics.ReceivableOpenCount > 0)
-                                        {
-                                            <div class="wis-stat-value mud-warning-text">@_analytics.ReceivableAmountDue.ToString("C")</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Warning">@_analytics.ReceivableOpenCount @Localization.GetString("Invoices")</MudText>
-                                        }
-                                        else
-                                        {
-                                            <div class="wis-stat-value mud-success-text">—</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Success">✓ @Localization.GetString("AllReceivablesPaid")</MudText>
-                                        }
-                                    </div>
-                                    @if (_analytics.ReceivableOverdueCount > 0)
-                                    {
+                                @if (_company.Type != CompanyType.Vendor) 
+                                {
+                                    <!-- Receivables -->
+                                    <div class="wis-ca-row">
                                         <div class="wis-ca-stat">
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverdueReceivables")</MudText>
-                                            <div class="wis-stat-value mud-error-text">@_analytics.ReceivableOverdueAmountDue.ToString("C")</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableOverdueCount @Localization.GetString("Invoices")</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalReceivables")</MudText>
+                                            <div class="wis-stat-value mud-info-text">@_analytics.ReceivableTotalAmount.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.ReceivableTotalCount @Localization.GetString("Invoices")</MudText>
                                         </div>
-                                    }
-                                    @if (_analytics.ReceivableCancelledCount > 0)
-                                    {
                                         <div class="wis-ca-stat">
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
-                                            <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.ReceivableCancelledAmount.ToString("C")</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableCancelledCount @Localization.GetString("Invoices")</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Paid")</MudText>
+                                            <div class="wis-stat-value mud-success-text">@_analytics.ReceivablePaidAmount.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.ReceivablePaidCount @Localization.GetString("FullyPaidInvoices")</MudText>
                                         </div>
-                                    }
-                                </div>
+                                        <div class="wis-ca-stat">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OpenReceivables")</MudText>
+                                            @if (_analytics.ReceivableOpenCount > 0)
+                                            {
+                                                <div class="wis-stat-value mud-warning-text">@_analytics.ReceivableAmountDue.ToString("C")</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Warning">@_analytics.ReceivableOpenCount @Localization.GetString("Invoices")</MudText>
+                                            }
+                                            else
+                                            {
+                                                <div class="wis-stat-value mud-success-text">—</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Success">✓ @Localization.GetString("AllReceivablesPaid")</MudText>
+                                            }
+                                        </div>
+                                        @if (_analytics.ReceivableOverdueCount > 0)
+                                        {
+                                            <div class="wis-ca-stat">
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverdueReceivables")</MudText>
+                                                <div class="wis-stat-value mud-error-text">@_analytics.ReceivableOverdueAmountDue.ToString("C")</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableOverdueCount @Localization.GetString("Invoices")</MudText>
+                                            </div>
+                                        }
+                                        @if (_analytics.ReceivableCancelledCount > 0)
+                                        {
+                                            <div class="wis-ca-stat">
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
+                                                <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.ReceivableCancelledAmount.ToString("C")</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableCancelledCount @Localization.GetString("Invoices")</MudText>
+                                            </div>
+                                        }
+                                    </div>
+                                }
 
-                                <div class="wis-ca-divider"></div>
+                                @if (_company.Type == CompanyType.Both)
+                                {
+                                    <div class="wis-ca-divider"></div>
+                                }
 
-                                <!-- Payables -->
-                                <div class="wis-ca-row">
-                                    <div class="wis-ca-stat">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalPayables")</MudText>
-                                        <div class="wis-stat-value mud-info-text">@_analytics.PayableTotalAmount.ToString("C")</div>
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.PayableTotalCount @Localization.GetString("Invoices")</MudText>
-                                    </div>
-                                    <div class="wis-ca-stat">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Paid")</MudText>
-                                        <div class="wis-stat-value mud-success-text">@_analytics.PayablePaidAmount.ToString("C")</div>
-                                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.PayablePaidCount @Localization.GetString("FullyPaidInvoices")</MudText>
-                                    </div>
-                                    <div class="wis-ca-stat">
-                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OpenPayables")</MudText>
-                                        @if (_analytics.PayableOpenCount > 0)
-                                        {
-                                            <div class="wis-stat-value mud-warning-text">@_analytics.PayableAmountDue.ToString("C")</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Warning">@_analytics.PayableOpenCount @Localization.GetString("Invoices")</MudText>
-                                        }
-                                        else
-                                        {
-                                            <div class="wis-stat-value mud-success-text">—</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Success">✓ @Localization.GetString("AllPayablesPaid")</MudText>
-                                        }
-                                    </div>
-                                    @if (_analytics.PayableOverdueCount > 0)
-                                    {
+                                @if (_company.Type != CompanyType.Client)
+                                {
+                                    <!-- Payables -->
+                                    <div class="wis-ca-row">
                                         <div class="wis-ca-stat">
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverduePayables")</MudText>
-                                            <div class="wis-stat-value mud-error-text">@_analytics.PayableOverdueAmountDue.ToString("C")</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableOverdueCount @Localization.GetString("Invoices")</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalPayables")</MudText>
+                                            <div class="wis-stat-value mud-info-text">@_analytics.PayableTotalAmount.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.PayableTotalCount @Localization.GetString("Invoices")</MudText>
                                         </div>
-                                    }
-                                    @if (_analytics.PayableCancelledCount > 0)
-                                    {
                                         <div class="wis-ca-stat">
-                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
-                                            <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.PayableCancelledAmount.ToString("C")</div>
-                                            <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableCancelledCount @Localization.GetString("Invoices")</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Paid")</MudText>
+                                            <div class="wis-stat-value mud-success-text">@_analytics.PayablePaidAmount.ToString("C")</div>
+                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.PayablePaidCount @Localization.GetString("FullyPaidInvoices")</MudText>
                                         </div>
-                                    }
-                                </div>
+                                        <div class="wis-ca-stat">
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OpenPayables")</MudText>
+                                            @if (_analytics.PayableOpenCount > 0)
+                                            {
+                                                <div class="wis-stat-value mud-warning-text">@_analytics.PayableAmountDue.ToString("C")</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Warning">@_analytics.PayableOpenCount @Localization.GetString("Invoices")</MudText>
+                                            }
+                                            else
+                                            {
+                                                <div class="wis-stat-value mud-success-text">—</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Success">✓ @Localization.GetString("AllPayablesPaid")</MudText>
+                                            }
+                                        </div>
+                                        @if (_analytics.PayableOverdueCount > 0)
+                                        {
+                                            <div class="wis-ca-stat">
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverduePayables")</MudText>
+                                                <div class="wis-stat-value mud-error-text">@_analytics.PayableOverdueAmountDue.ToString("C")</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableOverdueCount @Localization.GetString("Invoices")</MudText>
+                                            </div>
+                                        }
+                                        @if (_analytics.PayableCancelledCount > 0)
+                                        {
+                                            <div class="wis-ca-stat">
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Cancelled")</MudText>
+                                                <div class="wis-stat-value mud-error-text" style="text-decoration: line-through;">@_analytics.PayableCancelledAmount.ToString("C")</div>
+                                                <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableCancelledCount @Localization.GetString("Invoices")</MudText>
+                                            </div>
+                                        }
+                                    </div>
+                                }                                
 
                             </div>
 
@@ -288,10 +297,10 @@ else
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
                                 <MudTh>@Localization.GetString("Type")</MudTh>
+                                <MudTh>@Localization.GetString("Status")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
                                 <MudTh>@Localization.GetString("DueDate")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
-                                <MudTh>@Localization.GetString("Status")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
@@ -302,6 +311,11 @@ else
                                              Color="@(context.Type == InvoiceType.Receivable ? Color.Success : Color.Warning)"
                                              Variant="Variant.Outlined">
                                         @(context.Type == InvoiceType.Receivable ? Localization.GetString("Receivable") : Localization.GetString("Payable"))
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Status")">
+                                    <MudChip T="string" Size="Size.Small" Color="@GetInvoiceStatusColor(context.Status)" Variant="Variant.Outlined">
+                                        @GetInvoiceStatusText(context.Status)
                                     </MudChip>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Date")">
@@ -315,11 +329,6 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Status")">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetInvoiceStatusColor(context.Status)" Variant="Variant.Outlined">
-                                        @GetInvoiceStatusText(context.Status)
-                                    </MudChip>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>

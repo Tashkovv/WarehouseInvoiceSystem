@@ -125,7 +125,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 q = q.Where(c => c.Type == query.Type.Value || c.Type == CompanyType.Both);
 
             if (query.IsActive.HasValue)
-                q = q.Where(c => c.IsActive == query.IsActive.Value);
+                q = q.Where(c => c.IsActive == query.IsActive.Value || c.IsActive);
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {

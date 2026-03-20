@@ -133,6 +133,15 @@
                     </CellTemplate>
                 </PropertyColumn>
 
+                <PropertyColumn Property="x => x.LastRestockedAt"
+                                Title="@Localization.GetString("LastRestocked")"
+                                Sortable="true"
+                                IsEditable="false">
+                    <CellTemplate>
+                        @context.Item.LastRestockedAt.ToLocalTime().ToString("dd MMM yyyy")
+                    </CellTemplate>
+                </PropertyColumn>
+
                 <PropertyColumn Property="x => x.MinimumQuantity"
                                 Title="@Localization.GetString("MinimumQuantity")"
                                 Sortable="false"
@@ -166,15 +175,6 @@
                         {
                             <text>—</text>
                         }
-                    </CellTemplate>
-                </PropertyColumn>
-
-                <PropertyColumn Property="x => x.LastRestockedAt"
-                                Title="@Localization.GetString("LastRestocked")"
-                                Sortable="true"
-                                IsEditable="false">
-                    <CellTemplate>
-                        @context.Item.LastRestockedAt.ToLocalTime().ToString("dd MMM yyyy")
                     </CellTemplate>
                 </PropertyColumn>
 

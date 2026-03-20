@@ -117,7 +117,7 @@ else
                                     <MudText Typo="Typo.body2">
                                         <strong>@_outOfStockItems.Count()</strong> @Localization.GetString("ProductsOutOfStock"):
                                         @string.Join(", ", _outOfStockItems.Take(5).Select(s =>
-                                        _productDict.TryGetValue(s.ProductId, out var p) ? p.Name : ""))
+                                        _productDict.TryGetValue(s.ProductId, out var p) ? $"{p.Code} - {p.Name}" : ""))
                             @if (_outOfStockItems.Count() > 5)
                                         {
                                             <text> @($"{Localization.GetString("AndMore")} {_outOfStockItems.Count() - 5}")</text>
@@ -131,7 +131,7 @@ else
                                     <MudText Typo="Typo.body2">
                                         <strong>@_lowStockItems.Count()</strong> @Localization.GetString("ProductsBelowMinimum"):
                                         @string.Join(", ", _lowStockItems.Take(5).Select(s =>
-                                        _productDict.TryGetValue(s.ProductId, out var p) ? p.Name : ""))
+                                        _productDict.TryGetValue(s.ProductId, out var p) ? $"{p.Code} - {p.Name}" : ""))
                             @if (_lowStockItems.Count() > 5)
                                         {
                                             <text> @($"{Localization.GetString("AndMore")} {_lowStockItems.Count() - 5}")</text>
@@ -189,8 +189,8 @@ else
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("Value")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Value")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 <MudTd DataLabel="#">
@@ -199,17 +199,13 @@ else
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Product")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductCode - @item.ProductName</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
                                              Color="@(item.IsOutOfStock ? Color.Error : item.IsLowStock ? Color.Warning : Color.Default)">
                                         @item.TotalQuantity.ToString("N2") @item.ProductUnit
                                     </MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Value")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@item.TotalValue.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Status")">
                                     @if (item.IsOutOfStock)
@@ -230,6 +226,9 @@ else
                                             @Localization.GetString("InStock")
                                         </MudChip>
                                     }
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Value")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@item.TotalValue.ToString("C")</MudText>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -286,7 +285,7 @@ else
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("TotalSpend")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Spent")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 <MudTd DataLabel="#">
@@ -295,13 +294,12 @@ else
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Product")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductCode - @item.ProductName</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">@item.Quantity.ToString("N2") @item.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalSpend")" Class="text-right">
+                                <MudTd DataLabel="@Localization.GetString("Spent")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Info">
                                         @item.TotalValue.ToString("C")
                                     </MudText>
@@ -348,7 +346,7 @@ else
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("TotalRevenue")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Revenue")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 <MudTd DataLabel="#">
@@ -357,13 +355,12 @@ else
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Product")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@item.ProductCode</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductCode - @item.ProductName</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2">@item.Quantity.ToString("N2") @item.Unit</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("TotalRevenue")" Class="text-right">
+                                <MudTd DataLabel="@Localization.GetString("Revenue")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
                                         @item.TotalValue.ToString("C")
                                     </MudText>
@@ -410,54 +407,19 @@ else
                                   T="InventoryTransactionDto"
                                   OnRowClick="@((TableRowClickEventArgs<InventoryTransactionDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}/transactions?warehouse={_selectedWarehouseId}"))">
                             <HeaderContent>
-                                <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh>@Localization.GetString("Type")</MudTh>
                                 <MudTh>@Localization.GetString("Note")</MudTh>
                             </HeaderContent>
                             <RowTemplate>
-                                <MudTd DataLabel="@Localization.GetString("Type")">
-                                    @if (context.Type == InventoryTransactionType.Inbound)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.ArrowDownward">
-                                            @Localization.GetString("Inbound")
-                                        </MudChip>
-                                    }
-                                    else if (context.Type == InventoryTransactionType.Outbound)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.ArrowUpward">
-                                            @Localization.GetString("Outbound")
-                                        </MudChip>
-                                    }
-                                    else if (context.Type == InventoryTransactionType.TransferIn)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Tertiary" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.CallReceived">
-                                            @Localization.GetString("TransferIn")
-                                        </MudChip>
-                                    }
-                                    else if (context.Type == InventoryTransactionType.TransferOut)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.CallMade">
-                                            @Localization.GetString("TransferOut")
-                                        </MudChip>
-                                    }
-                                    else if (context.Type == InventoryTransactionType.Reversed)
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Dark" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Undo">
-                                            @Localization.GetString("Reversed")
-                                        </MudChip>
-                                    }
-                                    else
-                                    {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined" Icon="@Icons.Material.Filled.Tune">
-                                            @Localization.GetString("Adjustment")
-                                        </MudChip>
-                                    }
-                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Product")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductName</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.ProductCode</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode - @context.ProductName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Date")">
+                                    <MudText Typo="Typo.body2">@context.CreatedAt.ToString("dd MMM yyyy")</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CreatedAt.ToString("HH:mm")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
@@ -465,9 +427,10 @@ else
                                         @GetQuantityText(context.Type, context.Quantity)
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Date")">
-                                    <MudText Typo="Typo.body2">@context.CreatedAt.ToString("dd MMM yyyy")</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.CreatedAt.ToString("HH:mm")</MudText>
+                                <MudTd DataLabel="@Localization.GetString("Type")">
+                                    <MudChip T="string" Size="Size.Small" Color="@GetMovementTypeColor(context.Type)" Variant="Variant.Outlined" Icon="@GetMovementTypeIcon(context.Type)">
+                                        @GetMovementTypeLabel(context.Type)
+                                    </MudChip>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Note")">
                                     <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(context.Note) ? "-" : context.Note)</MudText>
