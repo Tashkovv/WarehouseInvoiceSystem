@@ -5,13 +5,16 @@
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
+@using WarehouseInvoiceSystem.Application.Models
 @inject IProductService ProductService
 @inject IInventoryService InventoryService
 @inject IWarehouseService WarehouseService
 @inject ICompanyService CompanyService
 @inject IIndividualService IndividualService
+@inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("TransactionHistory") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -78,6 +81,18 @@ else
                                 </MudText>
                             </div>
                         }
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" Color="Color.Success" />
+                            <MudText Typo="Typo.body2" Color="Color.Success">
+                                @Localization.GetString("TotalIncoming"): @_totalIncoming.ToString("N2") @_product.Unit
+                            </MudText>
+                        </div>
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" Color="Color.Error" />
+                            <MudText Typo="Typo.body2" Color="Color.Error">
+                                @Localization.GetString("TotalOutgoing"): @_totalOutgoing.ToString("N2") @_product.Unit
+                            </MudText>
+                        </div>
                     </div>
 
                     @* ── Tab toggle ── *@
@@ -135,6 +150,16 @@ else
                                     @Localization.GetString("ClearFilters")
                                 </button>
                             }
+
+                            <MudSpacer />
+
+                            <WisButton Action="@(new WisDetailActionItem
+                            {
+                                Icon = Icons.Material.Filled.Print,
+                                Label = Localization.GetString("Export"),
+                                Disabled = _exportingMovements,
+                                OnClick = EventCallback.Factory.Create(this, ExportMovements)
+                            })" />
 
                         </div>
                     </MudCardContent>
@@ -355,6 +380,8 @@ else
     private ProductDetailsDto _details = new();
     private Guid? _selectedWarehouseId;
     private Tab _activeTab = Tab.StockMovements;
+    private decimal _totalIncoming;
+    private decimal _totalOutgoing;
 
     // ── Table refs ────────────────────────────────────────────────────────────
 
@@ -423,6 +450,8 @@ else
 
             if (_product != null && WarehouseQueryParam.HasValue)
                 _selectedWarehouseId = WarehouseQueryParam;
+
+            await ComputeMovementTotalsAsync();
         }, "ErrorLoadingProduct");
 
     // ── Interactions ──────────────────────────────────────────────────────────
@@ -430,11 +459,29 @@ else
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
         _selectedWarehouseId = warehouseId;
+        await ComputeMovementTotalsAsync();
         // Reload both tables — warehouse is a server-side filter
         if (_movementsTable is not null)
             await _movementsTable.ReloadServerData();
         if (_historyTable is not null)
             await _historyTable.ReloadServerData();
+    }
+
+    private async Task ComputeMovementTotalsAsync()
+    {
+        IEnumerable<InventoryTransactionDto> transactions = await InventoryService.GetAllFilteredTransactionsAsync(
+            new GetInventoryTransactionsQuery { ProductId = Id, WarehouseId = _selectedWarehouseId },
+            CancellationToken.None);
+
+        var list = transactions.ToList();
+        _totalIncoming = list
+            .Where(t => t.Type is InventoryTransactionType.Inbound or InventoryTransactionType.TransferIn
+                || (t.Type is InventoryTransactionType.Adjustment or InventoryTransactionType.Reversed && t.Quantity > 0))
+            .Sum(t => t.Quantity);
+        _totalOutgoing = list
+            .Where(t => t.Type is InventoryTransactionType.Outbound or InventoryTransactionType.TransferOut
+                || (t.Type is InventoryTransactionType.Adjustment or InventoryTransactionType.Reversed && t.Quantity < 0))
+            .Sum(t => Math.Abs(t.Quantity));
     }
 
     private void SetTab(Tab tab)
@@ -449,6 +496,7 @@ else
     private DateRange _movementDateRange = new(null, null);
     private int? _movementDatePreset = null;
     private WisDateRangeFilter? _movementDateRangeFilter;
+    private bool _exportingMovements = false;
 
     private List<FilterPopoverItem<InventoryTransactionType>> _transactionTypeItems =>
     [
@@ -529,6 +577,62 @@ else
         InventoryTransactionType.Reversed => "row-status-dark",
         _ => ""
     };
+
+    private async Task ExportMovements()
+    {
+        _exportingMovements = true;
+        StateHasChanged();
+
+        try
+        {
+            List<InventoryTransactionDto> transactions = [.. await InventoryService.GetAllFilteredTransactionsAsync(
+                new GetInventoryTransactionsQuery
+                {
+                    ProductId = Id,
+                    WarehouseId = _selectedWarehouseId,
+                    Types = _movementTypeFilter.Count > 0 ? [.. _movementTypeFilter] : null,
+                    DateFrom = _movementDateRange.Start,
+                    DateTo = _movementDateRange.End,
+                }, CancellationToken.None)];
+
+            decimal totalIncoming = transactions
+                .Where(t => t.Type is InventoryTransactionType.Inbound or InventoryTransactionType.TransferIn
+                    || (t.Type is InventoryTransactionType.Adjustment or InventoryTransactionType.Reversed && t.Quantity > 0))
+                .Sum(t => t.Quantity);
+
+            decimal totalOutgoing = transactions
+                .Where(t => t.Type is InventoryTransactionType.Outbound or InventoryTransactionType.TransferOut
+                    || (t.Type is InventoryTransactionType.Adjustment or InventoryTransactionType.Reversed && t.Quantity < 0))
+                .Sum(t => Math.Abs(t.Quantity));
+
+            string unit = _product!.Unit;
+
+            byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
+                transactions,
+                ExportColumnDefinitions.TransactionColumns(Localization, unit),
+                new ExportListOptions(
+                    Localization.GetString("StockMovements"),
+                    $"{Localization.GetString("StockMovementsFor")} {_product.Name}",
+                    [
+                        $"{Localization.GetString("TotalIncoming")}: +{totalIncoming:N2} {unit}",
+                        $"{Localization.GetString("TotalOutgoing")}: -{totalOutgoing:N2} {unit}",
+                        $"{Localization.GetString("CurrentStock")}: {_currentStock?.ToString("N2") ?? "0.00"} {unit}",
+                    ]));
+
+            string fileName = $"{Localization.GetString("StockMovements")}_{_product.Name}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting movements: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exportingMovements = false;
+            StateHasChanged();
+        }
+    }
 
     // ── Document History ──────────────────────────────────────────────────────
 

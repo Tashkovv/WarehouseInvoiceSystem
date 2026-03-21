@@ -9,7 +9,7 @@
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
-@inject IJSRuntime JSRuntime
+@using WarehouseInvoiceSystem.Application.Models
 @inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("Invoices") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -581,15 +581,13 @@
             GetInvoicesQuery exportQuery = BuildQuery();
             IEnumerable<InvoiceDto> invoices = await InvoiceService.GetAllFilteredAsync(exportQuery, CancellationToken.None);
 
-            byte[] fileBytes = await ExcelExportService.ExportInvoicesToExcelAsync(invoices);
+            byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
+                invoices,
+                ExportColumnDefinitions.InvoiceColumns(Localization),
+                new ExportListOptions(Localization.GetString("Invoices")));
+
             string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
-
-            await JSRuntime.InvokeVoidAsync(
-                "fileDownloadHelper.downloadFileFromStream",
-                fileName,
-                new DotNetStreamReference(new MemoryStream(fileBytes)));
-
-            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+            await DownloadFileAsync(fileBytes, fileName);
         }
         catch (Exception ex)
         {
@@ -715,11 +713,7 @@
         {
             byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(item.Id);
             string fileName = $"{Localization.GetString("Invoice")}_{item.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
-            await JSRuntime.InvokeVoidAsync(
-                "fileDownloadHelper.downloadFileFromStream",
-                fileName,
-                new DotNetStreamReference(new MemoryStream(fileBytes)));
-            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+            await DownloadFileAsync(fileBytes, fileName);
         }
         catch (Exception ex)
         {

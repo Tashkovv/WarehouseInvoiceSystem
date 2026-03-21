@@ -2,8 +2,10 @@
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@using WarehouseInvoiceSystem.Application.Models
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
+@inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("WarehouseDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -80,6 +82,13 @@ else
                                     @_lowStockCount @Localization.GetString("LowStock")
                                 </MudChip>
                             }
+                            <WisButton Action="@(new WisDetailActionItem
+                            {
+                                Icon = Icons.Material.Filled.Print,
+                                Label = Localization.GetString("Export"),
+                                Disabled = _exportingStock,
+                                OnClick = EventCallback.Factory.Create(this, ExportStock)
+                            })" />
                         </div>
                     </CardHeaderActions>
                 </MudCardHeader>
@@ -174,6 +183,8 @@ else
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+    private bool _exportingStock = false;
+
     // ── Computed ──────────────────────────────────────────────────────────────
 
     private int _lowStockCount => _stock.Count(s =>
@@ -300,6 +311,34 @@ else
                 p => p.Add(x => x.StockLevel, stockLevel),
                 MaxWidth.Small) == true)
             await LoadWarehouse();
+    }
+
+    private async Task ExportStock()
+    {
+        _exportingStock = true;
+        StateHasChanged();
+
+        try
+        {
+            byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
+                _stock,
+                ExportColumnDefinitions.StockLevelColumns(Localization),
+                new ExportListOptions(Localization.GetString("StockByProduct"),
+                    $"{_warehouse!.Name} — {Localization.GetString("StockByProduct")}"));
+
+            string fileName = $"{Localization.GetString("Stock")}_{_warehouse!.Name}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting stock: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exportingStock = false;
+            StateHasChanged();
+        }
     }
 
 }

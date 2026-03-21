@@ -1,6 +1,7 @@
 namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 {
     using Microsoft.AspNetCore.Components;
+    using Microsoft.JSInterop;
     using MudBlazor;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.BlazorUI.Models;
@@ -13,6 +14,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         [Inject] protected NavigationManager Navigation { get; set; } = default!;
         [Inject] protected ISnackbar Snackbar { get; set; } = default!;
         [Inject] protected WisDialogService WisDialog { get; set; } = default!;
+        [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
 
         protected readonly CancellationTokenSource _cts = new();
         protected WisActionItem _act = null!;
@@ -34,6 +36,22 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             finally
             {
                 _loading = false;
+            }
+        }
+
+        protected async Task DownloadFileAsync(byte[] fileBytes, string fileName)
+        {
+            try
+            {
+                using MemoryStream ms = new(fileBytes);
+                using DotNetStreamReference streamRef = new(ms);
+                await JSRuntime.InvokeVoidAsync("fileDownloadHelper.downloadFileFromStream", fileName, streamRef);
+                Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error downloading file: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
             }
         }
 

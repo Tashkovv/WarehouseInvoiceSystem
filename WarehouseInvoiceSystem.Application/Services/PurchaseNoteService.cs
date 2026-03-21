@@ -473,6 +473,7 @@
             IndividualId = note.IndividualId,
             IndividualFullName = note.Individual?.FullName ?? string.Empty,
             IndividualIdentificationNumber = note.Individual?.IdentificationNumber ?? string.Empty,
+            IndividualAddress = note.Individual?.Address,
             WarehouseId = note.WarehouseId,
             WarehouseName = note.Warehouse.Name,
             PurchaseDate = note.PurchaseDate,

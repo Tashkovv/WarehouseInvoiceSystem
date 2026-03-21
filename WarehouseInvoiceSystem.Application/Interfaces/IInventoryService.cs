@@ -21,6 +21,7 @@
         Task<IEnumerable<InventoryTransactionDto>> GetAllTransactionsAsync(CancellationToken ct = default);
         Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByProductAsync(Guid productId, CancellationToken ct = default);
         Task<PagedResult<InventoryTransactionDto>> GetPagedTransactionsByProductAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default);
+        Task<IEnumerable<InventoryTransactionDto>> GetAllFilteredTransactionsAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default);
         Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId, CancellationToken ct = default);
         Task<InventoryTransactionDto> CreateTransactionAsync(CreateInventoryTransactionDto createDto);
 

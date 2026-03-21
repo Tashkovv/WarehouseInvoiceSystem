@@ -3,8 +3,10 @@
     using ClosedXML.Excel;
     using ClosedXML.Excel.Drawings;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
+    using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.DTOs.Tenant;
     using WarehouseInvoiceSystem.Application.Interfaces;
+    using WarehouseInvoiceSystem.Application.Models;
     using WarehouseInvoiceSystem.Domain.Enums;
 
     public class ExcelExportService(IInvoiceService invoiceService,
@@ -12,6 +14,111 @@
                                     ITenantService tenantService) : IExcelExportService
     {
         private readonly string dateFormat = "dd/MM/yyyy";
+
+        private const string totalString = "Total";
+
+        public Task<byte[]> ExportListToExcelAsync<T>(IEnumerable<T> data, IReadOnlyList<ExportColumn<T>> columns, ExportListOptions options)
+        {
+            using XLWorkbook workbook = new();
+            IXLWorksheet ws = workbook.Worksheets.Add(options.SheetName);
+
+            int row = 1;
+
+            if (options.Title is not null)
+                row = WriteTitleRow(ws, options.Title, columns.Count, row);
+
+            if (options.SubtitleLines is { Count: > 0 })
+                row = WriteSubtitleLines(ws, options.SubtitleLines, columns.Count, row);
+
+            row = WriteHeaderRow(ws, columns, row);
+
+            List<T> items = [.. data];
+            foreach (T item in items)
+            {
+                row++;
+                for (int i = 0; i < columns.Count; i++)
+                    SetCellValue(ws.Cell(row, i + 1), columns[i].Selector(item), columns[i].ColumnType);
+            }
+
+            if (columns.Any(c => c.IncludeInTotals))
+                WriteTotalsRow(ws, items, columns, row + 2);
+
+            ws.Columns().AdjustToContents();
+            return Task.FromResult(WorkbookToBytes(workbook));
+        }
+
+        private static int WriteTitleRow(IXLWorksheet ws, string title, int colCount, int row)
+        {
+            IXLRange range = ws.Range(row, 1, row, colCount).Merge();
+            range.Value = title;
+            range.Style.Font.Bold = true;
+            range.Style.Font.FontSize = 14;
+            range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            return row + 2;
+        }
+
+        private static int WriteSubtitleLines(IXLWorksheet ws, IReadOnlyList<string> lines, int colCount, int row)
+        {
+            foreach (string line in lines)
+            {
+                IXLRange range = ws.Range(row, 1, row, colCount).Merge();
+                range.Value = line;
+                range.Style.Font.FontSize = 10;
+                row++;
+            }
+            return row + 1;
+        }
+
+        private static int WriteHeaderRow<T>(IXLWorksheet ws, IReadOnlyList<ExportColumn<T>> columns, int row)
+        {
+            for (int i = 0; i < columns.Count; i++)
+                ws.Cell(row, i + 1).Value = columns[i].Header;
+
+            IXLRange headerRange = ws.Range(row, 1, row, columns.Count);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
+            headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            return row;
+        }
+
+        private void SetCellValue(IXLCell cell, object? value, ExportColumnType columnType)
+        {
+            cell.Value = FormatValue(value, columnType);
+
+            if (columnType is ExportColumnType.Currency or ExportColumnType.Number)
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+        }
+
+        private string FormatValue(object? value, ExportColumnType columnType) => columnType switch
+        {
+            ExportColumnType.Currency => value is decimal d ? d.ToString("C") : value?.ToString() ?? string.Empty,
+            ExportColumnType.Date => value is DateTime dt ? dt.ToString(dateFormat) : value?.ToString() ?? string.Empty,
+            ExportColumnType.Number => value is decimal n ? n.ToString("N2") : value?.ToString() ?? string.Empty,
+            _ => value?.ToString() ?? string.Empty,
+        };
+
+        private static void WriteTotalsRow<T>(IXLWorksheet ws, List<T> items, IReadOnlyList<ExportColumn<T>> columns, int row)
+        {
+            for (int i = 0; i < columns.Count; i++)
+            {
+                if (!columns[i].IncludeInTotals) continue;
+
+                decimal total = items.Sum(item =>
+                    columns[i].Selector(item) is decimal dv ? dv : 0m);
+
+                IXLCell cell = ws.Cell(row, i + 1);
+                cell.Value = columns[i].ColumnType == ExportColumnType.Currency
+                    ? total.ToString("C")
+                    : total.ToString("N2");
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            }
+
+            IXLRange totalsRange = ws.Range(row, 1, row, columns.Count);
+            totalsRange.Style.Font.Bold = true;
+            totalsRange.Style.Fill.BackgroundColor = XLColor.LightYellow;
+            totalsRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+        }
 
         public async Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId)
         {
@@ -29,175 +136,174 @@
         private byte[] ExportInvoiceForPrinting(InvoiceDto invoice, TenantDto tenant)
         {
             using XLWorkbook workbook = new();
-            IXLWorksheet worksheet = workbook.Worksheets.Add(translations.GetString("Invoice"));
+            IXLWorksheet ws = workbook.Worksheets.Add(translations.GetString("Invoice"));
 
-            // Set page setup for printing
-            worksheet.PageSetup.PageOrientation = XLPageOrientation.Portrait;
-            worksheet.PageSetup.PaperSize = XLPaperSize.LetterPaper;
-            worksheet.PageSetup.Margins.Left = 0.5;
-            worksheet.PageSetup.Margins.Right = 0.5;
-            worksheet.PageSetup.Margins.Top = 0.75;
-            worksheet.PageSetup.Margins.Bottom = 0.75;
-            worksheet.PageSetup.CenterHorizontally = true;
+            int totalCols = 7; // #, Description, Quantity, UnitPrice, TaxRate, Amount, Total
 
-            // Company header from tenant settings
-            worksheet.Range("A1:G1").Merge().Value = tenant.CompanyName;
-            worksheet.Range("A1:G1").Style.Font.Bold = true;
-            worksheet.Range("A1:G1").Style.Font.FontSize = 18;
-            worksheet.Range("A1:G1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            // ── Page setup ───────────────────────────────────────────────────────
+            ws.PageSetup.PageOrientation = XLPageOrientation.Portrait;
+            ws.PageSetup.PaperSize = XLPaperSize.LetterPaper;
+            ws.PageSetup.Margins.Left = 0.5;
+            ws.PageSetup.Margins.Right = 0.5;
+            ws.PageSetup.Margins.Top = 0.75;
+            ws.PageSetup.Margins.Bottom = 0.75;
+            ws.PageSetup.CenterHorizontally = true;
 
-            worksheet.Range("A2:G2").Merge().Value = tenant.Address ?? string.Empty;
-            worksheet.Range("A2:G2").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            worksheet.Range("A2:G2").Style.Font.FontSize = 10;
+            // ── Header area ──────────────────────────────────────────────────────
+            int row = 1;
 
-            // Embed logo in top-right corner when one is stored
+            // Company name (centered)
+            ws.Range(row, 1, row, totalCols).Merge().Value = tenant.CompanyName;
+            ws.Range(row, 1, row, totalCols).Style.Font.Bold = true;
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 18;
+            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            row++;
+            // Company address (centered)
+            ws.Range(row, 1, row, totalCols).Merge().Value = tenant.Address ?? string.Empty;
+            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+
+            // Logo (top-right)
             if (tenant.LogoData is { Length: > 0 })
             {
                 using MemoryStream logoStream = new(tenant.LogoData);
-                IXLPicture picture = worksheet.AddPicture(logoStream)
-                    .MoveTo(worksheet.Cell("F1"))
+                ws.AddPicture(logoStream)
+                    .MoveTo(ws.Cell("F1"))
                     .WithSize(80, 40);
             }
 
-            // Invoice title
-            int row = 4;
-            worksheet.Range($"A{row}:G{row}").Merge().Value = translations.GetString("Invoice").ToUpper();
-            worksheet.Range($"A{row}:G{row}").Style.Font.Bold = true;
-            worksheet.Range($"A{row}:G{row}").Style.Font.FontSize = 16;
-            worksheet.Range($"A{row}:G{row}").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            worksheet.Range($"A{row}:G{row}").Style.Fill.BackgroundColor = XLColor.LightGray;
+            // ── Title ────────────────────────────────────────────────────────────
+            row += 2;
+            ws.Range(row, 1, row, totalCols).Merge().Value = translations.GetString("Invoice").ToUpper();
+            ws.Range(row, 1, row, totalCols).Style.Font.Bold = true;
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 16;
+            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 1, row, totalCols).Style.Fill.BackgroundColor = XLColor.LightGray;
 
-            // Invoice Details - Left side
+            // ── Invoice details ──────────────────────────────────────────────────
             row += 2;
             int detailsStartRow = row;
-            worksheet.Cell(row, 1).Value = invoice.Type.Equals(InvoiceType.Receivable)
-                                             ? $"{translations.GetString("BillFrom")}:"
-                                             : $"{translations.GetString("BillTo")}:";
-            worksheet.Cell(row, 1).Style.Font.Bold = true;
-            row++;
-            worksheet.Cell(row, 1).Value = invoice.CompanyName;
-            worksheet.Cell(row, 1).Style.Font.FontSize = 12;
 
-            // Invoice Details - Right side
+            // Left side: Bill From/To + company name
+            ws.Cell(row, 1).Value = invoice.Type == InvoiceType.Receivable
+                ? $"{translations.GetString("BillFrom")}:"
+                : $"{translations.GetString("BillTo")}:";
+            ws.Cell(row, 1).Style.Font.Bold = true;
+
+            row++;
+            ws.Cell(row, 1).Value = invoice.CompanyName;
+            ws.Cell(row, 1).Style.Font.FontSize = 12;
+
+            // Right side: invoice number, issue date, due date
             row = detailsStartRow;
-            worksheet.Cell(row, 5).Value = $"{translations.GetString("InvoiceNumber")}:";
-            worksheet.Cell(row, 5).Style.Font.Bold = true;
-            worksheet.Cell(row, 6).Value = invoice.InvoiceNumber;
-            worksheet.Range(row, 6, row, 7).Merge();
-
+            WriteDetailRow(ws, row, 5, translations.GetString("InvoiceNumber"), invoice.InvoiceNumber);
             row++;
-            worksheet.Cell(row, 5).Value = $"{translations.GetString("IssueDate")}:";
-            worksheet.Cell(row, 5).Style.Font.Bold = true;
-            worksheet.Cell(row, 6).Value = invoice.IssueDate.ToString(dateFormat);
-            worksheet.Range(row, 6, row, 7).Merge();
-
+            WriteDetailRow(ws, row, 5, translations.GetString("IssueDate"), invoice.IssueDate.ToString(dateFormat));
             row++;
-            worksheet.Cell(row, 5).Value = $"{translations.GetString("DueDate")}:";
-            worksheet.Cell(row, 5).Style.Font.Bold = true;
-            worksheet.Cell(row, 6).Value = invoice.DueDate.ToString(dateFormat);
-            worksheet.Range(row, 6, row, 7).Merge();
+            WriteDetailRow(ws, row, 5, translations.GetString("DueDate"), invoice.DueDate.ToString(dateFormat));
 
-            // Line items table
+            // ── Line items table ─────────────────────────────────────────────────
             row += 3;
-            worksheet.Cell(row, 1).Value = "#";
-            worksheet.Cell(row, 2).Value = translations.GetString("Description");
-            worksheet.Cell(row, 3).Value = translations.GetString("Quantity");
-            worksheet.Cell(row, 4).Value = translations.GetString("UnitPrice");
-            worksheet.Cell(row, 5).Value = translations.GetString("TaxRate");
-            worksheet.Cell(row, 6).Value = translations.GetString("Amount");
-            worksheet.Cell(row, 7).Value = translations.GetString("Total");
 
-            IXLRange headerRange = worksheet.Range(row, 1, row, 7);
+            ws.Cell(row, 1).Value = "#";
+            ws.Cell(row, 2).Value = translations.GetString("Description");
+            ws.Cell(row, 3).Value = translations.GetString("Quantity");
+            ws.Cell(row, 4).Value = translations.GetString("UnitPrice");
+            ws.Cell(row, 5).Value = translations.GetString("TaxRate");
+            ws.Cell(row, 6).Value = translations.GetString("Amount");
+            ws.Cell(row, 7).Value = translations.GetString(totalString);
+
+            IXLRange headerRange = ws.Range(row, 1, row, totalCols);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
             headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
             headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            // Line items
+            // Data rows
             int itemNumber = 1;
-            foreach (InvoiceLineDto item in invoice.LineItems)
+            foreach (InvoiceLineDto line in invoice.LineItems)
             {
                 row++;
-                worksheet.Cell(row, 1).Value = itemNumber++;
-                worksheet.Cell(row, 2).Value = item.ProductName;
-                worksheet.Cell(row, 3).Value = $"{item.Quantity} {item.ProductUnit}";
-                worksheet.Cell(row, 4).Value = item.UnitPrice.ToString("C");
-                worksheet.Cell(row, 5).Value = $"{item.TaxRate}%";
-                worksheet.Cell(row, 6).Value = item.Amount.ToString("C");
-                worksheet.Cell(row, 7).Value = item.TotalAmount.ToString("C");
+                ws.Cell(row, 1).Value = itemNumber++;
+                ws.Cell(row, 2).Value = line.ProductName;
+                ws.Cell(row, 3).Value = $"{line.Quantity} {line.ProductUnit}";
+                ws.Cell(row, 4).Value = line.UnitPrice.ToString("C");
+                ws.Cell(row, 5).Value = $"{line.TaxRate}%";
+                ws.Cell(row, 6).Value = line.Amount.ToString("C");
+                ws.Cell(row, 7).Value = line.TotalAmount.ToString("C");
 
-                IXLRange itemRange = worksheet.Range(row, 1, row, 7);
-                itemRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                ws.Range(row, 1, row, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             }
 
-            // Totals section
+            // ── Totals section ───────────────────────────────────────────────────
             row += 2;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("Subtotal")}:";
-            worksheet.Cell(row, 7).Value = invoice.SubTotal.ToString("C");
-            worksheet.Cell(row, 6).Style.Font.Bold = true;
-            worksheet.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            WriteTotalLine(ws, row, 6, $"{translations.GetString("Subtotal")}:", invoice.SubTotal.ToString("C"));
+            row++;
+            WriteTotalLine(ws, row, 6, $"{translations.GetString("Tax")}:", invoice.TaxAmount.ToString("C"));
+
+            // Grand total (highlighted)
+            row++;
+            WriteTotalLine(ws, row, 6, $"{translations.GetString(totalString).ToUpper()}:", invoice.TotalAmount.ToString("C"));
+            ws.Range(row, 6, row, 7).Style.Font.FontSize = 14;
+            ws.Range(row, 6, row, 7).Style.Fill.BackgroundColor = XLColor.LightGray;
+            ws.Range(row, 6, row, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
             row++;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("Tax")}:";
-            worksheet.Cell(row, 7).Value = invoice.TaxAmount.ToString("C");
-            worksheet.Cell(row, 6).Style.Font.Bold = true;
-            worksheet.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            WriteTotalLine(ws, row, 6, $"{translations.GetString("AmountPaid")}:", invoice.AmountPaid.ToString("C"));
 
+            // Amount due (highlighted)
             row++;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("Total").ToUpper()}:";
-            worksheet.Cell(row, 7).Value = invoice.TotalAmount.ToString("C");
-            worksheet.Range(row, 6, row, 7).Style.Font.Bold = true;
-            worksheet.Range(row, 6, row, 7).Style.Font.FontSize = 14;
-            worksheet.Range(row, 6, row, 7).Style.Fill.BackgroundColor = XLColor.LightGray;
-            worksheet.Range(row, 6, row, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
-            worksheet.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            WriteTotalLine(ws, row, 6, $"{translations.GetString("AmountDue").ToUpper()}:", invoice.AmountDue.ToString("C"));
+            ws.Range(row, 6, row, 7).Style.Font.FontSize = 14;
+            ws.Range(row, 6, row, 7).Style.Fill.BackgroundColor = XLColor.Yellow;
+            ws.Range(row, 6, row, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
-            row++;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("AmountPaid")}:";
-            worksheet.Cell(row, 7).Value = invoice.AmountPaid.ToString("C");
-            worksheet.Cell(row, 6).Style.Font.Bold = true;
-            worksheet.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-            row++;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("AmountDue").ToUpper()}:";
-            worksheet.Cell(row, 7).Value = invoice.AmountDue.ToString("C");
-            worksheet.Range(row, 6, row, 7).Style.Font.Bold = true;
-            worksheet.Range(row, 6, row, 7).Style.Font.FontSize = 14;
-            worksheet.Range(row, 6, row, 7).Style.Fill.BackgroundColor = XLColor.Yellow;
-            worksheet.Range(row, 6, row, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
-            worksheet.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-            // Notes
+            // ── Notes ────────────────────────────────────────────────────────────
             if (!string.IsNullOrWhiteSpace(invoice.Notes))
             {
                 row += 3;
-                worksheet.Cell(row, 1).Value = $"{translations.GetString("Notes")}:";
-                worksheet.Cell(row, 1).Style.Font.Bold = true;
+                ws.Cell(row, 1).Value = $"{translations.GetString("Notes")}:";
+                ws.Cell(row, 1).Style.Font.Bold = true;
                 row++;
-                worksheet.Cell(row, 1).Value = invoice.Notes;
-                worksheet.Range(row, 1, row, 7).Merge();
-                worksheet.Range(row, 1, row, 7).Style.Alignment.WrapText = true;
+                ws.Range(row, 1, row, totalCols).Merge().Value = invoice.Notes;
+                ws.Range(row, 1, row, totalCols).Style.Alignment.WrapText = true;
             }
 
-            // Footer
+            // ── Footer ──────────────────────────────────────────────────────────
             row += 3;
-            worksheet.Range(row, 1, row, 7).Merge().Value = translations.GetString("ThankYou");
-            worksheet.Range(row, 1, row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            worksheet.Range(row, 1, row, 7).Style.Font.Italic = true;
+            ws.Range(row, 1, row, totalCols).Merge().Value = translations.GetString("ThankYou");
+            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 1, row, totalCols).Style.Font.Italic = true;
 
-            // Column widths for printing
-            worksheet.Column(1).Width = 5;
-            worksheet.Column(2).Width = 35;
-            worksheet.Column(3).Width = 10;
-            worksheet.Column(4).Width = 15;
-            worksheet.Column(5).Width = 20;
-            worksheet.Column(6).Width = 18;
-            worksheet.Column(7).AdjustToContents();
+            // ── Column widths ────────────────────────────────────────────────────
+            ws.Column(1).Width = 5;
+            ws.Column(2).Width = 35;
+            ws.Column(3).Width = 10;
+            ws.Column(4).Width = 15;
+            ws.Column(5).Width = 20;
+            ws.Column(6).Width = 18;
+            ws.Column(7).AdjustToContents();
 
-            using MemoryStream stream = new();
-            workbook.SaveAs(stream);
-            return stream.ToArray();
+            return WorkbookToBytes(workbook);
+        }
+
+        private static void WriteDetailRow(IXLWorksheet ws, int row, int labelCol, string label, string value)
+        {
+            ws.Cell(row, labelCol).Value = $"{label}:";
+            ws.Cell(row, labelCol).Style.Font.Bold = true;
+            ws.Cell(row, labelCol + 1).Value = value;
+            ws.Range(row, labelCol + 1, row, labelCol + 2).Merge();
+        }
+
+        private static void WriteTotalLine(IXLWorksheet ws, int row, int labelCol, string label, string value)
+        {
+            ws.Cell(row, labelCol).Value = label;
+            ws.Cell(row, labelCol + 1).Value = value;
+            ws.Cell(row, labelCol).Style.Font.Bold = true;
+            ws.Cell(row, labelCol).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            ws.Range(row, labelCol, row, labelCol + 1).Style.Font.Bold = true;
         }
 
         public async Task<byte[]> ExportInvoicesToExcelAsync(IEnumerable<InvoiceDto> invoicesToExport)
@@ -214,7 +320,7 @@
             worksheet.Cell(1, 6).Value = translations.GetString("DueDate");
             worksheet.Cell(1, 7).Value = translations.GetString("Subtotal");
             worksheet.Cell(1, 8).Value = translations.GetString("Tax");
-            worksheet.Cell(1, 9).Value = translations.GetString("Total");
+            worksheet.Cell(1, 9).Value = translations.GetString(totalString);
             worksheet.Cell(1, 10).Value = translations.GetString("AmountPaid");
             worksheet.Cell(1, 11).Value = translations.GetString("AmountDue");
 
@@ -244,7 +350,7 @@
 
             // Totals
             row++;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("Total").ToUpper()}:";
+            worksheet.Cell(row, 6).Value = $"{translations.GetString(totalString).ToUpper()}:";
             worksheet.Cell(row, 6).Style.Font.Bold = true;
             worksheet.Cell(row, 7).Value = invoicesToExport.Sum(i => i.SubTotal).ToString("C");
             worksheet.Cell(row, 8).Value = invoicesToExport.Sum(i => i.TaxAmount).ToString("C");
@@ -260,9 +366,7 @@
             // Auto-fit columns
             worksheet.Columns().AdjustToContents();
 
-            using MemoryStream stream = new();
-            workbook.SaveAs(stream);
-            return stream.ToArray();
+            return WorkbookToBytes(workbook);
         }
 
         public async Task<byte[]> ExportInvoicesByDateRangeAsync(List<InvoiceDto> invoicesToExport, DateTime startDate, DateTime endDate)
@@ -297,7 +401,7 @@
             worksheet.Cell(3, 6).Value = translations.GetString("DueDate");
             worksheet.Cell(3, 7).Value = translations.GetString("Subtotal");
             worksheet.Cell(3, 8).Value = translations.GetString("Tax");
-            worksheet.Cell(3, 9).Value = translations.GetString("Total");
+            worksheet.Cell(3, 9).Value = translations.GetString(totalString);
             worksheet.Cell(3, 10).Value = translations.GetString("AmountPaid");
             worksheet.Cell(3, 11).Value = translations.GetString("AmountDue");
 
@@ -327,7 +431,7 @@
 
             // Totals
             row++;
-            worksheet.Cell(row, 6).Value = $"{translations.GetString("Total").ToUpper()}:";
+            worksheet.Cell(row, 6).Value = $"{translations.GetString(totalString).ToUpper()}:";
             worksheet.Cell(row, 6).Style.Font.Bold = true;
             worksheet.Cell(row, 7).Value = filteredInvoices.Sum(i => i.SubTotal).ToString("C");
             worksheet.Cell(row, 8).Value = filteredInvoices.Sum(i => i.TaxAmount).ToString("C");
@@ -343,6 +447,254 @@
             // Auto-fit columns
             worksheet.Columns().AdjustToContents();
 
+            return WorkbookToBytes(workbook);
+        }
+
+        public async Task<byte[]> ExportPurchaseNoteForPrintingAsync(PurchaseNoteDto purchaseNote)
+        {
+            TenantDto tenant = await tenantService.GetAsync();
+            return ExportPurchaseNoteForPrinting(purchaseNote, tenant);
+        }
+
+        private byte[] ExportPurchaseNoteForPrinting(PurchaseNoteDto purchaseNote, TenantDto tenant)
+        {
+            using XLWorkbook workbook = new();
+            IXLWorksheet ws = workbook.Worksheets.Add(translations.GetString("PurchaseNote"));
+
+            // Page setup
+            ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
+            ws.PageSetup.PaperSize = XLPaperSize.A4Paper;
+            ws.PageSetup.Margins.Left = 0.5;
+            ws.PageSetup.Margins.Right = 0.5;
+            ws.PageSetup.Margins.Top = 0.5;
+            ws.PageSetup.Margins.Bottom = 0.5;
+            ws.PageSetup.CenterHorizontally = true;
+
+            int totalCols = 9; // Ред.Број, Назив, Ед.Мера, Количина, Цена(2), Износ(2), Забелешка
+
+            // ── Header area ─────────────────────────────────────────────────────
+            int row = 1;
+
+            // Company name (top-left)
+            ws.Range(row, 1, row, 4).Merge().Value = tenant.CompanyName;
+            ws.Range(row, 1, row, 4).Style.Font.Bold = true;
+            ws.Range(row, 1, row, 4).Style.Font.FontSize = 11;
+
+            // Logo (top-left, above company)
+            if (tenant.LogoData is { Length: > 0 })
+            {
+                using MemoryStream logoStream = new(tenant.LogoData);
+                ws.AddPicture(logoStream)
+                    .MoveTo(ws.Cell("A1"))
+                    .WithSize(80, 40);
+            }
+
+            // Date (top-right)
+            ws.Range(row, 6, row, totalCols).Merge().Value = $"На ден {purchaseNote.PurchaseDate:dd.MM.yyyy} год.";
+            ws.Range(row, 6, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+            row++;
+            // Company address
+            ws.Range(row, 1, row, 4).Merge().Value = tenant.Address ?? string.Empty;
+            ws.Range(row, 1, row, 4).Style.Font.FontSize = 9;
+
+            // ── Title ────────────────────────────────────────────────────────────
+            row += 2;
+            ws.Range(row, 1, row, totalCols).Merge().Value = "ОТКУПНА БЕЛЕШКА";
+            ws.Range(row, 1, row, totalCols).Style.Font.Bold = true;
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 16;
+            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // ── Individual info ──────────────────────────────────────────────────
+            row += 2;
+            ws.Range(row, 1, row, totalCols).Merge().Value = $"Денес откупив од лицето {purchaseNote.IndividualFullName}";
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+
+            row++;
+            string addressLine = !string.IsNullOrWhiteSpace(purchaseNote.IndividualAddress)
+                ? $"Од {purchaseNote.IndividualAddress}  долу наведените производи:"
+                : "долу наведените производи:";
+            ws.Range(row, 1, row, totalCols).Merge().Value = addressLine;
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+
+            // ── Line items table ─────────────────────────────────────────────────
+            row += 2;
+            int headerRow = row;
+
+            // Header row 1 (merged headers for ЦЕНА and ИЗНОС)
+            ws.Cell(row, 1).Value = "Ред.";
+            ws.Cell(row, 2).Value = "НАЗИВ НА СТОКАТА";
+            ws.Cell(row, 3).Value = "Ед.";
+            ws.Cell(row, 4).Value = "Количина";
+            ws.Range(row, 5, row, 6).Merge().Value = "Ц Е Н А";
+            ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 7, row, 8).Merge().Value = "И З Н О С";
+            ws.Range(row, 7, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Cell(row, 9).Value = "Забелешка";
+
+            // Header row 2 (sub-headers)
+            row++;
+            ws.Cell(row, 1).Value = "Број";
+            ws.Cell(row, 3).Value = "Мера";
+            ws.Cell(row, 5).Value = "Денари";
+            ws.Cell(row, 6).Value = "д.";
+            ws.Cell(row, 7).Value = "Денари";
+            ws.Cell(row, 8).Value = "д.";
+
+            // Style header rows
+            IXLRange headerRange = ws.Range(headerRow, 1, row, totalCols);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Font.FontSize = 9;
+            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+            headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            // Merge vertical headers across both header rows
+            ws.Range(headerRow, 1, row, 1).Merge(); // Ред. Број
+            ws.Range(headerRow, 2, row, 2).Merge(); // НАЗИВ НА СТОКАТА
+            ws.Range(headerRow, 3, row, 3).Merge(); // Ед. Мера
+            ws.Range(headerRow, 4, row, 4).Merge(); // Количина
+            ws.Range(headerRow, 9, row, 9).Merge(); // Забелешка
+
+            // Data rows
+            int itemNumber = 1;
+            foreach (PurchaseNoteLineDto line in purchaseNote.LineItems)
+            {
+                row++;
+                int wholePart = (int)Math.Truncate(line.UnitPrice);
+                int decPart = (int)((line.UnitPrice - Math.Truncate(line.UnitPrice)) * 100);
+                int amountWhole = (int)Math.Truncate(line.Amount);
+                int amountDec = (int)((line.Amount - Math.Truncate(line.Amount)) * 100);
+
+                ws.Cell(row, 1).Value = itemNumber++;
+                ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(row, 2).Value = line.ProductName;
+                ws.Cell(row, 3).Value = line.ProductUnit;
+                ws.Cell(row, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(row, 4).Value = line.Quantity;
+                ws.Cell(row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(row, 5).Value = wholePart;
+                ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                ws.Cell(row, 6).Value = decPart.ToString("00");
+                ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                ws.Cell(row, 7).Value = amountWhole;
+                ws.Cell(row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                ws.Cell(row, 8).Value = amountDec.ToString("00");
+                ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                ws.Cell(row, 9).Value = line.Description;
+                ws.Cell(row, 9).Style.Alignment.WrapText = true;
+
+                IXLRange rowRange = ws.Range(row, 1, row, totalCols);
+                rowRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                rowRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                rowRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                ws.Row(row).Height = 30;
+            }
+
+            // Ensure minimum empty rows for the table look
+            int minDataRows = 8;
+            int dataRowsWritten = purchaseNote.LineItems.Count;
+            for (int i = dataRowsWritten; i < minDataRows; i++)
+            {
+                row++;
+                IXLRange emptyRow = ws.Range(row, 1, row, totalCols);
+                emptyRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                emptyRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            }
+
+            // ── Totals row ─────────────────────────────────────────────────────────
+            row++;
+            ws.Range(row, 5, row, 6).Merge().Value = "Вкупно";
+            ws.Range(row, 5, row, 6).Style.Font.Bold = true;
+            ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            decimal totalAmount = purchaseNote.LineItems.Sum(l => l.Amount);
+            int totalWhole = (int)Math.Truncate(totalAmount);
+            int totalDec = (int)((totalAmount - Math.Truncate(totalAmount)) * 100);
+            ws.Range(row, 7, row, 7).Value = totalWhole;
+            ws.Range(row, 7, row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            ws.Range(row, 7, row, 7).Style.Font.Bold = true;
+            ws.Range(row, 8, row, 8).Value = totalDec.ToString("00");
+            ws.Range(row, 8, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+            ws.Range(row, 8, row, 8).Style.Font.Bold = true;
+            IXLRange totalRow = ws.Range(row, 1, row, totalCols);
+            totalRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            totalRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+            // Table outside border
+            IXLRange tableRange = ws.Range(headerRow, 1, row, totalCols);
+            tableRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+
+            // ── Footer area ──────────────────────────────────────────────────────
+            row += 2;
+            ws.Range(row, 1, row, totalCols).Merge().Value = "Со букви денари _______________________________________________________________________________";
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+
+            // Signature blocks
+            row += 2;
+            // Left: Стоката ја предал
+            ws.Range(row, 1, row, 3).Merge().Value = "Стоката ја предал,";
+            ws.Range(row, 1, row, 3).Style.Font.FontSize = 10;
+            // Center: Исплатил
+            ws.Range(row, 4, row, 5).Merge().Value = "Исплатил,";
+            ws.Range(row, 4, row, 5).Style.Font.FontSize = 10;
+            ws.Range(row, 4, row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            // Right: Стоката ја примил
+            ws.Range(row, 7, row, totalCols).Merge().Value = "Стоката ја примил лично";
+            ws.Range(row, 7, row, totalCols).Style.Font.FontSize = 10;
+            ws.Range(row, 7, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+            row++;
+            ws.Range(row, 7, row, totalCols).Merge().Value = "овластен купувач,";
+            ws.Range(row, 7, row, totalCols).Style.Font.FontSize = 10;
+            ws.Range(row, 7, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+            // Pre-filled names (above the line)
+            row++;
+            // Individual name (left)
+            ws.Range(row, 1, row, 3).Merge().Value = purchaseNote.IndividualFullName;
+            ws.Range(row, 1, row, 3).Style.Font.Bold = true;
+            ws.Range(row, 1, row, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            // Company name (center)
+            ws.Range(row, 4, row, 5).Merge().Value = tenant.CompanyName;
+            ws.Range(row, 4, row, 5).Style.Font.Bold = true;
+            ws.Range(row, 4, row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Signature lines (below the names)
+            row++;
+            ws.Range(row, 1, row, 3).Merge();
+            ws.Range(row, 1, row, 3).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 4, row, 5).Merge();
+            ws.Range(row, 4, row, 5).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 7, row, totalCols).Merge();
+            ws.Range(row, 7, row, totalCols).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+
+            // Парите ги примил
+            row += 2;
+            ws.Range(row, 7, row, totalCols).Merge().Value = "Парите ги примил,";
+            ws.Range(row, 7, row, totalCols).Style.Font.FontSize = 10;
+            ws.Range(row, 7, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+
+            row += 2;
+            ws.Range(row, 7, row, totalCols).Merge();
+            ws.Range(row, 7, row, totalCols).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+
+            // Column widths
+            ws.Column(1).Width = 5;   // Ред. Број
+            ws.Column(2).Width = 30;  // Назив на стоката
+            ws.Column(3).Width = 7;   // Ед. Мера
+            ws.Column(4).Width = 10;  // Количина
+            ws.Column(5).Width = 10;  // Цена Денари
+            ws.Column(6).Width = 5;   // Цена д.
+            ws.Column(7).Width = 10;  // Износ Денари
+            ws.Column(8).Width = 5;   // Износ д.
+            ws.Column(9).Width = 30;  // Забелешка
+
+            return WorkbookToBytes(workbook);
+        }
+
+        private static byte[] WorkbookToBytes(XLWorkbook workbook)
+        {
             using MemoryStream stream = new();
             workbook.SaveAs(stream);
             return stream.ToArray();

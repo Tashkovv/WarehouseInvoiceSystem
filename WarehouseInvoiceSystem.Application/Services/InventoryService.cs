@@ -138,6 +138,14 @@
             };
         }
 
+        public async Task<IEnumerable<InventoryTransactionDto>> GetAllFilteredTransactionsAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default)
+        {
+            query.Page = 1;
+            query.PageSize = int.MaxValue;
+            PagedResult<InventoryTransaction> result = await transactionRepository.GetPagedByProductAsync(query, ct);
+            return result.Items.Select(MapTransactionToDto);
+        }
+
         public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId, CancellationToken ct = default)
         {
             IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByWarehouseIdAsync(warehouseId, ct);

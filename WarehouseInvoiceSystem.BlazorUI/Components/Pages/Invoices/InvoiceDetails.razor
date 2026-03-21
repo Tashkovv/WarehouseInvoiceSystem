@@ -8,7 +8,6 @@
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject IPaymentService PaymentService
-@inject IJSRuntime JSRuntime
 @inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("InvoiceDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -538,13 +537,7 @@ else
         {
             byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(_invoice!);
             string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
-
-            await JSRuntime.InvokeVoidAsync(
-                "fileDownloadHelper.downloadFileFromStream",
-                fileName,
-                new DotNetStreamReference(new MemoryStream(fileBytes)));
-
-            Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
+            await DownloadFileAsync(fileBytes, fileName);
         }
         catch (Exception ex)
         {

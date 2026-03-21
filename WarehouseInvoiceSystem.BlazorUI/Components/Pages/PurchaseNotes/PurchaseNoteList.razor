@@ -5,8 +5,10 @@
 @using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
+@using WarehouseInvoiceSystem.Application.Models
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IIndividualService IndividualService
+@inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("PurchaseNotes") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -18,6 +20,7 @@
 
 <WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/purchase-notes/create"))"
                 CreateLabel="@Localization.GetString("PurchaseNote")"
+                CreateActions="@_createActions"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterStatus.HasValue || _activeAdvancedFilterCount > 0)"
@@ -194,6 +197,9 @@
 
     private MudDataGrid<PurchaseNoteDto> _grid = null!;
     private string _searchString = string.Empty;
+    private bool _exporting = false;
+    private bool _exportingRow = false;
+    private List<WisDetailActionItem>? _createActions;
 
     // Quick filter
     private PurchaseNoteStatus? _filterStatus = null;
@@ -220,6 +226,7 @@
     {
         await base.OnInitializedAsync();
         BuildFilterItems();
+        BuildCreateActions();
 
         if (!string.IsNullOrWhiteSpace(StatusParam) &&
             Enum.TryParse<PurchaseNoteStatus>(StatusParam, ignoreCase: true, out PurchaseNoteStatus parsedStatus))
@@ -465,6 +472,13 @@
             },
             new WisDetailActionItem
             {
+                Icon     = Icons.Material.Filled.Print,
+                Label    = Localization.GetString("Export"),
+                Disabled = _exportingRow,
+                OnClick  = EventCallback.Factory.Create(this, () => ExportNoteRow(item))
+            },
+            new WisDetailActionItem
+            {
                 Icon    = Icons.Material.Filled.ContentCopy,
                 Label   = Localization.GetString("Copy"),
                 OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={item.Id}"))
@@ -510,6 +524,83 @@
             async () => { await PurchaseNoteService.CancelAsync(note.Id); await _grid.ReloadServerData(); },
             "PurchaseNoteCancelled", "ErrorUpdatingPurchaseNote",
             Localization.GetString("Cancel"), Localization.GetString("Back"));
+    }
+
+    private void BuildCreateActions()
+    {
+        _createActions =
+        [
+            new WisDetailActionItem
+            {
+                Icon = Icons.Material.Filled.Print,
+                Label = Localization.GetString("Export"),
+                Disabled = _exporting,
+                OnClick = EventCallback.Factory.Create(this, PerformExport)
+            }
+        ];
+    }
+
+    private async Task PerformExport()
+    {
+        _exporting = true;
+        StateHasChanged();
+
+        try
+        {
+            GetPurchaseNotesQuery exportQuery = new()
+            {
+                Search = _searchString,
+                Status = _filterStatus,
+                IndividualId = _filterIndividualId,
+                DateFrom = _filterDateRange.Start,
+                DateTo = _filterDateRange.End,
+                AmountMin = _filterAmountMin,
+                AmountMax = _filterAmountMax,
+            };
+
+            IEnumerable<PurchaseNoteDto> notes = await PurchaseNoteService.GetAllFilteredAsync(exportQuery, CancellationToken.None);
+
+            byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
+                notes,
+                ExportColumnDefinitions.PurchaseNoteColumns(Localization),
+                new ExportListOptions(Localization.GetString("PurchaseNotes")));
+
+            string fileName = $"{Localization.GetString("PurchaseNotes")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting purchase notes: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportNoteRow(PurchaseNoteDto item)
+    {
+        _exportingRow = true;
+        try
+        {
+            PurchaseNoteDto? fullNote = await PurchaseNoteService.GetPurchaseNoteByIdAsync(item.Id, CancellationToken.None);
+            if (fullNote is null) return;
+
+            byte[] fileBytes = await ExcelExportService.ExportPurchaseNoteForPrintingAsync(fullNote);
+            string fileName = $"{Localization.GetString("PurchaseNote")}_{fullNote.NoteNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exportingRow = false;
+        }
     }
 
 }

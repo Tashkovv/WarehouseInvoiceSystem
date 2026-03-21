@@ -3,6 +3,7 @@
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IPurchaseNoteService PurchaseNoteService
+@inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("PurchaseNoteDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -215,6 +216,8 @@ else
         _primaryAction = null;
         _actions = [];
 
+        WisDetailActionItem exportAction = _act.Primary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting);
+
         switch (_note.Status)
         {
             case PurchaseNoteStatus.Draft:
@@ -222,6 +225,7 @@ else
                 _actions =
                 [
                     _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
+                    exportAction,
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
                 ];
@@ -231,6 +235,7 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("MarkAsPaid"), MarkAsPaid);
                 _actions =
                 [
+                    exportAction,
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
@@ -239,12 +244,14 @@ else
 
             case PurchaseNoteStatus.Paid:
                 _primaryAction = _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote);
+                _actions = [exportAction];
                 break;
 
             case PurchaseNoteStatus.Cancelled:
                 _primaryAction = _act.Error(Icons.Material.Filled.Delete, Localization.GetString("Delete"), DeleteNote);
                 _actions =
                 [
+                    exportAction,
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote),
                 ];
                 break;
@@ -255,6 +262,21 @@ else
 
     private void GoToEdit() => Navigation.NavigateTo($"/purchase-notes/edit/{Id}");
     private void CopyNote() => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={Id}");
+
+    private async Task ExportForPrinting()
+    {
+        try
+        {
+            byte[] fileBytes = await ExcelExportService.ExportPurchaseNoteForPrintingAsync(_note!);
+            string fileName = $"{Localization.GetString("PurchaseNote")}_{_note?.NoteNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+    }
 
     private async Task ReceiveGoods()
     {
