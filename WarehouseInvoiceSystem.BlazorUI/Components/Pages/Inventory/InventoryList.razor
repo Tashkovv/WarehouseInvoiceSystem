@@ -198,6 +198,10 @@
 </MudCard>
 
 @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "lowstock")]
+    public bool? LowStockParam { get; set; }
+
     private MudDataGrid<StockLevelDto> _grid = null!;
     private string _searchString = string.Empty;
     private List<WisDetailActionItem> _toolbarActions = [];
@@ -216,6 +220,10 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
+
+        if (LowStockParam == true)
+            _filterIsLowStock = true;
+
         _toolbarActions =
         [
             new WisDetailActionItem

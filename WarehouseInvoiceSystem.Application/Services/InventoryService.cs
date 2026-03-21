@@ -363,7 +363,8 @@
                 AvailableQuantity = stockLevel.AvailableQuantity,
                 MinimumQuantity = stockLevel.MinimumQuantity,
                 ReorderPoint = stockLevel.ReorderPoint,
-                LastRestockedAt = stockLevel.LastRestockedAt
+                LastRestockedAt = stockLevel.LastRestockedAt,
+                UnitPrice = stockLevel.Product.DefaultPrice
             };
         }
 

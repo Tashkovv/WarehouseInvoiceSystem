@@ -463,6 +463,9 @@
         public Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default)
             => purchaseNoteRepository.GetMonthIssuedSummaryAsync(year, month, ct);
 
+        public Task<DayPurchaseNoteSummaryResult> GetYearIssuedSummaryAsync(int year, CancellationToken ct = default)
+            => purchaseNoteRepository.GetYearIssuedSummaryAsync(year, ct);
+
         private static PurchaseNoteDto MapToDto(PurchaseNote note) => new()
         {
             Id = note.Id,

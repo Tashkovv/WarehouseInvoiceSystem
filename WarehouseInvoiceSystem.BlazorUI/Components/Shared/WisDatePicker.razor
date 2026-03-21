@@ -9,7 +9,40 @@
                   MinWidth="160px"
                   OnOpen="@OnPopoverOpen">
 
-    @if (OpenTo == OpenTo.Month)
+    @if (OpenTo == OpenTo.Year)
+    {
+        @* ── Custom year grid (one-click year selection) ── *@
+        <div class="wis-dp-month-grid">
+
+            <div class="wis-dp-month-nav">
+                <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
+                               Size="Size.Small"
+                               OnClick="@(() => _viewYearOffset -= 12)" />
+                <span class="wis-dp-month-year">@(_viewYear + _viewYearOffset) – @(_viewYear + _viewYearOffset + 11)</span>
+                <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
+                               Size="Size.Small"
+                               OnClick="@(() => _viewYearOffset += 12)" />
+            </div>
+
+            <div class="wis-dp-month-cells" style="grid-template-columns: repeat(3, 1fr);">
+                @for (int i = 0; i < 12; i++)
+                {
+                    var year = _viewYear + _viewYearOffset + i;
+                    bool isSelected = _localDate.HasValue && _localDate.Value.Year == year;
+                    bool isDisabled = MaxDate.HasValue && year > MaxDate.Value.Year;
+
+                    <button type="button"
+                            class="wis-dp-month-cell @(isSelected ? "wis-dp-month-cell--selected" : "")"
+                            disabled="@isDisabled"
+                            @onclick="@(() => SelectYear(year))">
+                        @year
+                    </button>
+                }
+            </div>
+
+        </div>
+    }
+    else if (OpenTo == OpenTo.Month)
     {
             @* ── Custom month grid (one-click month selection) ── *@
             <div class="wis-dp-month-grid">
@@ -77,6 +110,7 @@
     private DateTime? _localDate;
     private DateTime? _lastSeenDate;
     private int _viewYear = DateTime.Today.Year;
+    private int _viewYearOffset = 0;
 
     protected override void OnParametersSet()
     {
@@ -93,10 +127,23 @@
         ? _localDate.Value.ToString(DateFormat)
         : Label;
 
-    private void OnPopoverOpen() => _viewYear = _localDate?.Year ?? DateTime.Today.Year;
+    private void OnPopoverOpen()
+    {
+        _viewYear = _localDate?.Year ?? DateTime.Today.Year;
+        // For year grid: align the 12-year window so the selected/current year is visible
+        _viewYearOffset = ((_viewYear - DateTime.Today.Year) / 12) * 12;
+    }
 
     private async Task OnDateChanged(DateTime? date)
     {
+        _localDate = date;
+        await _popover.CloseAsync();
+        await DateChanged.InvokeAsync(date);
+    }
+
+    private async Task SelectYear(int year)
+    {
+        var date = new DateTime(year, 1, 1);
         _localDate = date;
         await _popover.CloseAsync();
         await DateChanged.InvokeAsync(date);

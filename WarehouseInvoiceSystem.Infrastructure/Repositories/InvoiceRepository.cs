@@ -288,7 +288,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<Invoice>)await All<Invoice>(context)
                     .Include(i => i.Company)
                     .Include(i => i.Warehouse)
-                    .OrderByDescending(i => i.CreatedAt)
+                    .OrderByDescending(i => i.IssueDate)
                     .Take(count)
                     .ToListAsync(ct);
             });
@@ -350,6 +350,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     PayableAmount = stats
                         .Where(s => s.Type == InvoiceType.Payable && s.Status != InvoiceStatus.Paid && s.Status != InvoiceStatus.Cancelled)
                         .Sum(s => s.AmountDue),
+                    OverduePayableCount = stats
+                        .Where(s => s.Type == InvoiceType.Payable && s.Status == InvoiceStatus.Overdue)
+                        .Sum(s => s.Count),
+                    OverduePayableAmount = stats
+                        .Where(s => s.Type == InvoiceType.Payable && s.Status == InvoiceStatus.Overdue)
+                        .Sum(s => s.AmountDue),
                     TotalOverdueCount = stats
                         .Where(s => s.Status == InvoiceStatus.Overdue)
                         .Sum(s => s.Count)
@@ -364,8 +370,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Where(i => i.Type == InvoiceType.Receivable &&
                                 i.Status != InvoiceStatus.Draft &&
                                 i.Status != InvoiceStatus.Cancelled &&
-                                i.IssueDate.Date >= from.Date &&
-                                i.IssueDate.Date <= to.Date)
+                                i.IssueDate >= from.Date &&
+                                i.IssueDate < to.Date.AddDays(1))
                     .GroupBy(i => new { i.CompanyId, i.Company.Name })
                     .Select(g => new PartnerSummaryResult
                     {
@@ -387,8 +393,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Where(i => i.Type == InvoiceType.Payable &&
                                 i.Status != InvoiceStatus.Draft &&
                                 i.Status != InvoiceStatus.Cancelled &&
-                                i.IssueDate.Date >= from.Date &&
-                                i.IssueDate.Date <= to.Date)
+                                i.IssueDate >= from.Date &&
+                                i.IssueDate < to.Date.AddDays(1))
                     .GroupBy(i => new { i.CompanyId, i.Company.Name })
                     .Select(g => new PartnerSummaryResult
                     {
@@ -416,6 +422,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         Amount = g.Sum(i => i.TotalAmount - i.AmountPaid)
                     })
                     .OrderByDescending(x => x.Amount)
+                    .Take(5)
                     .ToListAsync(ct);
             });
 
@@ -436,6 +443,24 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         Amount = g.Sum(i => i.TotalAmount - i.AmountPaid)
                     })
                     .OrderByDescending(x => x.Amount)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PartnerSummaryResult>> GetOverduePayableCompanySummariesAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                return (IEnumerable<PartnerSummaryResult>)await All<Invoice>(context)
+                    .Where(i => i.Type == InvoiceType.Payable && i.Status == InvoiceStatus.Overdue)
+                    .GroupBy(i => new { i.CompanyId, i.Company.Name })
+                    .Select(g => new PartnerSummaryResult
+                    {
+                        PartnerId = g.Key.CompanyId,
+                        PartnerName = g.Key.Name,
+                        Count = g.Count(),
+                        Amount = g.Sum(i => i.TotalAmount - i.AmountPaid)
+                    })
+                    .OrderByDescending(x => x.Amount)
+                    .Take(5)
                     .ToListAsync(ct);
             });
 
@@ -679,6 +704,29 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 var rows = await All<Invoice>(context)
                     .Where(i => i.IssueDate.Year == year &&
                                 i.IssueDate.Month == month &&
+                                i.Status != InvoiceStatus.Cancelled)
+                    .GroupBy(i => i.Type)
+                    .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
+                    .ToListAsync(ct);
+
+                var receivable = rows.FirstOrDefault(r => r.Type == InvoiceType.Receivable);
+                var payable    = rows.FirstOrDefault(r => r.Type == InvoiceType.Payable);
+
+                return new InvoicePeriodSummaryResult
+                {
+                    ReceivableCount  = receivable?.Count  ?? 0,
+                    ReceivableAmount = receivable?.Amount ?? 0,
+                    PayableCount     = payable?.Count     ?? 0,
+                    PayableAmount    = payable?.Amount    ?? 0
+                };
+            });
+
+        public Task<InvoicePeriodSummaryResult> GetYearInvoiceSummaryAsync(
+            int year, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var rows = await All<Invoice>(context)
+                    .Where(i => i.IssueDate.Year == year &&
                                 i.Status != InvoiceStatus.Cancelled)
                     .GroupBy(i => i.Type)
                     .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })

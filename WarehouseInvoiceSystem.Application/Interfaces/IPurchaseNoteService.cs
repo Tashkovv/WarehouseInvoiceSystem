@@ -51,5 +51,6 @@
         Task<IEnumerable<ProductMovementWithNameDto>> GetTopProductPurchasesAsync(Guid warehouseId, DateTime from, DateTime to, int top, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetYearIssuedSummaryAsync(int year, CancellationToken ct = default);
     }
 }

@@ -297,7 +297,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<PurchaseNote>)await All<PurchaseNote>(context)
                     .Include(pn => pn.Individual)
                     .Include(pn => pn.Warehouse)
-                    .OrderByDescending(pn => pn.CreatedAt)
+                    .OrderByDescending(pn => pn.PurchaseDate)
                     .Take(count)
                     .ToListAsync(ct);
             });
@@ -328,7 +328,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(async context =>
             {
                 var result = await All<PurchaseNote>(context)
-                    .Where(pn => pn.Status != PurchaseNoteStatus.Paid && pn.Status != PurchaseNoteStatus.Cancelled)
+                    .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
                     .GroupBy(_ => 1)
                     .Select(g => new { Count = g.Count(), Amount = g.Sum(pn => pn.TotalAmount) })
                     .FirstOrDefaultAsync(ct);
@@ -343,8 +343,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<PartnerSummaryResult>)await All<PurchaseNote>(context)
                     .Where(pn => pn.Status != PurchaseNoteStatus.Draft &&
                                  pn.Status != PurchaseNoteStatus.Cancelled &&
-                                 pn.PurchaseDate.Date >= from.Date &&
-                                 pn.PurchaseDate.Date <= to.Date)
+                                 pn.PurchaseDate >= from.Date &&
+                                 pn.PurchaseDate < to.Date.AddDays(1))
                     .GroupBy(pn => new { pn.IndividualId, pn.Individual.FirstName, pn.Individual.LastName })
                     .Select(g => new PartnerSummaryResult
                     {
@@ -372,6 +372,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         Amount = g.Sum(pn => pn.TotalAmount)
                     })
                     .OrderByDescending(x => x.Amount)
+                    .Take(5)
                     .ToListAsync(ct);
             });
 
@@ -559,6 +560,22 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 var result = await All<PurchaseNote>(context)
                     .Where(pn => pn.PurchaseDate.Year == year &&
                                  pn.PurchaseDate.Month == month &&
+                                 pn.Status != PurchaseNoteStatus.Cancelled)
+                    .GroupBy(_ => 1)
+                    .Select(g => new DayPurchaseNoteSummaryResult
+                    {
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return result ?? new DayPurchaseNoteSummaryResult();
+            });
+
+        public Task<DayPurchaseNoteSummaryResult> GetYearIssuedSummaryAsync(int year, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                var result = await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Year == year &&
                                  pn.Status != PurchaseNoteStatus.Cancelled)
                     .GroupBy(_ => 1)
                     .Select(g => new DayPurchaseNoteSummaryResult

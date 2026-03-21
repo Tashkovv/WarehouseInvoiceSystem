@@ -1,8 +1,5 @@
 @page "/"
 @inherits PageBase
-@using WarehouseInvoiceSystem.Application.DTOs.Invoice
-@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
-@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Company
@@ -87,7 +84,7 @@ else
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("FinancialHealth")</MudText>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalReceivables")"
                            Value="@_invoicePosition.ReceivableAmount.ToString("C")"
                            Subtitle="@($"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}")"
@@ -95,7 +92,7 @@ else
                            IconColor="Color.Primary" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayables.ToString("C")"
                            Subtitle="@($"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")} · {_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
@@ -103,12 +100,22 @@ else
                            IconColor="Color.Default" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="4">
+        <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                           Value="@_invoicePosition.OverdueReceivableCount.ToString()"
+                           Value="@_invoicePosition.TotalOverdueCount.ToString()"
                            Subtitle="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_invoicePosition.OverdueReceivableCount > 0 ? Color.Error : Color.Success)" />
+                           IconColor="@(_invoicePosition.TotalOverdueCount > 0 ? Color.Error : Color.Success)"
+                           Link="/invoices?status=Overdue" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("UnpaidPurchaseNotes")"
+                           Value="@_purchaseNotePosition.unpaidCount.ToString()"
+                           Subtitle="@_purchaseNotePosition.unpaidAmount.ToString("C")"
+                           Icon="@Icons.Material.Filled.Receipt"
+                           IconColor="@(_purchaseNotePosition.unpaidCount > 0 ? Color.Warning : Color.Success)"
+                           Link="/purchase-notes?status=Pending" />
         </MudItem>
 
         <!-- ── Row 3: Warehouse Health ── -->
@@ -147,202 +154,17 @@ else
                            Value="@_stockSummary.LowStockCount.ToString()"
                            Subtitle="@Localization.GetString("ProductsBelowMinimum")"
                            Icon="@Icons.Material.Filled.TrendingDown"
-                           IconColor="@(_stockSummary.LowStockCount > 0 ? Color.Warning : Color.Default)" />
+                           IconColor="@(_stockSummary.LowStockCount > 0 ? Color.Warning : Color.Default)"
+                           Link="/inventory?lowstock=true" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OutOfStock")"
                            Value="@_stockSummary.OutOfStockCount.ToString()"
                            Icon="@Icons.Material.Filled.RemoveShoppingCart"
-                           IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)" />
+                           IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)"
+                           Link="/inventory?lowstock=true" />
         </MudItem>
-
-        <!-- ── Row 4: Attention Needed ── -->
-        @if (_overdueInvoices.Any() || _unpaidPurchaseNotes.Any() || _stockAlerts.Any())
-        {
-            <MudItem xs="12" Class="mt-6">
-                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("AttentionNeeded")</MudText>
-            </MudItem>
-
-            <MudItem xs="12">
-                <MudCard Elevation="2">
-                    <MudTabs Elevation="0" Rounded="false" ApplyEffectsToContainer="true" PanelClass="pa-0" Color="Color.Default">
-
-                        @if (_overdueInvoices.Any())
-                        {
-                            <MudTabPanel Text="@Localization.GetString("OverdueInvoices")"
-                                         Icon="@Icons.Material.Filled.Warning"
-                                         BadgeData="@_overdueInvoices.Count()"
-                                         BadgeColor="Color.Error"
-                                         Class="mr-5">
-                                <MudTable Items="@_overdueInvoices.Take(10)"
-                                          Hover="true"
-                                          Dense="true"
-                                          Elevation="0"
-                                          T="InvoiceDto"
-                                          Class="wis-secondary-list"
-                                          RowClassFunc="@((i, n) => "row-status-error table-row-clickable")"
-                                          OnRowClick="@((TableRowClickEventArgs<InvoiceDto> args) => Navigation.NavigateTo($"/invoices/{args.Item!.Id}"))">
-                                    <HeaderContent>
-                                        <MudTh>@Localization.GetString("InvoiceNumber")</MudTh>
-                                        <MudTh>@Localization.GetString("Company")</MudTh>
-                                        <MudTh Class="text-right">@Localization.GetString("DaysOverdue")</MudTh>
-                                        <MudTh>@Localization.GetString("DueDate")</MudTh>
-                                        <MudTh Class="text-right">@Localization.GetString("AmountDue")</MudTh>
-                                    </HeaderContent>
-                                    <RowTemplate>
-                                        <MudTd DataLabel="@Localization.GetString("InvoiceNumber")">
-                                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.InvoiceNumber</MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Company")">
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.CompanyName</MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("DaysOverdue")" Class="text-right">
-                                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
-                                                @((DateTime.Today - context.DueDate).Days) @Localization.GetString("Days")
-                                            </MudChip>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("DueDate")">
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                                @context.DueDate.ToString("dd MMM yyyy")
-                                            </MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("AmountDue")" Class="text-right">
-                                            <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Error">
-                                                @context.AmountDue.ToString("C")
-                                            </MudText>
-                                        </MudTd>
-                                    </RowTemplate>
-                                </MudTable>
-                                <MudCardActions Class="pa-4">
-                                    <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Invoices"), "/invoices", Color.Secondary)" />
-                                </MudCardActions>
-                            </MudTabPanel>
-                        }
-
-                        @if (_unpaidPurchaseNotes.Any())
-                        {
-                            <MudTabPanel Text="@Localization.GetString("UnpaidPurchaseNotes")"
-                                         Icon="@Icons.Material.Filled.Receipt"
-                                         BadgeData="@_unpaidPurchaseNotes.Count()"
-                                         BadgeColor="Color.Warning"
-                                         Class="mr-5">
-                                <MudTable Items="@_unpaidPurchaseNotes.Take(10)"
-                                          Hover="true"
-                                          Dense="true"
-                                          Elevation="0"
-                                          T="PurchaseNoteDto"
-                                          Class="wis-secondary-list"
-                                          RowClassFunc="@((pn, n) => "row-status-warning table-row-clickable")"
-                                          OnRowClick="@((TableRowClickEventArgs<PurchaseNoteDto> args) => Navigation.NavigateTo($"/purchase-notes/{args.Item!.Id}"))">
-                                    <HeaderContent>
-                                        <MudTh>@Localization.GetString("NoteNumber")</MudTh>
-                                        <MudTh>@Localization.GetString("Individual")</MudTh>
-                                        <MudTh>@Localization.GetString("Status")</MudTh>
-                                        <MudTh>@Localization.GetString("Date")</MudTh>
-                                        <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
-                                    </HeaderContent>
-                                    <RowTemplate>
-                                        <MudTd DataLabel="@Localization.GetString("NoteNumber")">
-                                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.NoteNumber</MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Individual")">
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.IndividualFullName</MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Status")">
-                                            <MudChip T="string" Size="Size.Small" Color="@GetPurchaseNoteStatusColor(context.Status)" Variant="Variant.Outlined">
-                                                @GetPurchaseNoteStatusText(context.Status)
-                                            </MudChip>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Date")">
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                                @context.PurchaseDate.ToString("dd MMM yyyy")
-                                            </MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
-                                            <MudText Typo="Typo.body2" Class="font-weight-bold">@context.TotalAmount.ToString("C")</MudText>
-                                        </MudTd>
-                                    </RowTemplate>
-                                </MudTable>
-                                <MudCardActions Class="pa-4">
-                                    <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("PurchaseNotes"), "/purchase-notes", Color.Secondary)" />
-                                </MudCardActions>
-                            </MudTabPanel>
-                        }
-
-                        @if (_stockAlerts.Any())
-                        {
-                            <MudTabPanel Text="@Localization.GetString("AlertsAndWarnings")"
-                                         Icon="@Icons.Material.Filled.Inventory"
-                                         BadgeData="@_stockAlerts.Count()"
-                                         BadgeColor="Color.Error"
-                                         Class="mr-5">
-                                <MudTable Items="@_stockAlerts.Take(10)"
-                                          Hover="true"
-                                          Dense="true"
-                                          Elevation="0"
-                                          T="StockLevelDto"
-                                          Class="wis-secondary-list"
-                                          RowClassFunc="@((sl, n) => (sl.Quantity == 0 ? "row-status-error" : "row-status-warning") + " table-row-clickable")"
-                                          OnRowClick="@((TableRowClickEventArgs<StockLevelDto> args) => Navigation.NavigateTo($"/products/{args.Item!.ProductId}"))">
-                                    <HeaderContent>
-                                        <MudTh>@Localization.GetString("Product")</MudTh>
-                                        <MudTh>@Localization.GetString("Warehouse")</MudTh>
-                                        <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                                        <MudTh>@Localization.GetString("Status")</MudTh>
-                                        <MudTh Class="text-right">@Localization.GetString("MinimumQuantity")</MudTh>
-                                    </HeaderContent>
-                                    <RowTemplate>
-                                        <MudTd DataLabel="@Localization.GetString("Product")">
-                                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode — @context.ProductName</MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Warehouse")">
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.WarehouseName</MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
-                                            <MudText Typo="Typo.body2" Class="font-weight-bold"
-                                                     Color="@(context.Quantity == 0 ? Color.Error : Color.Warning)">
-                                                @context.Quantity.ToString("N2") @context.ProductUnit
-                                            </MudText>
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("Status")">
-                                            @if (context.Quantity == 0)
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Outlined">
-                                                    @Localization.GetString("OutOfStock")
-                                                </MudChip>
-                                            }
-                                            else
-                                            {
-                                                <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">
-                                                    @Localization.GetString("LowStock")
-                                                </MudChip>
-                                            }
-                                        </MudTd>
-                                        <MudTd DataLabel="@Localization.GetString("MinimumQuantity")" Class="text-right">
-                                            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                                @if (context.MinimumQuantity.HasValue)
-                                                {
-                                                    @($"{context.MinimumQuantity.Value.ToString("N2")} {context.ProductUnit}")
-                                                }
-                                                else
-                                                {
-                                                    <text>—</text>
-                                                }
-                                            </MudText>
-                                        </MudTd>
-                                    </RowTemplate>
-                                </MudTable>
-                                <MudCardActions Class="pa-4">
-                                    <WisButton Action="@NavAction(Icons.Material.Filled.List, Localization.GetString("Inventory"), "/inventory", Color.Secondary)" />
-                                </MudCardActions>
-                            </MudTabPanel>
-                        }
-
-                    </MudTabs>
-                </MudCard>
-            </MudItem>
-        }
 
     </MudGrid>
 }
@@ -356,11 +178,9 @@ else
     private InvoiceOutstandingResult _invoicePosition = new();
     private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
     private WarehouseStockSummaryResult _stockSummary = new();
-    private List<InvoiceDto> _overdueInvoices = [];
-    private List<PurchaseNoteDto> _unpaidPurchaseNotes = [];
-    private List<StockLevelDto> _stockAlerts = [];
     private Guid? _filterWarehouseId;
     private string? _selectedWarehouseName;
+    private readonly Dictionary<Guid, string> _warehouseNameCache = [];
 
     // ── Computed display values ─────────────────────────────────────────────────
 
@@ -417,16 +237,7 @@ else
 
     private async Task LoadWarehouseData()
     {
-        await Task.WhenAll(
-            InventoryService.GetWarehouseStockSummaryAsync(_filterWarehouseId, _cts.Token)
-                .ContinueWith(t => _stockSummary = t.Result),
-            InvoiceService.GetTopOverdueReceivablesAsync(_filterWarehouseId, 10, _cts.Token)
-                .ContinueWith(t => _overdueInvoices = t.Result.ToList()),
-            PurchaseNoteService.GetTopUnpaidAsync(_filterWarehouseId, 10, _cts.Token)
-                .ContinueWith(t => _unpaidPurchaseNotes = t.Result.ToList()),
-            InventoryService.GetStockAlertsAsync(_filterWarehouseId, 10, _cts.Token)
-                .ContinueWith(t => _stockAlerts = t.Result.ToList())
-        );
+        _stockSummary = await InventoryService.GetWarehouseStockSummaryAsync(_filterWarehouseId, _cts.Token);
     }
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
@@ -442,13 +253,18 @@ else
             IsActive = true
         }, ct);
 
+        var items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+        {
+            Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+            Value = w.Id
+        }).ToList();
+
+        foreach (var item in items)
+            _warehouseNameCache[item.Value] = item.Label;
+
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
-            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
-            {
-                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
-                Value = w.Id
-            }).ToList(),
+            Items = items,
             TotalCount = result.TotalCount,
             Page = result.Page,
             PageSize = result.PageSize
@@ -458,15 +274,9 @@ else
     private async Task OnWarehouseFilterChanged(Guid value)
     {
         _filterWarehouseId = value == default ? null : value;
-        if (_filterWarehouseId.HasValue)
-        {
-            WarehouseDto? wh = await WarehouseService.GetWarehouseByIdAsync(_filterWarehouseId.Value, _cts.Token);
-            _selectedWarehouseName = wh?.Name;
-        }
-        else
-        {
-            _selectedWarehouseName = null;
-        }
+        _selectedWarehouseName = _filterWarehouseId.HasValue && _warehouseNameCache.TryGetValue(_filterWarehouseId.Value, out string? name)
+            ? name
+            : null;
         await LoadWarehouseData();
     }
 
@@ -476,7 +286,6 @@ else
                 Localization.GetString("AdjustStock"), MaxWidth.Small) == true)
         {
             await LoadWarehouseData();
-            StateHasChanged();
         }
     }
 

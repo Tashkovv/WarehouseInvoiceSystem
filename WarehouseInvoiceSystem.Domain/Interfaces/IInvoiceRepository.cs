@@ -45,6 +45,7 @@
         Task<IEnumerable<PartnerSummaryResult>> GetTopPayableVendorsBySpendAsync(DateTime from, DateTime to, int topCount, CancellationToken ct = default);
         Task<IEnumerable<PartnerSummaryResult>> GetOverdueClientSummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<PartnerSummaryResult>> GetUnpaidPayableCompanySummariesAsync(CancellationToken ct = default);
+        Task<IEnumerable<PartnerSummaryResult>> GetOverduePayableCompanySummariesAsync(CancellationToken ct = default);
         Task<IEnumerable<ProductMovementResult>> GetProductMovementByWarehouseAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default);
         Task<IEnumerable<ProductMovementWithNameResult>> GetTopProductMovementByWarehouseAsync(Guid warehouseId, InvoiceType type, DateTime from, DateTime to, int top, CancellationToken ct = default);
 
@@ -57,5 +58,6 @@
         Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(Guid? warehouseId, int top, CancellationToken ct = default);
         Task<InvoicePeriodSummaryResult> GetDayInvoiceSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(int year, int month, CancellationToken ct = default);
+        Task<InvoicePeriodSummaryResult> GetYearInvoiceSummaryAsync(int year, CancellationToken ct = default);
     }
 }

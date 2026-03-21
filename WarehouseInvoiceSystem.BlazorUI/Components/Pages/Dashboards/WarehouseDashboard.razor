@@ -88,6 +88,7 @@ else
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OutOfStock")"
                            Value="@_stockSummary.OutOfStockCount.ToString()"
+                           Subtitle="@Localization.GetString("ProductsOutOfStock")"
                            Icon="@Icons.Material.Filled.RemoveShoppingCart"
                            IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)" />
         </MudItem>
@@ -185,8 +186,10 @@ else
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalValue")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 @{
@@ -200,6 +203,9 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Product")">
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductCode - @item.ProductName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@item.UnitPrice.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
@@ -226,6 +232,11 @@ else
                                             @Localization.GetString("InStock")
                                         </MudChip>
                                     }
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("TotalValue")" Class="text-right">
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
+                                        @item.TotalValue.ToString("C")
+                                    </MudText>
                                 </MudTd>
                             </RowTemplate>
                         </MudTable>
@@ -387,7 +398,6 @@ else
                                     @Localization.GetString("Last10Transactions") — @_selectedWarehouseName
                                 </MudText>
                             </div>
-                            <WisButton Action="@NavAction(Icons.Material.Filled.Inventory2, Localization.GetString("Inventory"), "/inventory", Color.Secondary)" />
                         </div>
                     </CardHeaderContent>
                 </MudCardHeader>
@@ -467,8 +477,8 @@ else
     private IEnumerable<StockLevelDto> _lowStockItems => _stockAlerts.Where(s => s.Quantity > 0);
 
     // ── Statistics date range ──────────────────────────────────────────────────
-    private int? _statsDatePreset = 30;
-    private DateRange _statsDateRange = new(DateTime.Today.AddDays(-30), DateTime.Today);
+    private int? _statsDatePreset = 730;
+    private DateRange _statsDateRange = new(new DateTime(DateTime.Today.Year - 1, 1, 1), new DateTime(DateTime.Today.Year - 1, 12, 31));
     private DateTime _statsFromDate => _statsDateRange.Start ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime _statsToDate => _statsDateRange.End ?? DateTime.Today;
 
@@ -515,7 +525,7 @@ else
                 .ContinueWith(t => _stockSummary = t.Result),
             InventoryService.GetStockAlertsAsync(_selectedWarehouseId, 20, _cts.Token)
                 .ContinueWith(t => _stockAlerts = t.Result.ToList()),
-            InventoryService.GetTopProductsByStockAsync(_selectedWarehouseId, 10, _cts.Token)
+            InventoryService.GetTopProductsByStockAsync(_selectedWarehouseId, 5, _cts.Token)
                 .ContinueWith(t => _topByStock = t.Result.ToList()),
             InventoryService.GetRecentTransactionsAsync(_selectedWarehouseId, 10, _cts.Token)
                 .ContinueWith(t => _allTransactions = t.Result.ToList())

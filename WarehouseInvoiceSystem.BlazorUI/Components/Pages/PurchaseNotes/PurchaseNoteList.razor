@@ -188,6 +188,10 @@
     [SupplyParameterFromQuery(Name = "individualId")]
     public Guid? IndividualIdParam { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? StatusParam { get; set; }
+
     private MudDataGrid<PurchaseNoteDto> _grid = null!;
     private string _searchString = string.Empty;
 
@@ -216,6 +220,12 @@
     {
         await base.OnInitializedAsync();
         BuildFilterItems();
+
+        if (!string.IsNullOrWhiteSpace(StatusParam) &&
+            Enum.TryParse<PurchaseNoteStatus>(StatusParam, ignoreCase: true, out PurchaseNoteStatus parsedStatus))
+        {
+            _filterStatus = parsedStatus;
+        }
 
         // Set IndividualId filter from ?individualId= query param
         if (IndividualIdParam.HasValue)

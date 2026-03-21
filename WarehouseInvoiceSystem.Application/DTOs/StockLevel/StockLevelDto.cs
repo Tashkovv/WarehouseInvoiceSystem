@@ -15,5 +15,7 @@
         public decimal? MinimumQuantity { get; set; }
         public decimal? ReorderPoint { get; set; }
         public DateTime LastRestockedAt { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalValue => Quantity * UnitPrice;
     }
 }

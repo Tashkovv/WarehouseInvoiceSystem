@@ -552,6 +552,19 @@
             });
         }
 
+        public async Task<IEnumerable<PartnerAttentionDto>> GetOverduePayableCompanySummariesAsync(CancellationToken ct = default)
+        {
+            IEnumerable<PartnerSummaryResult> results =
+                await invoiceRepository.GetOverduePayableCompanySummariesAsync(ct);
+            return results.Select(r => new PartnerAttentionDto
+            {
+                PartnerId = r.PartnerId,
+                PartnerName = r.PartnerName,
+                Count = r.Count,
+                Amount = r.Amount
+            });
+        }
+
         public async Task<IEnumerable<ProductMovementDto>> GetProductMovementByWarehouseAsync(
             Guid warehouseId, InvoiceType type, DateTime from, DateTime to, CancellationToken ct = default)
         {
@@ -598,6 +611,9 @@
 
         public Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(int year, int month, CancellationToken ct = default)
             => invoiceRepository.GetMonthInvoiceSummaryAsync(year, month, ct);
+
+        public Task<InvoicePeriodSummaryResult> GetYearInvoiceSummaryAsync(int year, CancellationToken ct = default)
+            => invoiceRepository.GetYearInvoiceSummaryAsync(year, ct);
 
         // ── Helpers ───────────────────────────────────────────────────────────────────
 

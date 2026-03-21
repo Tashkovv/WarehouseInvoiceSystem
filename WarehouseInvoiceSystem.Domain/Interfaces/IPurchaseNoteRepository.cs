@@ -49,5 +49,6 @@
         Task<IEnumerable<PurchaseNote>> GetTopUnpaidAsync(Guid? warehouseId, int top, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetYearIssuedSummaryAsync(int year, CancellationToken ct = default);
     }
 }

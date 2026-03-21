@@ -230,6 +230,10 @@
     [SupplyParameterFromQuery(Name = "status")]
     public string? StatusParam { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "type")]
+    public string? TypeParam { get; set; }
+
     private MudDataGrid<InvoiceDto> _grid = null!;
     private bool _exporting = false;
     private bool _exportingRow = false;
@@ -313,6 +317,12 @@
             Guid.TryParse(CompanyIdParam, out Guid companyId))
         {
             _filterCompanyId = companyId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(TypeParam) &&
+            Enum.TryParse<InvoiceType>(TypeParam, ignoreCase: true, out InvoiceType parsedType))
+        {
+            _filterType = parsedType;
         }
     }
 

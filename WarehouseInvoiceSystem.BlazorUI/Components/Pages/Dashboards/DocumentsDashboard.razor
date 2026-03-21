@@ -21,46 +21,24 @@ else
 {
     <MudGrid>
 
-        <!-- ── Financial Position ── -->
+        <!-- ── Yearly Overview ── -->
         <MudItem xs="12" Class="mb-2">
-            <MudText Typo="Typo.h6">@Localization.GetString("FinancialPosition")</MudText>
-            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("FinancialPositionSubtitle")</MudText>
+            <div class="d-flex align-center flex-wrap gap-2">
+                <MudText Typo="Typo.h6">@Localization.GetString("YearlyOverview") — @_selectedYear</MudText>
+                <WisDatePicker @bind-Date="_selectedYearDate"
+                               @bind-Date:after="OnYearChanged"
+                               DateFormat="yyyy"
+                               OpenTo="OpenTo.Year"
+                               Label="@Localization.GetString("SelectYear")"
+                               MaxDate="DateTime.Today" />
+            </div>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
-                           Value="@_invoicePosition.ReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.AccountBalance"
-                           IconColor="Color.Primary" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalPayables")"
-                           Value="@_totalPayablesOutstanding.ToString("C")"
-                           Subtitle="@($"{_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")} · {_invoicePosition.PayableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.AccountBalanceWallet"
-                           IconColor="Color.Default" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("NetBalance")"
-                           Value="@_netBalanceOutstanding.ToString("C")"
-                           Icon="@Icons.Material.Filled.Balance"
-                           IconColor="@(_netBalanceOutstanding > 0 ? Color.Success : _netBalanceOutstanding < 0 ? Color.Error : Color.Default)" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("OverdueReceivables")"
-                           Value="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.OverdueReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.RunningWithErrors"
-                           IconColor="@(_invoicePosition.OverdueReceivableCount > 0 ? Color.Error : Color.Default)" />
-        </MudItem>
+        @PeriodCards(_yearNoteSummary, _yearInvoiceSummary, _netIssuedYear, _marginYear)
 
         <!-- ── Today's Activity ── -->
         <MudItem xs="12" Class="mt-6">
-            <div class="d-flex align-center flex-wrap gap-2 mb-4">
+            <div class="d-flex align-center flex-wrap gap-2">
                 <MudText Typo="Typo.h6">@Localization.GetString("TodaysActivity")</MudText>
                 <WisDatePicker @bind-Date="_selectedDay"
                                @bind-Date:after="OnDayChanged"
@@ -69,43 +47,12 @@ else
             </div>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
-                           Value="@_dayNoteSummary.Count.ToString()"
-                           Subtitle="@_dayNoteSummary.Amount.ToString("C")"
-                           Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="Color.Default" />
-        </MudItem>
+        @PeriodCards(_dayNoteSummary, _dayInvoiceSummary, _netIssuedDay, _marginDay)
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PayableInvoicesToday")"
-                           Value="@_dayInvoiceSummary.PayableCount.ToString()"
-                           Subtitle="@_dayInvoiceSummary.PayableAmount.ToString("C")"
-                           Icon="@Icons.Material.Filled.ShoppingCart"
-                           IconColor="Color.Default" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
-                           Value="@_dayInvoiceSummary.ReceivableCount.ToString()"
-                           Subtitle="@_dayInvoiceSummary.ReceivableAmount.ToString("C")"
-                           Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Default" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("NetIssuedToday")"
-                           Value="@_netIssuedDay.ToString("C")"
-                           Icon="@Icons.Material.Filled.SwapVert"
-                           IconColor="@(_netIssuedDay >= 0 ? Color.Success : Color.Error)" />
-        </MudItem>
-
-        <!-- ── Financial Summary ── -->
+        <!-- ── Monthly Summary ── -->
         <MudItem xs="12" Class="mt-6">
-            <div class="d-flex align-center flex-wrap gap-2 mb-4">
-                <MudText Typo="Typo.h6">
-                    @Localization.GetString("FinancialSummary") — @_selectedMonth.ToString("MMMM yyyy")
-                </MudText>
+            <div class="d-flex align-center flex-wrap gap-2">
+                <MudText Typo="Typo.h6">@Localization.GetString("FinancialSummary") — @_selectedMonth.ToString("MMMM yyyy")</MudText>
                 <WisDatePicker @bind-Date="_selectedMonthDate"
                                @bind-Date:after="OnMonthChanged"
                                DateFormat="MMM yyyy"
@@ -115,35 +62,38 @@ else
             </div>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalToPay")"
-                           Value="@_totalPurchasesMonth.ToString("C")"
-                           Subtitle="@($"{_monthNoteSummary.Count} {Localization.GetString("PurchaseNotes")} | {_monthInvoiceSummary.PayableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.ShoppingCart"
-                           IconColor="Color.Default" />
+        @PeriodCards(_monthNoteSummary, _monthInvoiceSummary, _netIssuedMonth, _marginMonth)
+
+        <!-- ── Attention Needed ── -->
+        <MudItem xs="12" Class="mt-6">
+            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("AttentionNeeded")</MudText>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalSales")"
-                           Value="@_monthInvoiceSummary.ReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_monthInvoiceSummary.ReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.PointOfSale"
-                           IconColor="Color.Default" />
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("OverduePayables")"
+                           Value="@_invoicePosition.OverduePayableAmount.ToString("C")"
+                           Subtitle="@($"{_invoicePosition.OverduePayableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.AccountBalance"
+                           IconColor="@(_invoicePosition.OverduePayableCount > 0 ? Color.Error : Color.Success)"
+                           Link="/invoices?status=Overdue&type=Payable" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("Profit")"
-                           Value="@_profitMonth.ToString("C")"
-                           Subtitle="@_marginMonth.ToString("P1")"
-                           Icon="@Icons.Material.Filled.Savings"
-                           IconColor="@(_profitMonth >= 0 ? Color.Success : Color.Error)" />
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("OverdueReceivables")"
+                           Value="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_invoicePosition.OverdueReceivableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="@(_invoicePosition.OverdueReceivableCount > 0 ? Color.Error : Color.Success)"
+                           Link="/invoices?status=Overdue&type=Receivable" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                           Value="@_invoicePosition.TotalOverdueCount.ToString()"
-                           Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_invoicePosition.TotalOverdueCount > 0 ? Color.Error : Color.Default)" />
+        <MudItem xs="12" sm="6" md="4">
+            <DashboardCard Title="@Localization.GetString("UnpaidPurchaseNotes")"
+                           Value="@_purchaseNotePosition.unpaidAmount.ToString("C")"
+                           Subtitle="@($"{_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
+                           Icon="@Icons.Material.Filled.Receipt"
+                           IconColor="@(_purchaseNotePosition.unpaidCount > 0 ? Color.Warning : Color.Success)"
+                           Link="/purchase-notes?status=Pending" />
         </MudItem>
 
         <!-- ── Recent Activity (Tabbed) ── -->
@@ -372,12 +322,9 @@ else
 }
 
 @code {
-    // ── Financial position (DB aggregate) ──
-    private InvoiceOutstandingResult _invoicePosition = new();
-    private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
-
-    private decimal _totalPayablesOutstanding => _invoicePosition.PayableAmount + _purchaseNotePosition.unpaidAmount;
-    private decimal _netBalanceOutstanding => _invoicePosition.ReceivableAmount - _totalPayablesOutstanding;
+    // ── Year filter ──
+    private DateTime? _selectedYearDate = new DateTime(DateTime.Today.Year, 1, 1);
+    private int _selectedYear => (_selectedYearDate ?? DateTime.Today).Year;
 
     // ── Day filter ──
     private DateTime? _selectedDay = DateTime.Today;
@@ -387,19 +334,29 @@ else
     private DateTime? _selectedMonthDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime _selectedMonth => _selectedMonthDate ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
+    // ── Year data ──
+    private InvoicePeriodSummaryResult _yearInvoiceSummary = new();
+    private DayPurchaseNoteSummaryResult _yearNoteSummary = new();
+    private decimal _netIssuedYear => _yearInvoiceSummary.ReceivableAmount - _yearInvoiceSummary.PayableAmount - _yearNoteSummary.Amount;
+    private decimal _marginYear => _yearInvoiceSummary.ReceivableAmount > 0 ? _netIssuedYear / _yearInvoiceSummary.ReceivableAmount : 0;
+
     // ── Day data ──
     private InvoicePeriodSummaryResult _dayInvoiceSummary = new();
     private DayPurchaseNoteSummaryResult _dayNoteSummary = new();
     private decimal _netIssuedDay => _dayInvoiceSummary.ReceivableAmount - _dayInvoiceSummary.PayableAmount - _dayNoteSummary.Amount;
+    private decimal _marginDay => _dayInvoiceSummary.ReceivableAmount > 0 ? _netIssuedDay / _dayInvoiceSummary.ReceivableAmount : 0;
 
     // ── Month data ──
     private InvoicePeriodSummaryResult _monthInvoiceSummary = new();
     private DayPurchaseNoteSummaryResult _monthNoteSummary = new();
-    private decimal _totalPurchasesMonth => _monthInvoiceSummary.PayableAmount + _monthNoteSummary.Amount;
-    private decimal _profitMonth => _monthInvoiceSummary.ReceivableAmount - _totalPurchasesMonth;
-    private decimal _marginMonth => _monthInvoiceSummary.ReceivableAmount > 0 ? _profitMonth / _monthInvoiceSummary.ReceivableAmount : 0;
+    private decimal _netIssuedMonth => _monthInvoiceSummary.ReceivableAmount - _monthInvoiceSummary.PayableAmount - _monthNoteSummary.Amount;
+    private decimal _marginMonth => _monthInvoiceSummary.ReceivableAmount > 0 ? _netIssuedMonth / _monthInvoiceSummary.ReceivableAmount : 0;
 
-    // ── Recent activity (last 5, loaded once) ──
+    // ── Outstanding position ──
+    private InvoiceOutstandingResult _invoicePosition = new();
+    private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
+
+    // ── Recent activity ──
     private List<InvoiceDto> _recentInvoices = [];
     private List<PurchaseNoteDto> _recentPurchaseNotes = [];
     private List<PaymentDto> _recentPayments = [];
@@ -417,13 +374,14 @@ else
         try
         {
             await Task.WhenAll(
+                LoadYearData(),
+                LoadDayData(),
+                LoadMonthData(),
+                LoadRecentActivity(),
                 InvoiceService.GetOutstandingPositionAsync(_cts.Token)
                     .ContinueWith(t => _invoicePosition = t.Result),
                 PurchaseNoteService.GetOutstandingPositionAsync(_cts.Token)
-                    .ContinueWith(t => _purchaseNotePosition = t.Result),
-                LoadDayData(),
-                LoadMonthData(),
-                LoadRecentActivity()
+                    .ContinueWith(t => _purchaseNotePosition = t.Result)
             );
         }
         catch (Exception ex)
@@ -434,6 +392,16 @@ else
         {
             _loading = false;
         }
+    }
+
+    private async Task LoadYearData()
+    {
+        await Task.WhenAll(
+            InvoiceService.GetYearInvoiceSummaryAsync(_selectedYear, _cts.Token)
+                .ContinueWith(t => _yearInvoiceSummary = t.Result),
+            PurchaseNoteService.GetYearIssuedSummaryAsync(_selectedYear, _cts.Token)
+                .ContinueWith(t => _yearNoteSummary = t.Result)
+        );
     }
 
     private async Task LoadDayData()
@@ -468,17 +436,11 @@ else
         );
     }
 
-    private async Task OnDayChanged()
-    {
-        await LoadDayData();
-        StateHasChanged();
-    }
+    private async Task OnYearChanged() => await LoadYearData();
 
-    private async Task OnMonthChanged()
-    {
-        await LoadMonthData();
-        StateHasChanged();
-    }
+    private async Task OnDayChanged() => await LoadDayData();
+
+    private async Task OnMonthChanged() => await LoadMonthData();
 
     private async Task OpenPaymentDialog()
     {
@@ -489,7 +451,6 @@ else
             {
                 Snackbar.Add(Localization.GetString("PaymentRecorded"), Severity.Success);
                 await LoadRecentActivity();
-                StateHasChanged();
             }
         }
         catch (Exception ex)
@@ -498,5 +459,41 @@ else
             Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
         }
     }
+
+    private RenderFragment PeriodCards(
+        DayPurchaseNoteSummaryResult notes,
+        InvoicePeriodSummaryResult invoices,
+        decimal net,
+        decimal margin) => __builder =>
+    {
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("PurchaseNotes")"
+                           Value="@notes.Amount.ToString("C")"
+                           Subtitle="@($"{notes.Count} {Localization.GetString("PurchaseNotes")}")"
+                           Icon="@Icons.Material.Filled.Receipt"
+                           IconColor="Color.Default" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("PayableInvoices")"
+                           Value="@invoices.PayableAmount.ToString("C")"
+                           Subtitle="@($"{invoices.PayableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
+                           IconColor="Color.Default" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("ReceivableInvoices")"
+                           Value="@invoices.ReceivableAmount.ToString("C")"
+                           Subtitle="@($"{invoices.ReceivableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Primary" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("NetIssued")"
+                           Value="@net.ToString("C")"
+                           Subtitle="@margin.ToString("P1")"
+                           Icon="@Icons.Material.Filled.SwapVert"
+                           IconColor="@(net >= 0 ? Color.Success : Color.Error)" />
+        </MudItem>
+    };
 
 }
