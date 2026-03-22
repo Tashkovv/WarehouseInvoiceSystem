@@ -374,8 +374,8 @@
         {
             string footer = BuildFooterLines(tenant);
             string dueIntro = daysBeforeDue == 1
-                ? $"Утре е рокот за плаќање на следните {invoices.Count} фактура/и:"
-                : $"Рокот за плаќање на следните {invoices.Count} фактура/и истекува за {daysBeforeDue} дена:";
+                ? $"Утре е рокот за плаќање на {invoices.Count} фактура/и:"
+                : $"Рокот за плаќање на {invoices.Count} фактура/и истекува за {daysBeforeDue} дена:";
             string rows = string.Join("", invoices.Select(i => $@"
                 <tr>
                     <td style='padding: 8px 12px; border-bottom: 1px solid #eee;'>{i.InvoiceNumber}</td>

@@ -21,6 +21,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                             .ThenInclude(i => i.Company)
                     .OrderByDescending(n => n.CreatedAt)
                     .Take(count)
+                    .AsSplitQuery()
                     .ToListAsync(ct), ct);
 
         public Task<bool> ExistsTodayAsync(string data, CancellationToken ct = default) =>
@@ -36,7 +37,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(async context =>
             {
                 Insert(context, notification);
-                await SaveAsync(context, ct);
 
                 foreach (Guid invoiceId in invoiceIds)
                 {
@@ -54,15 +54,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task MarkAsReadAsync(Guid notificationId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
-                Notification? notification = await AllTracked<Notification>(context)
-                    .FirstOrDefaultAsync(n => n.Id == notificationId, ct);
-
-                if (notification is not null && !notification.IsRead)
-                {
-                    notification.IsRead = true;
-                    notification.ReadAt = DateTime.UtcNow;
-                    await SaveAsync(context, ct);
-                }
+                await context.Notifications
+                    .Where(n => n.DeletedOn == null && n.Id == notificationId && !n.IsRead)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(n => n.IsRead, true)
+                        .SetProperty(n => n.ReadAt, DateTime.UtcNow), ct);
             }, ct);
 
         public Task MarkAllAsReadAsync(CancellationToken ct = default) =>
@@ -78,15 +74,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task MarkEmailSentAsync(Guid notificationId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
-                Notification? notification = await AllTracked<Notification>(context)
-                    .FirstOrDefaultAsync(n => n.Id == notificationId, ct);
-
-                if (notification is not null)
-                {
-                    notification.IsEmailSent = true;
-                    notification.EmailSentAt = DateTime.UtcNow;
-                    await SaveAsync(context, ct);
-                }
+                await context.Notifications
+                    .Where(n => n.DeletedOn == null && n.Id == notificationId && !n.IsEmailSent)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(n => n.IsEmailSent, true)
+                        .SetProperty(n => n.EmailSentAt, DateTime.UtcNow), ct);
             }, ct);
     }
 }

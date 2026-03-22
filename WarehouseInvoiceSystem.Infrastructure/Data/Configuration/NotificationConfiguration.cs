@@ -24,8 +24,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data.Configuration
             builder.Property(e => e.EmailSentAt);
 
             // Indexes
-            builder.HasIndex(e => e.IsRead);
-            builder.HasIndex(e => e.CreatedAt);
+            builder.HasIndex(e => new { e.IsRead, e.CreatedAt });
+            builder.HasIndex(e => new { e.Data, e.CreatedAt });
             builder.HasIndex(e => e.DeletedOn);
 
             // Soft-delete query filter

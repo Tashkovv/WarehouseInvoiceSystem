@@ -397,16 +397,10 @@ else
 
         try
         {
-            List<PartnerComparisonDto> allPartners = await ProductService.GetPartnerComparisonAsync(
-                Id, _mode, _selectedWarehouseId, _dateRange.Start, _dateRange.End, ct);
+            _comparisonRows = await ProductService.GetPartnerComparisonAsync(
+                Id, _mode, _selectedWarehouseId, _dateRange.Start, _dateRange.End, _selectedPartnerIds, ct);
 
             if (ct.IsCancellationRequested) return;
-
-            // Filter to only selected partners
-            var selectedSet = _selectedPartnerIds.ToHashSet();
-            _comparisonRows = allPartners
-                .Where(p => selectedSet.Contains(p.PartnerId))
-                .ToList();
         }
         catch (OperationCanceledException) { return; }
         catch (Exception ex)

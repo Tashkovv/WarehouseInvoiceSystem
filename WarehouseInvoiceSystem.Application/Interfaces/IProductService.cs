@@ -27,6 +27,7 @@
             Guid? warehouseId,
             DateTime? dateFrom,
             DateTime? dateTo,
+            List<Guid>? partnerIds = null,
             CancellationToken ct = default);
         Task<List<ProductComparisonDto>> GetProductComparisonAsync(
             List<Guid> productIds,

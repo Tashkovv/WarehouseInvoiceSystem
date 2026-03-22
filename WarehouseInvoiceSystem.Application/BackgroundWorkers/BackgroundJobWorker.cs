@@ -61,8 +61,10 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
 
                         using (IServiceScope scope = serviceProvider.CreateScope())
                         {
+                            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+                            timeoutCts.CancelAfter(TimeSpan.FromMinutes(5));
                             var backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-                            await backgroundJobService.GenerateAndSendDueDateRemindersAsync(stoppingToken);
+                            await backgroundJobService.GenerateAndSendDueDateRemindersAsync(timeoutCts.Token);
                         }
 
                         await appState.SetDateAsync(LastNotificationCheckKey, now.Date);

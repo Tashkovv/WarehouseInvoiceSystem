@@ -280,15 +280,21 @@
             Guid? warehouseId,
             DateTime? dateFrom,
             DateTime? dateTo,
+            List<Guid>? partnerIds = null,
             CancellationToken ct = default)
         {
-            return mode switch
+            List<PartnerComparisonDto> results = mode switch
             {
                 PartnerComparisonMode.Individuals => await GetIndividualComparison(productId, warehouseId, dateFrom, dateTo, ct),
                 PartnerComparisonMode.Vendors => await GetInvoiceComparison(productId, InvoiceType.Payable, warehouseId, dateFrom, dateTo, ct),
                 PartnerComparisonMode.Clients => await GetInvoiceComparison(productId, InvoiceType.Receivable, warehouseId, dateFrom, dateTo, ct),
                 _ => []
             };
+
+            if (partnerIds is { Count: > 0 })
+                results = results.Where(p => partnerIds.Contains(p.PartnerId)).ToList();
+
+            return results;
         }
 
         private async Task<List<PartnerComparisonDto>> GetIndividualComparison(
@@ -338,13 +344,16 @@
 
             Task<IEnumerable<PurchaseNoteLine>> purchaseTask = purchaseNoteRepository
                 .GetLineItemsByProductIdsAsync(productIds, warehouseId, dateFrom, dateTo, ct);
-            Task<IEnumerable<InvoiceLine>> invoiceTask = invoiceRepository
-                .GetLineItemsByProductIdsAsync(productIds, warehouseId, dateFrom, dateTo, ct);
+            Task<IEnumerable<InvoiceLine>> payableTask = invoiceRepository
+                .GetLineItemsByProductIdsAsync(productIds, warehouseId, dateFrom, dateTo, InvoiceType.Payable, ct);
+            Task<IEnumerable<InvoiceLine>> receivableTask = invoiceRepository
+                .GetLineItemsByProductIdsAsync(productIds, warehouseId, dateFrom, dateTo, InvoiceType.Receivable, ct);
 
-            await Task.WhenAll(purchaseTask, invoiceTask);
+            await Task.WhenAll(purchaseTask, payableTask, receivableTask);
 
             IEnumerable<PurchaseNoteLine> purchaseLines = purchaseTask.Result;
-            IEnumerable<InvoiceLine> invoiceLines = invoiceTask.Result;
+            IEnumerable<InvoiceLine> payableLines = payableTask.Result;
+            IEnumerable<InvoiceLine> receivableLines = receivableTask.Result;
 
             // Purchase notes = incoming from individuals
             var purchaseByProduct = purchaseLines
@@ -354,16 +363,14 @@
                     g => (Qty: g.Sum(li => li.Quantity), Amt: g.Sum(li => li.Amount), Docs: g.Select(li => li.PurchaseNoteId).Distinct().Count()));
 
             // Payable invoices = incoming from vendors
-            var payableByProduct = invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Payable)
+            var payableByProduct = payableLines
                 .GroupBy(li => li.ProductId)
                 .ToDictionary(
                     g => g.Key,
                     g => (Qty: g.Sum(li => li.Quantity), Amt: g.Sum(li => li.Amount), Docs: g.Select(li => li.InvoiceId).Distinct().Count()));
 
             // Receivable invoices = outgoing to clients
-            var receivableByProduct = invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Receivable)
+            var receivableByProduct = receivableLines
                 .GroupBy(li => li.ProductId)
                 .ToDictionary(
                     g => g.Key,
@@ -371,7 +378,8 @@
 
             // Build product lookup for names/codes/units
             var products = purchaseLines.Select(li => li.Product)
-                .Concat(invoiceLines.Select(li => li.Product))
+                .Concat(payableLines.Select(li => li.Product))
+                .Concat(receivableLines.Select(li => li.Product))
                 .Where(p => p != null)
                 .DistinctBy(p => p!.Id)
                 .ToDictionary(p => p!.Id);

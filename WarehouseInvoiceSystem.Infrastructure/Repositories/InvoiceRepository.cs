@@ -162,7 +162,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             });
 
         public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdsAsync(
-            List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, InvoiceType? type = null, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
                 IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
@@ -170,6 +170,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                  li.Invoice.DeletedOn == null &&
                                  li.Invoice.Status != InvoiceStatus.Cancelled);
 
+                if (type.HasValue)
+                    q = q.Where(li => li.Invoice.Type == type.Value);
                 if (warehouseId.HasValue)
                     q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
                 if (dateFrom.HasValue)
@@ -489,6 +491,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         Amount = g.Sum(i => i.TotalAmount - i.AmountPaid)
                     })
                     .OrderByDescending(x => x.Amount)
+                    .Take(5)
                     .ToListAsync(ct);
             });
 
@@ -795,12 +798,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<List<Invoice>> GetInvoicesDueInDaysAsync(int days, InvoiceType type, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
-                DateTime targetDate = DateTime.UtcNow.Date.AddDays(days);
+                DateTime targetStart = DateTime.UtcNow.Date.AddDays(days);
+                DateTime targetEnd = targetStart.AddDays(1);
                 return await All<Invoice>(context)
                     .Include(i => i.Company)
                     .Where(i => (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
                              && i.Type == type
-                             && i.DueDate.Date == targetDate)
+                             && i.DueDate >= targetStart && i.DueDate < targetEnd)
                     .ToListAsync(ct);
             }, ct);
 

@@ -101,12 +101,13 @@
     private List<NotificationDto> _notifications = [];
     private bool _isOpen;
     private bool _loading;
+    private readonly CancellationTokenSource _cts = new();
 
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += OnLanguageChanged;
 
-        try { _unreadCount = await NotificationService.GetUnreadCountAsync(); }
+        try { _unreadCount = await NotificationService.GetUnreadCountAsync(_cts.Token); }
         catch { /* best-effort */ }
     }
 
@@ -126,7 +127,7 @@
 
             try
             {
-                _notifications = await NotificationService.GetRecentNotificationsAsync(20);
+                _notifications = await NotificationService.GetRecentNotificationsAsync(20, _cts.Token);
             }
             catch (Exception ex)
             {
@@ -147,7 +148,7 @@
         {
             try
             {
-                await NotificationService.MarkAsReadAsync(n.Id);
+                await NotificationService.MarkAsReadAsync(n.Id, _cts.Token);
                 n.IsRead = true;
                 n.ReadAt = DateTime.UtcNow;
                 _unreadCount = Math.Max(0, _unreadCount - 1);
@@ -169,7 +170,7 @@
     {
         try
         {
-            await NotificationService.MarkAllAsReadAsync();
+            await NotificationService.MarkAllAsReadAsync(_cts.Token);
             _unreadCount = 0;
             foreach (var n in _notifications)
             {
@@ -251,6 +252,8 @@
 
     public void Dispose()
     {
+        _cts.Cancel();
+        _cts.Dispose();
         Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 }

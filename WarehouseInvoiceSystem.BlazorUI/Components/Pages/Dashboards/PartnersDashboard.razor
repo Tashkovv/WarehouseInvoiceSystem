@@ -420,6 +420,7 @@ else
     private DateRange _partnerDateRange = new(DateTime.Today.AddDays(-365), DateTime.Today);
     private DateTime _partnerFromDate => _partnerDateRange.Start ?? DateTime.Today.AddDays(-365);
     private DateTime _partnerToDate => _partnerDateRange.End ?? DateTime.Today;
+    private CancellationTokenSource _summaryCts = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -435,7 +436,7 @@ else
         {
             var countsTask = CompanyService.GetPartnerCountsAsync(_cts.Token);
             var indsTask = IndividualService.GetCountsAsync(_cts.Token);
-            var summariesTask = LoadPartnerSummaries();
+            var summariesTask = LoadPartnerSummaries(_cts.Token);
 
             await Task.WhenAll(countsTask, indsTask, summariesTask);
 
@@ -459,16 +460,18 @@ else
         }
     }
 
-    private async Task LoadPartnerSummaries()
+    private async Task LoadPartnerSummaries(CancellationToken ct)
     {
-        var t1 = InvoiceService.GetTopPayableVendorsBySpendAsync(_partnerFromDate, _partnerToDate, 5, _cts.Token);
-        var t2 = InvoiceService.GetTopClientsByRevenueAsync(_partnerFromDate, _partnerToDate, 5, _cts.Token);
-        var t3 = PurchaseNoteService.GetTopVendorsBySpendAsync(_partnerFromDate, _partnerToDate, 5, _cts.Token);
-        var t4 = InvoiceService.GetOverdueClientSummariesAsync(_cts.Token);
-        var t5 = PurchaseNoteService.GetUnpaidVendorSummariesAsync(_cts.Token);
-        var t6 = InvoiceService.GetOverduePayableCompanySummariesAsync(_cts.Token);
+        var t1 = InvoiceService.GetTopPayableVendorsBySpendAsync(_partnerFromDate, _partnerToDate, 5, ct);
+        var t2 = InvoiceService.GetTopClientsByRevenueAsync(_partnerFromDate, _partnerToDate, 5, ct);
+        var t3 = PurchaseNoteService.GetTopVendorsBySpendAsync(_partnerFromDate, _partnerToDate, 5, ct);
+        var t4 = InvoiceService.GetOverdueClientSummariesAsync(ct);
+        var t5 = PurchaseNoteService.GetUnpaidVendorSummariesAsync(ct);
+        var t6 = InvoiceService.GetOverduePayableCompanySummariesAsync(ct);
 
         await Task.WhenAll(t1, t2, t3, t4, t5, t6);
+
+        if (ct.IsCancellationRequested) return;
 
         _topPayableVendors = t1.Result.ToList();
         _topClients = t2.Result.ToList();
@@ -480,7 +483,26 @@ else
 
     private async Task RecalculateSummaries()
     {
-        await LoadPartnerSummaries();
+        await _summaryCts.CancelAsync();
+        _summaryCts = new CancellationTokenSource();
+        var ct = _summaryCts.Token;
+
+        try
+        {
+            await Task.Delay(300, ct);
+            await LoadPartnerSummaries(ct);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _summaryCts.Cancel();
+            _summaryCts.Dispose();
+        }
+        base.Dispose(disposing);
     }
 
 }
