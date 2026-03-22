@@ -206,7 +206,6 @@
 
                 // Email
                 ["SendInvoice"] = "Send Invoice",
-                ["SendEmail"] = "Send Email",
                 ["EmailSent"] = "Email sent successfully",
                 ["SendingEmail"] = "Sending email...",
 
@@ -854,7 +853,6 @@
 
                 // Email
                 ["SendInvoice"] = "Испрати фактура",
-                ["SendEmail"] = "Испрати е-пошта",
                 ["EmailSent"] = "Е-поштата е успешно испратена",
                 ["SendingEmail"] = "Испраќање на е-пошта...",
 
