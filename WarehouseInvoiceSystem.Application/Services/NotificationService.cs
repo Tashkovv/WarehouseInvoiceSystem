@@ -60,17 +60,26 @@ namespace WarehouseInvoiceSystem.Application.Services
                 await GeneratePayableRemindersAsync(_settings.PayableDays, ct);
         }
 
-        private async Task GenerateReceivableRemindersAsync(int[] thresholds, CancellationToken ct)
+        private Task GenerateReceivableRemindersAsync(int[] thresholds, CancellationToken ct)
+            => GenerateRemindersAsync(thresholds, InvoiceType.Receivable, sendEmail: true, ct);
+
+        private Task GeneratePayableRemindersAsync(int[] thresholds, CancellationToken ct)
+            => GenerateRemindersAsync(thresholds, InvoiceType.Payable, sendEmail: false, ct);
+
+        private async Task GenerateRemindersAsync(int[] thresholds, InvoiceType type, bool sendEmail, CancellationToken ct)
         {
+            string typeName = type.ToString();
+
             foreach (int days in thresholds)
             {
                 if (ct.IsCancellationRequested) return;
 
-                List<Invoice> invoices = await invoiceRepository.GetInvoicesDueInDaysAsync(days, InvoiceType.Receivable, ct);
+                List<Invoice> invoices = await invoiceRepository.GetInvoicesDueInDaysAsync(days, type, ct);
                 if (invoices.Count == 0) continue;
 
-                string data = JsonSerializer.Serialize(new { daysBeforeDue = days, invoiceType = "Receivable" });
+                string data = JsonSerializer.Serialize(new { daysBeforeDue = days, invoiceType = typeName });
                 if (await notificationRepository.ExistsTodayAsync(data, ct)) continue;
+
                 var notification = new Notification
                 {
                     Type = NotificationType.InvoiceDueReminder,
@@ -82,60 +91,39 @@ namespace WarehouseInvoiceSystem.Application.Services
                 List<Guid> invoiceIds = invoices.Select(i => i.Id).ToList();
                 Guid notificationId = await notificationRepository.CreateWithInvoicesAsync(notification, invoiceIds, ct);
 
-                // Send email to each client company (grouped by CompanyId)
-                bool anySent = false;
-                var invoicesByCompany = invoices.GroupBy(i => i.CompanyId);
-
-                foreach (var group in invoicesByCompany)
-                {
-                    Invoice first = group.First();
-                    string? companyEmail = first.Company?.Email;
-                    string companyName = first.Company?.Name ?? string.Empty;
-
-                    if (string.IsNullOrWhiteSpace(companyEmail)) continue;
-
-                    try
-                    {
-                        bool sent = await emailService.SendDueDateReminderEmailAsync(
-                            days, companyName, companyEmail, group.ToList(), ct);
-                        if (sent) anySent = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error sending reminder to {companyName}: {ex.Message}");
-                    }
-                }
-
-                if (anySent)
-                {
-                    try { await notificationRepository.MarkEmailSentAsync(notificationId, ct); }
-                    catch { /* best-effort */ }
-                }
+                if (sendEmail)
+                    await SendReminderEmailsAsync(days, invoices, notificationId, ct);
             }
         }
 
-        private async Task GeneratePayableRemindersAsync(int[] thresholds, CancellationToken ct)
+        private async Task SendReminderEmailsAsync(int days, List<Invoice> invoices, Guid notificationId, CancellationToken ct)
         {
-            foreach (int days in thresholds)
+            bool anySent = false;
+
+            foreach (var group in invoices.GroupBy(i => i.CompanyId))
             {
-                if (ct.IsCancellationRequested) return;
+                Invoice first = group.First();
+                string? companyEmail = first.Company?.Email;
+                if (string.IsNullOrWhiteSpace(companyEmail)) continue;
 
-                List<Invoice> invoices = await invoiceRepository.GetInvoicesDueInDaysAsync(days, InvoiceType.Payable, ct);
-                if (invoices.Count == 0) continue;
+                string companyName = first.Company?.Name ?? string.Empty;
 
-                string data = JsonSerializer.Serialize(new { daysBeforeDue = days, invoiceType = "Payable" });
-                if (await notificationRepository.ExistsTodayAsync(data, ct)) continue;
-                var notification = new Notification
+                try
                 {
-                    Type = NotificationType.InvoiceDueReminder,
-                    Data = data,
-                    IsRead = false,
-                    IsEmailSent = false
-                };
+                    bool sent = await emailService.SendDueDateReminderEmailAsync(
+                        days, companyName, companyEmail, group.ToList(), ct);
+                    if (sent) anySent = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending reminder to {companyName}: {ex.Message}");
+                }
+            }
 
-                List<Guid> invoiceIds = invoices.Select(i => i.Id).ToList();
-                await notificationRepository.CreateWithInvoicesAsync(notification, invoiceIds, ct);
-                // No email for payable invoices
+            if (anySent)
+            {
+                try { await notificationRepository.MarkEmailSentAsync(notificationId, ct); }
+                catch { /* best-effort */ }
             }
         }
     }

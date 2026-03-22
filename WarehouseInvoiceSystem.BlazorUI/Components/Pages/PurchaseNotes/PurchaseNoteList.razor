@@ -442,48 +442,51 @@
         bool canPay      = isDraft || isPending;
         bool canCancel   = !isPaid && !isCancelled;
 
-        List<WisDetailActionItem> actions =
-        [
-            new WisDetailActionItem
+        List<WisDetailActionItem> actions = [];
+
+        if (isDraft)
+        {
+            actions.Add(new WisDetailActionItem
             {
-                Icon           = Icons.Material.Filled.Edit,
-                Label          = Localization.GetString("Edit"),
-                Disabled       = !isDraft,
-                DisabledReason = isDraft ? null : Localization.GetString("EditNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/edit/{item.Id}"))
-            },
-            new WisDetailActionItem
+                Icon    = Icons.Material.Filled.Edit,
+                Label   = Localization.GetString("Edit"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/edit/{item.Id}"))
+            });
+
+            actions.Add(new WisDetailActionItem
             {
-                Icon           = Icons.Material.Filled.MoveToInbox,
-                Label          = Localization.GetString("ReceiveGoods"),
-                Color          = Color.Warning,
-                Disabled       = !isDraft,
-                DisabledReason = isDraft ? null : Localization.GetString("ActionNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => ReceiveGoods(item))
-            },
-            new WisDetailActionItem
+                Icon    = Icons.Material.Filled.MoveToInbox,
+                Label   = Localization.GetString("ReceiveGoods"),
+                Color   = Color.Warning,
+                OnClick = EventCallback.Factory.Create(this, () => ReceiveGoods(item))
+            });
+        }
+
+        if (canPay)
+        {
+            actions.Add(new WisDetailActionItem
             {
-                Icon           = Icons.Material.Filled.Payment,
-                Label          = Localization.GetString("MarkAsPaid"),
-                Color          = Color.Success,
-                Disabled       = !canPay,
-                DisabledReason = canPay ? null : Localization.GetString("ActionNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => MarkAsPaid(item))
-            },
-            new WisDetailActionItem
-            {
-                Icon     = Icons.Material.Filled.Print,
-                Label    = Localization.GetString("Export"),
-                Disabled = _exportingRow,
-                OnClick  = EventCallback.Factory.Create(this, () => ExportNoteRow(item))
-            },
-            new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.ContentCopy,
-                Label   = Localization.GetString("Copy"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={item.Id}"))
-            },
-        ];
+                Icon    = Icons.Material.Filled.Payment,
+                Label   = Localization.GetString("MarkAsPaid"),
+                Color   = Color.Success,
+                OnClick = EventCallback.Factory.Create(this, () => MarkAsPaid(item))
+            });
+        }
+
+        actions.Add(new WisDetailActionItem
+        {
+            Icon     = Icons.Material.Filled.Print,
+            Label    = Localization.GetString("Export"),
+            Disabled = _exportingRow,
+            OnClick  = EventCallback.Factory.Create(this, () => ExportNoteRow(item))
+        });
+
+        actions.Add(new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.ContentCopy,
+            Label   = Localization.GetString("Copy"),
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={item.Id}"))
+        });
 
         if (isCancelled)
         {
@@ -496,7 +499,7 @@
                 OnClick         = EventCallback.Factory.Create(this, () => DeleteNote(item))
             });
         }
-        else
+        else if (canCancel)
         {
             actions.Add(new WisDetailActionItem
             {
@@ -504,8 +507,6 @@
                 Label           = Localization.GetString("Cancel"),
                 Color           = Color.Error,
                 IsDividerBefore = true,
-                Disabled        = !canCancel,
-                DisabledReason  = canCancel ? null : Localization.GetString("ActionNotAvailable"),
                 OnClick         = EventCallback.Factory.Create(this, () => CancelNote(item))
             });
         }

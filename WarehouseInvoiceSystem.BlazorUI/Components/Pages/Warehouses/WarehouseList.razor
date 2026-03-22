@@ -232,33 +232,44 @@
             await _grid.ReloadServerData();
     }
 
-    private List<WisDetailActionItem> BuildRowActions(WarehouseDto item) =>
-    [
-        new WisDetailActionItem
+    private List<WisDetailActionItem> BuildRowActions(WarehouseDto item)
+    {
+        List<WisDetailActionItem> actions =
+        [
+            new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Edit,
+                Label   = Localization.GetString("Edit"),
+                OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+            },
+        ];
+
+        if (!item.IsDefault && item.IsActive)
         {
-            Icon    = Icons.Material.Filled.Edit,
-            Label   = Localization.GetString("Edit"),
-            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
-        },
-        new WisDetailActionItem
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Star,
+                Label   = Localization.GetString("Default"),
+                Color   = Color.Info,
+                OnClick = EventCallback.Factory.Create(this, () => SetAsDefault(item))
+            });
+        }
+
+        bool canDeactivate = !item.IsDefault && !item.HasProducts;
+        if (!item.IsActive || canDeactivate)
         {
-            Icon     = Icons.Material.Filled.Star,
-            Label    = Localization.GetString("Default"),
-            Color    = Color.Info,
-            Disabled = item.IsDefault || !item.IsActive,
-            OnClick  = EventCallback.Factory.Create(this, () => SetAsDefault(item))
-        },
-        new WisDetailActionItem
-        {
-            Icon            = Icons.Material.Filled.PowerSettingsNew,
-            Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
-            Color           = item.IsActive ? Color.Warning : Color.Success,
-            IsDividerBefore = true,
-            Disabled        = item.IsActive && (item.IsDefault || item.HasProducts),
-            DisabledReason  = item.IsActive && (item.IsDefault || item.HasProducts) ? Localization.GetString("DeactivateWarehouseDisabledTooltip") : null,
-            OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
-        },
-    ];
+            actions.Add(new WisDetailActionItem
+            {
+                Icon            = Icons.Material.Filled.PowerSettingsNew,
+                Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
+                Color           = item.IsActive ? Color.Warning : Color.Success,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
+            });
+        }
+
+        return actions;
+    }
 
     private async Task SetAsDefault(WarehouseDto warehouse)
     {

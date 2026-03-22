@@ -6,8 +6,9 @@
 
     <span class="wis-pager__rpp-label">@Localization.GetString("ItemsPerPage")</span>
 
-    <div class="wis-pager__rpp-pill">
-        <MudSelect T="int"
+    <div class="wis-pager__rpp-pill" @onclick="ToggleSelect" @onclick:stopPropagation>
+        <MudSelect @ref="_selectRef"
+                   T="int"
                    Value="_rowsPerPage"
                    ValueChanged="OnRowsPerPageChanged"
                    Variant="Variant.Text"
@@ -56,6 +57,8 @@
     [CascadingParameter] public MudDataGrid<T> DataGrid { get; set; } = null!;
     [Parameter] public int[] PageSizeOptions { get; set; } = [10, 25, 50, 100];
 
+    private MudSelect<int> _selectRef = null!;
+
     private int _currentPage => DataGrid?.CurrentPage ?? 0;
     private int _rowsPerPage => DataGrid?.RowsPerPage ?? PageSizeOptions[0];
     private int _totalItems => DataGrid?.GetFilteredItemsCount() ?? 0;
@@ -79,6 +82,9 @@
         if (DataGrid is not null)
             await DataGrid.SetRowsPerPageAsync(value);
     }
+
+    private async Task ToggleSelect()
+        => await _selectRef.ToggleMenu();
 
     private void GoFirst() { DataGrid?.NavigateTo(Page.First); }
     private void GoPrev()  { DataGrid?.NavigateTo(Page.Previous); }

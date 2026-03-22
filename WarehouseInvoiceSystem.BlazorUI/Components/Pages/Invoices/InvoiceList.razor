@@ -706,72 +706,67 @@
             ? Icons.Material.Filled.Send
             : Icons.Material.Filled.CheckCircle;
 
-        List<WisDetailActionItem> actions =
-        [
-            new WisDetailActionItem
-            {
-                Icon           = Icons.Material.Filled.Edit,
-                Label          = Localization.GetString("Edit"),
-                Disabled       = !canEdit,
-                DisabledReason = canEdit ? null : Localization.GetString("EditNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/edit/{item.Id}"))
-            },
-            new WisDetailActionItem
-            {
-                Icon           = confirmIcon,
-                Label          = confirmLabel,
-                Color          = Color.Info,
-                Disabled       = !canConfirm,
-                DisabledReason = canConfirm ? null : Localization.GetString("ConfirmNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => ConfirmFromList(item))
-            },
-            new WisDetailActionItem
-            {
-                Icon           = Icons.Material.Filled.Send,
-                Label          = Localization.GetString("Send"),
-                Color          = Color.Info,
-                Disabled       = !canSend,
-                DisabledReason = canSend ? null : Localization.GetString("SendNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => OpenSendEmailDialog(item))
-            },
-            new WisDetailActionItem
-            {
-                Icon           = Icons.Material.Filled.Payment,
-                Label          = Localization.GetString("Payment"),
-                Color          = Color.Success,
-                Disabled       = !canPay,
-                DisabledReason = canPay ? null : Localization.GetString("PaymentNotAvailable"),
-                OnClick        = EventCallback.Factory.Create(this, () => OpenPaymentDialog(item))
-            },
-            new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.ContentCopy,
-                Label   = Localization.GetString("Copy"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
-            },
-            new WisDetailActionItem
-            {
-                Icon     = Icons.Material.Filled.FileDownload,
-                Label    = Localization.GetString("Export"),
-                Disabled = _exportingRow,
-                OnClick  = EventCallback.Factory.Create(this, () => ExportInvoiceRow(item))
-            },
-        ];
+        List<WisDetailActionItem> actions = [];
 
-        if (!isCancelled)
+        if (canEdit)
         {
             actions.Add(new WisDetailActionItem
             {
-                Icon            = Icons.Material.Filled.Cancel,
-                Label           = Localization.GetString("Cancel"),
-                Color           = Color.Error,
-                IsDividerBefore = true,
-                Disabled        = !canCancel,
-                DisabledReason  = canCancel ? null : Localization.GetString("ActionNotAvailable"),
-                OnClick         = EventCallback.Factory.Create(this, () => CancelInvoice(item))
+                Icon    = Icons.Material.Filled.Edit,
+                Label   = Localization.GetString("Edit"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/edit/{item.Id}"))
             });
         }
-        else
+
+        if (canConfirm)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = confirmIcon,
+                Label   = confirmLabel,
+                Color   = Color.Info,
+                OnClick = EventCallback.Factory.Create(this, () => ConfirmFromList(item))
+            });
+        }
+
+        if (canSend)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Send,
+                Label   = Localization.GetString("Send"),
+                Color   = Color.Info,
+                OnClick = EventCallback.Factory.Create(this, () => OpenSendEmailDialog(item))
+            });
+        }
+
+        if (canPay)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Payment,
+                Label   = Localization.GetString("Payment"),
+                Color   = Color.Success,
+                OnClick = EventCallback.Factory.Create(this, () => OpenPaymentDialog(item))
+            });
+        }
+
+        actions.Add(new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.ContentCopy,
+            Label   = Localization.GetString("Copy"),
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
+        });
+
+        actions.Add(new WisDetailActionItem
+        {
+            Icon     = Icons.Material.Filled.FileDownload,
+            Label    = Localization.GetString("Export"),
+            Disabled = _exportingRow,
+            OnClick  = EventCallback.Factory.Create(this, () => ExportInvoiceRow(item))
+        });
+
+        if (isCancelled)
         {
             actions.Add(new WisDetailActionItem
             {
@@ -780,6 +775,17 @@
                 Color           = Color.Error,
                 IsDividerBefore = true,
                 OnClick         = EventCallback.Factory.Create(this, () => DeleteInvoice(item))
+            });
+        }
+        else if (canCancel)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon            = Icons.Material.Filled.Cancel,
+                Label           = Localization.GetString("Cancel"),
+                Color           = Color.Error,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => CancelInvoice(item))
             });
         }
 
