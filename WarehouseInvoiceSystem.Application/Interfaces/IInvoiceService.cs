@@ -26,19 +26,19 @@
 
         // ── Status transitions ──────────────────────────────────────────────────
 
-        /// <summary>Draft → Sent. Receivable only. Creates outbound inventory transactions.</summary>
-        Task<InvoiceDto> SendAsync(Guid id);
+        /// <summary>Draft → Confirmed. Creates inventory transactions. Returns (dto, isDueDatePassed).</summary>
+        Task<(InvoiceDto Invoice, bool IsDueDatePassed)> ConfirmAsync(Guid id);
 
-        /// <summary>Sent/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
+        /// <summary>Confirmed/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
         Task<InvoiceDto> RevertToDraftAsync(Guid id);
 
-        /// <summary>Sent/PartiallyPaid/Overdue → Paid. Creates inventory transactions if not yet done (covers Overdue Payable Draft edge case).</summary>
+        /// <summary>Confirmed/PartiallyPaid/Overdue → Paid. Creates inventory transactions if not yet done.</summary>
         Task<InvoiceDto> MarkAsPaidAsync(Guid id);
 
-        /// <summary>Draft/Sent/Overdue → Cancelled. Reverses inventory transactions if any exist.</summary>
+        /// <summary>Draft/Confirmed/Overdue → Cancelled. Reverses inventory transactions if any exist.</summary>
         Task<InvoiceDto> CancelAsync(Guid id);
 
-        /// <summary>Any non-terminal status → Overdue. Called exclusively by BackgroundJobService. No inventory changes.</summary>
+        /// <summary>Confirmed/PartiallyPaid → Overdue. Called by BackgroundJobService. Draft invoices are excluded.</summary>
         Task<InvoiceDto> MarkAsOverdueAsync(Guid id);
 
         // ── Inventory helpers (used internally and by tests) ────────────────────

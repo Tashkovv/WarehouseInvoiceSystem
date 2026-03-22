@@ -2,11 +2,11 @@
 {
     public enum InvoiceStatus
     {
-        Draft = 1,         // Being created, not sent yet
-        Sent = 2,          // Sent to client/vendor
-        PartiallyPaid = 3, // Some payment received
-        Paid = 4,          // Fully paid
-        Overdue = 5,       // Past due date and unpaid
-        Cancelled = 6      // Cancelled/void
+        Draft = 1,
+        Confirmed = 2,
+        PartiallyPaid = 3,
+        Paid = 4,
+        Overdue = 5,
+        Cancelled = 6
     }
 }

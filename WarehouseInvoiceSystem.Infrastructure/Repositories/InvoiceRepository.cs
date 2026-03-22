@@ -479,7 +479,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<PartnerSummaryResult>)await All<Invoice>(context)
                     .Where(i => i.Type == InvoiceType.Payable &&
-                                (i.Status == InvoiceStatus.Sent ||
+                                (i.Status == InvoiceStatus.Confirmed ||
                                  i.Status == InvoiceStatus.PartiallyPaid ||
                                  i.Status == InvoiceStatus.Overdue))
                     .GroupBy(i => new { i.CompanyId, i.Company.Name })
@@ -802,7 +802,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 DateTime targetEnd = targetStart.AddDays(1);
                 return await All<Invoice>(context)
                     .Include(i => i.Company)
-                    .Where(i => (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
+                    .Where(i => (i.Status == InvoiceStatus.Confirmed || i.Status == InvoiceStatus.PartiallyPaid)
                              && i.Type == type
                              && i.DueDate >= targetStart && i.DueDate < targetEnd)
                     .ToListAsync(ct);

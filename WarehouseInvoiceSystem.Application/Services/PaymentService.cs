@@ -140,7 +140,7 @@
             }
             else
             {
-                invoice.Status = InvoiceStatus.Sent;
+                invoice.Status = InvoiceStatus.Confirmed;
             }
 
             await invoiceRepository.UpdateAsync(invoice);
@@ -196,10 +196,10 @@
 
                 if (hasTransactions)
                 {
-                    bool invoiceWasNeverSent = (invoice.Status is InvoiceStatus.Paid or InvoiceStatus.PartiallyPaid)
-                                                && !await InvoiceHadSentStatusAsync(invoice);
+                    bool invoiceWasNeverConfirmed = (invoice.Status is InvoiceStatus.Paid or InvoiceStatus.PartiallyPaid)
+                                                && !await InvoiceHadConfirmedStatusAsync(invoice);
 
-                    if (invoiceWasNeverSent)
+                    if (invoiceWasNeverConfirmed)
                     {
                         // Reverse the stock movements — invoice never formally left Draft
                         string reason = $"{localizationService.GetString("PaymentsRemovedFromInvoice")} {invoice.InvoiceNumber}";
@@ -209,9 +209,9 @@
                     }
                     else
                     {
-                        // Invoice was formally Sent before payments; stock correctly moved.
-                        // Revert to Sent (awaiting payment again).
-                        invoice.Status = InvoiceStatus.Sent;
+                        // Invoice was formally Confirmed before payments; stock correctly moved.
+                        // Revert to Confirmed (awaiting payment again).
+                        invoice.Status = InvoiceStatus.Confirmed;
                     }
                 }
                 else
@@ -238,7 +238,7 @@
         public Task<DayPaymentSummaryResult> GetDayPaymentSummaryAsync(DateTime date, CancellationToken ct = default)
             => paymentRepository.GetDayPaymentSummaryAsync(date, ct);
 
-        private async Task<bool> InvoiceHadSentStatusAsync(Invoice invoice)
+        private async Task<bool> InvoiceHadConfirmedStatusAsync(Invoice invoice)
         {
             IEnumerable<Payment> remainingPayments =
                 await paymentRepository.GetByInvoiceIdAsync(invoice.Id);

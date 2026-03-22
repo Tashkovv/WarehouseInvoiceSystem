@@ -145,7 +145,7 @@
 
                 // Status
                 ["Draft"] = "Draft",
-                ["Sent"] = "Sent",
+                ["Confirmed"] = "Confirmed",
                 ["PartiallyPaid"] = "Partially Paid",
                 ["PaidStatus"] = "Paid",
                 ["OverdueStatus"] = overdueString,
@@ -196,6 +196,11 @@
                 ["Back"] = "Back",
                 ["Revert"] = "Revert",
                 ["Send"] = "Send",
+                ["ConfirmInvoice"] = "Confirm",
+                ["ConfirmAndSend"] = "Confirm & Send",
+                ["ConfirmNotAvailable"] = "Only Draft invoices can be confirmed",
+                ["InvoiceConfirmed"] = "Invoice confirmed successfully.",
+                ["DueDateAlreadyPassed"] = "Due date has already passed — consider updating it.",
                 ["NoResults"] = "No results",
                 ["TypeMoreCharacters"] = "Type at least 2 characters",
 
@@ -516,6 +521,7 @@
                 ["OutOfStock"] = "Out of Stock",
                 ["ExceedsStock"] = "Exceeds available stock",
                 ["InsufficientStockToSend"] = "Cannot send invoice: one or more products have insufficient stock.",
+                ["InsufficientStockToConfirm"] = "Cannot confirm invoice: one or more products have insufficient stock.",
                 ["AllItems"] = "All Items",
                 ["WarehouseRequired"] = "Warehouse is required",
                 ["PurchaseFrom"] = "Purchase from",
@@ -787,7 +793,7 @@
 
                 // Status
                 ["Draft"] = "Нацрт",
-                ["Sent"] = "Испратена",
+                ["Confirmed"] = "Потврдена",
                 ["PartiallyPaid"] = "Делумно платена",
                 ["PaidStatus"] = "Платена",
                 ["OverdueStatus"] = "Задоцнета",
@@ -838,6 +844,11 @@
                 ["Back"] = "Назад",
                 ["Revert"] = "Врати",
                 ["Send"] = "Испрати",
+                ["ConfirmInvoice"] = "Потврди",
+                ["ConfirmAndSend"] = "Потврди и испрати",
+                ["ConfirmNotAvailable"] = "Само нацрт фактури може да се потврдат",
+                ["InvoiceConfirmed"] = "Фактурата е успешно потврдена.",
+                ["DueDateAlreadyPassed"] = "Датумот на доспевање веќе поминал — разгледајте ажурирање.",
                 ["NoResults"] = "Нема резултати",
                 ["TypeMoreCharacters"] = "Внеси барем 2 знаци",
 
@@ -1109,6 +1120,7 @@
                 ["OutOfStock"] = "Нема Залиха",
                 ["ExceedsStock"] = "Ја надминува достапната залиха",
                 ["InsufficientStockToSend"] = "Не може да се испрати фактурата: еден или повеќе производи немаат доволно залиха.",
+                ["InsufficientStockToConfirm"] = "Не може да се потврди фактурата: еден или повеќе производи немаат доволно залиха.",
                 ["AllItems"] = "Сите Ставки",
                 ["SelectWarehouse"] = "Избери Магацин",
                 ["AdjustStock"] = "Прилагоди Залиха",

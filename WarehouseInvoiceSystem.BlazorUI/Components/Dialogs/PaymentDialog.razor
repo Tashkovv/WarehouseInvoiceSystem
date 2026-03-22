@@ -258,7 +258,7 @@
         {
             IEnumerable<InvoiceDto> all = await InvoiceService.GetAllFilteredAsync(new GetInvoicesQuery
             {
-                Statuses = [InvoiceStatus.Draft, InvoiceStatus.Sent, InvoiceStatus.PartiallyPaid, InvoiceStatus.Overdue],
+                Statuses = [InvoiceStatus.Draft, InvoiceStatus.Confirmed, InvoiceStatus.PartiallyPaid, InvoiceStatus.Overdue],
                 SortBy = "DueDate",
                 SortAscending = true
             });

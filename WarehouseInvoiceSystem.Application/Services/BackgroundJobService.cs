@@ -24,6 +24,7 @@
             foreach (Invoice invoice in invoices)
             {
                 if (invoice.DueDate < today &&
+                    invoice.Status != InvoiceStatus.Draft &&
                     invoice.Status != InvoiceStatus.Paid &&
                     invoice.Status != InvoiceStatus.Cancelled &&
                     invoice.Status != InvoiceStatus.Overdue)

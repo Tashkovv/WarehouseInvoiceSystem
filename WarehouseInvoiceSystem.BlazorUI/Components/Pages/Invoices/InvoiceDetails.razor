@@ -393,9 +393,9 @@ else
         switch (_invoice.Status)
         {
             case InvoiceStatus.Draft when _invoice.Type == InvoiceType.Receivable:
-                WisDetailActionItem sendAction = _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog);
-                sendAction.Disabled = _hasInsufficientStock;
-                _primaryAction = sendAction;
+                WisDetailActionItem confirmSendAction = _act.Info(Icons.Material.Filled.Send, Localization.GetString("ConfirmAndSend"), ConfirmAndSendEmail);
+                confirmSendAction.Disabled = _hasInsufficientStock;
+                _primaryAction = confirmSendAction;
                 WisDetailActionItem payAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 payAction.Disabled = _hasInsufficientStock;
                 _actions =
@@ -409,9 +409,11 @@ else
                 break;
 
             case InvoiceStatus.Draft:
-                _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
+                WisDetailActionItem confirmAction = _act.Info(Icons.Material.Filled.CheckCircle, Localization.GetString("ConfirmInvoice"), ConfirmInvoice);
+                _primaryAction = confirmAction;
                 _actions =
                 [
+                    _act.Success(Icons.Material.Filled.Payment,       Localization.GetString("Payment"), RecordPayment),
                     _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
@@ -419,10 +421,11 @@ else
                 ];
                 break;
 
-            case InvoiceStatus.Sent:
+            case InvoiceStatus.Confirmed:
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
+                    _act.Info(Icons.Material.Filled.Send,             Localization.GetString("SendEmail"), OpenSendEmailDialog),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
@@ -434,6 +437,7 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
+                    _act.Info(Icons.Material.Filled.Send,             Localization.GetString("SendEmail"), OpenSendEmailDialog),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                 ];
@@ -443,6 +447,7 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
+                    _act.Info(Icons.Material.Filled.Send,             Localization.GetString("SendEmail"), OpenSendEmailDialog),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
@@ -489,6 +494,49 @@ else
             Console.WriteLine($"Error recording payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
         }
+    }
+
+    private async Task ConfirmInvoice()
+    {
+        if (_invoice is null) return;
+        try
+        {
+            var (_, isDueDatePassed) = await InvoiceService.ConfirmAsync(Id);
+            if (isDueDatePassed)
+                Snackbar.Add(Localization.GetString("DueDateAlreadyPassed"), Severity.Warning);
+            else
+                Snackbar.Add(Localization.GetString("InvoiceConfirmed"), Severity.Success);
+            await Reload();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error confirming invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+    }
+
+    private async Task ConfirmAndSendEmail()
+    {
+        if (_invoice is null) return;
+
+        // Auto-confirm if still Draft
+        if (_invoice.Status == InvoiceStatus.Draft)
+        {
+            try
+            {
+                var (_, isDueDatePassed) = await InvoiceService.ConfirmAsync(Id);
+                if (isDueDatePassed)
+                    Snackbar.Add(Localization.GetString("DueDateAlreadyPassed"), Severity.Warning);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error confirming invoice: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+                return;
+            }
+        }
+
+        await OpenSendEmailDialog();
     }
 
     private async Task OpenSendEmailDialog()

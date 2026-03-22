@@ -96,7 +96,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         protected static Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
         {
             InvoiceStatus.Draft        => Color.Default,
-            InvoiceStatus.Sent         => Color.Info,
+            InvoiceStatus.Confirmed    => Color.Info,
             InvoiceStatus.PartiallyPaid => Color.Warning,
             InvoiceStatus.Paid         => Color.Success,
             InvoiceStatus.Overdue      => Color.Error,
@@ -107,7 +107,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         protected string GetInvoiceStatusText(InvoiceStatus status) => status switch
         {
             InvoiceStatus.Draft        => Localization.GetString("Draft"),
-            InvoiceStatus.Sent         => Localization.GetString("Sent"),
+            InvoiceStatus.Confirmed    => Localization.GetString("Confirmed"),
             InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
             InvoiceStatus.Paid         => Localization.GetString("PaidStatus"),
             InvoiceStatus.Overdue      => Localization.GetString("OverdueStatus"),

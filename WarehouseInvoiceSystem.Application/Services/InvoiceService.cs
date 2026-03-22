@@ -263,21 +263,19 @@
 
         // ── Status transitions ────────────────────────────────────────────────────────
 
-        /// <summary>Draft → Sent. Receivable only. Creates outbound inventory transactions.</summary>
-        public async Task<InvoiceDto> SendAsync(Guid id)
+        /// <summary>Draft → Confirmed. Creates inventory transactions. Returns (dto, isDueDatePassed).</summary>
+        public async Task<(InvoiceDto Invoice, bool IsDueDatePassed)> ConfirmAsync(Guid id)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
-            if (invoice.Type != InvoiceType.Receivable)
-                throw new InvalidOperationException(
-                    $"Invoice {invoice.InvoiceNumber} is Payable and cannot be sent.");
-
             if (invoice.Status != InvoiceStatus.Draft)
                 throw new InvalidOperationException(
-                    $"Invoice {invoice.InvoiceNumber} must be in Draft to send (current: {invoice.Status}).");
+                    $"Invoice {invoice.InvoiceNumber} must be in Draft to confirm (current: {invoice.Status}).");
 
-            invoice.Status = InvoiceStatus.Sent;
+            bool isDueDatePassed = invoice.DueDate < DateTime.UtcNow.Date;
+
+            invoice.Status = InvoiceStatus.Confirmed;
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
 
             try
@@ -286,25 +284,23 @@
             }
             catch (Exception)
             {
-                // Inventory creation failed — roll back the status change so the invoice
-                // doesn't appear as Sent with no stock movement recorded.
                 invoice.Status = InvoiceStatus.Draft;
                 await invoiceRepository.UpdateAsync(invoice);
                 throw;
             }
 
-            return MapToDto(updated);
+            return (MapToDto(updated), isDueDatePassed);
         }
 
-        /// <summary>Sent/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
+        /// <summary>Confirmed/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
         public async Task<InvoiceDto> RevertToDraftAsync(Guid id)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
-            if (invoice.Status != InvoiceStatus.Sent && invoice.Status != InvoiceStatus.Overdue)
+            if (invoice.Status != InvoiceStatus.Confirmed && invoice.Status != InvoiceStatus.Overdue)
                 throw new InvalidOperationException(
-                    $"Invoice {invoice.InvoiceNumber} cannot be reverted to Draft (current: {invoice.Status}). Only Sent or Overdue invoices can be reverted.");
+                    $"Invoice {invoice.InvoiceNumber} cannot be reverted to Draft (current: {invoice.Status}). Only Confirmed or Overdue invoices can be reverted.");
 
             InvoiceStatus previousStatus = invoice.Status;
             invoice.Status = InvoiceStatus.Draft;
@@ -325,17 +321,16 @@
         }
 
         /// <summary>
-        /// Sent/PartiallyPaid/Overdue → Paid.
+        /// Confirmed/PartiallyPaid/Overdue → Paid.
         /// Calls CreateInventoryTransactionsIfNeededAsync to handle the edge case where
-        /// a Payable invoice was never sent (went Draft → Overdue) and stock was never moved.
-        /// The idempotency guard inside ensures no duplicate transactions for normal flows.
+        /// inventory was not yet created. The idempotency guard ensures no duplicate transactions.
         /// </summary>
         public async Task<InvoiceDto> MarkAsPaidAsync(Guid id)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
-            if (invoice.Status != InvoiceStatus.Sent &&
+            if (invoice.Status != InvoiceStatus.Confirmed &&
                 invoice.Status != InvoiceStatus.PartiallyPaid &&
                 invoice.Status != InvoiceStatus.Overdue)
                 throw new InvalidOperationException(
@@ -347,8 +342,8 @@
 
             try
             {
-                // Covers the Payable Draft → Overdue → Paid edge case where stock was never moved.
-                // No-op for invoices that already had transactions created (e.g. normal Sent → Paid flow).
+                // Creates inventory transactions if not yet done (idempotent).
+                // Covers edge cases where invoice reached Paid without prior Confirm.
                 await CreateInventoryTransactionsIfNeededAsync(updated);
             }
             catch (Exception)
@@ -362,7 +357,7 @@
         }
 
         /// <summary>
-        /// Draft/Sent/Overdue → Cancelled. Reverses inventory transactions if any exist.
+        /// Draft/Confirmed/Overdue → Cancelled. Reverses inventory transactions if any exist.
         /// Blocked for PartiallyPaid and Paid.
         /// </summary>
         public async Task<InvoiceDto> CancelAsync(Guid id)
@@ -388,7 +383,7 @@
 
             try
             {
-                // No-op for Draft since no transactions exist yet. Reverses for Sent/Overdue.
+                // No-op for Draft since no transactions exist yet. Reverses for Confirmed/Overdue.
                 await CreateReverseTransactionsIfNeeded(updated);
             }
             catch (Exception)
@@ -402,8 +397,9 @@
         }
 
         /// <summary>
-        /// Any non-terminal status → Overdue. Called exclusively by BackgroundJobService.
-        /// Pure status flag — no inventory changes. Overdue is a financial/time state only.
+        /// Confirmed/PartiallyPaid → Overdue. Called exclusively by BackgroundJobService.
+        /// Draft invoices are excluded — they haven't been finalized yet.
+        /// Pure status flag — no inventory changes.
         /// </summary>
         public async Task<InvoiceDto> MarkAsOverdueAsync(Guid id)
         {

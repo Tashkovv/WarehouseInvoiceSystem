@@ -358,7 +358,7 @@
         _statusFilterItems =
         [
             new() { Label = Localization.GetString("Draft"),           Value = InvoiceStatus.Draft,         Color = Color.Default },
-            new() { Label = Localization.GetString("Sent"),            Value = InvoiceStatus.Sent,          Color = Color.Info    },
+            new() { Label = Localization.GetString("Confirmed"),        Value = InvoiceStatus.Confirmed,     Color = Color.Info    },
             new() { Label = Localization.GetString("PartiallyPaid"),   Value = InvoiceStatus.PartiallyPaid, Color = Color.Warning },
             new() { Label = Localization.GetString("PaidStatus"),      Value = InvoiceStatus.Paid,          Color = Color.Success },
             new() { Label = Localization.GetString("OverdueStatus"),   Value = InvoiceStatus.Overdue,       Color = Color.Error   },
@@ -409,7 +409,7 @@
     private string GetRowClass(InvoiceDto item, int index) => item.Status switch
     {
         InvoiceStatus.Draft => "row-status-default",
-        InvoiceStatus.Sent => "row-status-info",
+        InvoiceStatus.Confirmed => "row-status-info",
         InvoiceStatus.PartiallyPaid => "row-status-warning",
         InvoiceStatus.Paid => "row-status-success",
         InvoiceStatus.Overdue => "row-status-error",
@@ -553,14 +553,54 @@
         }
     }
 
+    private async Task ConfirmFromList(InvoiceDto invoice)
+    {
+        if (invoice.Type == InvoiceType.Receivable)
+        {
+            // Receivable: confirm + send email
+            if (!await HasSufficientStockAsync(invoice))
+            {
+                Snackbar.Add(Localization.GetString("InsufficientStockToConfirm"), Severity.Error);
+                return;
+            }
+
+            try
+            {
+                var (_, isDueDatePassed) = await InvoiceService.ConfirmAsync(invoice.Id);
+                if (isDueDatePassed)
+                    Snackbar.Add(Localization.GetString("DueDateAlreadyPassed"), Severity.Warning);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error confirming invoice: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+                return;
+            }
+
+            await OpenSendEmailDialog(invoice);
+        }
+        else
+        {
+            // Payable: confirm only
+            try
+            {
+                var (_, isDueDatePassed) = await InvoiceService.ConfirmAsync(invoice.Id);
+                if (isDueDatePassed)
+                    Snackbar.Add(Localization.GetString("DueDateAlreadyPassed"), Severity.Warning);
+                else
+                    Snackbar.Add(Localization.GetString("InvoiceConfirmed"), Severity.Success);
+                await _grid.ReloadServerData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error confirming invoice: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+            }
+        }
+    }
+
     private async Task OpenSendEmailDialog(InvoiceDto invoice)
     {
-        if (!await HasSufficientStockAsync(invoice))
-        {
-            Snackbar.Add(Localization.GetString("InsufficientStockToSend"), Severity.Error);
-            return;
-        }
-
         bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
             Localization.GetString("SendInvoiceEmail"),
             p => p.Add(x => x.Invoice, invoice));
@@ -642,18 +682,29 @@
 
     private bool CanSendEmail(InvoiceType type, InvoiceStatus status) =>
         type == InvoiceType.Receivable &&
-        (status == InvoiceStatus.Draft ||
+        (status == InvoiceStatus.Confirmed ||
          status == InvoiceStatus.PartiallyPaid ||
          status == InvoiceStatus.Overdue);
+
+    private static bool CanConfirm(InvoiceStatus status) => status == InvoiceStatus.Draft;
 
     private List<WisDetailActionItem> BuildRowActions(InvoiceDto item)
     {
         bool isCancelled = item.Status == InvoiceStatus.Cancelled;
         bool isPaid      = item.Status == InvoiceStatus.Paid;
         bool canEdit     = item.Status == InvoiceStatus.Draft;
+        bool canConfirm  = CanConfirm(item.Status);
         bool canSend     = CanSendEmail(item.Type, item.Status);
         bool canPay      = CanPay(item.Status);
         bool canCancel   = !isCancelled && !isPaid;
+
+        // Confirm action: receivable Draft → "Confirm & Send", payable Draft → "Confirm"
+        string confirmLabel = item.Type == InvoiceType.Receivable
+            ? Localization.GetString("ConfirmAndSend")
+            : Localization.GetString("ConfirmInvoice");
+        string confirmIcon = item.Type == InvoiceType.Receivable
+            ? Icons.Material.Filled.Send
+            : Icons.Material.Filled.CheckCircle;
 
         List<WisDetailActionItem> actions =
         [
@@ -667,8 +718,17 @@
             },
             new WisDetailActionItem
             {
+                Icon           = confirmIcon,
+                Label          = confirmLabel,
+                Color          = Color.Info,
+                Disabled       = !canConfirm,
+                DisabledReason = canConfirm ? null : Localization.GetString("ConfirmNotAvailable"),
+                OnClick        = EventCallback.Factory.Create(this, () => ConfirmFromList(item))
+            },
+            new WisDetailActionItem
+            {
                 Icon           = Icons.Material.Filled.Send,
-                Label          = Localization.GetString("Send"),
+                Label          = Localization.GetString("SendEmail"),
                 Color          = Color.Info,
                 Disabled       = !canSend,
                 DisabledReason = canSend ? null : Localization.GetString("SendNotAvailable"),

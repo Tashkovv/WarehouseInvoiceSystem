@@ -129,7 +129,7 @@
             var recActive = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status != InvoiceStatus.Cancelled).ToList();
             var recPaid   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Paid).ToList();
             var recOpen   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status is InvoiceStatus.Draft
-                                                                                             or InvoiceStatus.Sent
+                                                                                             or InvoiceStatus.Confirmed
                                                                                              or InvoiceStatus.PartiallyPaid
                                                                                              or InvoiceStatus.Overdue).ToList();
             var recOverdue    = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Overdue).ToList();
@@ -150,7 +150,7 @@
             var payActive = rows.Where(r => r.Type == InvoiceType.Payable && r.Status != InvoiceStatus.Cancelled).ToList();
             var payPaid   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Paid).ToList();
             var payOpen   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status is InvoiceStatus.Draft
-                                                                                          or InvoiceStatus.Sent
+                                                                                          or InvoiceStatus.Confirmed
                                                                                           or InvoiceStatus.PartiallyPaid
                                                                                           or InvoiceStatus.Overdue).ToList();
             var payOverdue   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Overdue).ToList();
