@@ -1,7 +1,5 @@
-﻿@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @inject ILocalizationService Localization
-@inject IEmailService EmailService
-@inject ISnackbar Snackbar
 
 <MudDialog Class="wis-email-dialog">
     <DialogContent>
@@ -39,28 +37,15 @@
                       Placeholder="@Localization.GetString("CustomMessageHelper")"
                       Variant="Variant.Outlined"
                       Lines="5"
-                      FullWidth="true"
-                      Disabled="_sending" />
-
-        @* ── Error banner ── *@
-        @if (_errorMessage is not null)
-        {
-            <MudAlert Severity="Severity.Error"
-                      Variant="Variant.Filled"
-                      Dense="true"
-                      Class="mt-3 wis-alert-fullwidth">
-                @_errorMessage
-            </MudAlert>
-        }
+                      FullWidth="true" />
 
     </DialogContent>
     <DialogActions>
         <WisDialogActions OnCancel="Cancel"
                           OnSave="Send"
-                          SaveLabel="@(_sending ? Localization.GetString("Sending") : Localization.GetString("Send"))"
+                          SaveLabel="@Localization.GetString("Send")"
                           SaveIcon="@Icons.Material.Filled.Send"
-                          SaveColor="Color.Info"
-                          SaveDisabled="@_sending" />
+                          SaveColor="Color.Info" />
     </DialogActions>
 </MudDialog>
 
@@ -68,50 +53,18 @@
     [CascadingParameter]
     IMudDialogInstance MudDialog { get; set; } = null!;
 
-    /// <summary>The invoice to send. Required.</summary>
     [Parameter, EditorRequired]
     public InvoiceDto Invoice { get; set; } = null!;
 
     private InvoiceDto? _invoice;
     private string? _customMessage;
-    private bool _sending;
-    private string? _errorMessage;
 
     protected override void OnParametersSet()
     {
         _invoice = Invoice;
     }
 
-    private async Task Send()
-    {
-        _errorMessage = null;
-        _sending = true;
-
-        try
-        {
-            bool success = await EmailService.SendInvoiceEmailAsync(
-                _invoice!.Id, _customMessage);
-
-            if (success)
-            {
-                Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success);
-                MudDialog.Close(DialogResult.Ok(true));
-            }
-            else
-            {
-                _errorMessage = Localization.GetString("ErrorSendingEmail");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error sending invoice email: {ex.Message}");
-            _errorMessage = Localization.GetString("ErrorSendingEmail");
-        }
-        finally
-        {
-            _sending = false;
-        }
-    }
+    private void Send() => MudDialog.Close(DialogResult.Ok(_customMessage ?? ""));
 
     private void Cancel() => MudDialog.Cancel();
 }

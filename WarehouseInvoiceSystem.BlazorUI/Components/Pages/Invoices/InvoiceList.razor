@@ -9,6 +9,7 @@
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject ICompanyService CompanyService
+@inject IEmailService EmailService
 @using WarehouseInvoiceSystem.Application.Models
 @inject IExcelExportService ExcelExportService
 
@@ -601,12 +602,28 @@
 
     private async Task OpenSendEmailDialog(InvoiceDto invoice)
     {
-        bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
+        string? customMessage = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, string>(
             Localization.GetString("SendInvoiceEmail"),
             p => p.Add(x => x.Invoice, invoice));
 
-        if (sent == true)
-            await _grid.ReloadServerData();
+        if (customMessage is null) return;
+
+        Snackbar.Add(Localization.GetString("InvoiceEmailSending"), Severity.Info);
+        _ = SendEmailInBackgroundAsync(invoice.Id, customMessage);
+    }
+
+    private async Task SendEmailInBackgroundAsync(Guid invoiceId, string customMessage)
+    {
+        try
+        {
+            await EmailService.SendInvoiceEmailAsync(invoiceId, customMessage);
+            await InvokeAsync(() => Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending invoice email: {ex.Message}");
+            await InvokeAsync(() => Snackbar.Add(Localization.GetString("ErrorSendingEmail"), Severity.Error));
+        }
     }
 
     private async Task<bool> HasSufficientStockAsync(InvoiceDto invoice)

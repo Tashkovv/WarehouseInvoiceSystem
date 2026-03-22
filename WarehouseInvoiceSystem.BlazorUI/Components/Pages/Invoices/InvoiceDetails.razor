@@ -9,6 +9,7 @@
 @inject IInventoryService InventoryService
 @inject IPaymentService PaymentService
 @inject IExcelExportService ExcelExportService
+@inject IEmailService EmailService
 
 <PageTitle>@Localization.GetString("InvoiceDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -543,13 +544,28 @@ else
     {
         if (_invoice is null) return;
 
-        bool? sent = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, bool>(
+        string? customMessage = await WisDialog.ShowFormAsync<SendInvoiceEmailDialog, string>(
             Localization.GetString("SendInvoiceEmail"),
             p => p.Add(x => x.Invoice, _invoice));
 
-        if (sent != true) return;
+        if (customMessage is null) return;
 
-        await Reload();
+        Snackbar.Add(Localization.GetString("InvoiceEmailSending"), Severity.Info);
+        _ = SendEmailInBackgroundAsync(_invoice.Id, customMessage);
+    }
+
+    private async Task SendEmailInBackgroundAsync(Guid invoiceId, string customMessage)
+    {
+        try
+        {
+            await EmailService.SendInvoiceEmailAsync(invoiceId, customMessage);
+            await InvokeAsync(() => Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending invoice email: {ex.Message}");
+            await InvokeAsync(() => Snackbar.Add(Localization.GetString("ErrorSendingEmail"), Severity.Error));
+        }
     }
 
     private async Task RevertToDraft()

@@ -21,41 +21,36 @@
     {
         private readonly EmailSettings _emailSettings = emailSettings.Value;
 
-        public async Task<bool> SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null)
+        public async Task SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null)
         {
-            try
+            InvoiceDto invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId)
+                ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
+
+            if (string.IsNullOrWhiteSpace(invoice.CompanyEmail))
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} has no recipient email address.");
+
+            Tenant tenant = await tenantRepository.GetAsync();
+            (string username, string password) = ResolveCredentials(tenant);
+
+            MimeMessage message = new();
+            message.From.Add(new MailboxAddress(tenant.CompanyName, username));
+            message.To.Add(new MailboxAddress(invoice.CompanyName, invoice.CompanyEmail));
+            message.Subject = $"{translations.GetString("Invoice")} {invoice.InvoiceNumber} {translations.GetString("From")} {tenant.CompanyName}";
+
+            BodyBuilder bodyBuilder = new()
             {
-                InvoiceDto invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId)
-                    ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
+                HtmlBody = translations.CurrentLanguage.Equals("mk")
+                           ? BuildMkdInvoiceEmailHtml(invoice, customMessage, tenant)
+                           : BuildEnglishInvoiceEmailHtml(invoice, customMessage, tenant)
+            };
 
-                Tenant tenant = await tenantRepository.GetAsync();
-                (string username, string password) = ResolveCredentials(tenant);
+            byte[] invoiceExcel = await excelExportService.ExportInvoiceForPrintingAsync(invoice);
+            bodyBuilder.Attachments.Add($"{translations.GetString("Invoice")}_{invoice.InvoiceNumber}.xlsx", invoiceExcel);
 
-                MimeMessage message = new();
-                message.From.Add(new MailboxAddress(tenant.CompanyName, username));
-                message.To.Add(new MailboxAddress(invoice.CompanyName, invoice.CompanyEmail));
-                message.Subject = $"{translations.GetString("Invoice")} {invoice.InvoiceNumber} {translations.GetString("From")} {tenant.CompanyName}";
+            message.Body = bodyBuilder.ToMessageBody();
 
-                BodyBuilder bodyBuilder = new()
-                {
-                    HtmlBody = translations.CurrentLanguage.Equals("mk")
-                               ? BuildMkdInvoiceEmailHtml(invoice, customMessage, tenant)
-                               : BuildEnglishInvoiceEmailHtml(invoice, customMessage, tenant)
-                };
-
-                byte[] invoiceExcel = await excelExportService.ExportInvoiceForPrintingAsync(invoice);
-                bodyBuilder.Attachments.Add($"{translations.GetString("Invoice")}_{invoice.InvoiceNumber}.xlsx", invoiceExcel);
-
-                message.Body = bodyBuilder.ToMessageBody();
-
-                await SendAsync(message, username, password);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending invoice email: {ex.Message}");
-                return false;
-            }
+            await SendAsync(message, username, password);
         }
 
         public async Task<bool> SendTestEmailAsync(string recipientEmail)

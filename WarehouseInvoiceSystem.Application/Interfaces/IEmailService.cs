@@ -4,7 +4,7 @@
 
     public interface IEmailService
     {
-        Task<bool> SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null);
+        Task SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null);
         Task<bool> SendTestEmailAsync(string recipientEmail);
         Task<bool> SendDueDateReminderEmailAsync(int daysBeforeDue, string companyName, string companyEmail, List<Invoice> invoices, CancellationToken ct = default);
     }
