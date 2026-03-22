@@ -1,0 +1,256 @@
+@implements IDisposable
+@using System.Text.Json
+@using WarehouseInvoiceSystem.Application.DTOs.Notification
+@inject INotificationService NotificationService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+
+<MudBadge Content="@_unreadCount" Overlap="true" Color="Color.Error"
+          Visible="@(_unreadCount > 0)" Origin="Origin.TopRight"
+          BadgeClass="notification-badge">
+    <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                   Color="Color.Inherit"
+                   OnClick="TogglePopover" />
+</MudBadge>
+
+@if (_isOpen)
+{
+    <MudOverlay Visible="true" OnClick="ClosePopover" LockScroll="false" />
+
+    <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
+                AnchorOrigin="Origin.BottomRight"
+                TransformOrigin="Origin.TopRight"
+                Style="width: 420px; z-index: 1301; max-height: 500px; display: flex; flex-direction: column;">
+
+            @* ── Header ── *@
+            <div class="d-flex justify-space-between align-center px-4 py-2" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
+                <MudText Typo="Typo.h6">@Localization.GetString("Notifications")</MudText>
+                @if (_unreadCount > 0)
+                {
+                    <MudTooltip Text="@Localization.GetString("MarkAsRead")">
+                        <MudIconButton Icon="@Icons.Material.Filled.MarkEmailRead"
+                                       Size="Size.Small"
+                                       Color="Color.Primary"
+                                       OnClick="MarkAllAsRead" />
+                    </MudTooltip>
+                }
+            </div>
+
+            @* ── Content ── *@
+            @if (_loading)
+            {
+                <div class="d-flex justify-center pa-6">
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                </div>
+            }
+            else if (_notifications.Count == 0)
+            {
+                <div class="d-flex flex-column align-center pa-6">
+                    <MudIcon Icon="@Icons.Material.Filled.NotificationsNone" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @Localization.GetString("NoNotifications")
+                    </MudText>
+                </div>
+            }
+            else
+            {
+                <MudList T="NotificationDto" Dense="true" Class="pa-0" Style="max-height: 420px; overflow-y: auto;">
+                    @foreach (var n in _notifications)
+                    {
+                        <MudListItem OnClick="@(() => OnNotificationClick(n))"
+                                     Class="@(n.IsRead ? "" : "notification-unread")"
+                                     Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-3 py-1">
+                                <MudIcon Icon="@Icons.Material.Filled.Schedule"
+                                         Color="@GetThresholdColor(n)"
+                                         Size="Size.Small" />
+                                <div class="flex-grow-1" style="min-width: 0;">
+                                    <MudText Typo="Typo.body2" Style="@(n.IsRead ? "" : "font-weight: 600;")">
+                                        @FormatTitle(n)
+                                    </MudText>
+                                    <div class="d-flex align-center gap-1">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                            @FormatInvoiceList(n)
+                                        </MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="white-space: nowrap; flex-shrink: 0;">
+                                            · @FormatTimeAgo(n.CreatedAt)
+                                        </MudText>
+                                    </div>
+                                </div>
+                                @if (!n.IsRead)
+                                {
+                                    <div style="width: 8px; height: 8px; border-radius: 50%;
+                                                background-color: var(--mud-palette-primary); flex-shrink: 0;" />
+                                }
+                            </div>
+                        </MudListItem>
+                    }
+                </MudList>
+            }
+    </MudPopover>
+}
+
+<style>
+    .notification-unread {
+        background-color: rgba(30, 64, 175, 0.04);
+    }
+</style>
+
+@code {
+    private int _unreadCount;
+    private List<NotificationDto> _notifications = [];
+    private bool _isOpen;
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += OnLanguageChanged;
+
+        try { _unreadCount = await NotificationService.GetUnreadCountAsync(); }
+        catch { /* best-effort */ }
+    }
+
+    private async void OnLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task TogglePopover()
+    {
+        _isOpen = !_isOpen;
+
+        if (_isOpen && _notifications.Count == 0)
+        {
+            _loading = true;
+            StateHasChanged();
+
+            try
+            {
+                _notifications = await NotificationService.GetRecentNotificationsAsync(20);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading notifications: {ex.Message}");
+            }
+            finally
+            {
+                _loading = false;
+            }
+        }
+    }
+
+    private void ClosePopover() => _isOpen = false;
+
+    private async Task OnNotificationClick(NotificationDto n)
+    {
+        if (!n.IsRead)
+        {
+            try
+            {
+                await NotificationService.MarkAsReadAsync(n.Id);
+                n.IsRead = true;
+                n.ReadAt = DateTime.UtcNow;
+                _unreadCount = Math.Max(0, _unreadCount - 1);
+            }
+            catch { /* best-effort */ }
+        }
+
+        _isOpen = false;
+
+        // Navigate to invoice list with filters applied
+        var data = ParseData(n);
+        string invoiceType = data.InvoiceType ?? "Receivable";
+        DateTime targetDate = n.CreatedAt.Date.AddDays(data.DaysBeforeDue);
+        string dateStr = targetDate.ToString("yyyy-MM-dd");
+        Navigation.NavigateTo($"/invoices?type={invoiceType}&dueDateFrom={dateStr}&dueDateTo={dateStr}", forceLoad: true);
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        try
+        {
+            await NotificationService.MarkAllAsReadAsync();
+            _unreadCount = 0;
+            foreach (var n in _notifications)
+            {
+                n.IsRead = true;
+                n.ReadAt = DateTime.UtcNow;
+            }
+        }
+        catch { /* best-effort */ }
+    }
+
+    // ── Display helpers ──────────────────────────────────────────────────
+
+    private string FormatTitle(NotificationDto n)
+    {
+        var data = ParseData(n);
+        int count = n.Invoices.Count;
+        bool isReceivable = data.InvoiceType == "Receivable";
+
+        if (data.DaysBeforeDue == 1)
+        {
+            string key = isReceivable ? "ReceivableInvoicesDueTomorrow" : "PayableInvoicesDueTomorrow";
+            return string.Format(Localization.GetString(key), count);
+        }
+        else
+        {
+            string key = isReceivable ? "ReceivableInvoicesDueInDays" : "PayableInvoicesDueInDays";
+            return string.Format(Localization.GetString(key), count, data.DaysBeforeDue);
+        }
+    }
+
+    private string FormatInvoiceList(NotificationDto n)
+    {
+        const int maxShow = 3;
+        var numbers = n.Invoices.Select(i => i.InvoiceNumber).ToList();
+
+        if (numbers.Count <= maxShow)
+            return string.Join(", ", numbers);
+
+        string shown = string.Join(", ", numbers.Take(maxShow));
+        return $"{shown} {string.Format(Localization.GetString("AndMoreCount"), numbers.Count - maxShow)}";
+    }
+
+    private string FormatTimeAgo(DateTime createdAt)
+    {
+        TimeSpan diff = DateTime.UtcNow - createdAt;
+
+        if (diff.TotalMinutes < 60)
+            return string.Format(Localization.GetString("TimeAgoMinutes"), Math.Max(1, (int)diff.TotalMinutes));
+        if (diff.TotalHours < 24)
+            return string.Format(Localization.GetString("TimeAgoHours"), (int)diff.TotalHours);
+        return string.Format(Localization.GetString("TimeAgoDays"), (int)diff.TotalDays);
+    }
+
+    private Color GetThresholdColor(NotificationDto n)
+    {
+        var data = ParseData(n);
+        return data.DaysBeforeDue switch
+        {
+            <= 1 => Color.Error,
+            <= 5 => Color.Warning,
+            _ => Color.Info
+        };
+    }
+
+    private static readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    private static NotificationData ParseData(NotificationDto n)
+    {
+        if (string.IsNullOrEmpty(n.Data)) return new NotificationData();
+        try { return JsonSerializer.Deserialize<NotificationData>(n.Data, _jsonOpts) ?? new NotificationData(); }
+        catch { return new NotificationData(); }
+    }
+
+    private record NotificationData
+    {
+        public int DaysBeforeDue { get; init; }
+        public string? InvoiceType { get; init; }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
+    }
+}

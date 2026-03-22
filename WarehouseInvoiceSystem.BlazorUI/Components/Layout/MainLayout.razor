@@ -1,9 +1,12 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
+@using Microsoft.Extensions.Options
+@using WarehouseInvoiceSystem.Application.Settings
 @inject ILocalizationService Localization
 @inject IBackgroundJobService BackgroundJobService
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
+@inject IOptions<NotificationSettings> NotificationSettingsOptions
 
 <MudThemeProvider Theme="_theme" />
 <MudPopoverProvider />
@@ -106,63 +109,105 @@
         <MudSpacer />
 
         <!-- Language Switcher -->
-        <MudMenu Icon="@Icons.Material.Filled.Language"
-                 Color="Color.Inherit"
-                 TransformOrigin="Origin.TopRight"
-                 AnchorOrigin="Origin.BottomRight">
-            <MudMenuItem OnClick="@(() => ChangeLanguage("en"))">
-                <div class="d-flex align-center gap-2">
-                    <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                    <span>English</span>
-                    @if (Localization.CurrentLanguage == "en")
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                    }
-                </div>
-            </MudMenuItem>
-            <MudMenuItem OnClick="@(() => ChangeLanguage("mk"))">
-                <div class="d-flex align-center gap-2">
-                    <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                    <span>Македонски</span>
-                    @if (Localization.CurrentLanguage == "mk")
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                    }
-                </div>
-            </MudMenuItem>
-        </MudMenu>
+        <MudIconButton Icon="@Icons.Material.Filled.Language"
+                       Color="Color.Inherit"
+                       OnClick="@(() => _langOpen = !_langOpen)" />
 
-        <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" />
-        <MudMenu Icon="@Icons.Material.Filled.Settings"
-                 Color="Color.Inherit"
-                 AnchorOrigin="Origin.BottomRight"
-                 TransformOrigin="Origin.TopRight"
-                 Dense="true">
-            <MudMenuItem Href="/profile" Icon="@Icons.Material.Filled.Tune">
-                @Localization.GetString("Profile")
-            </MudMenuItem>
-            <MudDivider />
-            <MudListSubheader Class="px-4 py-2">
-                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
-                    @Localization.GetString("SystemJobs")
-                </MudText>
-            </MudListSubheader>
-            <MudMenuItem OnClick="RunCheckOverdueInvoices"
-                         Icon="@Icons.Material.Filled.Schedule"
-                         Disabled="_runningJob">
-                @if (_runningJob)
-                {
-                    <div class="d-flex align-center gap-2">
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                        <span>@Localization.GetString("CheckOverdueInvoices")</span>
+        @if (_langOpen)
+        {
+            <MudOverlay Visible="true" OnClick="@(() => _langOpen = false)" LockScroll="false" />
+            <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
+                        AnchorOrigin="Origin.BottomRight"
+                        TransformOrigin="Origin.TopRight"
+                        Style="z-index: 1301; min-width: 160px;">
+                <MudList T="string" Dense="true" Class="pa-0">
+                    <MudListItem OnClick="@(() => { ChangeLanguage("en"); _langOpen = false; })"
+                                 Class="px-3 py-2" Style="cursor: pointer;">
+                        <div class="d-flex align-center gap-2">
+                            <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
+                            <span>English</span>
+                            @if (Localization.CurrentLanguage == "en")
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
+                            }
+                        </div>
+                    </MudListItem>
+                    <MudListItem OnClick="@(() => { ChangeLanguage("mk"); _langOpen = false; })"
+                                 Class="px-3 py-2" Style="cursor: pointer;">
+                        <div class="d-flex align-center gap-2">
+                            <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
+                            <span>Македонски</span>
+                            @if (Localization.CurrentLanguage == "mk")
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
+                            }
+                        </div>
+                    </MudListItem>
+                </MudList>
+            </MudPopover>
+        }
+
+        <NotificationBell />
+
+        <!-- Settings -->
+        <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                       Color="Color.Inherit"
+                       OnClick="@(() => _settingsOpen = !_settingsOpen)" />
+
+        @if (_settingsOpen)
+        {
+            <MudOverlay Visible="true" OnClick="@(() => _settingsOpen = false)" LockScroll="false" />
+            <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
+                        AnchorOrigin="Origin.BottomRight"
+                        TransformOrigin="Origin.TopRight"
+                        Style="z-index: 1301; min-width: 220px;">
+                <MudList T="string" Dense="true" Class="pa-0">
+                    <MudListItem OnClick="@(() => { Navigation.NavigateTo("/profile"); _settingsOpen = false; })"
+                                 Class="px-3 py-2" Style="cursor: pointer;">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Secondary" />
+                            <span>@Localization.GetString("Profile")</span>
+                        </div>
+                    </MudListItem>
+                    <MudDivider />
+                    <div class="px-4 py-2">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
+                            @Localization.GetString("SystemJobs")
+                        </MudText>
                     </div>
-                }
-                else
-                {
-                    @Localization.GetString("CheckOverdueInvoices")
-                }
-            </MudMenuItem>
-        </MudMenu>
+                    <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunCheckOverdueInvoices(); })"
+                                 Disabled="_runningJob"
+                                 Class="px-3 py-2" Style="cursor: pointer;">
+                        <div class="d-flex align-center gap-2">
+                            @if (_runningJob)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                            }
+                            <span>@Localization.GetString("CheckOverdueInvoices")</span>
+                        </div>
+                    </MudListItem>
+                    <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunGenerateNotifications(); })"
+                                 Disabled="_runningNotifications"
+                                 Class="px-3 py-2" Style="cursor: pointer;">
+                        <div class="d-flex align-center gap-2">
+                            @if (_runningNotifications)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Notifications" Size="Size.Small" Color="Color.Secondary" />
+                            }
+                            <span>@Localization.GetString("GenerateNotifications")</span>
+                        </div>
+                    </MudListItem>
+                </MudList>
+            </MudPopover>
+        }
     </MudAppBar>
 
     <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh;">
@@ -252,7 +297,10 @@
         }
     };
 
+    private bool _langOpen = false;
+    private bool _settingsOpen = false;
     private bool _runningJob = false;
+    private bool _runningNotifications = false;
 
     protected override void OnInitialized()
     {
@@ -278,6 +326,33 @@
             Console.WriteLine($"Error running overdue check: {ex.Message}");
             Snackbar.Add(Localization.GetString("CheckOverdueInvoicesError"), Severity.Error);
             _runningJob = false;
+        }
+    }
+
+    private async Task RunGenerateNotifications()
+    {
+        var settings = NotificationSettingsOptions.Value;
+        bool hasReceivable = settings.ReceivableDays is { Length: > 0 };
+        bool hasPayable = settings.PayableDays is { Length: > 0 };
+
+        if (!hasReceivable && !hasPayable)
+        {
+            Snackbar.Add(Localization.GetString("NotificationsDisabled"), Severity.Warning);
+            return;
+        }
+
+        _runningNotifications = true;
+        try
+        {
+            await BackgroundJobService.GenerateAndSendDueDateRemindersAsync();
+            Snackbar.Add(Localization.GetString("GenerateNotificationsSuccess"), Severity.Success);
+            Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error generating notifications: {ex.Message}");
+            Snackbar.Add(Localization.GetString("GenerateNotificationsError"), Severity.Error);
+            _runningNotifications = false;
         }
     }
 

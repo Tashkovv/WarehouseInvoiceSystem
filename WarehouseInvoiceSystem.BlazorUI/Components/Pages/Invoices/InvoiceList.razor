@@ -234,6 +234,14 @@
     [SupplyParameterFromQuery(Name = "type")]
     public string? TypeParam { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "dueDateFrom")]
+    public string? DueDateFromParam { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "dueDateTo")]
+    public string? DueDateToParam { get; set; }
+
     private MudDataGrid<InvoiceDto> _grid = null!;
     private bool _exporting = false;
     private bool _exportingRow = false;
@@ -323,6 +331,18 @@
             Enum.TryParse<InvoiceType>(TypeParam, ignoreCase: true, out InvoiceType parsedType))
         {
             _filterType = parsedType;
+        }
+
+        if (!string.IsNullOrWhiteSpace(DueDateFromParam) &&
+            DateTime.TryParse(DueDateFromParam, out DateTime dueDateFrom))
+        {
+            _filterDueDateRange = new DateRange(dueDateFrom, _filterDueDateRange.End);
+        }
+
+        if (!string.IsNullOrWhiteSpace(DueDateToParam) &&
+            DateTime.TryParse(DueDateToParam, out DateTime dueDateTo))
+        {
+            _filterDueDateRange = new DateRange(_filterDueDateRange.Start, dueDateTo);
         }
     }
 

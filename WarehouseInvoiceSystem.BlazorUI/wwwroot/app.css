@@ -1773,3 +1773,20 @@ html {
     .wis-pager__btn.mud-disabled {
         opacity: 0.3;
     }
+
+/* AppBar popovers — right-align all to viewport right edge */
+.appbar-popover {
+    left: auto !important;
+    right: 56px !important;
+}
+
+.notification-badge {
+    top: 1px !important;
+    right: 2px !important;
+    transform: none !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    font-size: 11px !important;
+    padding: 0 3px !important;
+    border-radius: 50% !important;
+}

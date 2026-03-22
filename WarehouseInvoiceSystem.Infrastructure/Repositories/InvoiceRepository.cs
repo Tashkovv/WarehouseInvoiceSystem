@@ -790,6 +790,20 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
+        // ── Notification queries ────────────────────────────────────────────────
+
+        public Task<List<Invoice>> GetInvoicesDueInDaysAsync(int days, InvoiceType type, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime targetDate = DateTime.UtcNow.Date.AddDays(days);
+                return await All<Invoice>(context)
+                    .Include(i => i.Company)
+                    .Where(i => (i.Status == InvoiceStatus.Sent || i.Status == InvoiceStatus.PartiallyPaid)
+                             && i.Type == type
+                             && i.DueDate.Date == targetDate)
+                    .ToListAsync(ct);
+            }, ct);
+
         private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)
         {
             if (query.Statuses is { Count: > 0 })

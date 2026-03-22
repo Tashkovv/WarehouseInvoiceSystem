@@ -22,6 +22,8 @@
         public DbSet<PurchaseNoteLine> PurchaseNoteLines { get; set; }
         public DbSet<ProductPurchaseHistoryView> ProductPurchaseHistory { get; set; }
         public DbSet<Tenant> Tenants { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<NotificationInvoice> NotificationInvoices { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +43,8 @@
             modelBuilder.ApplyConfiguration(new PurchaseNoteLineConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new TenantConfiguration());
+            modelBuilder.ApplyConfiguration(new NotificationConfiguration());
+            modelBuilder.ApplyConfiguration(new NotificationInvoiceConfiguration());
 
             modelBuilder.Entity<ProductPurchaseHistoryView>(e =>
             {

@@ -119,7 +119,7 @@ else
                                         @string.Join(", ", _outOfStockItems.Take(5).Select(s => $"{s.ProductCode} - {s.ProductName}"))
                             @if (_outOfStockItems.Count() > 5)
                                         {
-                                            <text> @($"{Localization.GetString("AndMore")} {_outOfStockItems.Count() - 5}")</text>
+                                            <text> @($"{Localization.GetString("AndMoreItems")} {_outOfStockItems.Count() - 5}")</text>
                                         }
                                     </MudText>
                                 </MudAlert>
@@ -132,7 +132,7 @@ else
                                         @string.Join(", ", _lowStockItems.Take(5).Select(s => $"{s.ProductCode} - {s.ProductName}"))
                             @if (_lowStockItems.Count() > 5)
                                         {
-                                            <text> @($"{Localization.GetString("AndMore")} {_lowStockItems.Count() - 5}")</text>
+                                            <text> @($"{Localization.GetString("AndMoreItems")} {_lowStockItems.Count() - 5}")</text>
                                         }
                                     </MudText>
                                 </MudAlert>

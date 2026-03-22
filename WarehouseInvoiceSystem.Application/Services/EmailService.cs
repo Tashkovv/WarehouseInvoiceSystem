@@ -98,6 +98,43 @@
             }
         }
 
+        public async Task<bool> SendDueDateReminderEmailAsync(int daysBeforeDue, string companyName,
+            string companyEmail, List<Invoice> invoices, CancellationToken ct = default)
+        {
+            try
+            {
+                Tenant tenant = await tenantRepository.GetAsync(ct);
+                (string username, string password) = ResolveCredentials(tenant);
+
+                MimeMessage message = new();
+                message.From.Add(new MailboxAddress(tenant.CompanyName, username));
+                message.To.Add(new MailboxAddress(companyName, companyEmail));
+
+                string subjectKey = daysBeforeDue == 1 ? "DueDateReminderSubjectTomorrow" : "DueDateReminderSubjectDays";
+                message.Subject = daysBeforeDue == 1
+                    ? string.Format(translations.GetString(subjectKey), invoices.Count)
+                    : string.Format(translations.GetString(subjectKey), invoices.Count, daysBeforeDue);
+
+                bool isMk = translations.CurrentLanguage.Equals("mk");
+
+                BodyBuilder bodyBuilder = new()
+                {
+                    HtmlBody = isMk
+                        ? BuildMkdReminderHtml(daysBeforeDue, companyName, invoices, tenant)
+                        : BuildEnglishReminderHtml(daysBeforeDue, companyName, invoices, tenant)
+                };
+
+                message.Body = bodyBuilder.ToMessageBody();
+                await SendAsync(message, username, password);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending reminder email to {companyName}: {ex.Message}");
+                return false;
+            }
+        }
+
         // ── Private helpers ───────────────────────────────────────────────────
 
         /// <summary>
@@ -272,6 +309,126 @@
             if (!string.IsNullOrWhiteSpace(tenant.Phone)) lines.Add(tenant.Phone);
             if (!string.IsNullOrWhiteSpace(tenant.Website)) lines.Add(tenant.Website);
             return string.Join("", lines.Select(l => $"<p>{l}</p>"));
+        }
+
+        private static string BuildEnglishReminderHtml(int daysBeforeDue, string companyName, List<Invoice> invoices, Tenant tenant)
+        {
+            string footer = BuildFooterLines(tenant);
+            string dueText = daysBeforeDue == 1 ? "due tomorrow" : $"due in {daysBeforeDue} days";
+            string rows = string.Join("", invoices.Select(i => $@"
+                <tr>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee;'>{i.InvoiceNumber}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.DueDate:MMMM dd, yyyy}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.AmountDue:C}</td>
+                </tr>"));
+
+            return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #1E40AF; color: white; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; background-color: #f9f9f9; }}
+                    .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+                    table {{ width: 100%; border-collapse: collapse; background: white; }}
+                    th {{ padding: 10px 12px; background-color: #1E40AF; color: white; text-align: left; }}
+                    th:not(:first-child) {{ text-align: right; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>{tenant.CompanyName}</h1>
+                        <p>Payment Reminder</p>
+                    </div>
+                    <div class='content'>
+                        <p>Dear {companyName},</p>
+                        <p>This is a friendly reminder that the following {invoices.Count} invoice(s) are {dueText}:</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th style='text-align: right;'>Due Date</th>
+                                    <th style='text-align: right;'>Amount Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>{rows}</tbody>
+                        </table>
+                        <p style='margin-top: 20px;'>Please ensure timely payment to avoid any late fees.</p>
+                        <p>If you have already made the payment, please disregard this reminder.</p>
+                        <p>Thank you for your business!</p>
+                    </div>
+                    <div class='footer'>
+                        <p><strong>{tenant.CompanyName}</strong></p>
+                        {footer}
+                        <p>This is an automated message, please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
+        }
+
+        private static string BuildMkdReminderHtml(int daysBeforeDue, string companyName, List<Invoice> invoices, Tenant tenant)
+        {
+            string footer = BuildFooterLines(tenant);
+            string dueIntro = daysBeforeDue == 1
+                ? $"Утре е рокот за плаќање на следните {invoices.Count} фактура/и:"
+                : $"Рокот за плаќање на следните {invoices.Count} фактура/и истекува за {daysBeforeDue} дена:";
+            string rows = string.Join("", invoices.Select(i => $@"
+                <tr>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee;'>{i.InvoiceNumber}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.DueDate:MMMM dd, yyyy}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.AmountDue:C}</td>
+                </tr>"));
+
+            return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #1E40AF; color: white; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; background-color: #f9f9f9; }}
+                    .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+                    table {{ width: 100%; border-collapse: collapse; background: white; }}
+                    th {{ padding: 10px 12px; background-color: #1E40AF; color: white; text-align: left; }}
+                    th:not(:first-child) {{ text-align: right; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>{tenant.CompanyName}</h1>
+                        <p>Потсетник за плаќање</p>
+                    </div>
+                    <div class='content'>
+                        <p>Почитувани {companyName},</p>
+                        <p>{dueIntro}</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Фактура</th>
+                                    <th style='text-align: right;'>Рок</th>
+                                    <th style='text-align: right;'>Износ</th>
+                                </tr>
+                            </thead>
+                            <tbody>{rows}</tbody>
+                        </table>
+                        <p style='margin-top: 20px;'>Ве молиме обезбедете навремено плаќање.</p>
+                        <p>Доколку веќе сте ја извршиле уплатата, занемарете го овој потсетник.</p>
+                        <p>Ви благодариме за соработката!</p>
+                    </div>
+                    <div class='footer'>
+                        <p><strong>{tenant.CompanyName}</strong></p>
+                        {footer}
+                        <p>Ова е автоматска порака, ве молиме не одговарајте на оваа е-пошта.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
         }
     }
 }

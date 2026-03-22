@@ -33,6 +33,9 @@ builder.Services.AddOptions<EmailSettings>()
 builder.Services.Configure<EncryptionSettings>(
     builder.Configuration.GetSection("EncryptionSettings"));
 
+builder.Services.Configure<NotificationSettings>(
+    builder.Configuration.GetSection("NotificationSettings"));
+
 // Add Database Context
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -48,6 +51,7 @@ builder.Services.AddTransient<IInventoryTransactionRepository, InventoryTransact
 builder.Services.AddTransient<IIndividualRepository, IndividualRepository>();
 builder.Services.AddTransient<IPurchaseNoteRepository, PurchaseNoteRepository>();
 builder.Services.AddTransient<ITenantRepository, TenantRepository>();
+builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
 
 // Register Services
 builder.Services.AddScoped<ICompanyService, CompanyService>();
@@ -62,6 +66,7 @@ builder.Services.AddScoped<ITenantService, TenantService>();
 builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 
 // Background job infrastructure

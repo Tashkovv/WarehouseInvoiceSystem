@@ -12,7 +12,8 @@
     /// </summary>
     public class BackgroundJobService(
         IInvoiceRepository invoiceRepository,
-        IInvoiceService invoiceService) : IBackgroundJobService
+        IInvoiceService invoiceService,
+        INotificationService notificationService) : IBackgroundJobService
     {
         public async Task CheckAndUpdateOverdueInvoicesAsync()
         {
@@ -30,6 +31,11 @@
                     await invoiceService.MarkAsOverdueAsync(invoice.Id);
                 }
             }
+        }
+
+        public async Task GenerateAndSendDueDateRemindersAsync(CancellationToken ct = default)
+        {
+            await notificationService.GenerateAndSendDueDateRemindersAsync(ct);
         }
     }
 }

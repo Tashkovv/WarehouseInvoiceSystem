@@ -7,10 +7,10 @@
         /// </summary>
         Task CheckAndUpdateOverdueInvoicesAsync();
 
-        // Future background jobs can be added here:
-        // Task SendOverdueInvoiceRemindersAsync();
-        // Task GenerateMonthlyReportsAsync();
-        // Task CleanupOldLogsAsync();
-        // etc.
+        /// <summary>
+        /// Generates due-date reminder notifications for receivable and payable invoices.
+        /// Sends email reminders to client companies for receivable invoices.
+        /// </summary>
+        Task GenerateAndSendDueDateRemindersAsync(CancellationToken ct = default);
     }
 }
