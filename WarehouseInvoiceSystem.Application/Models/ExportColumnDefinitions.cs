@@ -2,6 +2,7 @@ namespace WarehouseInvoiceSystem.Application.Models
 {
     using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
+    using WarehouseInvoiceSystem.Application.DTOs.Product;
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -50,6 +51,25 @@ namespace WarehouseInvoiceSystem.Application.Models
             new(t.GetString("Quantity"), x => $"{x.Quantity:N2} {productUnit}"),
             new(t.GetString("Type"), x => t.GetString(x.Type.ToString())),
             new(t.GetString("Note"), x => x.Note),
+        ];
+
+        public static IReadOnlyList<ExportColumn<PartnerComparisonDto>> PartnerComparisonColumns(ILocalizationService t, string productUnit) =>
+        [
+            new(t.GetString("Partner"), x => x.PartnerName),
+            new(t.GetString("Quantity"), x => $"{x.TotalQuantity:N2} {productUnit}"),
+            new(t.GetString("Amount"), x => x.TotalAmount, ExportColumnType.Currency),
+            new(t.GetString("AveragePrice"), x => x.AverageUnitPrice, ExportColumnType.Currency),
+            new(t.GetString("Documents"), x => x.DocumentCount, ExportColumnType.Number),
+        ];
+
+        public static IReadOnlyList<ExportColumn<ProductComparisonDto>> ProductComparisonColumns(ILocalizationService t) =>
+        [
+            new(t.GetString("Product"), x => $"{x.ProductCode} — {x.ProductName}"),
+            new(t.GetString("Incoming"), x => $"{x.IncomingQuantity:N2} {x.ProductUnit}"),
+            new(t.GetString("IncomingAmount"), x => x.IncomingAmount, ExportColumnType.Currency),
+            new(t.GetString("Outgoing"), x => $"{x.OutgoingQuantity:N2} {x.ProductUnit}"),
+            new(t.GetString("OutgoingAmount"), x => x.OutgoingAmount, ExportColumnType.Currency),
+            new(t.GetString("Documents"), x => x.DocumentCount, ExportColumnType.Number),
         ];
     }
 }

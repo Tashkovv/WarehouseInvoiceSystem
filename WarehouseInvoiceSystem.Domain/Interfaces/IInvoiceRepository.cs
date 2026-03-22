@@ -23,6 +23,8 @@
         Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber, CancellationToken ct = default);
 
         Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, InvoiceType? type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
+        Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdsAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
 
         Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
 

@@ -274,6 +274,130 @@
             return await productRepository.DeleteAsync(id);
         }
 
+        public async Task<List<PartnerComparisonDto>> GetPartnerComparisonAsync(
+            Guid productId,
+            PartnerComparisonMode mode,
+            Guid? warehouseId,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            CancellationToken ct = default)
+        {
+            return mode switch
+            {
+                PartnerComparisonMode.Individuals => await GetIndividualComparison(productId, warehouseId, dateFrom, dateTo, ct),
+                PartnerComparisonMode.Vendors => await GetInvoiceComparison(productId, InvoiceType.Payable, warehouseId, dateFrom, dateTo, ct),
+                PartnerComparisonMode.Clients => await GetInvoiceComparison(productId, InvoiceType.Receivable, warehouseId, dateFrom, dateTo, ct),
+                _ => []
+            };
+        }
+
+        private async Task<List<PartnerComparisonDto>> GetIndividualComparison(
+            Guid productId, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct)
+        {
+            IEnumerable<PurchaseNoteLine> lines = await purchaseNoteRepository
+                .GetLineItemsByProductIdAsync(productId, warehouseId, dateFrom, dateTo, ct);
+
+            return lines
+                .GroupBy(li => new { li.PurchaseNote.IndividualId, Name = li.PurchaseNote.Individual?.FullName ?? "" })
+                .Select(g => new PartnerComparisonDto(
+                    g.Key.IndividualId,
+                    g.Key.Name,
+                    g.Sum(li => li.Quantity),
+                    g.Sum(li => li.Amount),
+                    g.Average(li => li.UnitPrice),
+                    g.Select(li => li.PurchaseNoteId).Distinct().Count()
+                ))
+                .OrderByDescending(p => p.TotalQuantity)
+                .ToList();
+        }
+
+        private async Task<List<PartnerComparisonDto>> GetInvoiceComparison(
+            Guid productId, InvoiceType type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct)
+        {
+            IEnumerable<InvoiceLine> lines = await invoiceRepository
+                .GetLineItemsByProductIdAsync(productId, type, warehouseId, dateFrom, dateTo, ct);
+
+            return lines
+                .GroupBy(li => new { li.Invoice.CompanyId, Name = li.Invoice.Company?.Name ?? "" })
+                .Select(g => new PartnerComparisonDto(
+                    g.Key.CompanyId,
+                    g.Key.Name,
+                    g.Sum(li => li.Quantity),
+                    g.Sum(li => li.Amount),
+                    g.Average(li => li.UnitPrice),
+                    g.Select(li => li.InvoiceId).Distinct().Count()
+                ))
+                .OrderByDescending(p => p.TotalQuantity)
+                .ToList();
+        }
+
+        public async Task<List<ProductComparisonDto>> GetProductComparisonAsync(
+            List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default)
+        {
+            if (productIds.Count < 2) return [];
+
+            Task<IEnumerable<PurchaseNoteLine>> purchaseTask = purchaseNoteRepository
+                .GetLineItemsByProductIdsAsync(productIds, warehouseId, dateFrom, dateTo, ct);
+            Task<IEnumerable<InvoiceLine>> invoiceTask = invoiceRepository
+                .GetLineItemsByProductIdsAsync(productIds, warehouseId, dateFrom, dateTo, ct);
+
+            await Task.WhenAll(purchaseTask, invoiceTask);
+
+            IEnumerable<PurchaseNoteLine> purchaseLines = purchaseTask.Result;
+            IEnumerable<InvoiceLine> invoiceLines = invoiceTask.Result;
+
+            // Purchase notes = incoming from individuals
+            var purchaseByProduct = purchaseLines
+                .GroupBy(li => li.ProductId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (Qty: g.Sum(li => li.Quantity), Amt: g.Sum(li => li.Amount), Docs: g.Select(li => li.PurchaseNoteId).Distinct().Count()));
+
+            // Payable invoices = incoming from vendors
+            var payableByProduct = invoiceLines
+                .Where(li => li.Invoice.Type == InvoiceType.Payable)
+                .GroupBy(li => li.ProductId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (Qty: g.Sum(li => li.Quantity), Amt: g.Sum(li => li.Amount), Docs: g.Select(li => li.InvoiceId).Distinct().Count()));
+
+            // Receivable invoices = outgoing to clients
+            var receivableByProduct = invoiceLines
+                .Where(li => li.Invoice.Type == InvoiceType.Receivable)
+                .GroupBy(li => li.ProductId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (Qty: g.Sum(li => li.Quantity), Amt: g.Sum(li => li.Amount), Docs: g.Select(li => li.InvoiceId).Distinct().Count()));
+
+            // Build product lookup for names/codes/units
+            var products = purchaseLines.Select(li => li.Product)
+                .Concat(invoiceLines.Select(li => li.Product))
+                .Where(p => p != null)
+                .DistinctBy(p => p!.Id)
+                .ToDictionary(p => p!.Id);
+
+            return productIds
+                .Where(id => products.ContainsKey(id))
+                .Select(id =>
+                {
+                    Product p = products[id];
+                    purchaseByProduct.TryGetValue(id, out var pn);
+                    payableByProduct.TryGetValue(id, out var pay);
+                    receivableByProduct.TryGetValue(id, out var rec);
+
+                    decimal inQty = pn.Qty + pay.Qty;
+                    decimal inAmt = pn.Amt + pay.Amt;
+                    decimal outQty = rec.Qty;
+                    decimal outAmt = rec.Amt;
+                    int docs = pn.Docs + pay.Docs + rec.Docs;
+
+                    return new ProductComparisonDto(
+                        id, p.Name, p.Code, p.Unit,
+                        inQty, outQty, inAmt, outAmt, docs);
+                })
+                .ToList();
+        }
+
         private static ProductDto MapToDto(Product product)
         {
             return new ProductDto

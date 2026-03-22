@@ -15,6 +15,7 @@
 
 <WisGridToolbar CreateAction="OpenCreateDialog"
                 CreateLabel="@Localization.GetString("Product")"
+                CreateActions="_toolbarActions"
                 SearchValue="@_searchString"
                 SearchValueChanged="OnSearch"
                 HasAnyActiveFilter="@(_filterIsActive.HasValue)"
@@ -138,11 +139,26 @@
     private bool? _filterIsActive = null;
 
     private List<FilterPopoverItem<bool?>> _statusFilterItems = [];
+    private List<WisDetailActionItem> _toolbarActions = [];
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
         BuildFilterItems();
+        BuildToolbarActions();
+    }
+
+    private void BuildToolbarActions()
+    {
+        _toolbarActions =
+        [
+            new WisDetailActionItem
+            {
+                Icon = Icons.Material.Filled.CompareArrows,
+                Label = Localization.GetString("CompareProducts"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo("/products/compare"))
+            }
+        ];
     }
 
     private void BuildFilterItems()
@@ -235,6 +251,12 @@
             Icon    = Icons.Material.Filled.Edit,
             Label   = Localization.GetString("Edit"),
             OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.CompareArrows,
+            Label   = Localization.GetString("Compare"),
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/products/{item.Id}/compare"))
         },
         new WisDetailActionItem
         {

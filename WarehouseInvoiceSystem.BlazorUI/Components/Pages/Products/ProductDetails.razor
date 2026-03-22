@@ -425,6 +425,7 @@ else
                 disabled: noWarehouse,
                 disabledReason: noWarehouse ? Localization.GetString("SelectWarehouseForThresholds") : null),
             _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"), OpenEditDialog),
+            _act.Primary(Icons.Material.Filled.CompareArrows, Localization.GetString("Compare"), () => Navigation.NavigateTo($"/products/{Id}/compare")),
             _product.IsActive
                 ? _act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), ToggleActiveStatus, dividerBefore: true)
                 : _act.Success(Icons.Material.Filled.PowerSettingsNew,  Localization.GetString("Activate"),   ToggleActiveStatus, dividerBefore: true),

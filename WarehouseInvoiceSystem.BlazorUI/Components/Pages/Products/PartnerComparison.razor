@@ -1,0 +1,468 @@
+@page "/products/{Id:guid}/compare"
+@inherits PageBase
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Domain.Enums
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@using WarehouseInvoiceSystem.Application.Models
+@inject IProductService ProductService
+@inject IWarehouseService WarehouseService
+@inject ICompanyService CompanyService
+@inject IIndividualService IndividualService
+@inject IExcelExportService ExcelExportService
+
+<PageTitle>@Localization.GetString("PartnerComparison") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+}
+else if (_product == null)
+{
+    <MudAlert Severity="Severity.Error">@Localization.GetString("ProductNotFound")</MudAlert>
+}
+else
+{
+    <WisDetailHeader BackHref="/products"
+                     BackLabel="@Localization.GetString("Products")" />
+
+    <MudGrid>
+        <MudItem xs="12">
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-4">
+
+                    @* ── Product identity ── *@
+                    <div class="wis-detail-identity mb-3">
+                        <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">
+                            @Localization.GetString("PartnerComparison")
+                        </MudText>
+                    </div>
+
+                    <div class="wis-detail-contact wis-product-meta-row mb-3">
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_product.Code — @_product.Name</MudText>
+                        </div>
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Scale" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_product.Unit</MudText>
+                        </div>
+                    </div>
+
+                    @* ── Mode tabs ── *@
+                    <div class="d-flex gap-2 mb-3">
+                        <button class="wis-pill-btn @(_mode == PartnerComparisonMode.Individuals ? "wis-pill-btn--active" : "")"
+                                type="button"
+                                @onclick="@(() => SetMode(PartnerComparisonMode.Individuals))">
+                            @Localization.GetString("Individuals")
+                        </button>
+                        <button class="wis-pill-btn @(_mode == PartnerComparisonMode.Vendors ? "wis-pill-btn--active" : "")"
+                                type="button"
+                                @onclick="@(() => SetMode(PartnerComparisonMode.Vendors))">
+                            @Localization.GetString("Vendors")
+                        </button>
+                        <button class="wis-pill-btn @(_mode == PartnerComparisonMode.Clients ? "wis-pill-btn--active" : "")"
+                                type="button"
+                                @onclick="@(() => SetMode(PartnerComparisonMode.Clients))">
+                            @Localization.GetString("Clients")
+                        </button>
+                    </div>
+
+                    @* ── Filters ── *@
+                    <div class="d-flex flex-wrap align-center gap-2 mb-2">
+                        <WisMultiItemPicker @ref="_partnerPicker"
+                                            TValue="Guid"
+                                            Label="@PartnerPickerLabel"
+                                            Icon="@Icons.Material.Filled.Add"
+                                            LoadItems="LoadPartnerItems"
+                                            SelectedValues="_selectedPartnerIds"
+                                            SelectedValuesChanged="OnPartnersChanged"
+                                            MaxSelection="10"
+                                            MinWidth="220px"
+                                            ShowChips="false" />
+
+                        <WisAutocompleteFilter TValue="Guid"
+                                               Label="@Localization.GetString("AllWarehouses")"
+                                               AllLabel="@Localization.GetString("All")"
+                                               Icon="@Icons.Material.Filled.Warehouse"
+                                               LoadItems="LoadWarehouseItems"
+                                               PopoverAnchorOrigin="Origin.BottomRight"
+                                               PopoverTransformOrigin="Origin.TopRight"
+                                               SelectedValue="@(_selectedWarehouseId ?? default)"
+                                               SelectedValueChanged="@(async (Guid v) => await OnWarehouseChanged(v == default ? (Guid?)null : v))"
+                                               MinWidth="200px" />
+
+                        <WisDateRangeFilter @ref="_dateRangeFilter"
+                                            DateRange="_dateRange"
+                                            DateRangeChanged="OnDateRangeChanged"
+                                            DatePreset="_datePreset"
+                                            DatePresetChanged="OnDatePresetChanged"
+                                            OnChanged="LoadComparisonAsync" />
+                    </div>
+
+                    @* ── Selected partner chips ── *@
+                    @if (_partnerPicker?.SelectedLabels.Count > 0)
+                    {
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var kvp in _partnerPicker.SelectedLabels)
+                            {
+                                var value = kvp.Key;
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="Color.Primary"
+                                         Variant="Variant.Outlined"
+                                         OnClose="@(() => _partnerPicker.RemoveItemAsync(value))">
+                                    @kvp.Value
+                                </MudChip>
+                            }
+                        </div>
+                    }
+
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        @* ── Results ── *@
+        <MudItem xs="12">
+            @if (_selectedPartnerIds.Count < 2)
+            {
+                <MudCard Elevation="2">
+                    <MudCardContent Class="pa-6 text-center d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.CompareArrows" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                        <MudText Typo="Typo.body1" Color="Color.Secondary">
+                            @Localization.GetString("SelectAtLeastTwo")
+                        </MudText>
+                    </MudCardContent>
+                </MudCard>
+            }
+            else if (_loadingComparison)
+            {
+                <MudCard Elevation="2">
+                    <MudCardContent Class="pa-6">
+                        <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                    </MudCardContent>
+                </MudCard>
+            }
+            else
+            {
+                <MudCard Elevation="2">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("PartnerComparison")</MudText>
+                        </CardHeaderContent>
+                        <CardHeaderActions>
+                            <WisButton Action="@(new WisDetailActionItem
+                            {
+                                Icon = Icons.Material.Filled.Print,
+                                Label = Localization.GetString("Export"),
+                                Disabled = _exporting,
+                                OnClick = EventCallback.Factory.Create(this, ExportComparison)
+                            })" />
+                        </CardHeaderActions>
+                    </MudCardHeader>
+                    <MudCardContent Class="pa-0">
+                        <MudTable Items="_comparisonRows"
+                                  Hover="true"
+                                  Elevation="0"
+                                  Class="wis-secondary-list">
+                            <HeaderContent>
+                                <MudTh>@PartnerColumnHeader</MudTh>
+                                <MudTh>@Localization.GetString("Documents")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("AveragePrice")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="@PartnerColumnHeader">
+                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PartnerName</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Documents")">
+                                    <MudText Typo="Typo.body2">@context.DocumentCount</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@context.TotalQuantity.ToString("N2") @_product.Unit</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("AveragePrice")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@context.AverageUnitPrice.ToString("C")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@context.TotalAmount.ToString("C")</MudText>
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </MudCardContent>
+                </MudCard>
+            }
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ProductDto? _product;
+    private PartnerComparisonMode _mode = PartnerComparisonMode.Individuals;
+
+    // ── Filters ──────────────────────────────────────────────────────────────
+    private List<Guid> _selectedPartnerIds = [];
+    private Guid? _selectedWarehouseId;
+    private DateRange _dateRange = new(null, null);
+    private int? _datePreset;
+    private WisDateRangeFilter? _dateRangeFilter;
+    private WisMultiItemPicker<Guid>? _partnerPicker;
+
+    // ── Results ──────────────────────────────────────────────────────────────
+    private List<PartnerComparisonDto> _comparisonRows = [];
+    private bool _loadingComparison;
+    private bool _exporting;
+    private CancellationTokenSource _loadCts = new();
+
+    // ── Computed labels ──────────────────────────────────────────────────────
+    private string PartnerPickerLabel => _mode == PartnerComparisonMode.Individuals
+        ? Localization.GetString("Individual")
+        : Localization.GetString("Company");
+
+    private string PartnerColumnHeader => _mode == PartnerComparisonMode.Individuals
+        ? Localization.GetString("Individual")
+        : Localization.GetString("Company");
+
+    // ── Lifecycle ────────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadProductAsync();
+    }
+
+    private async Task LoadProductAsync() =>
+        await SafeLoadAsync(async () =>
+        {
+            _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
+        }, "ErrorLoadingProduct");
+
+    // ── Mode switching ──────────────────────────────────────────────────────
+
+    private async Task SetMode(PartnerComparisonMode mode)
+    {
+        if (_mode == mode) return;
+        _mode = mode;
+        _selectedPartnerIds = [];
+        _comparisonRows = [];
+        if (_partnerPicker is not null)
+            await _partnerPicker.ClearAsync();
+        StateHasChanged();
+    }
+
+    // ── Partner data source ─────────────────────────────────────────────────
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadPartnerItems(
+        string search, int page, CancellationToken ct)
+    {
+        if (_mode == PartnerComparisonMode.Individuals)
+            return await LoadIndividualItems(search, page, ct);
+        else
+            return await LoadCompanyItems(search, page, ct);
+    }
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadIndividualItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<IndividualDto> result = await IndividualService.GetPagedAsync(
+            new GetIndividualsQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                IsActive = true,
+                SearchByNameOnly = true,
+                SortBy = "FirstName",
+                SortAscending = true
+            }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(i => new WisAutocompleteItem<Guid>
+            {
+                Label = i.FullName,
+                Value = i.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadCompanyItems(
+        string search, int page, CancellationToken ct)
+    {
+        CompanyType? companyType = _mode == PartnerComparisonMode.Vendors
+            ? CompanyType.Vendor
+            : CompanyType.Client;
+
+        PagedResult<CompanyDto> result = await CompanyService.GetPagedAsync(
+            new GetCompaniesQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                Type = companyType,
+                IsActive = true,
+                SearchByNameOnly = true,
+                SortBy = "Name",
+                SortAscending = true
+            }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(c => new WisAutocompleteItem<Guid>
+            {
+                Label = c.Name,
+                Value = c.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    // ── Warehouse data source ───────────────────────────────────────────────
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(
+            new GetWarehousesQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                SortBy = "Name",
+                SortAscending = true
+            }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+            {
+                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+                Value = w.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    // ── Filter callbacks ────────────────────────────────────────────────────
+
+    private async Task OnPartnersChanged(List<Guid> values)
+    {
+        _selectedPartnerIds = values;
+        await LoadComparisonAsync();
+    }
+
+    private async Task OnWarehouseChanged(Guid? warehouseId)
+    {
+        _selectedWarehouseId = warehouseId;
+        await LoadComparisonAsync();
+    }
+
+    private Task OnDateRangeChanged(DateRange range)
+    {
+        _dateRange = range;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDatePresetChanged(int? preset)
+    {
+        _datePreset = preset;
+        return Task.CompletedTask;
+    }
+
+    // ── Core comparison load ────────────────────────────────────────────────
+
+    private async Task LoadComparisonAsync()
+    {
+        if (_selectedPartnerIds.Count < 2) return;
+
+        await _loadCts.CancelAsync();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
+        _loadingComparison = true;
+        StateHasChanged();
+
+        try
+        {
+            List<PartnerComparisonDto> allPartners = await ProductService.GetPartnerComparisonAsync(
+                Id, _mode, _selectedWarehouseId, _dateRange.Start, _dateRange.End, ct);
+
+            if (ct.IsCancellationRequested) return;
+
+            // Filter to only selected partners
+            var selectedSet = _selectedPartnerIds.ToHashSet();
+            _comparisonRows = allPartners
+                .Where(p => selectedSet.Contains(p.PartnerId))
+                .ToList();
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex)
+        {
+            if (ct.IsCancellationRequested) return;
+            Console.WriteLine($"Error loading comparison: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingData"), Severity.Error);
+        }
+        finally
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                _loadingComparison = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    // ── Export ───────────────────────────────────────────────────────────────
+
+    private async Task ExportComparison()
+    {
+        if (_comparisonRows.Count == 0 || _product == null) return;
+
+        _exporting = true;
+        StateHasChanged();
+
+        try
+        {
+            string modeLabel = _mode switch
+            {
+                PartnerComparisonMode.Individuals => Localization.GetString("Individuals"),
+                PartnerComparisonMode.Vendors => Localization.GetString("Vendors"),
+                PartnerComparisonMode.Clients => Localization.GetString("Clients"),
+                _ => ""
+            };
+
+            byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
+                _comparisonRows,
+                ExportColumnDefinitions.PartnerComparisonColumns(Localization, _product.Unit),
+                new ExportListOptions(
+                    Localization.GetString("PartnerComparison"),
+                    $"{_product.Name} — {modeLabel}"));
+
+            string fileName = $"{Localization.GetString("PartnerComparison")}_{_product.Code}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting comparison: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+            StateHasChanged();
+        }
+    }
+}

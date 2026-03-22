@@ -137,6 +137,52 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .ToListAsync(ct);
             });
 
+        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(
+            Guid productId, InvoiceType? type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
+                    .Where(li => li.ProductId == productId &&
+                                 li.Invoice.DeletedOn == null &&
+                                 li.Invoice.Status != InvoiceStatus.Cancelled);
+
+                if (type.HasValue)
+                    q = q.Where(li => li.Invoice.Type == type.Value);
+                if (warehouseId.HasValue)
+                    q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
+                if (dateFrom.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value);
+                if (dateTo.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate <= dateTo.Value);
+
+                return (IEnumerable<InvoiceLine>)await q
+                    .Include(li => li.Invoice)
+                        .ThenInclude(i => i.Company)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdsAsync(
+            List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
+                    .Where(li => productIds.Contains(li.ProductId) &&
+                                 li.Invoice.DeletedOn == null &&
+                                 li.Invoice.Status != InvoiceStatus.Cancelled);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
+                if (dateFrom.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value);
+                if (dateTo.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate <= dateTo.Value);
+
+                return (IEnumerable<InvoiceLine>)await q
+                    .Include(li => li.Invoice)
+                    .Include(li => li.Product)
+                    .ToListAsync(ct);
+            });
+
         public Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {

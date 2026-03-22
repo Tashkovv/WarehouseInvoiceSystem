@@ -22,6 +22,8 @@
         Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default);
 
         Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
+        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdsAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
 
         Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
 

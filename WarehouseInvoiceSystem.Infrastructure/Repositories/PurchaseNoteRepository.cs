@@ -124,6 +124,49 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .ToListAsync(ct);
             });
 
+        public Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(
+            Guid productId, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<PurchaseNoteLine> q = All<PurchaseNoteLine>(context)
+                    .Where(li => li.ProductId == productId &&
+                                 li.PurchaseNote.DeletedOn == null &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(li => li.PurchaseNote.WarehouseId == warehouseId.Value);
+                if (dateFrom.HasValue)
+                    q = q.Where(li => li.PurchaseNote.PurchaseDate >= dateFrom.Value);
+                if (dateTo.HasValue)
+                    q = q.Where(li => li.PurchaseNote.PurchaseDate <= dateTo.Value);
+
+                return (IEnumerable<PurchaseNoteLine>)await q
+                    .Include(li => li.PurchaseNote)
+                        .ThenInclude(pn => pn.Individual)
+                    .ToListAsync(ct);
+            });
+
+        public Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdsAsync(
+            List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<PurchaseNoteLine> q = All<PurchaseNoteLine>(context)
+                    .Where(li => productIds.Contains(li.ProductId) &&
+                                 li.PurchaseNote.DeletedOn == null &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(li => li.PurchaseNote.WarehouseId == warehouseId.Value);
+                if (dateFrom.HasValue)
+                    q = q.Where(li => li.PurchaseNote.PurchaseDate >= dateFrom.Value);
+                if (dateTo.HasValue)
+                    q = q.Where(li => li.PurchaseNote.PurchaseDate <= dateTo.Value);
+
+                return (IEnumerable<PurchaseNoteLine>)await q
+                    .Include(li => li.Product)
+                    .ToListAsync(ct);
+            });
+
         public Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {

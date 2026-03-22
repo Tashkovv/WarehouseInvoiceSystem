@@ -1,0 +1,345 @@
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@typeparam TValue where TValue : notnull
+@inject ILocalizationService Localization
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<WisFilterPopover @ref="_popover"
+                  IsActive="@(SelectedValues.Count > 0)"
+                  TriggerLabel="@TriggerLabel"
+                  TriggerIcon="@Icon"
+                  MinWidth="@MinWidth"
+                  TriggerPadding="0 10px"
+                  TruncateLabel="true"
+                  Fixed="true"
+                  AnchorOrigin="@PopoverAnchorOrigin"
+                  TransformOrigin="@PopoverTransformOrigin"
+                  PopoverStyle="@($"min-width: {MinWidth}; overflow: hidden; padding: 8px;")"
+                  OnOpen="@OnOpenAsync"
+                  OnClose="@CloseInternal">
+
+        <MudStack Spacing="1">
+
+            @* ── Search input ── *@
+            <MudTextField @ref="_searchField"
+                          T="string"
+                          Value="_searchText"
+                          ValueChanged="OnSearchChanged"
+                          Placeholder="@(Localization.GetString("Search"))"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Clearable="true"
+                          Immediate="true"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Class="mb-1"
+                          style="font-size: 13px;" />
+
+            @* ── List ── *@
+            @if (_loading)
+            {
+                <div style="display:flex; justify-content:center; padding: 12px 0;">
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                </div>
+            }
+            else
+            {
+                <div id="@_scrollContainerId"
+                     style="max-height: 240px; overflow-y: auto;">
+
+                    @if (_searchText.Length == 1)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-2 py-2">
+                            @Localization.GetString("TypeMoreCharacters")
+                        </MudText>
+                    }
+                    else if (!_items.Any() && !_isLoadingMore)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="px-2 py-2">
+                            @Localization.GetString("NoResults")
+                        </MudText>
+                    }
+                    else
+                    {
+                        @foreach (WisAutocompleteItem<TValue> item in _items)
+                        {
+                            bool isSelected = SelectedValues.Any(v => Equals(v, item.Value));
+                            bool isDisabled = !isSelected && SelectedValues.Count >= MaxSelection;
+                            <div class="wis-autocomplete-item @(isSelected ? "wis-autocomplete-item--selected" : "") @(isDisabled ? "wis-autocomplete-item--disabled" : "")"
+                                 @onclick="@(() => ToggleItemAsync(item, isSelected, isDisabled))">
+                                @if (isSelected)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Primary" Class="mr-1" />
+                                }
+                                <span class="wis-autocomplete-item__label">@item.Label</span>
+                                @if (!string.IsNullOrEmpty(item.SubLabel))
+                                {
+                                    <span class="wis-autocomplete-item__sublabel">@item.SubLabel</span>
+                                }
+                            </div>
+                        }
+
+                        @if (_isLoadingMore)
+                        {
+                            <div style="display:flex; justify-content:center; padding: 8px 0;">
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                            </div>
+                        }
+                    }
+                </div>
+            }
+
+        </MudStack>
+
+</WisFilterPopover>
+
+@* ── Selected chips (outside popover) ── *@
+@if (ShowChips && SelectedValues.Count > 0 && _selectedLabels.Count > 0)
+{
+    <div class="d-flex flex-wrap gap-1 mt-1">
+        @foreach (var kvp in _selectedLabels)
+        {
+            var value = kvp.Key;
+            <MudChip T="string"
+                     Size="Size.Small"
+                     Color="Color.Primary"
+                     Variant="Variant.Outlined"
+                     OnClose="@(() => RemoveItemAsync(value))">
+                @kvp.Value
+            </MudChip>
+        }
+    </div>
+}
+
+@code {
+    // ── Parameters ────────────────────────────────────────────────────────────
+
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter, EditorRequired]
+    public Func<string, int, CancellationToken, Task<PagedResult<WisAutocompleteItem<TValue>>>>? LoadItems { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; } = 10;
+
+    [Parameter]
+    public int DebounceMs { get; set; } = 300;
+
+    [Parameter]
+    public List<TValue> SelectedValues { get; set; } = [];
+
+    [Parameter]
+    public EventCallback<List<TValue>> SelectedValuesChanged { get; set; }
+
+    [Parameter]
+    public int MaxSelection { get; set; } = 10;
+
+    [Parameter]
+    public Origin PopoverAnchorOrigin { get; set; } = Origin.BottomLeft;
+
+    [Parameter]
+    public Origin PopoverTransformOrigin { get; set; } = Origin.TopLeft;
+
+    [Parameter]
+    public string MinWidth { get; set; } = "200px";
+
+    [Parameter]
+    public bool ShowChips { get; set; } = true;
+
+    /// <summary>Selected value → label pairs. Use with ShowChips="false" to render chips externally.</summary>
+    public IReadOnlyDictionary<TValue, string> SelectedLabels => _selectedLabels;
+
+    // ── Internal state ────────────────────────────────────────────────────────
+
+    private WisFilterPopover _popover = null!;
+
+    private bool _loading;
+    private bool _isLoadingMore;
+    private bool _hasMore;
+
+    private int _page = 1;
+    private string _searchText = string.Empty;
+    private List<WisAutocompleteItem<TValue>> _items = [];
+    private Dictionary<TValue, string> _selectedLabels = new();
+
+    private MudTextField<string>? _searchField;
+    private CancellationTokenSource _cts = new();
+    private Timer? _debounceTimer;
+    private DotNetObjectReference<WisMultiItemPicker<TValue>>? _dotNetRef;
+
+    private readonly string _scrollContainerId = $"wis-mp-scroll-{Guid.NewGuid():N}";
+
+    private string TriggerLabel => SelectedValues.Count > 0
+        ? $"{Label} ({SelectedValues.Count})"
+        : Label;
+
+    // ── Open / Close ──────────────────────────────────────────────────────────
+
+    private async Task OnOpenAsync()
+    {
+        await FetchPageAsync(searchTerm: "", page: 1, replace: true);
+
+        await Task.Delay(50);
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("wisAutocomplete.attachScrollListener",
+            _scrollContainerId, _dotNetRef, 40);
+
+        if (_searchField is not null)
+            await _searchField.FocusAsync();
+    }
+
+    private void CloseInternal()
+    {
+        _searchText = string.Empty;
+        _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+        _ = JS.InvokeVoidAsync("wisAutocomplete.removeScrollListener", _scrollContainerId);
+        StateHasChanged();
+    }
+
+    // ── Search with debounce ──────────────────────────────────────────────────
+
+    private void OnSearchChanged(string value)
+    {
+        _searchText = value;
+        _debounceTimer?.Dispose();
+
+        if (!string.IsNullOrWhiteSpace(value) && value.Length < 2)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        _debounceTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+                await FetchPageAsync(searchTerm: _searchText, page: 1, replace: true));
+        }, null, DebounceMs, Timeout.Infinite);
+    }
+
+    // ── Infinite scroll ──────────────────────────────────────────────────────
+
+    [JSInvokable]
+    public async Task OnScrolledToBottom()
+    {
+        if (_isLoadingMore || !_hasMore) return;
+        await FetchPageAsync(searchTerm: _searchText, page: _page + 1, replace: false);
+    }
+
+    // ── Core fetch ────────────────────────────────────────────────────────────
+
+    private async Task FetchPageAsync(string searchTerm, int page, bool replace)
+    {
+        if (LoadItems is null) return;
+
+        await _cts.CancelAsync();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        if (replace)
+        {
+            _loading = true;
+            _items = [];
+        }
+        else
+        {
+            _isLoadingMore = true;
+        }
+
+        StateHasChanged();
+
+        try
+        {
+            PagedResult<WisAutocompleteItem<TValue>> result =
+                await LoadItems(searchTerm, page, token);
+
+            if (token.IsCancellationRequested) return;
+
+            if (replace)
+                _items = result.Items;
+            else
+                _items.AddRange(result.Items);
+
+            _page = result.Page;
+            _hasMore = result.Page < result.TotalPages;
+
+            // Sync labels for selected items that appear in results
+            foreach (var item in _items)
+            {
+                if (SelectedValues.Any(v => Equals(v, item.Value)))
+                    _selectedLabels[item.Value] = item.Label;
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                _loading = false;
+                _isLoadingMore = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    // ── Selection ─────────────────────────────────────────────────────────────
+
+    private async Task ToggleItemAsync(WisAutocompleteItem<TValue> item, bool isSelected, bool isDisabled)
+    {
+        if (isDisabled) return;
+
+        var updated = new List<TValue>(SelectedValues);
+
+        if (isSelected)
+        {
+            updated.RemoveAll(v => Equals(v, item.Value));
+            _selectedLabels.Remove(item.Value);
+        }
+        else
+        {
+            updated.Add(item.Value);
+            _selectedLabels[item.Value] = item.Label;
+        }
+
+        await SelectedValuesChanged.InvokeAsync(updated);
+    }
+
+    public async Task RemoveItemAsync(TValue value)
+    {
+        var updated = new List<TValue>(SelectedValues);
+        updated.RemoveAll(v => Equals(v, value));
+        _selectedLabels.Remove(value);
+        await SelectedValuesChanged.InvokeAsync(updated);
+    }
+
+    /// <summary>
+    /// Clears all selected items. Can be called from parent via @ref.
+    /// </summary>
+    public async Task ClearAsync()
+    {
+        _selectedLabels.Clear();
+        _items = [];
+        await SelectedValuesChanged.InvokeAsync([]);
+    }
+
+    // ── Disposal ──────────────────────────────────────────────────────────────
+
+    public async ValueTask DisposeAsync()
+    {
+        _debounceTimer?.Dispose();
+        _cts.Cancel();
+        _cts.Dispose();
+
+        if (_dotNetRef is not null)
+        {
+            try { await JS.InvokeVoidAsync("wisAutocomplete.removeScrollListener", _scrollContainerId, CancellationToken.None); }
+            catch (JSDisconnectedException) { }
+            catch (OperationCanceledException) { }
+            catch { }
+            _dotNetRef.Dispose();
+        }
+    }
+}

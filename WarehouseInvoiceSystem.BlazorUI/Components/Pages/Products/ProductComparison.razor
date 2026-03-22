@@ -1,0 +1,327 @@
+@page "/products/compare"
+@inherits PageBase
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@using WarehouseInvoiceSystem.Application.Models
+@inject IProductService ProductService
+@inject IWarehouseService WarehouseService
+@inject IExcelExportService ExcelExportService
+
+<PageTitle>@Localization.GetString("CompareProducts") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<WisDetailHeader BackHref="/products"
+                 BackLabel="@Localization.GetString("Products")" />
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudCard Elevation="2">
+            <MudCardContent Class="pa-4">
+
+                <div class="wis-detail-identity mb-3">
+                    <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">
+                        @Localization.GetString("CompareProducts")
+                    </MudText>
+                </div>
+
+                @* ── Filters ── *@
+                <div class="d-flex flex-wrap align-center gap-2 mb-2">
+                    <WisMultiItemPicker @ref="_productPicker"
+                                        TValue="Guid"
+                                        Label="@Localization.GetString("Product")"
+                                        Icon="@Icons.Material.Filled.Add"
+                                        LoadItems="LoadProductItems"
+                                        SelectedValues="_selectedProductIds"
+                                        SelectedValuesChanged="OnProductsChanged"
+                                        MaxSelection="10"
+                                        MinWidth="220px"
+                                        ShowChips="false" />
+
+                    <WisAutocompleteFilter TValue="Guid"
+                                           Label="@Localization.GetString("AllWarehouses")"
+                                           AllLabel="@Localization.GetString("All")"
+                                           Icon="@Icons.Material.Filled.Warehouse"
+                                           LoadItems="LoadWarehouseItems"
+                                           PopoverAnchorOrigin="Origin.BottomRight"
+                                           PopoverTransformOrigin="Origin.TopRight"
+                                           SelectedValue="@(_selectedWarehouseId ?? default)"
+                                           SelectedValueChanged="@(async (Guid v) => await OnWarehouseChanged(v == default ? (Guid?)null : v))"
+                                           MinWidth="200px" />
+
+                    <WisDateRangeFilter @ref="_dateRangeFilter"
+                                        DateRange="_dateRange"
+                                        DateRangeChanged="OnDateRangeChanged"
+                                        DatePreset="_datePreset"
+                                        DatePresetChanged="OnDatePresetChanged"
+                                        OnChanged="LoadComparisonAsync" />
+                </div>
+
+                @* ── Selected product chips ── *@
+                @if (_productPicker?.SelectedLabels.Count > 0)
+                {
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var kvp in _productPicker.SelectedLabels)
+                        {
+                            var value = kvp.Key;
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Color="Color.Primary"
+                                     Variant="Variant.Outlined"
+                                     OnClose="@(() => _productPicker.RemoveItemAsync(value))">
+                                @kvp.Value
+                            </MudChip>
+                        }
+                    </div>
+                }
+
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    @* ── Results ── *@
+    <MudItem xs="12">
+        @if (_selectedProductIds.Count < 2)
+        {
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-6 text-center d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.CompareArrows" Size="Size.Large" Color="Color.Secondary" Class="mb-2" />
+                    <MudText Typo="Typo.body1" Color="Color.Secondary">
+                        @Localization.GetString("SelectAtLeastTwoProducts")
+                    </MudText>
+                </MudCardContent>
+            </MudCard>
+        }
+        else if (_loadingComparison)
+        {
+            <MudCard Elevation="2">
+                <MudCardContent Class="pa-6">
+                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
+                </MudCardContent>
+            </MudCard>
+        }
+        else
+        {
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("CompareProducts")</MudText>
+                    </CardHeaderContent>
+                    <CardHeaderActions>
+                        <WisButton Action="@(new WisDetailActionItem
+                        {
+                            Icon = Icons.Material.Filled.Print,
+                            Label = Localization.GetString("Export"),
+                            Disabled = _exporting,
+                            OnClick = EventCallback.Factory.Create(this, ExportComparison)
+                        })" />
+                    </CardHeaderActions>
+                </MudCardHeader>
+                <MudCardContent Class="pa-0">
+                    <MudTable Items="_comparisonRows"
+                              Hover="true"
+                              Elevation="0"
+                              Class="wis-secondary-list">
+                        <HeaderContent>
+                            <MudTh>@Localization.GetString("Product")</MudTh>
+                            <MudTh>@Localization.GetString("Documents")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("Incoming")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("IncomingAmount")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("Outgoing")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("OutgoingAmount")</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="@Localization.GetString("Product")">
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode — @context.ProductName</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Documents")">
+                                <MudText Typo="Typo.body2">@context.DocumentCount</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Incoming")" Class="text-right">
+                                <MudText Typo="Typo.body2">@context.IncomingQuantity.ToString("N2") @context.ProductUnit</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("IncomingAmount")" Class="text-right">
+                                <MudText Typo="Typo.body2">@context.IncomingAmount.ToString("C")</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Outgoing")" Class="text-right">
+                                <MudText Typo="Typo.body2">@context.OutgoingQuantity.ToString("N2") @context.ProductUnit</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("OutgoingAmount")" Class="text-right">
+                                <MudText Typo="Typo.body2">@context.OutgoingAmount.ToString("C")</MudText>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    // ── Filters ──────────────────────────────────────────────────────────────
+    private List<Guid> _selectedProductIds = [];
+    private Guid? _selectedWarehouseId;
+    private DateRange _dateRange = new(null, null);
+    private int? _datePreset;
+    private WisDateRangeFilter? _dateRangeFilter;
+    private WisMultiItemPicker<Guid>? _productPicker;
+
+    // ── Results ──────────────────────────────────────────────────────────────
+    private List<ProductComparisonDto> _comparisonRows = [];
+    private bool _loadingComparison;
+    private bool _exporting;
+    private CancellationTokenSource _loadCts = new();
+
+    // ── Product data source ─────────────────────────────────────────────────
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadProductItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<ProductDto> result = await ProductService.GetPagedAsync(
+            new GetProductsQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                IsActive = true,
+                SortBy = "Name",
+                SortAscending = true
+            }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(p => new WisAutocompleteItem<Guid>
+            {
+                Label = $"{p.Code} — {p.Name}",
+                Value = p.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    // ── Warehouse data source ───────────────────────────────────────────────
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(
+            new GetWarehousesQuery
+            {
+                Search = search,
+                Page = page,
+                PageSize = 10,
+                SortBy = "Name",
+                SortAscending = true
+            }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+            {
+                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+                Value = w.Id
+            }).ToList(),
+            TotalCount = result.TotalCount,
+            Page = result.Page,
+            PageSize = result.PageSize
+        };
+    }
+
+    // ── Filter callbacks ────────────────────────────────────────────────────
+
+    private async Task OnProductsChanged(List<Guid> values)
+    {
+        _selectedProductIds = values;
+        await LoadComparisonAsync();
+    }
+
+    private async Task OnWarehouseChanged(Guid? warehouseId)
+    {
+        _selectedWarehouseId = warehouseId;
+        await LoadComparisonAsync();
+    }
+
+    private Task OnDateRangeChanged(DateRange range)
+    {
+        _dateRange = range;
+        return Task.CompletedTask;
+    }
+
+    private Task OnDatePresetChanged(int? preset)
+    {
+        _datePreset = preset;
+        return Task.CompletedTask;
+    }
+
+    // ── Core comparison load ────────────────────────────────────────────────
+
+    private async Task LoadComparisonAsync()
+    {
+        if (_selectedProductIds.Count < 2) return;
+
+        await _loadCts.CancelAsync();
+        _loadCts = new CancellationTokenSource();
+        var ct = _loadCts.Token;
+
+        _loadingComparison = true;
+        StateHasChanged();
+
+        try
+        {
+            _comparisonRows = await ProductService.GetProductComparisonAsync(
+                _selectedProductIds, _selectedWarehouseId, _dateRange.Start, _dateRange.End, ct);
+
+            if (ct.IsCancellationRequested) return;
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex)
+        {
+            if (ct.IsCancellationRequested) return;
+            Console.WriteLine($"Error loading comparison: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorLoadingData"), Severity.Error);
+        }
+        finally
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                _loadingComparison = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    // ── Export ───────────────────────────────────────────────────────────────
+
+    private async Task ExportComparison()
+    {
+        if (_comparisonRows.Count == 0) return;
+
+        _exporting = true;
+        StateHasChanged();
+
+        try
+        {
+            byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
+                _comparisonRows,
+                ExportColumnDefinitions.ProductComparisonColumns(Localization),
+                new ExportListOptions(
+                    Localization.GetString("CompareProducts"),
+                    ""));
+
+            string fileName = $"{Localization.GetString("CompareProducts")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            await DownloadFileAsync(fileBytes, fileName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting comparison: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
+        }
+        finally
+        {
+            _exporting = false;
+            StateHasChanged();
+        }
+    }
+}

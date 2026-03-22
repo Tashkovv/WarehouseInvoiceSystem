@@ -21,5 +21,18 @@
         Task UpdateProductAsync(Guid id, UpdateProductDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);
         Task<bool> DeleteProductAsync(Guid id);
+        Task<List<PartnerComparisonDto>> GetPartnerComparisonAsync(
+            Guid productId,
+            PartnerComparisonMode mode,
+            Guid? warehouseId,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            CancellationToken ct = default);
+        Task<List<ProductComparisonDto>> GetProductComparisonAsync(
+            List<Guid> productIds,
+            Guid? warehouseId,
+            DateTime? dateFrom,
+            DateTime? dateTo,
+            CancellationToken ct = default);
     }
 }
