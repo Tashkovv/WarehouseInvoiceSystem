@@ -1689,16 +1689,22 @@ html {
     white-space: nowrap;
 }
 
-/* Rows-per-page pill */
+/* Rows-per-page picker */
+.wis-pager__rpp-container {
+    position: relative;
+}
+
 .wis-pager__rpp-pill {
     border: 1px solid var(--mud-palette-divider);
     border-radius: 999px;
-    padding: 1px 2px 1px 10px;
+    padding: 3px 4px 3px 10px;
     background: var(--mud-palette-surface);
     display: inline-flex;
     align-items: center;
-    min-width: 80px;
-    max-width: 110px;
+    gap: 2px;
+    min-width: 72px;
+    cursor: pointer;
+    user-select: none;
     transition: border-color 0.15s, background 0.15s;
 }
 
@@ -1707,26 +1713,45 @@ html {
         background: rgba(var(--mud-palette-primary-rgb), 0.06);
     }
 
-    /* Strip ALL MudSelect underlines inside the pill */
-    .wis-pager__rpp-pill .mud-input-root::before,
-    .wis-pager__rpp-pill .mud-input-root::after,
-    .wis-pager__rpp-pill .mud-input-root-text::before,
-    .wis-pager__rpp-pill .mud-input-root-text::after,
-    .wis-pager__rpp-pill .mud-input-underline::before,
-    .wis-pager__rpp-pill .mud-input-underline::after {
-        display: none !important;
-        border-bottom: none !important;
+.wis-pager__rpp-value {
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-primary);
+    flex: 1;
+}
+
+.wis-pager__rpp-chevron {
+    color: var(--mud-palette-text-secondary);
+}
+
+.wis-pager__rpp-dropdown {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    z-index: 1300;
+    min-width: 72px;
+    overflow: hidden;
+}
+
+.wis-pager__rpp-option {
+    padding: 6px 16px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.1s;
+}
+
+    .wis-pager__rpp-option:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.08);
     }
 
-    .wis-pager__rpp-pill .mud-input-slot {
-        padding: 0;
-    }
-
-    .wis-pager__rpp-pill .mud-select-input {
-        font-size: 0.75rem;
-        padding: 0;
-        min-height: unset;
-        height: auto;
+    .wis-pager__rpp-option--active {
+        color: var(--mud-palette-primary);
+        font-weight: 600;
     }
 
 /* Vertical separator */

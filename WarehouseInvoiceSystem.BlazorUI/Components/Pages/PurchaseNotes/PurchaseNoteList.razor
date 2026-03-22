@@ -440,19 +440,13 @@
         bool isPaid      = item.Status == PurchaseNoteStatus.Paid;
         bool isCancelled = item.Status == PurchaseNoteStatus.Cancelled;
         bool canPay      = isDraft || isPending;
+        bool canRevert   = isPending;
         bool canCancel   = !isPaid && !isCancelled;
 
         List<WisDetailActionItem> actions = [];
 
         if (isDraft)
         {
-            actions.Add(new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.Edit,
-                Label   = Localization.GetString("Edit"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/edit/{item.Id}"))
-            });
-
             actions.Add(new WisDetailActionItem
             {
                 Icon    = Icons.Material.Filled.MoveToInbox,
@@ -473,6 +467,16 @@
             });
         }
 
+        if (isDraft)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Edit,
+                Label   = Localization.GetString("Edit"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/edit/{item.Id}"))
+            });
+        }
+
         actions.Add(new WisDetailActionItem
         {
             Icon     = Icons.Material.Filled.Print,
@@ -487,6 +491,16 @@
             Label   = Localization.GetString("Copy"),
             OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={item.Id}"))
         });
+
+        if (canRevert)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Undo,
+                Label   = Localization.GetString("Draft"),
+                OnClick = EventCallback.Factory.Create(this, () => RevertToDraftFromList(item))
+            });
+        }
 
         if (isCancelled)
         {
@@ -526,6 +540,14 @@
             "PurchaseNoteCancelled", "ErrorUpdatingPurchaseNote",
             Localization.GetString("Cancel"), Localization.GetString("Back"));
     }
+
+    private async Task RevertToDraftFromList(PurchaseNoteDto note) =>
+        await ConfirmAndExecuteAsync(
+            Localization.GetString("RevertToDraft"),
+            Localization.GetString("RevertToDraftConfirm"),
+            async () => { await PurchaseNoteService.RevertToDraftAsync(note.Id); await _grid.ReloadServerData(); },
+            "PurchaseNoteRevertedToDraft", "ErrorUpdatingPurchaseNote",
+            Localization.GetString("RevertToDraft"), Localization.GetString("Back"));
 
     private void BuildCreateActions()
     {

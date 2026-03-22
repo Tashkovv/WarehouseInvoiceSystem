@@ -6,22 +6,33 @@
 
     <span class="wis-pager__rpp-label">@Localization.GetString("ItemsPerPage")</span>
 
-    <div class="wis-pager__rpp-pill" @onclick="ToggleSelect" @onclick:stopPropagation>
-        <MudSelect @ref="_selectRef"
-                   T="int"
-                   Value="_rowsPerPage"
-                   ValueChanged="OnRowsPerPageChanged"
-                   Variant="Variant.Text"
-                   Margin="Margin.None"
-                   Dense="true"
-                   Class="wis-pager__select"
-                   AnchorOrigin="Origin.TopCenter">
-            @foreach (var size in PageSizeOptions)
-            {
-                <MudSelectItem T="int" Value="size">@size</MudSelectItem>
-            }
-        </MudSelect>
+    <div class="wis-pager__rpp-container">
+        <div class="wis-pager__rpp-pill" @onclick="TogglePicker" @onclick:stopPropagation>
+            <span class="wis-pager__rpp-value">@_rowsPerPage</span>
+            <MudIcon Icon="@(_isOpen ? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
+                     Size="Size.Small"
+                     Class="wis-pager__rpp-chevron" />
+        </div>
+
+        @if (_isOpen)
+        {
+            <div class="wis-pager__rpp-dropdown" @onclick:stopPropagation>
+                @foreach (int size in PageSizeOptions)
+                {
+                    int s = size;
+                    <div class="wis-pager__rpp-option @(s == _rowsPerPage ? "wis-pager__rpp-option--active" : "")"
+                         @onclick="@(() => SelectSize(s))">
+                        @size
+                    </div>
+                }
+            </div>
+        }
     </div>
+
+    @if (_isOpen)
+    {
+        <MudOverlay Visible="true" OnClick="TogglePicker" LockScroll="false" />
+    }
 
     <div class="wis-pager__sep"></div>
 
@@ -57,7 +68,7 @@
     [CascadingParameter] public MudDataGrid<T> DataGrid { get; set; } = null!;
     [Parameter] public int[] PageSizeOptions { get; set; } = [10, 25, 50, 100];
 
-    private MudSelect<int> _selectRef = null!;
+    private bool _isOpen;
 
     private int _currentPage => DataGrid?.CurrentPage ?? 0;
     private int _rowsPerPage => DataGrid?.RowsPerPage ?? PageSizeOptions[0];
@@ -77,14 +88,14 @@
     private void OnPagerStateChanged()
         => InvokeAsync(StateHasChanged);
 
-    private async Task OnRowsPerPageChanged(int value)
-    {
-        if (DataGrid is not null)
-            await DataGrid.SetRowsPerPageAsync(value);
-    }
+    private void TogglePicker() => _isOpen = !_isOpen;
 
-    private async Task ToggleSelect()
-        => await _selectRef.ToggleMenu();
+    private async Task SelectSize(int size)
+    {
+        _isOpen = false;
+        if (DataGrid is not null)
+            await DataGrid.SetRowsPerPageAsync(size);
+    }
 
     private void GoFirst() { DataGrid?.NavigateTo(Page.First); }
     private void GoPrev()  { DataGrid?.NavigateTo(Page.Previous); }

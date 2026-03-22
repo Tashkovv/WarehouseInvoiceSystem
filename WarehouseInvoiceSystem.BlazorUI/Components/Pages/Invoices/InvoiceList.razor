@@ -677,6 +677,14 @@
             "InvoiceCancelled", "ErrorUpdatingInvoice",
             Localization.GetString("Cancel"), Localization.GetString("Back"));
 
+    private async Task RevertToDraftFromList(InvoiceDto invoice) =>
+        await ConfirmAndExecuteAsync(
+            Localization.GetString("RevertInvoiceToDraft"),
+            Localization.GetString("RevertInvoiceToDraftConfirm"),
+            async () => { await InvoiceService.RevertToDraftAsync(invoice.Id); await _grid.ReloadServerData(); },
+            "InvoiceRevertedToDraft", "ErrorUpdatingInvoice",
+            Localization.GetString("RevertInvoiceToDraft"), Localization.GetString("Back"));
+
     private bool CanPay(InvoiceStatus status) =>
         status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
 
@@ -696,6 +704,7 @@
         bool canConfirm  = CanConfirm(item.Status);
         bool canSend     = CanSendEmail(item.Type, item.Status);
         bool canPay      = CanPay(item.Status);
+        bool canRevert   = item.Status == InvoiceStatus.Confirmed || item.Status == InvoiceStatus.Overdue;
         bool canCancel   = !isCancelled && !isPaid;
 
         // Confirm action: receivable Draft → "Confirm & Send", payable Draft → "Confirm"
@@ -707,16 +716,6 @@
             : Icons.Material.Filled.CheckCircle;
 
         List<WisDetailActionItem> actions = [];
-
-        if (canEdit)
-        {
-            actions.Add(new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.Edit,
-                Label   = Localization.GetString("Edit"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/edit/{item.Id}"))
-            });
-        }
 
         if (canConfirm)
         {
@@ -751,12 +750,15 @@
             });
         }
 
-        actions.Add(new WisDetailActionItem
+        if (canEdit)
         {
-            Icon    = Icons.Material.Filled.ContentCopy,
-            Label   = Localization.GetString("Copy"),
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
-        });
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Edit,
+                Label   = Localization.GetString("Edit"),
+                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/edit/{item.Id}"))
+            });
+        }
 
         actions.Add(new WisDetailActionItem
         {
@@ -765,6 +767,23 @@
             Disabled = _exportingRow,
             OnClick  = EventCallback.Factory.Create(this, () => ExportInvoiceRow(item))
         });
+
+        actions.Add(new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.ContentCopy,
+            Label   = Localization.GetString("Copy"),
+            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
+        });
+
+        if (canRevert)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Undo,
+                Label   = Localization.GetString("Draft"),
+                OnClick = EventCallback.Factory.Create(this, () => RevertToDraftFromList(item))
+            });
+        }
 
         if (isCancelled)
         {
