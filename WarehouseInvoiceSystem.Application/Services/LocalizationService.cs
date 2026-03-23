@@ -42,6 +42,7 @@ namespace WarehouseInvoiceSystem.Application.Services
             CultureInfo.DefaultThreadCurrentUICulture = culture;
 
             _currentLanguage = language;
+            _translations[language] = LoadLanguage(language);
             OnLanguageChanged?.Invoke();
         }
 

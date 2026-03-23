@@ -189,7 +189,15 @@
 @code {
     [Parameter]
     [SupplyParameterFromQuery(Name = "individualId")]
-    public Guid? IndividualIdParam { get; set; }
+    public string? IndividualIdParam { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "purchaseDateFrom")]
+    public string? PurchaseDateFromParam { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "purchaseDateTo")]
+    public string? PurchaseDateToParam { get; set; }
 
     [Parameter]
     [SupplyParameterFromQuery(Name = "status")]
@@ -227,27 +235,48 @@
         await base.OnInitializedAsync();
         BuildFilterItems();
         BuildCreateActions();
+        ApplyQueryParams();
 
+        // Set IndividualId filter from query param so filter button shows active state
+        if (_filterIndividualId.HasValue)
+        {
+            try
+            {
+                IndividualDto? individual = await IndividualService.GetIndividualByIdAsync(_filterIndividualId.Value, CancellationToken.None);
+                if (individual is not null)
+                    _filterIndividualInitialLabel = individual.FullName;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error resolving individual param: {ex.Message}");
+            }
+        }
+    }
+
+    private void ApplyQueryParams()
+    {
         if (!string.IsNullOrWhiteSpace(StatusParam) &&
             Enum.TryParse<PurchaseNoteStatus>(StatusParam, ignoreCase: true, out PurchaseNoteStatus parsedStatus))
         {
             _filterStatus = parsedStatus;
         }
 
-        // Set IndividualId filter from ?individualId= query param
-        if (IndividualIdParam.HasValue)
+        if (!string.IsNullOrWhiteSpace(IndividualIdParam) &&
+            Guid.TryParse(IndividualIdParam, out Guid individualId))
         {
-            _filterIndividualId = IndividualIdParam.Value;
-            try
-            {
-                IndividualDto? match = await IndividualService.GetIndividualByIdAsync(IndividualIdParam.Value, CancellationToken.None);
-                if (match is not null)
-                    _filterIndividualInitialLabel = match.FullName;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error resolving individual param: {ex.Message}");
-            }
+            _filterIndividualId = individualId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(PurchaseDateFromParam) &&
+            DateTime.TryParse(PurchaseDateFromParam, out DateTime purchaseDateFrom))
+        {
+            _filterDateRange = new DateRange(purchaseDateFrom, _filterDateRange.End);
+        }
+
+        if (!string.IsNullOrWhiteSpace(PurchaseDateToParam) &&
+            DateTime.TryParse(PurchaseDateToParam, out DateTime purchaseDateTo))
+        {
+            _filterDateRange = new DateRange(_filterDateRange.Start, purchaseDateTo);
         }
     }
 

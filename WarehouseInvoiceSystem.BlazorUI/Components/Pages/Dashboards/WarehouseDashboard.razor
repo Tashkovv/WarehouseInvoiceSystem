@@ -431,7 +431,7 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
                                              Color="@GetQuantityColor(context.Type, context.Quantity)">
-                                        @GetQuantityText(context.Type, context.Quantity)
+                                        @GetQuantityText(context.Type, context.Quantity) @context.ProductUnit
                                     </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Type")">

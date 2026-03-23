@@ -384,6 +384,7 @@
                 ProductId = transaction.ProductId,
                 ProductCode = transaction.Product.Code,
                 ProductName = transaction.Product.Name,
+                ProductUnit = transaction.Product.Unit,
                 WarehouseId = transaction.WarehouseId,
                 WarehouseName = transaction.Warehouse.Name,
                 Type = transaction.Type,

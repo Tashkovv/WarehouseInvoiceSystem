@@ -236,6 +236,14 @@
     public string? TypeParam { get; set; }
 
     [Parameter]
+    [SupplyParameterFromQuery(Name = "issueDateFrom")]
+    public string? IssueDateFromParam { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "issueDateTo")]
+    public string? IssueDateToParam { get; set; }
+
+    [Parameter]
     [SupplyParameterFromQuery(Name = "dueDateFrom")]
     public string? DueDateFromParam { get; set; }
 
@@ -332,6 +340,18 @@
             Enum.TryParse<InvoiceType>(TypeParam, ignoreCase: true, out InvoiceType parsedType))
         {
             _filterType = parsedType;
+        }
+
+        if (!string.IsNullOrWhiteSpace(IssueDateFromParam) &&
+            DateTime.TryParse(IssueDateFromParam, out DateTime issueDateFrom))
+        {
+            _filterIssueDateRange = new DateRange(issueDateFrom, _filterIssueDateRange.End);
+        }
+
+        if (!string.IsNullOrWhiteSpace(IssueDateToParam) &&
+            DateTime.TryParse(IssueDateToParam, out DateTime issueDateTo))
+        {
+            _filterIssueDateRange = new DateRange(_filterIssueDateRange.Start, issueDateTo);
         }
 
         if (!string.IsNullOrWhiteSpace(DueDateFromParam) &&
