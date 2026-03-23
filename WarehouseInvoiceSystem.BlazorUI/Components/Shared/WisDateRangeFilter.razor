@@ -4,7 +4,8 @@
                   IsActive="@_isActive"
                   TriggerLabel="@_triggerLabel"
                   TriggerIcon="@Icons.Material.Filled.CalendarMonth"
-                  MinWidth="130px">
+                  MinWidth="130px"
+                  OnOpen="@OnPopoverOpen">
 
     @* Static inline calendar *@
     <div class="wis-drf-calendar">
@@ -15,7 +16,7 @@
                             Margin="Margin.None"
                             DateFormat="dd MMM yy"
                             MaxDate="@MaxDate"
-                            PickerMonth="@(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1))"
+                            @bind-PickerMonth="_pickerMonth"
                             Elevation="0"
                             Class="wis-daterange-static" />
     </div>
@@ -78,6 +79,15 @@
     public bool FuturePresets { get; set; } = false;
 
     private WisFilterPopover _popover = null!;
+
+    private DateTime? _pickerMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+
+    private void OnPopoverOpen()
+    {
+        _pickerMonth = _localRange.Start.HasValue
+            ? new DateTime(_localRange.Start.Value.Year, _localRange.Start.Value.Month, 1)
+            : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+    }
 
     // Shadow fields — synced in OnParametersSet so external resets
     // (e.g. ClearAllFilters) are always reflected in the UI,

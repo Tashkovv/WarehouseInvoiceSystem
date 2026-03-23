@@ -130,8 +130,7 @@
     private void OnPopoverOpen()
     {
         _viewYear = _localDate?.Year ?? DateTime.Today.Year;
-        // For year grid: align the 12-year window so the selected/current year is visible
-        _viewYearOffset = ((_viewYear - DateTime.Today.Year) / 12) * 12;
+        _viewYearOffset = 0;
     }
 
     private async Task OnDateChanged(DateTime? date)

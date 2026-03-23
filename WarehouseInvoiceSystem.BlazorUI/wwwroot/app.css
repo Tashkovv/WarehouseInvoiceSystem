@@ -444,9 +444,6 @@ html {
     .wis-daterange-static .mud-picker-static {
         box-shadow: none !important;
         border: none !important;
-    }
-
-    .wis-daterange-static .mud-picker-content {
         padding: 0 !important;
     }
 
@@ -458,34 +455,27 @@ html {
         display: none !important;
     }
 
-    /* Tighten month navigation row */
+    /* Tighten month navigation row — same horizontal padding as content so headers align */
     .wis-daterange-static .mud-picker-calendar-header,
     .wis-daterange-static .mud-daterangepicker-month-year {
-        padding-top: 4px !important;
-        padding-bottom: 0 !important;
+        padding: 4px 6px 0 6px !important;
         min-height: unset !important;
     }
 
-    /* Remove padding around the calendar grid */
-    .wis-daterange-static .mud-picker-calendar-content,
-    .wis-daterange-static .mud-daterange-calendar-content {
-        padding: 0 6px 4px 6px !important;
+    /* Align content to top — mud-picker-content centers vertically by default, causing space above */
+    .wis-daterange-static .mud-picker-content {
+        justify-content: flex-start !important;
+        padding: 0 !important;
     }
 
-    /* Compact day-of-week header */
-    .wis-daterange-static .mud-day-of-week,
-    .wis-daterange-static th {
-        padding: 2px 0 !important;
-        height: 28px !important;
+    /* Remove the 12px top margin above the calendar rows */
+    .wis-daterange-static .mud-picker-calendar-transition {
+        margin-top: 0 !important;
     }
 
-    /* Smaller day cells */
-    .wis-daterange-static .mud-button-date,
-    .wis-daterange-static .mud-picker-calendar-day {
-        height: 34px !important;
-        width: 34px !important;
-        min-width: 34px !important;
-        font-size: 0.8rem !important;
+    /* Remove the 5px side margin on week rows so they align with the header-day row */
+    .wis-daterange-static .mud-picker-calendar-week {
+        margin: 0 !important;
     }
 
     /* Remove gap between the two month columns */
@@ -514,9 +504,6 @@ html {
     .wis-date-static .mud-picker-static {
         box-shadow: none !important;
         border: none !important;
-    }
-
-    .wis-date-static .mud-picker-content {
         padding: 0 !important;
     }
 
@@ -530,30 +517,24 @@ html {
 
     /* Tighten month navigation row */
     .wis-date-static .mud-picker-calendar-header {
-        padding-top: 4px !important;
-        padding-bottom: 0 !important;
+        padding: 4px 6px 0 6px !important;
         min-height: unset !important;
     }
 
-    /* Remove padding around the calendar grid */
-    .wis-date-static .mud-picker-calendar-content {
-        padding: 0 6px 4px 6px !important;
+    /* Align content to top — mud-picker-content centers vertically by default, causing space above */
+    .wis-date-static .mud-picker-content {
+        justify-content: flex-start !important;
+        padding: 0 !important;
     }
 
-    /* Compact day-of-week header */
-    .wis-date-static .mud-day-of-week,
-    .wis-date-static th {
-        padding: 2px 0 !important;
-        height: 28px !important;
+    /* Remove the 12px top margin above the calendar rows */
+    .wis-date-static .mud-picker-calendar-transition {
+        margin-top: 0 !important;
     }
 
-    /* Smaller day cells */
-    .wis-date-static .mud-button-date,
-    .wis-date-static .mud-picker-calendar-day {
-        height: 34px !important;
-        width: 34px !important;
-        min-width: 34px !important;
-        font-size: 0.75rem !important;
+    /* Remove the 5px side margin on week rows so they align with the header-day row */
+    .wis-date-static .mud-picker-calendar-week {
+        margin: 0 !important;
     }
 
 /* Single-month calendar wrapper */
