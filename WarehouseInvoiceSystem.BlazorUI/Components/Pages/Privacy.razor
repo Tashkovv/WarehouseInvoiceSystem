@@ -1,0 +1,64 @@
+@page "/privacy"
+@inherits PageBase
+
+<PageTitle>@Localization.GetString("PrivacyPageTitle") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("PrivacyPageTitle")</MudText>
+
+<MudGrid Style="align-items: stretch;">
+
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2" Style="height: 100%;">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Storage" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("PrivacyDataStorage")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @Localization.GetString("PrivacyDataStorageBody")
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2" Style="height: 100%;">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("PrivacyEmail")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @Localization.GetString("PrivacyEmailBody")
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2" Style="height: 100%;">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("PrivacyNoTracking")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @Localization.GetString("PrivacyNoTrackingBody")
+                </MudText>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+</MudGrid>

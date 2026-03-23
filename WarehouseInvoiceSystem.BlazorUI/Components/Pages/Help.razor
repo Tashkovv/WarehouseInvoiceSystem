@@ -1,0 +1,134 @@
+@page "/help"
+@inherits PageBase
+@inject ITenantService TenantService
+
+<PageTitle>@Localization.GetString("HelpPageTitle") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-6">@Localization.GetString("HelpPageTitle")</MudText>
+
+<MudGrid>
+
+    @* ── About ── *@
+    <MudItem xs="12" md="6">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("HelpAbout")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Class="mr-2" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body1"><strong>@Localization.GetString("InvoiceSystem")</strong></MudText>
+                </div>
+                <div class="d-flex align-center mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Tag" Class="mr-2" Color="Color.Secondary" />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("HelpAppVersion"): @_version</MudText>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(_companyName))
+                {
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Business" Class="mr-2" Color="Color.Secondary" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_companyName</MudText>
+                    </div>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    @* ── Contact Support ── *@
+    <MudItem xs="12" md="6">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.SupportAgent" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("HelpSupportTitle")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    @Localization.GetString("HelpSupportBody")
+                </MudText>
+                <div class="d-flex align-center mb-4">
+                    <div class="d-flex align-center mr-4">
+                        <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                        <MudLink Href="mailto:jovcotaskov@gmail.com" Typo="Typo.body2">jovcotaskov@gmail.com</MudLink>
+                    </div>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Class="mr-2" Color="Color.Secondary" />
+                        <MudText Typo="Typo.body2">+389 71 850 851</MudText>
+                    </div>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    @* ── Quick Guide ── *@
+    <MudItem xs="12">
+        <MudCard Elevation="2">
+            <MudCardHeader>
+                <CardHeaderAvatar>
+                    <MudIcon Icon="@Icons.Material.Filled.MenuBook" Color="Color.Primary" />
+                </CardHeaderAvatar>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@Localization.GetString("HelpQuickGuide")</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Groups" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.body2">@Localization.GetString("HelpGuidePartners")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Description" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.body2">@Localization.GetString("HelpGuideDocuments")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Warehouse" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.body2">@Localization.GetString("HelpGuideWarehouse")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="mr-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.body2">@Localization.GetString("HelpGuideDashboards")</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+</MudGrid>
+
+@code {
+    private string _version = string.Empty;
+    private string _companyName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _version = System.Reflection.Assembly
+            .GetExecutingAssembly()
+            .GetName()
+            .Version?
+            .ToString(3) ?? "1.0.0";
+
+        try
+        {
+            var tenant = await TenantService.GetAsync();
+            _companyName = tenant.CompanyName;
+        }
+        catch { /* non-critical */ }
+    }
+}
