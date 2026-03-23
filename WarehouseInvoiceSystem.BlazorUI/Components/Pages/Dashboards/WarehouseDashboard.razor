@@ -186,9 +186,9 @@ else
                             <HeaderContent>
                                 <MudTh>#</MudTh>
                                 <MudTh>@Localization.GetString("Product")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("Status")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("TotalValue")</MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
@@ -203,9 +203,6 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Product")">
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductCode - @item.ProductName</MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@item.UnitPrice.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold"
@@ -232,6 +229,9 @@ else
                                             @Localization.GetString("InStock")
                                         </MudChip>
                                     }
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@item.UnitPrice.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("TotalValue")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
