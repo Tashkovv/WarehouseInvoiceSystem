@@ -3,7 +3,7 @@ using System.Globalization;
 using WarehouseInvoiceSystem.Application.BackgroundWorkers;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Services;
-using WarehouseInvoiceSystem.Application.Settings;
+using WarehouseInvoiceSystem.Application;
 using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Common;
 using WarehouseInvoiceSystem.Infrastructure.Data;
@@ -26,15 +26,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Register Settings
-builder.Services.AddOptions<EmailSettings>()
-                .Bind(builder.Configuration.GetSection("EmailSettings"))
-                .ValidateOnStart();
-
-builder.Services.Configure<EncryptionSettings>(
-    builder.Configuration.GetSection("EncryptionSettings"));
-
-builder.Services.Configure<NotificationSettings>(
-    builder.Configuration.GetSection("NotificationSettings"));
+builder.Services.AddApplicationSettings(builder.Configuration);
 
 // Add Database Context
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>

@@ -5,7 +5,7 @@ using System.Globalization;
 using WarehouseInvoiceSystem.Application.BackgroundWorkers;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Services;
-using WarehouseInvoiceSystem.Application.Settings;
+using WarehouseInvoiceSystem.Application;
 using WarehouseInvoiceSystem.BlazorUI.Components;
 using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Common;
@@ -28,15 +28,7 @@ builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
 
 // Register Settings
-builder.Services.AddOptions<EmailSettings>()
-                .Bind(builder.Configuration.GetSection("EmailSettings"))
-                .ValidateOnStart();
-
-builder.Services.Configure<EncryptionSettings>(
-    builder.Configuration.GetSection("EncryptionSettings"));
-
-builder.Services.Configure<NotificationSettings>(
-    builder.Configuration.GetSection("NotificationSettings"));
+builder.Services.AddApplicationSettings(builder.Configuration);
 
 // Add MudBlazor services
 builder.Services.AddMudServices();
