@@ -501,10 +501,10 @@ else
     private List<FilterPopoverItem<InventoryTransactionType>> _transactionTypeItems =>
     [
         new() { Label = Localization.GetString("Inbound"),     Value = InventoryTransactionType.Inbound,     Color = Color.Success,  Icon = Icons.Material.Filled.ArrowDownward },
-        new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Warning,  Icon = Icons.Material.Filled.ArrowUpward },
+        new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Error,    Icon = Icons.Material.Filled.ArrowUpward },
         new() { Label = Localization.GetString("Adjustment"),  Value = InventoryTransactionType.Adjustment,  Color = Color.Info,     Icon = Icons.Material.Filled.Tune },
         new() { Label = Localization.GetString("TransferIn"),  Value = InventoryTransactionType.TransferIn,  Color = Color.Tertiary, Icon = Icons.Material.Filled.CallMade },
-        new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Default,  Icon = Icons.Material.Filled.CallReceived },
+        new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Warning,  Icon = Icons.Material.Filled.CallReceived },
         new() { Label = Localization.GetString("Reversed"),    Value = InventoryTransactionType.Reversed,    Color = Color.Dark,     Icon = Icons.Material.Filled.Undo },
     ];
 

@@ -31,7 +31,7 @@
 
     @if (_isOpen)
     {
-        <MudOverlay Visible="true" OnClick="TogglePicker" LockScroll="false" />
+        <div class="wis-pager__backdrop" @onclick="ClosePicker" @onclick:stopPropagation />
     }
 
     <div class="wis-pager__sep"></div>
@@ -89,6 +89,8 @@
         => InvokeAsync(StateHasChanged);
 
     private void TogglePicker() => _isOpen = !_isOpen;
+
+    private void ClosePicker() => _isOpen = false;
 
     private async Task SelectSize(int size)
     {

@@ -64,7 +64,7 @@ else
             <DashboardCard Title="@Localization.GetString("OverduePayables")"
                            Value="@_invoicePosition.OverduePayableAmount.ToString("C")"
                            Subtitle="@($"{_invoicePosition.OverduePayableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.AccountBalance"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="@(_invoicePosition.OverduePayableCount > 0 ? Color.Error : Color.Success)"
                            Link="/invoices?status=Overdue&type=Payable" />
         </MudItem>

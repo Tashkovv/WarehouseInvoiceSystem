@@ -1731,7 +1731,7 @@ html {
     border: 1px solid var(--mud-palette-divider);
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-    z-index: 1300;
+    z-index: 2;
     min-width: 72px;
     overflow: hidden;
 }
@@ -1797,6 +1797,12 @@ html {
     .wis-pager__btn.mud-disabled {
         opacity: 0.3;
     }
+
+.wis-pager__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1; /* behind dropdown */
+}
 
 /* AppBar popovers — right-align all to viewport right edge */
 .appbar-popover {

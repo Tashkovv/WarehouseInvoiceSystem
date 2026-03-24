@@ -161,7 +161,7 @@ else
                                         @if (_analytics.ReceivableOverdueCount > 0)
                                         {
                                             <div class="wis-ca-stat">
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverdueReceivables")</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Overdue")</MudText>
                                                 <div class="wis-stat-value mud-error-text">@_analytics.ReceivableOverdueAmountDue.ToString("C")</div>
                                                 <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.ReceivableOverdueCount @Localization.GetString("Invoices")</MudText>
                                             </div>
@@ -212,7 +212,7 @@ else
                                         @if (_analytics.PayableOverdueCount > 0)
                                         {
                                             <div class="wis-ca-stat">
-                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("OverduePayables")</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Overdue")</MudText>
                                                 <div class="wis-stat-value mud-error-text">@_analytics.PayableOverdueAmountDue.ToString("C")</div>
                                                 <MudText Typo="Typo.body2" Color="Color.Error">@_analytics.PayableOverdueCount @Localization.GetString("Invoices")</MudText>
                                             </div>

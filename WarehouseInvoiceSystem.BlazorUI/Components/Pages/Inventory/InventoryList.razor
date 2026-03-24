@@ -18,7 +18,7 @@
 </div>
 
 <WisGridToolbar CreateAction="OpenAdjustDialog"
-                CreateLabel="@Localization.GetString("AdjustStock")"
+                CreateLabel="@Localization.GetString("Adjust")"
                 CreateIcon="@Icons.Material.Filled.Inventory2"
                 CreateActions="@_toolbarActions"
                 SearchValue="@_searchString"
@@ -229,7 +229,7 @@
             new WisDetailActionItem
             {
                 Icon    = Icons.Material.Filled.SwapHoriz,
-                Label   = Localization.GetString("TransferStock"),
+                Label   = Localization.GetString("Transfer"),
                 OnClick = EventCallback.Factory.Create(this, OpenTransferDialog)
             }
         ];
@@ -365,19 +365,19 @@
         new WisDetailActionItem
         {
             Icon    = Icons.Material.Filled.Inventory2,
-            Label   = Localization.GetString("AdjustStock"),
+            Label   = Localization.GetString("Adjust"),
             OnClick = EventCallback.Factory.Create(this, () => OpenAdjustDialogRow(item))
         },
         new WisDetailActionItem
         {
             Icon    = Icons.Material.Filled.SwapHoriz,
-            Label   = Localization.GetString("TransferStock"),
+            Label   = Localization.GetString("Transfer"),
             OnClick = EventCallback.Factory.Create(this, () => OpenTransferDialogRow(item))
         },
         new WisDetailActionItem
         {
             Icon    = Icons.Material.Filled.Tune,
-            Label   = Localization.GetString("EditThresholds"),
+            Label   = Localization.GetString("Thresholds"),
             OnClick = EventCallback.Factory.Create(this, () => OpenSetThresholdsDialog(item))
         },
     ];

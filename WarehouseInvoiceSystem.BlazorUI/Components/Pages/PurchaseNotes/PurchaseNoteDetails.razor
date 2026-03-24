@@ -217,6 +217,7 @@ else
         _actions = [];
 
         WisDetailActionItem exportAction = _act.Primary(Icons.Material.Filled.Print, Localization.GetString("Export"), ExportForPrinting);
+        WisDetailActionItem copyAction = _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote);
 
         switch (_note.Status)
         {
@@ -224,11 +225,11 @@ else
                 _primaryAction = _act.Warning(Icons.Material.Filled.MoveToInbox, Localization.GetString("ReceiveGoods"), ReceiveGoods);
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
+                    _act.Primary(Icons.Material.Filled.Edit, Localization.GetString("Edit"),   GoToEdit),
                     exportAction,
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
-                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
-                ];
+                    copyAction,
+                    _act.Error(Icons.Material.Filled.Cancel, Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
+            ];
                 break;
 
             case PurchaseNoteStatus.Pending:
@@ -236,14 +237,14 @@ else
                 _actions =
                 [
                     exportAction,
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyNote),
-                    _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
-                    _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
-                ];
+                    copyAction,
+                    _act.Primary(Icons.Material.Filled.Undo, Localization.GetString("Draft"),  RevertToDraft),
+                    _act.Error(Icons.Material.Filled.Cancel, Localization.GetString("Cancel"), CancelNote, dividerBefore: true),
+            ];
                 break;
 
             case PurchaseNoteStatus.Paid:
-                _primaryAction = _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote);
+                _primaryAction = copyAction;
                 _actions = [exportAction];
                 break;
 
@@ -252,7 +253,7 @@ else
                 _actions =
                 [
                     exportAction,
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"), CopyNote),
+                    copyAction,
                 ];
                 break;
         }

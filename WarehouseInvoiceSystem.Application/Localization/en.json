@@ -433,7 +433,6 @@
   "Transfer": "Transfer",
   "SourceWarehouse": "Source Warehouse",
   "DestinationWarehouse": "Destination Warehouse",
-  "TransferNote": "Note (optional)",
   "StockTransferred": "Stock transferred successfully",
   "ErrorTransferringStock": "Error transferring stock",
   "Profile": "Profile",

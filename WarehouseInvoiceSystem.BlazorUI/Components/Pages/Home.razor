@@ -85,19 +85,28 @@ else
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
-                           Value="@_invoicePosition.ReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.AccountBalanceWallet"
-                           IconColor="Color.Primary" />
+            <DashboardCard Title="@Localization.GetString("UnpaidPurchaseNotes")"
+                           Value="@_purchaseNotePosition.unpaidCount.ToString()"
+                           Subtitle="@_purchaseNotePosition.unpaidAmount.ToString("C")"
+                           Icon="@Icons.Material.Filled.Receipt"
+                           IconColor="@(_purchaseNotePosition.unpaidCount > 0 ? Color.Warning : Color.Success)"
+                           Link="/purchase-notes?status=Pending" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayables.ToString("C")"
                            Subtitle="@($"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")} · {_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
-                           Icon="@Icons.Material.Filled.AccountBalance"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Default" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
+                           Value="@_invoicePosition.ReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Primary" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -107,15 +116,6 @@ else
                            Icon="@Icons.Material.Filled.Warning"
                            IconColor="@(_invoicePosition.TotalOverdueCount > 0 ? Color.Error : Color.Success)"
                            Link="/invoices?status=Overdue" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("UnpaidPurchaseNotes")"
-                           Value="@_purchaseNotePosition.unpaidCount.ToString()"
-                           Subtitle="@_purchaseNotePosition.unpaidAmount.ToString("C")"
-                           Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="@(_purchaseNotePosition.unpaidCount > 0 ? Color.Warning : Color.Success)"
-                           Link="/purchase-notes?status=Pending" />
         </MudItem>
 
         <!-- ── Row 3: Warehouse Health ── -->

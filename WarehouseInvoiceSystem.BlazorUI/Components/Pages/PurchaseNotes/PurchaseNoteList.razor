@@ -468,7 +468,7 @@
         bool isPending   = item.Status == PurchaseNoteStatus.Pending;
         bool isPaid      = item.Status == PurchaseNoteStatus.Paid;
         bool isCancelled = item.Status == PurchaseNoteStatus.Cancelled;
-        bool canPay      = isDraft || isPending;
+        bool canPay      = isPending;
         bool canRevert   = isPending;
         bool canCancel   = !isPaid && !isCancelled;
 
