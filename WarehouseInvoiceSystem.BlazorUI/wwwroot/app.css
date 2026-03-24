@@ -1381,7 +1381,8 @@ html {
 .wis-detail-history {
     display: flex;
     align-items: flex-start;
-    gap: 32px;
+    flex-wrap: wrap;
+    gap: 16px 32px;
 }
 
 .wis-detail-history-dates {
@@ -1392,11 +1393,22 @@ html {
 
 .wis-detail-history-product {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
     padding-left: 8px;
     border-left: 1px solid rgba(var(--mud-palette-text-primary-rgb), 0.08);
+}
+
+    .wis-detail-history-product > .mud-icon-root {
+        margin-top: 28px;
+    }
+
+.wis-detail-history-product-text {
+    min-width: 0;
+    overflow: hidden;
 }
 
 /* ── Secondary list — generic subordinate table style ─────────────────────
@@ -1450,6 +1462,12 @@ html {
 
 .wis-capitalize {
     text-transform: capitalize;
+}
+
+.wis-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ── WisAutocompleteFilter ──────────────────────────────────────────────── */

@@ -576,9 +576,6 @@
 
         // ── Home dashboard aggregates ─────────────────────────────────────────────
 
-        public Task<DayIssueSummaryResult> GetDayIssueSummaryAsync(DateTime date, CancellationToken ct = default)
-            => invoiceRepository.GetDayIssueSummaryAsync(date, ct);
-
         public async Task<IEnumerable<InvoiceDto>> GetTopOverdueReceivablesAsync(
             Guid? warehouseId, int top, CancellationToken ct = default)
         {

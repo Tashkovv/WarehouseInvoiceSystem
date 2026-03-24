@@ -61,7 +61,7 @@
             analytics.CancelledCount  = cancelled.Sum(r => r.Count);
             analytics.CancelledAmount = cancelled.Sum(r => r.TotalAmount);
 
-            var active = rows.Where(r => r.Status != PurchaseNoteStatus.Cancelled).ToList();
+            var active = rows.Where(r => r.Status != PurchaseNoteStatus.Cancelled && r.Status != PurchaseNoteStatus.Draft).ToList();
             analytics.TotalPurchaseNotes = active.Sum(r => r.Count);
             analytics.TotalAmount        = active.Sum(r => r.TotalAmount);
 
@@ -69,7 +69,7 @@
             analytics.PaidCount  = paid.Sum(r => r.Count);
             analytics.PaidAmount = paid.Sum(r => r.TotalAmount);
 
-            var unpaid = rows.Where(r => r.Status == PurchaseNoteStatus.Draft || r.Status == PurchaseNoteStatus.Pending).ToList();
+            var unpaid = rows.Where(r => r.Status == PurchaseNoteStatus.Pending).ToList();
             analytics.UnpaidCount  = unpaid.Sum(r => r.Count);
             analytics.UnpaidAmount = unpaid.Sum(r => r.TotalAmount);
 

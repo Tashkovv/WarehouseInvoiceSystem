@@ -235,9 +235,6 @@
             return payments.Select(MapToDto);
         }
 
-        public Task<DayPaymentSummaryResult> GetDayPaymentSummaryAsync(DateTime date, CancellationToken ct = default)
-            => paymentRepository.GetDayPaymentSummaryAsync(date, ct);
-
         private async Task<bool> InvoiceHadConfirmedStatusAsync(Invoice invoice)
         {
             IEnumerable<Payment> remainingPayments =

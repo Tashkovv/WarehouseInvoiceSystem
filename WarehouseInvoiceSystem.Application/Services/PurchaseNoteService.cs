@@ -429,11 +429,6 @@
             });
         }
 
-        // ── Home dashboard aggregates ─────────────────────────────────────────────
-
-        public Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default)
-            => purchaseNoteRepository.GetDayPaidSummaryAsync(date, ct);
-
         public async Task<IEnumerable<PurchaseNoteDto>> GetTopUnpaidAsync(
             Guid? warehouseId, int top, CancellationToken ct = default)
         {

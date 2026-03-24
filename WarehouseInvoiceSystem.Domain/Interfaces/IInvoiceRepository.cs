@@ -56,7 +56,6 @@
         Task<PagedResult<ProductPurchaseHistoryView>> GetPagedPurchasedHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
 
         // ── Dashboard aggregates ──────────────────────────────────────────────────
-        Task<DayIssueSummaryResult> GetDayIssueSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(Guid? warehouseId, int top, CancellationToken ct = default);
         Task<InvoicePeriodSummaryResult> GetDayInvoiceSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(int year, int month, CancellationToken ct = default);

@@ -248,12 +248,12 @@ else
                                     {
                                         <div class="wis-detail-history-product">
                                             <MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" Color="Color.Warning" />
-                                            <div>
+                                            <div class="wis-detail-history-product-text">
                                                 <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MostTradedProduct")</MudText>
-                                                <div class="d-flex align-center gap-2">
-                                                    <MudText Typo="Typo.body1" Class="wis-capitalize font-weight-medium">@_analytics.MostTradedProduct</MudText>
-                                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.MostTradedProductQuantity.ToString("N2") @_analytics.MostTradedProductUnit</MudText>
-                                                </div>
+                                                <MudTooltip Text="@_analytics.MostTradedProduct">
+                                                    <MudText Typo="Typo.body2" Class="wis-capitalize font-weight-medium wis-truncate">@_analytics.MostTradedProduct</MudText>
+                                                </MudTooltip>
+                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.MostTradedProductQuantity.ToString("N2") @_analytics.MostTradedProductUnit</MudText>
                                             </div>
                                         </div>
                                     }

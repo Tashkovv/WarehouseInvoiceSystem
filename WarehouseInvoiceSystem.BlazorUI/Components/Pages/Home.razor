@@ -9,7 +9,6 @@
 @using WarehouseInvoiceSystem.Domain.Queries.Results
 @inject IInvoiceService InvoiceService
 @inject IPurchaseNoteService PurchaseNoteService
-@inject IPaymentService PaymentService
 @inject IInventoryService InventoryService
 @inject IIndividualService IndividualService
 @inject ICompanyService CompanyService
@@ -49,34 +48,35 @@ else
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("InvoicesIssuedToday")"
-                           Value="@_dayIssueSummary.ReceivableCount.ToString()"
-                           Subtitle="@_dayIssueSummary.ReceivableAmount.ToString("C")"
-                           Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Default" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PurchaseNotesToday")"
-                           Value="@_dayPurchaseNoteSummary.Count.ToString()"
-                           Subtitle="@_dayPurchaseNoteSummary.Amount.ToString("C")"
+            <DashboardCard Title="@Localization.GetString("PurchaseNotes")"
+                           Value="@_todayNoteSummary.Amount.ToString("C")"
+                           Subtitle="@($"{_todayNoteSummary.Count} {Localization.GetString("PurchaseNotes")}")"
                            Icon="@Icons.Material.Filled.Receipt"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("RecentPayments")"
-                           Value="@_dayPaymentSummary.TotalCount.ToString()"
-                           Subtitle="@_dayPaymentSummary.TotalAmount.ToString("C")"
-                           Icon="@Icons.Material.Filled.Payments"
+            <DashboardCard Title="@Localization.GetString("PayableInvoices")"
+                           Value="@_todayInvoiceSummary.PayableAmount.ToString("C")"
+                           Subtitle="@($"{_todayInvoiceSummary.PayableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Default" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("Profit")"
-                           Value="@_profitToday.ToString("C")"
-                           Icon="@Icons.Material.Filled.TrendingUp"
-                           IconColor="@(_profitToday >= 0 ? Color.Success : Color.Error)" />
+            <DashboardCard Title="@Localization.GetString("ReceivableInvoices")"
+                           Value="@_todayInvoiceSummary.ReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_todayInvoiceSummary.ReceivableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Primary" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <DashboardCard Title="@Localization.GetString("NetIssued")"
+                           Value="@_netIssuedToday.ToString("C")"
+                           Subtitle="@_marginToday.ToString("P1")"
+                           Icon="@Icons.Material.Filled.SwapVert"
+                           IconColor="@(_netIssuedToday >= 0 ? Color.Success : Color.Error)" />
         </MudItem>
 
         <!-- ── Row 2: Financial Health ── -->
@@ -172,9 +172,8 @@ else
 @code {
     // ── State ──────────────────────────────────────────────────────────────────
 
-    private DayIssueSummaryResult _dayIssueSummary = new();
-    private DayPaymentSummaryResult _dayPaymentSummary = new();
-    private DayPurchaseNoteSummaryResult _dayPurchaseNoteSummary = new();
+    private InvoicePeriodSummaryResult _todayInvoiceSummary = new();
+    private DayPurchaseNoteSummaryResult _todayNoteSummary = new();
     private InvoiceOutstandingResult _invoicePosition = new();
     private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
     private WarehouseStockSummaryResult _stockSummary = new();
@@ -184,8 +183,11 @@ else
 
     // ── Computed display values ─────────────────────────────────────────────────
 
-    private decimal _profitToday =>
-        _dayPaymentSummary.ReceivedAmount - _dayPaymentSummary.PaidOutAmount - _dayPurchaseNoteSummary.Amount;
+    private decimal _netIssuedToday =>
+        _todayInvoiceSummary.ReceivableAmount - _todayInvoiceSummary.PayableAmount - _todayNoteSummary.Amount;
+
+    private decimal _marginToday =>
+        _todayInvoiceSummary.ReceivableAmount > 0 ? _netIssuedToday / _todayInvoiceSummary.ReceivableAmount : 0;
 
     private decimal _totalPayables =>
         _invoicePosition.PayableAmount + _purchaseNotePosition.unpaidAmount;
@@ -212,12 +214,10 @@ else
             DateTime today = DateTime.Today;
 
             await Task.WhenAll(
-                InvoiceService.GetDayIssueSummaryAsync(today, _cts.Token)
-                    .ContinueWith(t => _dayIssueSummary = t.Result),
-                PaymentService.GetDayPaymentSummaryAsync(today, _cts.Token)
-                    .ContinueWith(t => _dayPaymentSummary = t.Result),
-                PurchaseNoteService.GetDayPaidSummaryAsync(today, _cts.Token)
-                    .ContinueWith(t => _dayPurchaseNoteSummary = t.Result),
+                InvoiceService.GetDayInvoiceSummaryAsync(today, _cts.Token)
+                    .ContinueWith(t => _todayInvoiceSummary = t.Result),
+                PurchaseNoteService.GetDayIssuedSummaryAsync(today, _cts.Token)
+                    .ContinueWith(t => _todayNoteSummary = t.Result),
                 InvoiceService.GetOutstandingPositionAsync(_cts.Token)
                     .ContinueWith(t => _invoicePosition = t.Result),
                 PurchaseNoteService.GetOutstandingPositionAsync(_cts.Token)

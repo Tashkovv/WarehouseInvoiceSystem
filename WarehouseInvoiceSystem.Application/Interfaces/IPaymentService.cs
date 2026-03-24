@@ -16,6 +16,5 @@
         Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
         Task<bool> DeletePaymentAsync(Guid id);
         Task<IEnumerable<PaymentDto>> GetRecentAsync(int count, CancellationToken ct = default);
-        Task<DayPaymentSummaryResult> GetDayPaymentSummaryAsync(DateTime date, CancellationToken ct = default);
     }
 }

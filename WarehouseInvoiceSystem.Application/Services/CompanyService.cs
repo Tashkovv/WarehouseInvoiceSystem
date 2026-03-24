@@ -126,10 +126,9 @@
             var rows = data.StatRows;
 
             // ── Receivables ───────────────────────────────────────────────────
-            var recActive = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status != InvoiceStatus.Cancelled).ToList();
+            var recActive = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status != InvoiceStatus.Cancelled && r.Status != InvoiceStatus.Draft).ToList();
             var recPaid   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Paid).ToList();
-            var recOpen   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status is InvoiceStatus.Draft
-                                                                                             or InvoiceStatus.Confirmed
+            var recOpen   = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status is InvoiceStatus.Confirmed
                                                                                              or InvoiceStatus.PartiallyPaid
                                                                                              or InvoiceStatus.Overdue).ToList();
             var recOverdue    = rows.Where(r => r.Type == InvoiceType.Receivable && r.Status == InvoiceStatus.Overdue).ToList();
@@ -147,10 +146,9 @@
             analytics.ReceivableCancelledAmount = recCancelled.Sum(r => r.TotalAmount);
 
             // ── Payables ──────────────────────────────────────────────────────
-            var payActive = rows.Where(r => r.Type == InvoiceType.Payable && r.Status != InvoiceStatus.Cancelled).ToList();
+            var payActive = rows.Where(r => r.Type == InvoiceType.Payable && r.Status != InvoiceStatus.Cancelled && r.Status != InvoiceStatus.Draft).ToList();
             var payPaid   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Paid).ToList();
-            var payOpen   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status is InvoiceStatus.Draft
-                                                                                          or InvoiceStatus.Confirmed
+            var payOpen   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status is InvoiceStatus.Confirmed
                                                                                           or InvoiceStatus.PartiallyPaid
                                                                                           or InvoiceStatus.Overdue).ToList();
             var payOverdue   = rows.Where(r => r.Type == InvoiceType.Payable && r.Status == InvoiceStatus.Overdue).ToList();

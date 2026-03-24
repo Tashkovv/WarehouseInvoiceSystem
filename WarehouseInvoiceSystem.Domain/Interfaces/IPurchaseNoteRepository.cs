@@ -47,7 +47,6 @@
         Task<IndividualAnalyticsResult> GetIndividualAnalyticsDataAsync(Guid individualId, CancellationToken ct = default);
 
         // ── Dashboard aggregates ──────────────────────────────────────────────────
-        Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<IEnumerable<PurchaseNote>> GetTopUnpaidAsync(Guid? warehouseId, int top, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default);

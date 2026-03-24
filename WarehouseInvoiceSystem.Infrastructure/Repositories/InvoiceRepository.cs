@@ -128,7 +128,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<InvoiceLine>)await All<InvoiceLine>(context)
                     .Where(li => li.ProductId == productId &&
                                  li.Invoice.DeletedOn == null &&
-                                 li.Invoice.Status != InvoiceStatus.Cancelled)
+                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.Status != InvoiceStatus.Draft)
                     .Include(li => li.Invoice)
                         .ThenInclude(i => i.Company)
                     .Include(li => li.Invoice)
@@ -144,7 +145,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
                     .Where(li => li.ProductId == productId &&
                                  li.Invoice.DeletedOn == null &&
-                                 li.Invoice.Status != InvoiceStatus.Cancelled);
+                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.Status != InvoiceStatus.Draft);
 
                 if (type.HasValue)
                     q = q.Where(li => li.Invoice.Type == type.Value);
@@ -168,7 +170,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
                     .Where(li => productIds.Contains(li.ProductId) &&
                                  li.Invoice.DeletedOn == null &&
-                                 li.Invoice.Status != InvoiceStatus.Cancelled);
+                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.Status != InvoiceStatus.Draft);
 
                 if (type.HasValue)
                     q = q.Where(li => li.Invoice.Type == type.Value);
@@ -522,6 +525,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                  li.Invoice.Type == type &&
                                  li.Invoice.DeletedOn == null &&
                                  li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.Status != InvoiceStatus.Draft &&
                                  li.Invoice.IssueDate.Date >= from.Date &&
                                  li.Invoice.IssueDate.Date <= to.Date)
                     .GroupBy(li => li.ProductId)
@@ -551,6 +555,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                  li.Invoice.Type == type &&
                                  li.Invoice.DeletedOn == null &&
                                  li.Invoice.Status != InvoiceStatus.Cancelled &&
+                                 li.Invoice.Status != InvoiceStatus.Draft &&
                                  li.Invoice.IssueDate.Date >= from.Date &&
                                  li.Invoice.IssueDate.Date <= to.Date)
                     .GroupBy(li => new { li.ProductId, li.Product.Code, li.Product.Name, li.Product.Unit })
@@ -689,22 +694,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
         // ── Home dashboard aggregates ─────────────────────────────────────────────
 
-        public Task<DayIssueSummaryResult> GetDayIssueSummaryAsync(DateTime date, CancellationToken ct = default) =>
-            WithContextAsync(async context =>
-            {
-                DateTime day = date.Date;
-                var result = await All<Invoice>(context)
-                    .Where(i => i.Type == InvoiceType.Receivable && i.IssueDate.Date == day)
-                    .GroupBy(_ => 1)
-                    .Select(g => new DayIssueSummaryResult
-                    {
-                        ReceivableCount = g.Count(),
-                        ReceivableAmount = g.Sum(i => i.TotalAmount)
-                    })
-                    .FirstOrDefaultAsync(ct);
-                return result ?? new DayIssueSummaryResult();
-            });
-
         public Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(
             Guid? warehouseId, int top, CancellationToken ct = default) =>
             WithContextAsync(async context =>
@@ -729,7 +718,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 var rows = await All<Invoice>(context)
                     .Where(i => i.IssueDate.Date == date.Date &&
-                                i.Status != InvoiceStatus.Cancelled)
+                                i.Status != InvoiceStatus.Cancelled &&
+                                i.Status != InvoiceStatus.Draft)
                     .GroupBy(i => i.Type)
                     .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
                     .ToListAsync(ct);
@@ -753,7 +743,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 var rows = await All<Invoice>(context)
                     .Where(i => i.IssueDate.Year == year &&
                                 i.IssueDate.Month == month &&
-                                i.Status != InvoiceStatus.Cancelled)
+                                i.Status != InvoiceStatus.Cancelled &&
+                                i.Status != InvoiceStatus.Draft)
                     .GroupBy(i => i.Type)
                     .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
                     .ToListAsync(ct);
@@ -776,7 +767,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 var rows = await All<Invoice>(context)
                     .Where(i => i.IssueDate.Year == year &&
-                                i.Status != InvoiceStatus.Cancelled)
+                                i.Status != InvoiceStatus.Cancelled &&
+                                i.Status != InvoiceStatus.Draft)
                     .GroupBy(i => i.Type)
                     .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
                     .ToListAsync(ct);
@@ -860,6 +852,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             q = q.Where(li => li.ProductId == query.ProductId &&
                                li.Invoice.DeletedOn == null &&
                                li.Invoice.Status != InvoiceStatus.Cancelled &&
+                               li.Invoice.Status != InvoiceStatus.Draft &&
                                li.Invoice.Type == invoiceType);
 
             if (query.WarehouseId.HasValue)

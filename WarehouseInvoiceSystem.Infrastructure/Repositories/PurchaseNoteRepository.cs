@@ -115,7 +115,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<PurchaseNoteLine>)await All<PurchaseNoteLine>(context)
                     .Where(li => li.ProductId == productId &&
                                  li.PurchaseNote.DeletedOn == null &&
-                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled)
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Draft)
                     .Include(li => li.PurchaseNote)
                         .ThenInclude(pn => pn.Individual)
                     .Include(li => li.PurchaseNote)
@@ -131,7 +132,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 IQueryable<PurchaseNoteLine> q = All<PurchaseNoteLine>(context)
                     .Where(li => li.ProductId == productId &&
                                  li.PurchaseNote.DeletedOn == null &&
-                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Draft);
 
                 if (warehouseId.HasValue)
                     q = q.Where(li => li.PurchaseNote.WarehouseId == warehouseId.Value);
@@ -153,7 +155,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 IQueryable<PurchaseNoteLine> q = All<PurchaseNoteLine>(context)
                     .Where(li => productIds.Contains(li.ProductId) &&
                                  li.PurchaseNote.DeletedOn == null &&
-                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Draft);
 
                 if (warehouseId.HasValue)
                     q = q.Where(li => li.PurchaseNote.WarehouseId == warehouseId.Value);
@@ -311,7 +314,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         {
             q = q.Where(li => li.ProductId == query.ProductId &&
                               li.PurchaseNote.DeletedOn == null &&
-                              li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled);
+                              li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                              li.PurchaseNote.Status != PurchaseNoteStatus.Draft);
 
             if (query.WarehouseId.HasValue)
                 q = q.Where(li => li.PurchaseNote.WarehouseId == query.WarehouseId.Value);
@@ -427,6 +431,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Where(li => li.PurchaseNote.WarehouseId == warehouseId &&
                                  li.PurchaseNote.DeletedOn == null &&
                                  li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Draft &&
                                  li.PurchaseNote.PurchaseDate.Date >= from.Date &&
                                  li.PurchaseNote.PurchaseDate.Date <= to.Date)
                     .GroupBy(li => li.ProductId)
@@ -455,6 +460,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Where(li => li.PurchaseNote.WarehouseId == warehouseId &&
                                  li.PurchaseNote.DeletedOn == null &&
                                  li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled &&
+                                 li.PurchaseNote.Status != PurchaseNoteStatus.Draft &&
                                  li.PurchaseNote.PurchaseDate.Date >= from.Date &&
                                  li.PurchaseNote.PurchaseDate.Date <= to.Date)
                     .GroupBy(li => new { li.ProductId, li.Product.Code, li.Product.Name, li.Product.Unit })
@@ -544,24 +550,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
-        // ── Home dashboard aggregates ─────────────────────────────────────────────
-
-        public Task<DayPurchaseNoteSummaryResult> GetDayPaidSummaryAsync(DateTime date, CancellationToken ct = default) =>
-            WithContextAsync(async context =>
-            {
-                DateTime day = date.Date;
-                var result = await All<PurchaseNote>(context)
-                    .Where(pn => pn.PaidDate.HasValue && pn.PaidDate.Value.Date == day)
-                    .GroupBy(_ => 1)
-                    .Select(g => new DayPurchaseNoteSummaryResult
-                    {
-                        Count = g.Count(),
-                        Amount = g.Sum(pn => pn.TotalAmount)
-                    })
-                    .FirstOrDefaultAsync(ct);
-                return result ?? new DayPurchaseNoteSummaryResult();
-            });
-
         public Task<IEnumerable<PurchaseNote>> GetTopUnpaidAsync(
             Guid? warehouseId, int top, CancellationToken ct = default) =>
             WithContextAsync(async context =>
@@ -586,7 +574,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 DateTime day = date.Date;
                 var result = await All<PurchaseNote>(context)
                     .Where(pn => pn.PurchaseDate.Date == day &&
-                                 pn.Status != PurchaseNoteStatus.Cancelled)
+                                 pn.Status != PurchaseNoteStatus.Cancelled &&
+                                 pn.Status != PurchaseNoteStatus.Draft)
                     .GroupBy(_ => 1)
                     .Select(g => new DayPurchaseNoteSummaryResult
                     {
@@ -603,7 +592,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 var result = await All<PurchaseNote>(context)
                     .Where(pn => pn.PurchaseDate.Year == year &&
                                  pn.PurchaseDate.Month == month &&
-                                 pn.Status != PurchaseNoteStatus.Cancelled)
+                                 pn.Status != PurchaseNoteStatus.Cancelled &&
+                                 pn.Status != PurchaseNoteStatus.Draft)
                     .GroupBy(_ => 1)
                     .Select(g => new DayPurchaseNoteSummaryResult
                     {
@@ -619,7 +609,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 var result = await All<PurchaseNote>(context)
                     .Where(pn => pn.PurchaseDate.Year == year &&
-                                 pn.Status != PurchaseNoteStatus.Cancelled)
+                                 pn.Status != PurchaseNoteStatus.Cancelled &&
+                                 pn.Status != PurchaseNoteStatus.Draft)
                     .GroupBy(_ => 1)
                     .Select(g => new DayPurchaseNoteSummaryResult
                     {
