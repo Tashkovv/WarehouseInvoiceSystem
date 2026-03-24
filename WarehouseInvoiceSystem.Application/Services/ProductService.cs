@@ -185,6 +185,7 @@
                         Date = li.Invoice.IssueDate,
                         DocumentNumber = li.Invoice.InvoiceNumber,
                         DocumentUrl = $"/invoices/{li.Invoice.Id}",
+                        DocumentType = "Invoice",
                         PartyName = li.Invoice.Company.Name,
                         WarehouseId = li.Invoice.WarehouseId,
                         WarehouseName = li.Invoice.Warehouse.Name,
@@ -212,6 +213,7 @@
                         Date           = v.Date,
                         DocumentNumber = v.DocumentNumber,
                         DocumentUrl    = v.DocumentUrl,
+                        DocumentType   = v.DocumentUrl.StartsWith("/purchase-notes/") ? "PurchaseNote" : "Invoice",
                         PartyName      = v.PartyName,
                         WarehouseId    = v.WarehouseId,
                         WarehouseName  = v.WarehouseName,
@@ -224,6 +226,14 @@
                     PageSize   = result.PageSize
                 };
             }
+        }
+
+        public async Task<(decimal TotalQuantity, decimal TotalAmount)> GetProductHistoryTotalsAsync(
+            GetProductHistoryQuery query, CancellationToken ct = default)
+        {
+            return query.Purchased
+                ? await invoiceRepository.GetPurchasedHistoryTotalsAsync(query, ct)
+                : await invoiceRepository.GetSoldHistoryTotalsAsync(query, ct);
         }
 
         public async Task CreateProductAsync(CreateProductDto createDto)

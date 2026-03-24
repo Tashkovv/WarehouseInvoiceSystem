@@ -17,6 +17,7 @@
         /// </summary>
         Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId, CancellationToken ct = default);
         Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<(decimal TotalQuantity, decimal TotalAmount)> GetProductHistoryTotalsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
         Task CreateProductAsync(CreateProductDto createDto);
         Task UpdateProductAsync(Guid id, UpdateProductDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);

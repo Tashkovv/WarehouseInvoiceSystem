@@ -692,6 +692,55 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
+        public Task<(decimal TotalQuantity, decimal TotalAmount)> GetPurchasedHistoryTotalsAsync(
+            GetProductHistoryQuery query, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<ProductPurchaseHistoryView> q = context.Set<ProductPurchaseHistoryView>()
+                    .Where(v => v.ProductId == query.ProductId);
+
+                if (query.WarehouseId.HasValue)
+                    q = q.Where(v => v.WarehouseId == query.WarehouseId.Value);
+
+                if (query.CompanyId.HasValue)
+                    q = q.Where(v => v.CompanyId == query.CompanyId.Value);
+
+                if (query.IndividualId.HasValue)
+                    q = q.Where(v => v.IndividualId == query.IndividualId.Value);
+
+                if (query.DateFrom.HasValue)
+                    q = q.Where(v => v.Date >= query.DateFrom.Value.Date);
+
+                if (query.DateTo.HasValue)
+                    q = q.Where(v => v.Date < query.DateTo.Value.Date.AddDays(1));
+
+                if (!await q.AnyAsync(ct))
+                    return (0m, 0m);
+
+                return (
+                    await q.SumAsync(v => v.Quantity, ct),
+                    await q.SumAsync(v => v.TotalPrice, ct)
+                );
+            });
+
+        public Task<(decimal TotalQuantity, decimal TotalAmount)> GetSoldHistoryTotalsAsync(
+            GetProductHistoryQuery query, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InvoiceLine> q = ApplyLineItemFilters(
+                    All<InvoiceLine>(context)
+                        .Include(li => li.Invoice),
+                    query);
+
+                if (!await q.AnyAsync(ct))
+                    return (0m, 0m);
+
+                return (
+                    await q.SumAsync(li => (decimal)li.Quantity, ct),
+                    await q.SumAsync(li => li.Quantity * li.UnitPrice * (1 + li.TaxRate / 100m), ct)
+                );
+            });
+
         // ── Home dashboard aggregates ─────────────────────────────────────────────
 
         public Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(

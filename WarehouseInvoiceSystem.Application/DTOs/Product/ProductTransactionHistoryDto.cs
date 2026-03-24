@@ -11,6 +11,7 @@
         public DateTime Date { get; set; }
         public string DocumentNumber { get; set; } = string.Empty;
         public string DocumentUrl { get; set; } = string.Empty;
+        public string? DocumentType { get; set; }
         public string PartyName { get; set; } = string.Empty;
         public Guid WarehouseId { get; set; }
         public string WarehouseName { get; set; } = string.Empty;

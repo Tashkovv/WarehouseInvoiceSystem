@@ -54,6 +54,8 @@
         Task<CompanyAnalyticsResult> GetCompanyAnalyticsDataAsync(Guid companyId, CancellationToken ct = default);
 
         Task<PagedResult<ProductPurchaseHistoryView>> GetPagedPurchasedHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<(decimal TotalQuantity, decimal TotalAmount)> GetPurchasedHistoryTotalsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<(decimal TotalQuantity, decimal TotalAmount)> GetSoldHistoryTotalsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
 
         // ── Dashboard aggregates ──────────────────────────────────────────────────
         Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(Guid? warehouseId, int top, CancellationToken ct = default);

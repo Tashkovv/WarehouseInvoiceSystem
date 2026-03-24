@@ -302,6 +302,18 @@ else
                                 </button>
                             }
 
+                            <div class="d-flex align-center gap-2 ml-auto">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default"
+                                         Icon="@Icons.Material.Filled.Scale">
+                                    @_historyTotalQuantity.ToString("N2") @_product!.Unit
+                                </MudChip>
+                                <MudChip T="string" Size="Size.Small"
+                                         Color="@(_historyMode == HistoryMode.Purchased ? Color.Info : Color.Success)"
+                                         Icon="@Icons.Material.Filled.AttachMoney">
+                                    @_historyTotalAmount.ToString("C")
+                                </MudChip>
+                            </div>
+
                         </div>
                     </MudCardContent>
 
@@ -318,6 +330,10 @@ else
                                   OnRowClick="@((TableRowClickEventArgs<ProductTransactionRowDto> args) => Navigation.NavigateTo(args.Item!.DocumentUrl))">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("DocumentNumber")</MudTh>
+                                @if (_historyMode == HistoryMode.Purchased)
+                                {
+                                    <MudTh>@Localization.GetString("Type")</MudTh>
+                                }
                                 <MudTh>@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))</MudTh>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
                                 <MudTh>@Localization.GetString("Date")</MudTh>
@@ -329,6 +345,15 @@ else
                                 <MudTd DataLabel="@Localization.GetString("DocumentNumber")">
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">@context.DocumentNumber</MudText>
                                 </MudTd>
+                                @if (_historyMode == HistoryMode.Purchased)
+                                {
+                                    <MudTd DataLabel="@Localization.GetString("Type")">
+                                        <MudChip T="string" Size="Size.Small"
+                                                 Color="@(context.DocumentType == "PurchaseNote" ? Color.Info : Color.Default)">
+                                            @Localization.GetString(context.DocumentType!)
+                                        </MudChip>
+                                    </MudTd>
+                                }
                                 <MudTd DataLabel="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("Vendor") : Localization.GetString("Client"))">
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@context.PartyName</MudText>
                                 </MudTd>
@@ -649,6 +674,10 @@ else
     // SOLD filter state (companies only)
     private Guid? _historyClientId;
 
+    // Totals
+    private decimal _historyTotalQuantity;
+    private decimal _historyTotalAmount;
+
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadVendorItems(string search, int page, CancellationToken ct)
     {
         Task<PagedResult<CompanyDto>> companiesTask = CompanyService.GetPagedAsync(
@@ -718,23 +747,29 @@ else
         bool vendorIsIndividual = _historyVendorId.HasValue
             && _vendorTypeMap.TryGetValue(_historyVendorId.Value, out bool isInd) && isInd;
 
-        PagedResult<ProductTransactionRowDto> result = await ProductService.GetPagedProductHistoryAsync(
-            new GetProductHistoryQuery
-            {
-                ProductId = Id,
-                WarehouseId = _selectedWarehouseId,
-                Purchased = _historyMode == HistoryMode.Purchased,
-                CompanyId = _historyMode == HistoryMode.Sold
-                    ? _historyClientId
-                    : (_historyVendorId.HasValue && !vendorIsIndividual ? _historyVendorId : null),
-                IndividualId = _historyMode == HistoryMode.Purchased && vendorIsIndividual
-                    ? _historyVendorId
-                    : null,
-                DateFrom = _historyDateRange.Start,
-                DateTo = _historyDateRange.End,
-                Page = state.Page + 1,
-                PageSize = state.PageSize
-            }, ct);
+        GetProductHistoryQuery query = new()
+        {
+            ProductId = Id,
+            WarehouseId = _selectedWarehouseId,
+            Purchased = _historyMode == HistoryMode.Purchased,
+            CompanyId = _historyMode == HistoryMode.Sold
+                ? _historyClientId
+                : (_historyVendorId.HasValue && !vendorIsIndividual ? _historyVendorId : null),
+            IndividualId = _historyMode == HistoryMode.Purchased && vendorIsIndividual
+                ? _historyVendorId
+                : null,
+            DateFrom = _historyDateRange.Start,
+            DateTo = _historyDateRange.End,
+            Page = state.Page + 1,
+            PageSize = state.PageSize
+        };
+
+        PagedResult<ProductTransactionRowDto> result = await ProductService.GetPagedProductHistoryAsync(query, ct);
+
+        var totals = await ProductService.GetProductHistoryTotalsAsync(query, ct);
+        _historyTotalQuantity = totals.TotalQuantity;
+        _historyTotalAmount = totals.TotalAmount;
+        await InvokeAsync(StateHasChanged);
 
         return new TableData<ProductTransactionRowDto>
         {
