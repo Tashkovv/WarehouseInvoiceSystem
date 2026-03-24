@@ -40,6 +40,18 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         .Include(t => t.Warehouse),
                     query);
 
+                if (query.CompanyId.HasValue)
+                    q = q.Where(t => t.SourceDocumentType != null
+                        && t.SourceDocumentType.StartsWith("Invoice")
+                        && context.Set<Invoice>().Any(i =>
+                            i.Id == t.SourceDocumentId && i.CompanyId == query.CompanyId.Value));
+
+                if (query.IndividualId.HasValue)
+                    q = q.Where(t => t.SourceDocumentType != null
+                        && t.SourceDocumentType.StartsWith("PurchaseNote")
+                        && context.Set<PurchaseNote>().Any(pn =>
+                            pn.Id == t.SourceDocumentId && pn.IndividualId == query.IndividualId.Value));
+
                 q = q.OrderByDescending(t => t.CreatedAt);
 
                 int totalCount = await q.CountAsync(ct);
