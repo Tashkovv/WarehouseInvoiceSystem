@@ -138,9 +138,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(async context =>
             {
                 IQueryable<StockLevel> q = All<StockLevel>(context)
-                    .Where(s => s.MinimumQuantity.HasValue &&
-                                s.Quantity <= s.MinimumQuantity.Value &&
-                                s.Product.IsActive)
+                    .Where(s => s.Product.IsActive &&
+                                (s.Quantity == 0 ||
+                                 (s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value)))
                     .Include(s => s.Product)
                     .Include(s => s.Warehouse);
 
@@ -262,7 +262,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 q = q.Where(s => s.ProductId == query.ProductId.Value);
 
             if (query.IsLowStock == true)
-                q = q.Where(s => s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value);
+                q = q.Where(s => s.Quantity == 0 ||
+                    (s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value));
 
             if (!string.IsNullOrWhiteSpace(query.Search))
             {

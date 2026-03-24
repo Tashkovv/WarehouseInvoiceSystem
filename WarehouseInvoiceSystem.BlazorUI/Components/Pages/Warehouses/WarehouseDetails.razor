@@ -3,6 +3,7 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.Models
+@using WarehouseInvoiceSystem.Domain.Queries
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
 @inject IExcelExportService ExcelExportService
@@ -73,7 +74,7 @@ else
                         <div class="d-flex align-center gap-2 pr-2">
                             <MudChip T="string" Size="Size.Small" Color="Color.Default"
                                      Icon="@Icons.Material.Filled.Inventory2">
-                                @_stock.Count @Localization.GetString("Products")
+                                @_totalProducts @Localization.GetString("Products")
                             </MudChip>
                             @if (_lowStockCount > 0)
                             {
@@ -93,11 +94,13 @@ else
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
-                    @if (_stock.Any())
+                    @if (_totalProducts > 0)
                     {
-                        <MudTable Items="_stock"
+                        <MudTable @ref="_stockTable"
+                                  ServerData="LoadStockServerData"
                                   Hover="true"
                                   Elevation="0"
+                                  RowsPerPage="10"
                                   Class="wis-secondary-list">
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Code")</MudTh>
@@ -156,6 +159,9 @@ else
                                                    OnClick="@(() => OpenSetThresholdsDialog(context))" />
                                 </MudTd>
                             </RowTemplate>
+                            <PagerContent>
+                                <WisPagerContent T="StockLevelDto" Table="_stockTable" PageSizeOptions="[10, 25, 50]" />
+                            </PagerContent>
                         </MudTable>
                     }
                     else
@@ -179,22 +185,37 @@ else
     [Parameter] public Guid Id { get; set; }
 
     private WarehouseDto? _warehouse;
-    private List<StockLevelDto> _stock = [];
+    private MudTable<StockLevelDto>? _stockTable;
+    private int _totalProducts;
+    private int _lowStockCount;
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
     private bool _exportingStock = false;
-
-    // ── Computed ──────────────────────────────────────────────────────────────
-
-    private int _lowStockCount => _stock.Count(s =>
-        s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value && s.Quantity > 0);
 
     private static Color GetQuantityColor(StockLevelDto s)
     {
         if (s.Quantity == 0) return Color.Error;
         if (s.MinimumQuantity.HasValue && s.Quantity <= s.MinimumQuantity.Value) return Color.Warning;
         return Color.Default;
+    }
+
+    // ── Server data ─────────────────────────────────────────────────────────
+
+    private async Task<TableData<StockLevelDto>> LoadStockServerData(TableState state, CancellationToken ct)
+    {
+        var result = await InventoryService.GetPagedStockAsync(new GetStockQuery
+        {
+            WarehouseId = Id,
+            Page = state.Page + 1,
+            PageSize = state.PageSize
+        }, ct);
+
+        return new TableData<StockLevelDto>
+        {
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
     }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -217,8 +238,14 @@ else
             _warehouse = await WarehouseService.GetWarehouseByIdAsync(Id, CancellationToken.None);
             if (_warehouse != null)
             {
-                IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(Id, CancellationToken.None);
-                _stock = levels.OrderBy(s => s.ProductCode).ToList();
+                var allResult = await InventoryService.GetPagedStockAsync(
+                    new GetStockQuery { WarehouseId = Id, Page = 1, PageSize = 1 }, CancellationToken.None);
+                _totalProducts = allResult.TotalCount;
+
+                var lowResult = await InventoryService.GetPagedStockAsync(
+                    new GetStockQuery { WarehouseId = Id, IsLowStock = true, Page = 1, PageSize = 1 }, CancellationToken.None);
+                _lowStockCount = lowResult.TotalCount;
+
                 BuildActions();
             }
         }, "ErrorLoadingWarehouse");
@@ -236,7 +263,7 @@ else
 
         if (_warehouse.IsActive)
         {
-            bool cannotDeactivate = _warehouse.IsDefault || _stock.Any();
+            bool cannotDeactivate = _warehouse.IsDefault || _totalProducts > 0;
             actions.Add(_act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), () => SetActiveStatus(false),
                 dividerBefore: actions.Count > 0,
                 disabled: cannotDeactivate,
@@ -258,7 +285,10 @@ else
                 Localization.GetString("EditWarehouse"),
                 p => p.Add(x => x.Warehouse, _warehouse),
                 MaxWidth.Small) == true)
+        {
             await LoadWarehouse();
+            if (_stockTable is not null) await _stockTable.ReloadServerData();
+        }
     }
 
     private async Task SetAsDefault()
@@ -268,6 +298,7 @@ else
             await WarehouseService.SetDefaultWarehouseAsync(Id);
             Snackbar.Add(Localization.GetString("WarehouseSetAsDefault"), Severity.Success);
             await LoadWarehouse();
+            if (_stockTable is not null) await _stockTable.ReloadServerData();
         }
         catch (Exception ex)
         {
@@ -295,6 +326,7 @@ else
             string key = isActive ? "WarehouseActivated" : "WarehouseDeactivated";
             Snackbar.Add(Localization.GetString(key), Severity.Success);
             await LoadWarehouse();
+            if (_stockTable is not null) await _stockTable.ReloadServerData();
         }
         catch (Exception ex)
         {
@@ -310,7 +342,10 @@ else
                 Localization.GetString("EditThresholds"),
                 p => p.Add(x => x.StockLevel, stockLevel),
                 MaxWidth.Small) == true)
+        {
             await LoadWarehouse();
+            if (_stockTable is not null) await _stockTable.ReloadServerData();
+        }
     }
 
     private async Task ExportStock()
@@ -320,8 +355,11 @@ else
 
         try
         {
+            var exportResult = await InventoryService.GetPagedStockAsync(
+                new GetStockQuery { WarehouseId = Id, Page = 1, PageSize = int.MaxValue }, CancellationToken.None);
+
             byte[] fileBytes = await ExcelExportService.ExportListToExcelAsync(
-                _stock,
+                exportResult.Items,
                 ExportColumnDefinitions.StockLevelColumns(Localization),
                 new ExportListOptions(Localization.GetString("StockByProduct"),
                     $"{_warehouse!.Name} — {Localization.GetString("StockByProduct")}"));

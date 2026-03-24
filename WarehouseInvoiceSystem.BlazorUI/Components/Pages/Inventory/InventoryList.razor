@@ -349,7 +349,7 @@
     }
 
     private bool IsLowStock(StockLevelDto item) =>
-        item.MinimumQuantity.HasValue && item.Quantity <= item.MinimumQuantity.Value;
+        item.Quantity == 0 || (item.MinimumQuantity.HasValue && item.Quantity <= item.MinimumQuantity.Value);
 
     private string GetRowClass(StockLevelDto item, int index) =>
         IsLowStock(item) ? "row-status-error table-row-clickable" : "table-row-clickable";

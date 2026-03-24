@@ -220,7 +220,7 @@ else
                                                      Message="@Localization.GetString("NoRecentMovements")" />
                             </NoRecordsContent>
                             <PagerContent>
-                                <MudTablePager PageSizeOptions="new int[] { 25, 50, 100 }" />
+                                <WisPagerContent T="InventoryTransactionDto" Table="_movementsTable" PageSizeOptions="[25, 50, 100]" />
                             </PagerContent>
                         </MudTable>
                     </MudCardContent>
@@ -356,7 +356,7 @@ else
                                                      Message="@(_historyMode == HistoryMode.Purchased ? Localization.GetString("NoPurchaseData") : Localization.GetString("NoSalesData"))" />
                             </NoRecordsContent>
                             <PagerContent>
-                                <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+                                <WisPagerContent T="ProductTransactionRowDto" Table="_historyTable" PageSizeOptions="[10, 25, 50]" />
                             </PagerContent>
                         </MudTable>
                     </MudCardContent>
