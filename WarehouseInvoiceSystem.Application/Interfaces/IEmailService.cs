@@ -7,5 +7,6 @@
         Task SendInvoiceEmailAsync(Guid invoiceId, string? customMessage = null);
         Task<bool> SendTestEmailAsync(string recipientEmail);
         Task<bool> SendDueDateReminderEmailAsync(int daysBeforeDue, string companyName, string companyEmail, List<Invoice> invoices, CancellationToken ct = default);
+        Task<bool> SendOverdueNotificationEmailAsync(string companyName, string companyEmail, List<Invoice> invoices, CancellationToken ct = default);
     }
 }

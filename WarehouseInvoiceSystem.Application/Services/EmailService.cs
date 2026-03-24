@@ -130,6 +130,40 @@
             }
         }
 
+        public async Task<bool> SendOverdueNotificationEmailAsync(string companyName, string companyEmail,
+            List<Invoice> invoices, CancellationToken ct = default)
+        {
+            try
+            {
+                Tenant tenant = await tenantRepository.GetAsync(ct);
+                (string username, string password) = ResolveCredentials(tenant);
+
+                MimeMessage message = new();
+                message.From.Add(new MailboxAddress(tenant.CompanyName, username));
+                message.To.Add(new MailboxAddress(companyName, companyEmail));
+
+                message.Subject = string.Format(translations.GetString("OverdueEmailSubject"), invoices.Count);
+
+                bool isMk = translations.CurrentLanguage.Equals("mk");
+
+                BodyBuilder bodyBuilder = new()
+                {
+                    HtmlBody = isMk
+                        ? BuildMkdOverdueHtml(companyName, invoices, tenant)
+                        : BuildEnglishOverdueHtml(companyName, invoices, tenant)
+                };
+
+                message.Body = bodyBuilder.ToMessageBody();
+                await SendAsync(message, username, password);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending overdue notification to {companyName}: {ex.Message}");
+                return false;
+            }
+        }
+
         // ── Private helpers ───────────────────────────────────────────────────
 
         /// <summary>
@@ -415,6 +449,122 @@
                         <p style='margin-top: 20px;'>Ве молиме обезбедете навремено плаќање.</p>
                         <p>Доколку веќе сте ја извршиле уплатата, занемарете го овој потсетник.</p>
                         <p>Ви благодариме за соработката!</p>
+                    </div>
+                    <div class='footer'>
+                        <p><strong>{tenant.CompanyName}</strong></p>
+                        {footer}
+                        <p>Ова е автоматска порака, ве молиме не одговарајте на оваа е-пошта.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
+        }
+
+        private static string BuildEnglishOverdueHtml(string companyName, List<Invoice> invoices, Tenant tenant)
+        {
+            string footer = BuildFooterLines(tenant);
+            string rows = string.Join("", invoices.Select(i => $@"
+                <tr>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee;'>{i.InvoiceNumber}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.DueDate:MMMM dd, yyyy}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.AmountDue:C}</td>
+                </tr>"));
+
+            return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #B91C1C; color: white; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; background-color: #f9f9f9; }}
+                    .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+                    table {{ width: 100%; border-collapse: collapse; background: white; }}
+                    th {{ padding: 10px 12px; background-color: #B91C1C; color: white; text-align: left; }}
+                    th:not(:first-child) {{ text-align: right; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>{tenant.CompanyName}</h1>
+                        <p>Overdue Invoice Notice</p>
+                    </div>
+                    <div class='content'>
+                        <p>Dear {companyName},</p>
+                        <p>The following {invoices.Count} invoice(s) are now <strong>overdue</strong>:</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th style='text-align: right;'>Due Date</th>
+                                    <th style='text-align: right;'>Amount Due</th>
+                                </tr>
+                            </thead>
+                            <tbody>{rows}</tbody>
+                        </table>
+                        <p style='margin-top: 20px;'>Please arrange payment at your earliest convenience.</p>
+                        <p>If you have already made the payment, please disregard this notice.</p>
+                        <p>Thank you for your attention to this matter.</p>
+                    </div>
+                    <div class='footer'>
+                        <p><strong>{tenant.CompanyName}</strong></p>
+                        {footer}
+                        <p>This is an automated message, please do not reply to this email.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
+        }
+
+        private static string BuildMkdOverdueHtml(string companyName, List<Invoice> invoices, Tenant tenant)
+        {
+            string footer = BuildFooterLines(tenant);
+            string rows = string.Join("", invoices.Select(i => $@"
+                <tr>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee;'>{i.InvoiceNumber}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.DueDate:MMMM dd, yyyy}</td>
+                    <td style='padding: 8px 12px; border-bottom: 1px solid #eee; text-align: right;'>{i.AmountDue:C}</td>
+                </tr>"));
+
+            return $@"
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                    .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                    .header {{ background-color: #B91C1C; color: white; padding: 20px; text-align: center; }}
+                    .content {{ padding: 20px; background-color: #f9f9f9; }}
+                    .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
+                    table {{ width: 100%; border-collapse: collapse; background: white; }}
+                    th {{ padding: 10px 12px; background-color: #B91C1C; color: white; text-align: left; }}
+                    th:not(:first-child) {{ text-align: right; }}
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h1>{tenant.CompanyName}</h1>
+                        <p>Известување за задоцнети фактури</p>
+                    </div>
+                    <div class='content'>
+                        <p>Почитувани {companyName},</p>
+                        <p>Следниве {invoices.Count} фактура/и се <strong>задоцнети</strong>:</p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Фактура</th>
+                                    <th style='text-align: right;'>Рок</th>
+                                    <th style='text-align: right;'>Износ</th>
+                                </tr>
+                            </thead>
+                            <tbody>{rows}</tbody>
+                        </table>
+                        <p style='margin-top: 20px;'>Ве молиме извршете ја уплатата во најкраток можен рок.</p>
+                        <p>Доколку веќе сте ја извршиле уплатата, занемарете го ова известување.</p>
+                        <p>Ви благодариме за вниманието.</p>
                     </div>
                     <div class='footer'>
                         <p><strong>{tenant.CompanyName}</strong></p>

@@ -1,6 +1,7 @@
 @implements IDisposable
 @using System.Text.Json
 @using WarehouseInvoiceSystem.Application.DTOs.Notification
+@using WarehouseInvoiceSystem.Domain.Enums
 @inject INotificationService NotificationService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
@@ -61,8 +62,8 @@
                                      Class="@(n.IsRead ? "" : "notification-unread")"
                                      Style="cursor: pointer;">
                             <div class="d-flex align-center gap-3 py-1">
-                                <MudIcon Icon="@Icons.Material.Filled.Schedule"
-                                         Color="@GetThresholdColor(n)"
+                                <MudIcon Icon="@GetNotificationIcon(n)"
+                                         Color="@GetNotificationColor(n)"
                                          Size="Size.Small" />
                                 <div class="flex-grow-1" style="min-width: 0;">
                                     <MudText Typo="Typo.body2" Style="@(n.IsRead ? "" : "font-weight: 600;")">
@@ -158,12 +159,18 @@
 
         _isOpen = false;
 
-        // Navigate to invoice list with filters applied
-        var data = ParseData(n);
-        string invoiceType = data.InvoiceType ?? "Receivable";
-        DateTime targetDate = n.CreatedAt.Date.AddDays(data.DaysBeforeDue);
-        string dateStr = targetDate.ToString("yyyy-MM-dd");
-        Navigation.NavigateTo($"/invoices?type={invoiceType}&dueDateFrom={dateStr}&dueDateTo={dateStr}", forceLoad: true);
+        if (n.Type == NotificationType.InvoiceOverdue)
+        {
+            Navigation.NavigateTo("/invoices?status=Overdue", forceLoad: true);
+        }
+        else
+        {
+            var data = ParseData(n);
+            string invoiceType = data.InvoiceType ?? "Receivable";
+            DateTime targetDate = n.CreatedAt.Date.AddDays(data.DaysBeforeDue);
+            string dateStr = targetDate.ToString("yyyy-MM-dd");
+            Navigation.NavigateTo($"/invoices?type={invoiceType}&dueDateFrom={dateStr}&dueDateTo={dateStr}", forceLoad: true);
+        }
     }
 
     private async Task MarkAllAsRead()
@@ -185,19 +192,28 @@
 
     private string FormatTitle(NotificationDto n)
     {
-        var data = ParseData(n);
-        int count = n.Invoices.Count;
-        bool isReceivable = data.InvoiceType == "Receivable";
-
-        if (data.DaysBeforeDue == 1)
+        if (n.Type == NotificationType.InvoiceOverdue)
         {
-            string key = isReceivable ? "ReceivableInvoicesDueTomorrow" : "PayableInvoicesDueTomorrow";
-            return string.Format(Localization.GetString(key), count);
+            var data = ParseData(n);
+            int count = data.Count > 0 ? data.Count : n.Invoices.Count;
+            return string.Format(Localization.GetString("InvoicesNowOverdue"), count);
         }
         else
         {
-            string key = isReceivable ? "ReceivableInvoicesDueInDays" : "PayableInvoicesDueInDays";
-            return string.Format(Localization.GetString(key), count, data.DaysBeforeDue);
+            var data = ParseData(n);
+            int count = n.Invoices.Count;
+            bool isReceivable = data.InvoiceType == "Receivable";
+
+            if (data.DaysBeforeDue == 1)
+            {
+                string key = isReceivable ? "ReceivableInvoicesDueTomorrow" : "PayableInvoicesDueTomorrow";
+                return string.Format(Localization.GetString(key), count);
+            }
+            else
+            {
+                string key = isReceivable ? "ReceivableInvoicesDueInDays" : "PayableInvoicesDueInDays";
+                return string.Format(Localization.GetString(key), count, data.DaysBeforeDue);
+            }
         }
     }
 
@@ -224,8 +240,16 @@
         return string.Format(Localization.GetString("TimeAgoDays"), (int)diff.TotalDays);
     }
 
-    private Color GetThresholdColor(NotificationDto n)
+    private static string GetNotificationIcon(NotificationDto n) =>
+        n.Type == NotificationType.InvoiceOverdue
+            ? Icons.Material.Filled.Warning
+            : Icons.Material.Filled.Schedule;
+
+    private Color GetNotificationColor(NotificationDto n)
     {
+        if (n.Type == NotificationType.InvoiceOverdue)
+            return Color.Error;
+
         var data = ParseData(n);
         return data.DaysBeforeDue switch
         {
@@ -248,6 +272,7 @@
     {
         public int DaysBeforeDue { get; init; }
         public string? InvoiceType { get; init; }
+        public int Count { get; init; }
     }
 
     public void Dispose()

@@ -172,6 +172,9 @@
   "ConfirmAndSend": "Confirm & Send",
   "InvoiceConfirmed": "Invoice confirmed successfully.",
   "DueDateAlreadyPassed": "Due date has already passed — consider updating it.",
+  "DueDatePassed": "Due Date Has Passed",
+  "DueDatePassedConfirmMessage": "The due date for this invoice has already passed. Do you still want to confirm it?",
+  "Continue": "Continue",
   "NoResults": "No results",
   "TypeMoreCharacters": "Type at least 2 characters",
   "SendInvoice": "Send Invoice",
@@ -598,5 +601,7 @@
   "NotificationsDisabled": "Notifications are disabled",
   "AndMoreCount": "+{0} more",
   "DueDateReminderSubjectDays": "Payment Reminder — {0} invoices due in {1} days",
-  "DueDateReminderSubjectTomorrow": "Payment Reminder — {0} invoices due tomorrow"
+  "DueDateReminderSubjectTomorrow": "Payment Reminder — {0} invoices due tomorrow",
+  "InvoicesNowOverdue": "{0} invoices became overdue today",
+  "OverdueEmailSubject": "Overdue Notice — {0} invoices past due"
 }

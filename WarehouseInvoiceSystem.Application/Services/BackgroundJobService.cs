@@ -15,11 +15,12 @@
         IInvoiceService invoiceService,
         INotificationService notificationService) : IBackgroundJobService
     {
-        public async Task CheckAndUpdateOverdueInvoicesAsync()
+        public async Task<List<Guid>> CheckAndUpdateOverdueInvoicesAsync()
         {
             IEnumerable<Invoice> invoices = await invoiceRepository.GetAllAsync();
 
             DateTime today = DateTime.UtcNow.Date;
+            List<Guid> newlyOverdueIds = [];
 
             foreach (Invoice invoice in invoices)
             {
@@ -30,8 +31,11 @@
                     invoice.Status != InvoiceStatus.Overdue)
                 {
                     await invoiceService.MarkAsOverdueAsync(invoice.Id);
+                    newlyOverdueIds.Add(invoice.Id);
                 }
             }
+
+            return newlyOverdueIds;
         }
 
         public async Task GenerateAndSendDueDateRemindersAsync(CancellationToken ct = default)

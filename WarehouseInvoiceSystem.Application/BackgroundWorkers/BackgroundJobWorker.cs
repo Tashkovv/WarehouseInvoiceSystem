@@ -46,7 +46,13 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
                         using (IServiceScope scope = serviceProvider.CreateScope())
                         {
                             var backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-                            await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+                            List<Guid> overdueIds = await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+
+                            if (overdueIds.Count > 0)
+                            {
+                                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                                await notificationService.CreateOverdueNotificationAsync(overdueIds, stoppingToken);
+                            }
                         }
 
                         await appState.SetDateAsync(LastOverdueCheckKey, now.Date);

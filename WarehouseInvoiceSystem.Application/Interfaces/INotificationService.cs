@@ -9,5 +9,6 @@ namespace WarehouseInvoiceSystem.Application.Interfaces
         Task MarkAsReadAsync(Guid id, CancellationToken ct = default);
         Task MarkAllAsReadAsync(CancellationToken ct = default);
         Task GenerateAndSendDueDateRemindersAsync(CancellationToken ct = default);
+        Task CreateOverdueNotificationAsync(List<Guid> invoiceIds, CancellationToken ct = default);
     }
 }

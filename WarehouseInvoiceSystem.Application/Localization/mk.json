@@ -171,7 +171,10 @@
   "ConfirmInvoice": "Потврди",
   "ConfirmAndSend": "Потврди и испрати",
   "InvoiceConfirmed": "Фактурата е успешно потврдена.",
-  "DueDateAlreadyPassed": "Датумот на доспевање веќе поминал — разгледајте ажурирање.",
+  "DueDateAlreadyPassed": "Рокот на плаќање веќе поминал — разгледајте ажурирање.",
+  "DueDatePassed": "Рокот за плаќање е поминат",
+  "DueDatePassedConfirmMessage": "Рокот за плаќање на оваа фактура е веќе поминат. Дали сепак сакате да ја потврдите?",
+  "Continue": "Продолжи",
   "NoResults": "Нема резултати",
   "TypeMoreCharacters": "Внеси барем 2 знаци",
   "SendInvoice": "Испрати фактура",
@@ -598,5 +601,7 @@
   "NotificationsDisabled": "Известувањата се оневозможени",
   "AndMoreCount": "+{0} повеќе",
   "DueDateReminderSubjectDays": "Потсетник — Рокот за плаќање на {0} фактури истекува за {1} дена",
-  "DueDateReminderSubjectTomorrow": "Потсетник — Утре е рокот за плаќање на {0} фактури"
+  "DueDateReminderSubjectTomorrow": "Потсетник — Утре е рокот за плаќање на {0} фактури",
+  "InvoicesNowOverdue": "{0} фактури станаа задоцнети денес",
+  "OverdueEmailSubject": "Известување — {0} фактури се задоцнети"
 }

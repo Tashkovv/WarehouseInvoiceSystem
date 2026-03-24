@@ -91,8 +91,67 @@ namespace WarehouseInvoiceSystem.Application.Services
                 List<Guid> invoiceIds = invoices.Select(i => i.Id).ToList();
                 Guid notificationId = await notificationRepository.CreateWithInvoicesAsync(notification, invoiceIds, ct);
 
-                if (sendEmail)
+                if (sendEmail && _settings.SendEmails)
                     await SendReminderEmailsAsync(days, invoices, notificationId, ct);
+            }
+        }
+
+        public async Task CreateOverdueNotificationAsync(List<Guid> invoiceIds, CancellationToken ct = default)
+        {
+            string data = JsonSerializer.Serialize(new { count = invoiceIds.Count });
+            if (await notificationRepository.ExistsTodayAsync(data, ct)) return;
+
+            var notification = new Notification
+            {
+                Type = NotificationType.InvoiceOverdue,
+                Data = data,
+                IsRead = false,
+                IsEmailSent = false
+            };
+
+            Guid notificationId = await notificationRepository.CreateWithInvoicesAsync(notification, invoiceIds, ct);
+
+            if (_settings.SendEmails)
+            {
+                List<Invoice> invoices = [];
+                foreach (Guid id in invoiceIds)
+                {
+                    Invoice? invoice = await invoiceRepository.GetByIdAsync(id, ct);
+                    if (invoice != null) invoices.Add(invoice);
+                }
+
+                await SendOverdueEmailsAsync(invoices, notificationId, ct);
+            }
+        }
+
+        private async Task SendOverdueEmailsAsync(List<Invoice> invoices, Guid notificationId, CancellationToken ct)
+        {
+            bool anySent = false;
+
+            foreach (var group in invoices.GroupBy(i => i.CompanyId))
+            {
+                Invoice first = group.First();
+                string? companyEmail = first.Company?.Email;
+                if (string.IsNullOrWhiteSpace(companyEmail)) continue;
+
+                string companyName = first.Company?.Name ?? string.Empty;
+
+                try
+                {
+                    bool sent = await emailService.SendOverdueNotificationEmailAsync(
+                        companyName, companyEmail, group.ToList(), ct);
+                    if (sent) anySent = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending overdue notification to {companyName}: {ex.Message}");
+                }
+            }
+
+            if (anySent)
+            {
+                try { await notificationRepository.MarkEmailSentAsync(notificationId, ct); }
+                catch { /* best-effort */ }
             }
         }
 

@@ -576,47 +576,32 @@
 
     private async Task ConfirmFromList(InvoiceDto invoice)
     {
-        if (invoice.Type == InvoiceType.Receivable)
+        if (invoice.Type == InvoiceType.Receivable && !await HasSufficientStockAsync(invoice))
         {
-            // Receivable: confirm + send email
-            if (!await HasSufficientStockAsync(invoice))
-            {
-                Snackbar.Add(Localization.GetString("InsufficientStockToConfirm"), Severity.Error);
-                return;
-            }
-
-            try
-            {
-                var (_, isDueDatePassed) = await InvoiceService.ConfirmAsync(invoice.Id);
-                if (isDueDatePassed)
-                    Snackbar.Add(Localization.GetString("DueDateAlreadyPassed"), Severity.Warning);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error confirming invoice: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
-                return;
-            }
-
-            await OpenSendEmailDialog(invoice);
+            Snackbar.Add(Localization.GetString("InsufficientStockToConfirm"), Severity.Error);
+            return;
         }
-        else
+
+        if (invoice.DueDate < DateTime.UtcNow.Date)
         {
-            // Payable: confirm only
-            try
-            {
-                var (_, isDueDatePassed) = await InvoiceService.ConfirmAsync(invoice.Id);
-                if (isDueDatePassed)
-                    Snackbar.Add(Localization.GetString("DueDateAlreadyPassed"), Severity.Warning);
-                else
-                    Snackbar.Add(Localization.GetString("InvoiceConfirmed"), Severity.Success);
-                await _grid.ReloadServerData();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error confirming invoice: {ex.Message}");
-                Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
-            }
+            bool confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("DueDatePassed"),
+                Localization.GetString("DueDatePassedConfirmMessage"),
+                Localization.GetString("Continue"),
+                Localization.GetString("Cancel"));
+            if (!confirmed) return;
+        }
+
+        try
+        {
+            await InvoiceService.ConfirmAsync(invoice.Id);
+            Snackbar.Add(Localization.GetString("InvoiceConfirmed"), Severity.Success);
+            await _grid.ReloadServerData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error confirming invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
     }
 
@@ -744,13 +729,8 @@
         bool canRevert   = item.Status == InvoiceStatus.Confirmed || item.Status == InvoiceStatus.Overdue;
         bool canCancel   = !isCancelled && !isPaid;
 
-        // Confirm action: receivable Draft → "Confirm & Send", payable Draft → "Confirm"
-        string confirmLabel = item.Type == InvoiceType.Receivable
-            ? Localization.GetString("ConfirmAndSend")
-            : Localization.GetString("ConfirmInvoice");
-        string confirmIcon = item.Type == InvoiceType.Receivable
-            ? Icons.Material.Filled.Send
-            : Icons.Material.Filled.CheckCircle;
+        string confirmLabel = Localization.GetString("ConfirmInvoice");
+        string confirmIcon = Icons.Material.Filled.CheckCircle;
 
         List<WisDetailActionItem> actions = [];
 

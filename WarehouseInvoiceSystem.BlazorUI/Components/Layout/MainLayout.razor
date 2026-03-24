@@ -4,6 +4,7 @@
 @using WarehouseInvoiceSystem.Application.Settings
 @inject ILocalizationService Localization
 @inject IBackgroundJobService BackgroundJobService
+@inject INotificationService NotificationService
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 @inject IOptions<NotificationSettings> NotificationSettingsOptions
@@ -317,7 +318,11 @@
         _runningJob = true;
         try
         {
-            await BackgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+            List<Guid> overdueIds = await BackgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+
+            if (overdueIds.Count > 0)
+                await NotificationService.CreateOverdueNotificationAsync(overdueIds);
+
             Snackbar.Add(Localization.GetString("CheckOverdueInvoicesSuccess"), Severity.Success);
             Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
         }
