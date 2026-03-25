@@ -124,10 +124,12 @@
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
                 TaxRate = li.TaxRate,
+                DiscountPercentage = li.DiscountPercentage,
                 CreatedAt = DateTime.UtcNow,
             }).ToList();
 
             decimal subTotal = lineItems.Sum(li => li.Amount);
+            decimal discountTotal = lineItems.Sum(li => li.DiscountAmount);
             decimal taxAmount = lineItems.Sum(li => li.TaxAmount);
             decimal totalAmount = lineItems.Sum(li => li.TotalAmount);
 
@@ -141,6 +143,7 @@
                 IssueDate = createDto.IssueDate,
                 DueDate = createDto.DueDate,
                 SubTotal = subTotal,
+                DiscountTotal = discountTotal,
                 TaxAmount = taxAmount,
                 TotalAmount = totalAmount,
                 AmountPaid = 0,
@@ -212,6 +215,7 @@
                     existing.Quantity = li.Quantity;
                     existing.UnitPrice = li.UnitPrice;
                     existing.TaxRate = li.TaxRate;
+                    existing.DiscountPercentage = li.DiscountPercentage;
                 }
                 else
                 {
@@ -221,7 +225,8 @@
                         Description = li.Description,
                         Quantity = li.Quantity,
                         UnitPrice = li.UnitPrice,
-                        TaxRate = li.TaxRate
+                        TaxRate = li.TaxRate,
+                        DiscountPercentage = li.DiscountPercentage
                     });
                 }
             }
@@ -235,6 +240,7 @@
                 .ToList();
 
             invoice.SubTotal = activeLines.Sum(li => li.Amount);
+            invoice.DiscountTotal = activeLines.Sum(li => li.DiscountAmount);
             invoice.TaxAmount = activeLines.Sum(li => li.TaxAmount);
             invoice.TotalAmount = activeLines.Sum(li => li.TotalAmount);
         }
@@ -636,6 +642,7 @@
                 IssueDate = invoice.IssueDate,
                 DueDate = invoice.DueDate,
                 SubTotal = invoice.SubTotal,
+                DiscountTotal = invoice.DiscountTotal,
                 TaxAmount = invoice.TaxAmount,
                 TotalAmount = invoice.TotalAmount,
                 AmountPaid = invoice.AmountPaid,
@@ -653,7 +660,9 @@
                     Quantity = li.Quantity,
                     UnitPrice = li.UnitPrice,
                     TaxRate = li.TaxRate,
+                    DiscountPercentage = li.DiscountPercentage,
                     Amount = li.Amount,
+                    DiscountAmount = li.DiscountAmount,
                     TaxAmount = li.TaxAmount,
                     TotalAmount = li.TotalAmount
                 })]

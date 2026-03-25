@@ -127,13 +127,19 @@ else
                     @* Stats row: full width *@
                     <MudGrid Spacing="4" Class="wis-detail-stats">
 
-                        <MudItem xs="3">
+                        <MudItem xs="4">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Total")</MudText>
                             <div class="wis-stat-value mud-primary-text">@_invoice.TotalAmount.ToString("C")</div>
                             <div class="d-flex align-center gap-3 mt-1">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
                                     @Localization.GetString("Subtotal"): @_invoice.SubTotal.ToString("C")
                                 </MudText>
+                                @if (_invoice.DiscountTotal > 0)
+                                {
+                                    <MudText Typo="Typo.caption" Class="mud-error-text">
+                                        @Localization.GetString("Discount"): -@_invoice.DiscountTotal.ToString("C")
+                                    </MudText>
+                                }
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
                                     @Localization.GetString("Tax"): @_invoice.TaxAmount.ToString("C")
                                 </MudText>
@@ -190,6 +196,10 @@ else
                             <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("TaxRate")</MudTh>
+                            @if (_invoice!.Type == InvoiceType.Receivable && _invoice.LineItems.Any(li => li.DiscountPercentage > 0))
+                            {
+                                <MudTh Class="text-right">@Localization.GetString("Discount")</MudTh>
+                            }
                             <MudTh Class="text-right">@Localization.GetString("Total")</MudTh>
                         </HeaderContent>
                         <RowTemplate>
@@ -227,6 +237,12 @@ else
                                     @context.TaxRate.ToString("0.00", CultureInfo.CurrentCulture)%
                                 </MudText>
                             </MudTd>
+                            @if (_invoice!.Type == InvoiceType.Receivable && _invoice.LineItems.Any(li => li.DiscountPercentage > 0))
+                            {
+                                <MudTd DataLabel="@Localization.GetString("Discount")" Class="text-right">
+                                    <MudText Typo="Typo.body2" Color="Color.Dark">@context.DiscountPercentage%</MudText>
+                                </MudTd>
+                            }
                             <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
                                 <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
                                     @context.TotalAmount.ToString("C")

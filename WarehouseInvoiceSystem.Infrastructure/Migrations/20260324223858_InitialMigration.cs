@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class ConcurrencySequenceAudit : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,6 +57,26 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notification",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    Data = table.Column<string>(type: "text", nullable: true),
+                    IsRead = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    ReadAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsEmailSent = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    EmailSentAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notification", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Product",
                 columns: table => new
                 {
@@ -65,7 +85,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Unit = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
-                    DefaultPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    CostPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
+                    SellingPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -74,6 +95,29 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Product", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Tenant",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    CompanyName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    OperatorName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Website = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    EmailPasswordEncrypted = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    LogoData = table.Column<byte[]>(type: "bytea", nullable: true),
+                    LogoMimeType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tenant", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -160,6 +204,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     IssueDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DueDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     SubTotal = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    DiscountTotal = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
                     TaxAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
                     TotalAmount = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     AmountPaid = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
@@ -267,6 +312,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     TaxRate = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false, defaultValue: 0m),
+                    DiscountPercentage = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false, defaultValue: 0m),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     DeletedOn = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
@@ -286,6 +332,31 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         principalTable: "Product",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "NotificationInvoice",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    NotificationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    InvoiceId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_NotificationInvoice", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_NotificationInvoice_Invoice_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoice",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_NotificationInvoice_Notification_NotificationId",
+                        column: x => x.NotificationId,
+                        principalTable: "Notification",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -468,6 +539,37 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Notification_Data_CreatedAt",
+                table: "Notification",
+                columns: new[] { "Data", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_DeletedOn",
+                table: "Notification",
+                column: "DeletedOn");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notification_IsRead_CreatedAt",
+                table: "Notification",
+                columns: new[] { "IsRead", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationInvoice_InvoiceId",
+                table: "NotificationInvoice",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationInvoice_NotificationId",
+                table: "NotificationInvoice",
+                column: "NotificationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_NotificationInvoice_NotificationId_InvoiceId",
+                table: "NotificationInvoice",
+                columns: new[] { "NotificationId", "InvoiceId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Payment_DeletedOn",
                 table: "Payment",
                 column: "DeletedOn");
@@ -591,6 +693,94 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 table: "User",
                 column: "Username",
                 unique: true);
+
+            migrationBuilder.Sql("CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;");
+            migrationBuilder.Sql("CREATE SEQUENCE IF NOT EXISTS bill_number_seq START 1;");
+
+            // Seed each sequence to the current highest number so existing invoices
+            // are not re-numbered. The subquery returns 0 if no invoices exist yet.
+            migrationBuilder.Sql(@"
+                SELECT setval(
+                    'invoice_number_seq',
+                    GREATEST(
+                        (SELECT COALESCE(MAX(CAST(SUBSTRING(""InvoiceNumber"" FROM 13) AS INTEGER)), 0)
+                         FROM ""Invoice""
+                         WHERE ""InvoiceNumber"" LIKE 'INV-%'),
+                        1
+                    )
+                );
+            ");
+
+            migrationBuilder.Sql(@"
+                SELECT setval(
+                    'bill_number_seq',
+                    GREATEST(
+                        (SELECT COALESCE(MAX(CAST(SUBSTRING(""InvoiceNumber"" FROM 14) AS INTEGER)), 0)
+                         FROM ""Invoice""
+                         WHERE ""InvoiceNumber"" LIKE 'BILL-%'),
+                        1
+                    )
+                );
+            ");
+
+            // vw_product_purchase_history
+            // UNIONs purchase-note lines (individual vendors) and payable invoice lines
+            // (company vendors) into a single queryable shape so the purchased transaction
+            // history can be filtered, sorted, and paginated entirely in SQL.
+            //
+            // Enum values used:
+            //   PurchaseNoteStatus.Cancelled = 4
+            //   InvoiceStatus.Cancelled      = 6
+            //   InvoiceType.Payable          = 2
+
+            migrationBuilder.Sql(@"
+                CREATE OR REPLACE VIEW vw_product_purchase_history AS
+
+                -- Purchase note lines (individual vendors)
+                SELECT
+                    pnl.""ProductId"",
+                    pn.""PurchaseDate""                                       AS ""Date"",
+                    pn.""NoteNumber""                                         AS ""DocumentNumber"",
+                    '/purchase-notes/' || pn.""Id""::text                    AS ""DocumentUrl"",
+                    (i.""FirstName"" || ' ' || i.""LastName"")               AS ""PartyName"",
+                    pn.""WarehouseId"",
+                    w.""Name""                                                AS ""WarehouseName"",
+                    CAST(pnl.""Quantity"" AS numeric)                        AS ""Quantity"",
+                    pnl.""UnitPrice"",
+                    CAST(pnl.""Quantity"" AS numeric) * pnl.""UnitPrice""    AS ""TotalPrice"",
+                    pn.""IndividualId"",
+                    NULL::uuid                                                AS ""CompanyId""
+                FROM ""PurchaseNoteLine"" pnl
+                JOIN ""PurchaseNote"" pn ON pn.""Id"" = pnl.""PurchaseNoteId""
+                JOIN ""Individual""   i  ON i.""Id""  = pn.""IndividualId""
+                JOIN ""Warehouse""    w  ON w.""Id""  = pn.""WarehouseId""
+                WHERE pn.""DeletedOn"" IS NULL
+                  AND pn.""Status"" != 4
+
+                UNION ALL
+
+                -- Payable invoice lines (company vendors)
+                SELECT
+                    il.""ProductId"",
+                    inv.""IssueDate""                                         AS ""Date"",
+                    inv.""InvoiceNumber""                                     AS ""DocumentNumber"",
+                    '/invoices/' || inv.""Id""::text                         AS ""DocumentUrl"",
+                    c.""Name""                                                AS ""PartyName"",
+                    inv.""WarehouseId"",
+                    w.""Name""                                                AS ""WarehouseName"",
+                    CAST(il.""Quantity"" AS numeric)                         AS ""Quantity"",
+                    il.""UnitPrice"",
+                    CAST(il.""Quantity"" AS numeric) * il.""UnitPrice"" * (1 + il.""TaxRate"" / 100.0) AS ""TotalPrice"",
+                    NULL::uuid                                                AS ""IndividualId"",
+                    inv.""CompanyId""
+                FROM ""InvoiceLine"" il
+                JOIN ""Invoice""   inv ON inv.""Id"" = il.""InvoiceId""
+                JOIN ""Company""   c   ON c.""Id""  = inv.""CompanyId""
+                JOIN ""Warehouse"" w   ON w.""Id""  = inv.""WarehouseId""
+                WHERE inv.""DeletedOn"" IS NULL
+                  AND inv.""Status"" != 6
+                  AND inv.""Type""   = 2;
+            ");
         }
 
         /// <inheritdoc />
@@ -603,6 +793,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "InvoiceLine");
 
             migrationBuilder.DropTable(
+                name: "NotificationInvoice");
+
+            migrationBuilder.DropTable(
                 name: "Payment");
 
             migrationBuilder.DropTable(
@@ -612,7 +805,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "StockLevel");
 
             migrationBuilder.DropTable(
+                name: "Tenant");
+
+            migrationBuilder.DropTable(
                 name: "User");
+
+            migrationBuilder.DropTable(
+                name: "Notification");
 
             migrationBuilder.DropTable(
                 name: "Invoice");
@@ -631,6 +830,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Warehouse");
+
+            // Drop sequences
+            migrationBuilder.Sql("DROP SEQUENCE IF EXISTS invoice_number_seq;");
+            migrationBuilder.Sql("DROP SEQUENCE IF EXISTS bill_number_seq;");
+
+            migrationBuilder.Sql("DROP VIEW IF EXISTS vw_product_purchase_history;");
         }
     }
 }

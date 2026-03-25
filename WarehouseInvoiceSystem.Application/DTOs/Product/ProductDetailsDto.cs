@@ -13,7 +13,7 @@
         public bool HasLowStock { get; set; }
 
         // ── Profitability ─────────────────────────────────────────────────────
-        public decimal CurrentSellingPrice { get; set; }
+        public decimal AverageSellingPrice { get; set; }
         public decimal GrossMarginPercentage { get; set; }
         public decimal AveragePurchasePrice { get; set; }
 

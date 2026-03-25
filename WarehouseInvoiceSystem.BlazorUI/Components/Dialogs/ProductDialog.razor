@@ -6,38 +6,21 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            @if (IsEditMode)
-            {
-                <MudItem xs="12">
-                    <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        @Localization.GetString("Code"): <strong>@_product.Code</strong>
-                    </MudText>
-                </MudItem>
-            }
-            else
-            {
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="_product.Code"
-                                  Label="@Localization.GetString("Code")"
-                                  Variant="Variant.Outlined"
-                                  RequiredError="@Localization.GetString("CodeRequired")"
-                                  Required="true"
-                                  FullWidth="true" />
-                </MudItem>
-            }
-            <MudItem xs="12">
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_product.Code"
+                              Label="@Localization.GetString("Code")"
+                              Variant="Variant.Outlined"
+                              RequiredError="@Localization.GetString("CodeRequired")"
+                              Required="true"
+                              ReadOnly="@IsEditMode"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="_product.Name"
                               Label="@Localization.GetString("Name")"
                               Variant="Variant.Outlined"
                               Required="true"
                               RequiredError="@Localization.GetString("NameRequired")"
-                              FullWidth="true" />
-            </MudItem>
-            <MudItem xs="12">
-                <MudTextField @bind-Value="_product.Description"
-                              Label="@Localization.GetString("Description")"
-                              Variant="Variant.Outlined"
-                              Lines="3"
                               FullWidth="true" />
             </MudItem>
             <MudItem xs="12" sm="6">
@@ -49,9 +32,27 @@
                               FullWidth="true" />
             </MudItem>
             <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_product.Description"
+                              Label="@Localization.GetString("Description")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
                 <MudNumericField T="decimal"
-                                 @bind-Value="_product.DefaultPrice"
-                                 Label="@Localization.GetString("Price")"
+                                 @bind-Value="_product.CostPrice"
+                                 Label="@Localization.GetString("CostPrice")"
+                                 Variant="Variant.Outlined"
+                                 HideSpinButtons="true"
+                                 Format="N2"
+                                 Min="1m"
+                                 FullWidth="true"
+                                 Adornment="Adornment.End"
+                                 AdornmentText="@Localization.CurrencySymbol" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="decimal"
+                                 @bind-Value="_product.SellingPrice"
+                                 Label="@Localization.GetString("SellingPrice")"
                                  Variant="Variant.Outlined"
                                  HideSpinButtons="true"
                                  Format="N2"
@@ -99,7 +100,8 @@
                 Name = Product.Name,
                 Description = Product.Description,
                 Unit = Product.Unit,
-                DefaultPrice = Product.DefaultPrice,
+                CostPrice = Product.CostPrice,
+                SellingPrice = Product.SellingPrice,
                 IsActive = Product.IsActive,
                 CreatedAt = Product.CreatedAt
             };
@@ -126,7 +128,8 @@
                     Name = _product.Name,
                     Description = _product.Description,
                     Unit = _product.Unit,
-                    DefaultPrice = _product.DefaultPrice,
+                    CostPrice = _product.CostPrice,
+                    SellingPrice = _product.SellingPrice,
                     IsActive = _product.IsActive
                 });
                 Snackbar.Add(Localization.GetString("ProductUpdated"), Severity.Success);
@@ -139,7 +142,8 @@
                     Name = _product.Name,
                     Description = _product.Description,
                     Unit = _product.Unit,
-                    DefaultPrice = _product.DefaultPrice,
+                    CostPrice = _product.CostPrice,
+                    SellingPrice = _product.SellingPrice,
                     IsActive = _product.IsActive
                 });
                 Snackbar.Add(Localization.GetString("ProductCreated"), Severity.Success);

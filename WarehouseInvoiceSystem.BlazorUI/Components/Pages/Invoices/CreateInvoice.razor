@@ -165,9 +165,17 @@ else
                                 }
                                 <MudTh Style="width:14%" Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh Style="width:16%" Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
-                                <MudTh Style="width:16%" Class="text-right">@Localization.GetString("TaxRate")</MudTh>
+                                @if (_selectedType == InvoiceType.Receivable)
+                                {
+                                    <MudTh Style="width:10%" Class="text-right">@Localization.GetString("TaxRate")</MudTh>
+                                    <MudTh Style="width:10%" Class="text-right">@Localization.GetString("Discount")</MudTh>
+                                }
+                                else
+                                {                                    
+                                    <MudTh Style="width:16%" Class="text-right">@Localization.GetString("TaxRate")</MudTh>
+                                }
                                 <MudTh Style="width:17%" Class="text-right">@Localization.GetString("Amount")</MudTh>
-                                <MudTh Style="width:48px"></MudTh>
+                                <MudTh Style="width:40px"></MudTh>
                             </HeaderContent>
                             <RowTemplate Context="item">
                                 <MudTd>
@@ -197,7 +205,7 @@ else
                                                         <strong>@product.Code</strong> - @product.Name
                                                     </MudText>
                                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                        @product.Unit | @product.DefaultPrice.ToString("C")
+                                                        @product.Unit | @((_selectedType == InvoiceType.Receivable ? product.SellingPrice : product.CostPrice).ToString("C"))
                                                     </MudText>
                                                 </div>
                                                 @if (isReceivable && stock != null)
@@ -268,6 +276,21 @@ else
                                                      AdornmentText="%"
                                                      TextUpdateSuppression="false" />
                                 </MudTd>
+                                @if (_selectedType == InvoiceType.Receivable)
+                                {
+                                    <MudTd>
+                                        <MudNumericField @bind-Value="item.DiscountPercentage"
+                                                         @bind-Value:after="CalculateTotals"
+                                                         Variant="Variant.Text"
+                                                         Min="0m"
+                                                         Max="100m"
+                                                         Format="N2"
+                                                         Class="text-right"
+                                                         HideSpinButtons="true"
+                                                         Adornment="Adornment.End"
+                                                         AdornmentText="%" />
+                                    </MudTd>
+                                }
                                 <MudTd Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers text-right">
                                         @item.LineTotal.ToString("C")
@@ -295,6 +318,13 @@ else
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Subtotal"):</MudText>
                                 <MudText Typo="Typo.body1" Class="font-weight-medium tabular-numbers">@_subtotal.ToString("C")</MudText>
                             </div>
+                            @if (_selectedType == InvoiceType.Receivable && _discountTotal > 0)
+                            {
+                                <div class="d-flex align-center gap-2">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Discount"):</MudText>
+                                    <MudText Typo="Typo.body1" Class="font-weight-medium tabular-numbers">-@_discountTotal.ToString("C")</MudText>
+                                </div>
+                            }
                             <div class="d-flex align-center gap-2">
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Tax"):</MudText>
                                 <MudText Typo="Typo.body1" Class="font-weight-medium tabular-numbers">@_taxAmount.ToString("C")</MudText>
@@ -345,6 +375,7 @@ else
 
     private readonly List<LineItemModel> _lineItems = new();
     private decimal _subtotal = 0;
+    private decimal _discountTotal = 0;
     private decimal _taxAmount = 0;
     private decimal _total = 0;
 
@@ -421,7 +452,8 @@ else
                         Description = li.Description,
                         Quantity = li.Quantity,
                         UnitPrice = li.UnitPrice,
-                        TaxRate = li.TaxRate
+                        TaxRate = li.TaxRate,
+                        DiscountPercentage = li.DiscountPercentage
                     });
                 }
             }
@@ -539,7 +571,9 @@ else
         if (product == null) return;
         item.SelectedProduct = product;
         item.Description = product.Name;
-        item.UnitPrice = product.DefaultPrice;
+        item.UnitPrice = _selectedType == InvoiceType.Receivable
+            ? product.SellingPrice
+            : product.CostPrice;
 
         if (_selectedType == InvoiceType.Receivable)
         {
@@ -579,8 +613,13 @@ else
     private void CalculateTotals()
     {
         _subtotal = _lineItems.Sum(i => i.Quantity * i.UnitPrice);
-        _taxAmount = _lineItems.Sum(i => (i.Quantity * i.UnitPrice) * (i.TaxRate / 100));
-        _total = _subtotal + _taxAmount;
+        _discountTotal = _lineItems.Sum(i => (i.Quantity * i.UnitPrice) * (i.DiscountPercentage / 100m));
+        _taxAmount = _lineItems.Sum(i =>
+        {
+            decimal net = (i.Quantity * i.UnitPrice) * (1 - i.DiscountPercentage / 100m);
+            return net * (i.TaxRate / 100m);
+        });
+        _total = _subtotal - _discountTotal + _taxAmount;
         StateHasChanged();
     }
 
@@ -606,7 +645,8 @@ else
                         Description = i.SelectedProduct.Name,
                         Quantity = i.Quantity,
                         UnitPrice = i.UnitPrice,
-                        TaxRate = i.TaxRate
+                        TaxRate = i.TaxRate,
+                        DiscountPercentage = i.DiscountPercentage
                     }).ToList()
             };
 
@@ -632,6 +672,14 @@ else
         public int Quantity { get; set; } = 1;
         public decimal UnitPrice { get; set; } = 0m;
         public decimal TaxRate { get; set; } = 0m;
-        public decimal LineTotal => (Quantity * UnitPrice) * (1 + TaxRate / 100);
+        public decimal DiscountPercentage { get; set; } = 0m;
+        public decimal LineTotal
+        {
+            get
+            {
+                decimal net = (Quantity * UnitPrice) * (1 - DiscountPercentage / 100m);
+                return net + net * (TaxRate / 100m);
+            }
+        }
     }
 }

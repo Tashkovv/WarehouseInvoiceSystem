@@ -156,7 +156,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 "Code" => ascending ? q.OrderBy(p => p.Code) : q.OrderByDescending(p => p.Code),
                 "Name" => ascending ? q.OrderBy(p => p.Name) : q.OrderByDescending(p => p.Name),
-                "DefaultPrice" => ascending ? q.OrderBy(p => p.DefaultPrice) : q.OrderByDescending(p => p.DefaultPrice),
+                "CostPrice" => ascending ? q.OrderBy(p => p.CostPrice) : q.OrderByDescending(p => p.CostPrice),
+                "SellingPrice" => ascending ? q.OrderBy(p => p.SellingPrice) : q.OrderByDescending(p => p.SellingPrice),
                 _ => q.OrderBy(p => p.Name)
             };
     }

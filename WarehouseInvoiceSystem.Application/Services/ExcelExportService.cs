@@ -138,7 +138,8 @@
             using XLWorkbook workbook = new();
             IXLWorksheet ws = workbook.Worksheets.Add(translations.GetString("Invoice"));
 
-            int totalCols = 7; // #, Description, Quantity, UnitPrice, TaxRate, Amount, Total
+            bool hasDiscount = invoice.DiscountTotal > 0;
+            int totalCols = hasDiscount ? 7 : 6; // #, Description, Quantity, UnitPrice, TaxRate, [Discount], Amount
 
             // ── Page setup ───────────────────────────────────────────────────────
             ws.PageSetup.PageOrientation = XLPageOrientation.Portrait;
@@ -207,12 +208,13 @@
             row += 3;
 
             ws.Cell(row, 1).Value = "#";
-            ws.Cell(row, 2).Value = translations.GetString("Description");
+            ws.Cell(row, 2).Value = translations.GetString("Product");
             ws.Cell(row, 3).Value = translations.GetString("Quantity");
             ws.Cell(row, 4).Value = translations.GetString("UnitPrice");
             ws.Cell(row, 5).Value = translations.GetString("TaxRate");
-            ws.Cell(row, 6).Value = translations.GetString("Amount");
-            ws.Cell(row, 7).Value = translations.GetString(totalString);
+            if (hasDiscount)
+                ws.Cell(row, 6).Value = translations.GetString("Discount");
+            ws.Cell(row, hasDiscount ? 7 : 6).Value = translations.GetString("Amount");
 
             IXLRange headerRange = ws.Range(row, 1, row, totalCols);
             headerRange.Style.Font.Bold = true;
@@ -231,34 +233,41 @@
                 ws.Cell(row, 3).Value = $"{line.Quantity} {line.ProductUnit}";
                 ws.Cell(row, 4).Value = line.UnitPrice.ToString("C");
                 ws.Cell(row, 5).Value = $"{line.TaxRate}%";
-                ws.Cell(row, 6).Value = line.Amount.ToString("C");
-                ws.Cell(row, 7).Value = line.TotalAmount.ToString("C");
+                if (hasDiscount)
+                    ws.Cell(row, 6).Value = line.DiscountPercentage > 0 ? $"-{line.DiscountAmount.ToString("C")}" : "";
+                ws.Cell(row, hasDiscount ? 7 : 6).Value = line.Amount.ToString("C");
 
                 ws.Range(row, 1, row, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             }
 
             // ── Totals section ───────────────────────────────────────────────────
+            int labelCol = totalCols - 1;
             row += 2;
-            WriteTotalLine(ws, row, 6, $"{translations.GetString("Subtotal")}:", invoice.SubTotal.ToString("C"));
+            WriteTotalLine(ws, row, labelCol, $"{translations.GetString("Subtotal")}:", invoice.SubTotal.ToString("C"));
+            if (hasDiscount)
+            {
+                row++;
+                WriteTotalLine(ws, row, labelCol, $"{translations.GetString("Discount")}:", $"-{invoice.DiscountTotal.ToString("C")}");
+            }
             row++;
-            WriteTotalLine(ws, row, 6, $"{translations.GetString("Tax")}:", invoice.TaxAmount.ToString("C"));
+            WriteTotalLine(ws, row, labelCol, $"{translations.GetString("Tax")}:", invoice.TaxAmount.ToString("C"));
 
             // Grand total (highlighted)
             row++;
-            WriteTotalLine(ws, row, 6, $"{translations.GetString(totalString).ToUpper()}:", invoice.TotalAmount.ToString("C"));
-            ws.Range(row, 6, row, 7).Style.Font.FontSize = 14;
-            ws.Range(row, 6, row, 7).Style.Fill.BackgroundColor = XLColor.LightGray;
-            ws.Range(row, 6, row, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+            WriteTotalLine(ws, row, labelCol, $"{translations.GetString(totalString).ToUpper()}:", invoice.TotalAmount.ToString("C"));
+            ws.Range(row, labelCol, row, totalCols).Style.Font.FontSize = 14;
+            ws.Range(row, labelCol, row, totalCols).Style.Fill.BackgroundColor = XLColor.LightGray;
+            ws.Range(row, labelCol, row, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
             row++;
-            WriteTotalLine(ws, row, 6, $"{translations.GetString("AmountPaid")}:", invoice.AmountPaid.ToString("C"));
+            WriteTotalLine(ws, row, labelCol, $"{translations.GetString("AmountPaid")}:", invoice.AmountPaid.ToString("C"));
 
             // Amount due (highlighted)
             row++;
-            WriteTotalLine(ws, row, 6, $"{translations.GetString("AmountDue").ToUpper()}:", invoice.AmountDue.ToString("C"));
-            ws.Range(row, 6, row, 7).Style.Font.FontSize = 14;
-            ws.Range(row, 6, row, 7).Style.Fill.BackgroundColor = XLColor.Yellow;
-            ws.Range(row, 6, row, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
+            WriteTotalLine(ws, row, labelCol, $"{translations.GetString("AmountDue").ToUpper()}:", invoice.AmountDue.ToString("C"));
+            ws.Range(row, labelCol, row, totalCols).Style.Font.FontSize = 14;
+            ws.Range(row, labelCol, row, totalCols).Style.Fill.BackgroundColor = XLColor.Yellow;
+            ws.Range(row, labelCol, row, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
             // ── Notes ────────────────────────────────────────────────────────────
             if (!string.IsNullOrWhiteSpace(invoice.Notes))

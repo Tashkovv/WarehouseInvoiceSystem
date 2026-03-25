@@ -21,7 +21,8 @@
             builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
             builder.Property(e => e.Description).HasMaxLength(500);
             builder.Property(e => e.Unit).IsRequired().HasMaxLength(10);
-            builder.Property(e => e.DefaultPrice).HasPrecision(18, 2).IsRequired();
+            builder.Property(e => e.CostPrice).HasPrecision(18, 2).IsRequired().HasDefaultValue(0m);
+            builder.Property(e => e.SellingPrice).HasPrecision(18, 2).IsRequired();
             builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
             // Indexes

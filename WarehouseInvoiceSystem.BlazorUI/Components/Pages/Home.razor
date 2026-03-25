@@ -319,7 +319,8 @@ else
                 Name = dto.Name,
                 Description = dto.Description,
                 Unit = dto.Unit,
-                DefaultPrice = dto.DefaultPrice,
+                CostPrice = dto.CostPrice,
+                SellingPrice = dto.SellingPrice,
                 IsActive = dto.IsActive
             });
             Snackbar.Add(Localization.GetString("ProductCreated"), Severity.Success);
