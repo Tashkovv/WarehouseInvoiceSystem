@@ -13,6 +13,7 @@
         public DateTime IssueDate { get; set; } = DateTime.UtcNow;
         public DateTime DueDate { get; set; }
         public decimal SubTotal { get; set; }
+        public decimal DiscountTotal { get; set; }
         public decimal TaxAmount { get; set; }
         public decimal TotalAmount { get; set; }
         public decimal AmountPaid { get; set; }

@@ -130,7 +130,7 @@ else
                                         <strong>@product.Code</strong> - @product.Name
                                     </MudText>
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                        @product.Unit | @product.DefaultPrice.ToString("C")
+                                        @product.Unit | @product.CostPrice.ToString("C")
                                     </MudText>
                                 </ItemTemplate>
                             </MudAutocomplete>
@@ -355,7 +355,7 @@ else
         {
             item.SelectedProduct = product;
             item.Description = product.Name;
-            item.UnitPrice = product.DefaultPrice;
+            item.UnitPrice = product.CostPrice;
             CalculateTotals();
         }
     }

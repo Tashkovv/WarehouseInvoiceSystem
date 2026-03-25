@@ -126,9 +126,9 @@
 
             // ── Compute profitability ─────────────────────────────────────────
             decimal avgPurchasePrice = purchasedRows.Count > 0 ? purchasedRows.Average(r => r.UnitPrice) : 0;
-            decimal sellingPrice = product.DefaultPrice;
-            decimal grossMargin = sellingPrice > 0 && avgPurchasePrice > 0
-                ? (sellingPrice - avgPurchasePrice) / sellingPrice * 100
+            decimal avgSellingPrice = soldRows.Count > 0 ? soldRows.Average(r => r.UnitPrice) : product.SellingPrice;
+            decimal grossMargin = avgSellingPrice > 0 && avgPurchasePrice > 0
+                ? (avgSellingPrice - avgPurchasePrice) / avgSellingPrice * 100
                 : 0;
 
             decimal totalPurchasedAmount = purchasedRows.Sum(r => r.TotalPrice);
@@ -152,7 +152,7 @@
                 }).ToList(),
 
                 // Profitability
-                CurrentSellingPrice = sellingPrice,
+                AverageSellingPrice = avgSellingPrice,
                 AveragePurchasePrice = avgPurchasePrice,
                 GrossMarginPercentage = grossMargin,
 
@@ -248,7 +248,8 @@
                 Name = createDto.Name,
                 Description = createDto.Description,
                 Unit = createDto.Unit,
-                DefaultPrice = createDto.DefaultPrice,
+                CostPrice = createDto.CostPrice,
+                SellingPrice = createDto.SellingPrice,
                 IsActive = createDto.IsActive
             };
 
@@ -268,7 +269,8 @@
             product.Name = updateDto.Name;
             product.Description = updateDto.Description;
             product.Unit = updateDto.Unit;
-            product.DefaultPrice = updateDto.DefaultPrice;
+            product.CostPrice = updateDto.CostPrice;
+            product.SellingPrice = updateDto.SellingPrice;
             product.IsActive = updateDto.IsActive;
 
             await productRepository.UpdateAsync(product);
@@ -425,7 +427,8 @@
                 Name = product.Name,
                 Description = product.Description,
                 Unit = product.Unit,
-                DefaultPrice = product.DefaultPrice,
+                CostPrice = product.CostPrice,
+                SellingPrice = product.SellingPrice,
                 IsActive = product.IsActive,
                 CreatedAt = product.CreatedAt
             };

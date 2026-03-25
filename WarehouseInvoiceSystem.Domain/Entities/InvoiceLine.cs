@@ -10,9 +10,11 @@
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TaxRate { get; set; } = 0m; // Percentage (e.g., 10 for 10%)
+        public decimal DiscountPercentage { get; set; } = 0m; // Percentage (e.g., 10 for 10%)
         public decimal Amount => Quantity * UnitPrice;
-        public decimal TaxAmount => Amount * (TaxRate / 100);
-        public decimal TotalAmount => Amount + TaxAmount;
+        public decimal DiscountAmount => Amount * (DiscountPercentage / 100);
+        public decimal TaxAmount => (Amount - DiscountAmount) * (TaxRate / 100);
+        public decimal TotalAmount => (Amount - DiscountAmount) + TaxAmount;
 
         // Navigation property
         public Invoice Invoice { get; set; } = null!;

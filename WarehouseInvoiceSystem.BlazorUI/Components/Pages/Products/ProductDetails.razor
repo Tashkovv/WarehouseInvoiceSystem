@@ -77,10 +77,16 @@ else
                     @* ── Stats bar — 4 stats, full width ── *@
                     <div class="wis-product-stats-bar">
 
-                        @* Stat 1 *@
+                        @* Stat 1a *@
                         <div class="wis-product-stats-bar__stat">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("DefaultPrice")</MudText>
-                            <div class="wis-stat-value mud-success-text">@_product.DefaultPrice.ToString("C")</div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("CostPrice")</MudText>
+                            <div class="wis-stat-value mud-default-text">@_product.CostPrice.ToString("C")</div>
+                        </div>
+
+                        @* Stat 1b *@
+                        <div class="wis-product-stats-bar__stat">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("SellingPrice")</MudText>
+                            <div class="wis-stat-value mud-success-text">@_product.SellingPrice.ToString("C")</div>
                         </div>
 
                         @* Stat 2 *@
@@ -187,8 +193,8 @@ else
                         </MudItem>
 
                         <MudItem xs="3">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("CurrentSellingPrice")</MudText>
-                            <div class="wis-stat-value mud-success-text">@_details.CurrentSellingPrice.ToString("C")</div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AverageSellingPrice")</MudText>
+                            <div class="wis-stat-value mud-success-text">@_scopedAvgSellingPrice.ToString("C")</div>
                         </MudItem>
 
                         <MudItem xs="3">
@@ -311,7 +317,7 @@ else
         ? _details.StockByWarehouse.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
         : _details.TotalStockAcrossWarehouses;
 
-    private decimal _filteredStockValue => _filteredTotalStock * _details.CurrentSellingPrice;
+    private decimal _filteredStockValue => _filteredTotalStock * _scopedAvgSellingPrice;
 
     private bool _filteredIsOutOfStock => _filteredTotalStock == 0;
 
@@ -372,15 +378,18 @@ else
     private decimal _scopedAvgPurchasePrice =>
         _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.AverageUnitPrice ?? 0) : _details.AveragePurchasePrice;
 
+    private decimal _scopedAvgSellingPrice =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.AverageUnitPrice ?? _details.AverageSellingPrice) : _details.AverageSellingPrice;
+
     private decimal _scopedGrossMarginPct =>
     _selectedWarehouseId.HasValue
-        ? (_details.CurrentSellingPrice > 0 && _scopedAvgPurchasePrice > 0
-            ? (_details.CurrentSellingPrice - _scopedAvgPurchasePrice) / _details.CurrentSellingPrice * 100
+        ? (_scopedAvgSellingPrice > 0 && _scopedAvgPurchasePrice > 0
+            ? (_scopedAvgSellingPrice - _scopedAvgPurchasePrice) / _scopedAvgSellingPrice * 100
             : 0)
         : _details.GrossMarginPercentage;
 
     private decimal _scopedEstimatedProfit =>
-        (_details.CurrentSellingPrice - _scopedAvgPurchasePrice) * _filteredTotalStock;
+        (_scopedAvgSellingPrice - _scopedAvgPurchasePrice) * _filteredTotalStock;
 
     private decimal _scopedProfit =>
         _scopedSoldAmount - _scopedPurchasedAmount;

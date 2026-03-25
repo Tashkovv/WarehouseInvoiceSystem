@@ -15,49 +15,38 @@
 
 <PageTitle>@Localization.GetString("WarehouseDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div class="d-flex align-center justify-space-between flex-wrap gap-3 mb-6">
-    <MudText Typo="Typo.h4">@Localization.GetString("Warehouse")</MudText>
-    @if (!_loading && _warehouses.Any())
-    {
-        <WisAutocompleteFilter TValue="Guid"
-                               Label="@Localization.GetString("Warehouse")"
-                               Icon="@Icons.Material.Filled.Warehouse"
-                               LoadItems="LoadWarehouseItems"
-                               SelectedValue="@_selectedWarehouseId"
-                               SelectedValueChanged="@(async (Guid v) => await OnWarehouseChanged(v))"
-                               InitialLabel="@_selectedWarehouseName"
-                               MinWidth="220px" />
-    }
-</div>
-
 @if (_loading)
 {
     <MudProgressLinear Color="Color.Primary" Indeterminate="true" />
 }
 else if (_selectedWarehouseId == Guid.Empty)
 {
-    <MudGrid>
-        <MudItem xs="12">
-            <MudCard Elevation="2">
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("NoWarehousesCreateOne")</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
-                <MudCardContent Class="pa-6">
-                    <MudButton StartIcon="@Icons.Material.Filled.Add"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               Href="/warehouses/create">
-                        @Localization.GetString("CreateWarehouse")
-                    </MudButton>
-                </MudCardContent>
-            </MudCard>
-        </MudItem>
-    </MudGrid>
+    <div class="d-flex flex-column align-center justify-center gap-4" style="flex:1">
+        <MudIcon Icon="@Icons.Material.Outlined.Warehouse" Style="font-size:4rem" Color="Color.Secondary" />
+        <MudText Typo="Typo.h6" Color="Color.Secondary">@Localization.GetString("NoWarehousesCreateOne")</MudText>
+        <WisButton Action="@(new WisDetailActionItem
+        {
+            Icon = Icons.Material.Filled.Add,
+            Label = Localization.GetString("Warehouse"),
+            Color = Color.Primary,
+            OnClick = EventCallback.Factory.Create(this, OpenCreateWarehouseDialog)
+        })" />
+    </div>
 }
 else
 {
+<div class="d-flex align-center justify-space-between flex-wrap gap-3 mb-6">
+    <MudText Typo="Typo.h4">@Localization.GetString("Warehouse")</MudText>
+    <WisAutocompleteFilter TValue="Guid"
+                           Label="@Localization.GetString("Warehouse")"
+                           Icon="@Icons.Material.Filled.Warehouse"
+                           LoadItems="LoadWarehouseItems"
+                           SelectedValue="@_selectedWarehouseId"
+                           SelectedValueChanged="@(async (Guid v) => await OnWarehouseChanged(v))"
+                           InitialLabel="@_selectedWarehouseName"
+                           MinWidth="220px" />
+</div>
+
     <MudGrid>
 
         <!-- ── Summary Cards ── -->
@@ -477,8 +466,8 @@ else
     private IEnumerable<StockLevelDto> _lowStockItems => _stockAlerts.Where(s => s.Quantity > 0);
 
     // ── Statistics date range ──────────────────────────────────────────────────
-    private int? _statsDatePreset = 730;
-    private DateRange _statsDateRange = new(new DateTime(DateTime.Today.Year - 1, 1, 1), new DateTime(DateTime.Today.Year - 1, 12, 31));
+    private int? _statsDatePreset = 365;
+    private DateRange _statsDateRange = new(new DateTime(DateTime.Today.Year, 1, 1), DateTime.UtcNow);
     private DateTime _statsFromDate => _statsDateRange.Start ?? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
     private DateTime _statsToDate => _statsDateRange.End ?? DateTime.Today;
 
@@ -553,6 +542,13 @@ else
     {
         await LoadProductStatistics();
         StateHasChanged();
+    }
+
+    private async Task OpenCreateWarehouseDialog()
+    {
+        if (await WisDialog.ShowFormAsync<WarehouseDialog, bool>(
+                Localization.GetString("CreateWarehouse"), MaxWidth.Small) == true)
+            await LoadData(true);
     }
 
     private async Task OpenAdjustDialog()

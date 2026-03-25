@@ -201,7 +201,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 int totalProducts = await q.Select(s => s.ProductId).Distinct().CountAsync(ct);
                 int inStockCount = await q.Where(s => s.Quantity > 0).Select(s => s.ProductId).Distinct().CountAsync(ct);
-                decimal totalStockValue = await q.SumAsync(s => s.Quantity * s.Product.DefaultPrice, ct);
+                decimal totalStockValue = await q.SumAsync(s => s.Quantity * s.Product.SellingPrice, ct);
                 int lowStockCount = await q.CountAsync(
                     s => s.MinimumQuantity.HasValue && s.Quantity > 0 && s.Quantity <= s.MinimumQuantity.Value, ct);
                 int outOfStockCount = await q.Where(s => s.Quantity == 0).Select(s => s.ProductId).Distinct().CountAsync(ct);

@@ -23,6 +23,7 @@
             builder.Property(e => e.Type).IsRequired();
             builder.Property(e => e.Status).IsRequired().HasDefaultValue(InvoiceStatus.Draft);
             builder.Property(e => e.SubTotal).HasPrecision(18, 2).IsRequired();
+            builder.Property(e => e.DiscountTotal).HasPrecision(18, 2).IsRequired().HasDefaultValue(0m);
             builder.Property(e => e.TaxAmount).HasPrecision(18, 2).IsRequired().HasDefaultValue(0);
             builder.Property(e => e.TotalAmount).HasPrecision(18, 2).IsRequired();
             builder.Property(e => e.AmountPaid).HasPrecision(18, 2).IsRequired().HasDefaultValue(0);

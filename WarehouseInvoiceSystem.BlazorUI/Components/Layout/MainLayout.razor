@@ -211,8 +211,8 @@
         }
     </MudAppBar>
 
-    <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh;">
-        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6">
+    <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6" Style="flex: 1 1 auto;">
             @Body
         </MudContainer>
         <Footer />

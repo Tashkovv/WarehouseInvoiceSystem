@@ -86,15 +86,28 @@
                                 Sortable="false"
                                 IsEditable="false" />
 
-                <PropertyColumn Property="x => x.DefaultPrice"
-                                Title="@Localization.GetString("Price")"
+                <PropertyColumn Property="x => x.CostPrice"
+                                Title="@Localization.GetString("CostPrice")"
                                 Sortable="true"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
                                 IsEditable="false">
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
-                            @context.Item.DefaultPrice.ToString("C")
+                            @context.Item.CostPrice.ToString("C")
+                        </MudText>
+                    </CellTemplate>
+                </PropertyColumn>
+
+                <PropertyColumn Property="x => x.SellingPrice"
+                                Title="@Localization.GetString("SellingPrice")"
+                                Sortable="true"
+                                HeaderClass="text-right"
+                                CellClass="text-right"
+                                IsEditable="false">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2" Class="wis-cell-amount">
+                            @context.Item.SellingPrice.ToString("C")
                         </MudText>
                     </CellTemplate>
                 </PropertyColumn>

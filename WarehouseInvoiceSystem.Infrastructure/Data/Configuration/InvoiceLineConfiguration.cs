@@ -24,9 +24,11 @@
             builder.Property(e => e.Quantity).IsRequired();
             builder.Property(e => e.UnitPrice).HasPrecision(18, 2).IsRequired();
             builder.Property(e => e.TaxRate).HasPrecision(5, 2).IsRequired().HasDefaultValue(0);
+            builder.Property(e => e.DiscountPercentage).HasPrecision(5, 2).IsRequired().HasDefaultValue(0m);
 
             // Computed properties - not stored in database
             builder.Ignore(e => e.Amount);
+            builder.Ignore(e => e.DiscountAmount);
             builder.Ignore(e => e.TaxAmount);
             builder.Ignore(e => e.TotalAmount);
 

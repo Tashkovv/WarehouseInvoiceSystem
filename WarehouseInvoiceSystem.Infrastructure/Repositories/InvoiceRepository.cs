@@ -533,7 +533,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     {
                         ProductId = g.Key,
                         Quantity = (decimal)g.Sum(li => li.Quantity),
-                        TotalAmount = g.Sum(li => li.Quantity * li.UnitPrice * (1 + li.TaxRate / 100))
+                        TotalAmount = g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2))
                     })
                     .ToListAsync(ct);
 
@@ -566,7 +566,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         g.Key.Name,
                         g.Key.Unit,
                         Quantity = (decimal)g.Sum(li => li.Quantity),
-                        TotalAmount = g.Sum(li => li.Quantity * li.UnitPrice * (1 + li.TaxRate / 100))
+                        TotalAmount = g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2))
                     })
                     .OrderByDescending(r => r.TotalAmount)
                     .Take(top)
@@ -737,7 +737,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 return (
                     await q.SumAsync(li => (decimal)li.Quantity, ct),
-                    await q.SumAsync(li => li.Quantity * li.UnitPrice * (1 + li.TaxRate / 100m), ct)
+                    await q.SumAsync(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2), ct)
                 );
             });
 
