@@ -81,7 +81,6 @@
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
-                                IsEditable="false"
                                 HeaderClass="wis-col-actions-1"
                                 CellClass="wis-col-actions-1">
                     <CellTemplate>
@@ -97,25 +96,24 @@
                 <PropertyColumn Property="x => x.ProductCode"
                                 Title="@Localization.GetString("Code")"
                                 Sortable="true"
-                                IsEditable="false"
                                 CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.ProductName"
                                 Title="@Localization.GetString("Product")"
                                 Sortable="true"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.WarehouseName"
                                 Title="@Localization.GetString("Warehouse")"
                                 Sortable="true"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.Quantity"
                                 Title="@Localization.GetString("CurrentStock")"
                                 Sortable="true"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.FlexEnd" Spacing="1">
                             <MudText Typo="Typo.body2"
@@ -136,7 +134,7 @@
                 <PropertyColumn Property="x => x.LastRestockedAt"
                                 Title="@Localization.GetString("LastRestocked")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @context.Item.LastRestockedAt.ToLocalTime().ToString("dd MMM yyyy")
                     </CellTemplate>
@@ -147,7 +145,7 @@
                                 Sortable="false"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @if (context.Item.MinimumQuantity.HasValue)
                         {
@@ -165,7 +163,7 @@
                                 Sortable="false"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @if (context.Item.ReorderPoint.HasValue)
                         {

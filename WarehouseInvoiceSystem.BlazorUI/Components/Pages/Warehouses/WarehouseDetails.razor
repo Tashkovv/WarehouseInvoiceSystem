@@ -151,12 +151,13 @@ else
                                         }
                                     </MudText>
                                 </MudTd>
-                                <MudTd>
-                                    <MudIconButton Icon="@Icons.Material.Filled.Tune"
-                                                   Size="Size.Small"
-                                                   Color="Color.Primary"
-                                                   Title="@Localization.GetString("EditThresholds")"
-                                                   OnClick="@(() => OpenSetThresholdsDialog(context))" />
+                                <MudTd Style="text-align:center">
+                                    <MudTooltip Text="@Localization.GetString("EditThresholds")">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Tune"
+                                                       Size="Size.Small"
+                                                       Color="Color.Primary"
+                                                       OnClick="@(() => OpenSetThresholdsDialog(context))" />
+                                    </MudTooltip>
                                 </MudTd>
                             </RowTemplate>
                             <PagerContent>

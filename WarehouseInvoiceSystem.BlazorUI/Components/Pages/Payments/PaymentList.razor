@@ -75,7 +75,6 @@
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
-                                IsEditable="false"
                                 HeaderClass="wis-col-actions-1"
                                 CellClass="wis-col-actions-1">
                     <CellTemplate>
@@ -91,7 +90,7 @@
                 <PropertyColumn Property="x => x.InvoiceNumber"
                                 Title="@Localization.GetString("InvoiceNumber")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudLink Href="@($"/invoices/{context.Item.InvoiceId}")"
                                  Typo="Typo.body2"
@@ -105,17 +104,17 @@
                 <PropertyColumn Property="x => x.ReferenceNumber"
                                 Title="@Localization.GetString("ReferenceNumber")"
                                 Sortable="false"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.RecordedBy"
                                 Title="@Localization.GetString("RecordedBy")"
                                 Sortable="false"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.PaymentMethod"
                                 Title="@Localization.GetString("PaymentMethod")"
                                 Sortable="false"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudChip T="string" Size="Size.Small" Color="@GetPaymentMethodColor(context.Item.PaymentMethod)">
                             @GetPaymentMethodText(context.Item.PaymentMethod)
@@ -126,7 +125,7 @@
                 <PropertyColumn Property="x => x.PaymentDate"
                                 Title="@Localization.GetString("PaymentDate")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @context.Item.PaymentDate.ToString("dd MMM yyyy")
                     </CellTemplate>
@@ -137,7 +136,7 @@
                                 Sortable="true"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount-success">
                             @context.Item.Amount.ToString("C")

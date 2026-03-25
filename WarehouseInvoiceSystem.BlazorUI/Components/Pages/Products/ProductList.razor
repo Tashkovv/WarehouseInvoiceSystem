@@ -51,7 +51,6 @@
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
-                                IsEditable="false"
                                 HeaderClass="wis-col-actions-1"
                                 CellClass="wis-col-actions-1">
                     <CellTemplate>
@@ -67,31 +66,29 @@
                 <PropertyColumn Property="x => x.Code"
                                 Title="@Localization.GetString("Code")"
                                 Sortable="true"
-                                IsEditable="false"
                                 CellClass="wis-cell-mono-medium" />
 
                 <PropertyColumn Property="x => x.Name"
                                 Title="@Localization.GetString("Name")"
                                 Sortable="true"
-                                IsEditable="false"
                                 CellClass="wis-cell-primary" />
 
                 <PropertyColumn Property="x => x.Description"
                                 Title="@Localization.GetString("Description")"
                                 Sortable="false"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.Unit"
                                 Title="@Localization.GetString("Unit")"
                                 Sortable="false"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.CostPrice"
                                 Title="@Localization.GetString("CostPrice")"
                                 Sortable="true"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
                             @context.Item.CostPrice.ToString("C")
@@ -104,7 +101,7 @@
                                 Sortable="true"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
                             @context.Item.SellingPrice.ToString("C")
@@ -115,7 +112,7 @@
                 <PropertyColumn Property="x => x.IsActive"
                                 Title="@Localization.GetString("Status")"
                                 Sortable="false"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"

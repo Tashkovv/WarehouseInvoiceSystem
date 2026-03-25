@@ -90,7 +90,6 @@
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
-                                IsEditable="false"
                                 HeaderClass="wis-col-actions-1"
                                 CellClass="wis-col-actions-1">
                     <CellTemplate>
@@ -106,13 +105,12 @@
                 <PropertyColumn Property="x => x.NoteNumber"
                                 Title="@Localization.GetString("Number")"
                                 Sortable="true"
-                                IsEditable="false"
                                 CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.IndividualFullName"
                                 Title="@Localization.GetString("Individual")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-primary">
                             @context.Item.IndividualFullName
@@ -126,7 +124,7 @@
                 <PropertyColumn Property="x => x.Status"
                                 Title="@Localization.GetString("Status")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
@@ -139,7 +137,7 @@
                 <PropertyColumn Property="x => x.PurchaseDate"
                                 Title="@Localization.GetString("PurchaseDate")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @context.Item.PurchaseDate.ToString("dd MMM yyyy")
                     </CellTemplate>
@@ -148,7 +146,7 @@
                 <PropertyColumn Property="x => x.WarehouseName"
                                 Title="@Localization.GetString("Warehouse")"
                                 Sortable="false"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @context.Item.WarehouseName
                     </CellTemplate>
@@ -159,7 +157,7 @@
                                 Sortable="true"
                                 HeaderClass="text-right"
                                 CellClass="text-right"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
                             @context.Item.TotalAmount.ToString("C")

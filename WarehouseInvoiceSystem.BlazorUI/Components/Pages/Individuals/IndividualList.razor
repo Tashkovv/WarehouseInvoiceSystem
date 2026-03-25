@@ -50,7 +50,6 @@
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
-                                IsEditable="false"
                                 HeaderClass="wis-col-actions-1"
                                 CellClass="wis-col-actions-1">
                     <CellTemplate>
@@ -66,29 +65,27 @@
                 <PropertyColumn Property="x => x.FullName"
                                 Title="@Localization.GetString("FullName")"
                                 Sortable="true"
-                                IsEditable="false"
                                 CellClass="wis-cell-primary" />
 
                 <PropertyColumn Property="x => x.IdentificationNumber"
                                 Title="@Localization.GetString("IdentificationNumber")"
                                 Sortable="true"
-                                IsEditable="false"
                                 CellClass="wis-cell-mono" />
 
                 <PropertyColumn Property="x => x.Phone"
                                 Title="@Localization.GetString("Phone")"
                                 Sortable="false"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.Email"
                                 Title="@Localization.GetString("Email")"
                                 Sortable="false"
-                                IsEditable="false" />
+                                />
 
                 <PropertyColumn Property="x => x.IsActive"
                                 Title="@Localization.GetString("Status")"
                                 Sortable="false"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"

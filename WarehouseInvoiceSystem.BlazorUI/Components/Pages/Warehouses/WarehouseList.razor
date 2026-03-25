@@ -50,7 +50,6 @@
 
                 <TemplateColumn Sortable="false"
                                 Filterable="false"
-                                IsEditable="false"
                                 HeaderClass="wis-col-actions-1"
                                 CellClass="wis-col-actions-1">
                     <CellTemplate>
@@ -66,7 +65,7 @@
                 <PropertyColumn Property="x => x.Name"
                                 Title="@Localization.GetString("Name")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                             <MudText Typo="Typo.body2" Class="wis-cell-primary">
@@ -85,7 +84,7 @@
                 <PropertyColumn Property="x => x.Address"
                                 Title="@Localization.GetString("Address")"
                                 Sortable="false"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @(context.Item.Address ?? "—")
                     </CellTemplate>
@@ -94,7 +93,7 @@
                 <PropertyColumn Property="x => x.IsActive"
                                 Title="@Localization.GetString("Status")"
                                 Sortable="false"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         <MudChip T="string"
                                  Size="Size.Small"
@@ -109,7 +108,7 @@
                 <PropertyColumn Property="x => x.CreatedAt"
                                 Title="@Localization.GetString("Created")"
                                 Sortable="true"
-                                IsEditable="false">
+>
                     <CellTemplate>
                         @context.Item.CreatedAt.ToString("dd MMM yyyy")
                     </CellTemplate>
