@@ -245,16 +245,13 @@ else
                                         @if (item.SelectedProduct != null)
                                         {
                                             var itemStock = GetStockLevel(item.SelectedProduct.Id);
-                                            if (itemStock != null)
-                                            {
-                                                <MudChip T="string"
-                                                         Size="Size.Small"
-                                                         Color="@GetStockColor(itemStock)"
-                                                         Variant="Variant.Outlined"
-                                                         Class="ml-2">
-                                                    @($"{itemStock.AvailableQuantity:N0} {item.SelectedProduct.Unit}")
-                                                </MudChip>
-                                            }
+                                            <MudChip T="string"
+                                                     Size="Size.Small"
+                                                     Color="@(itemStock != null ? GetStockColor(itemStock) : Color.Error)"
+                                                     Variant="Variant.Outlined"
+                                                     Class="ml-2">
+                                                @($"{(itemStock?.AvailableQuantity ?? 0m):N0} {item.SelectedProduct.Unit}")
+                                            </MudChip>
                                         }
                                     </MudTd>
                                 }
