@@ -61,11 +61,12 @@ else
                 <MudTabs Elevation="0"
                          Rounded="false"
                          ApplyEffectsToContainer="true"
-                         PanelClass="pa-0">
+                         >
 
                     <!-- Company Vendors (payable invoices) -->
                     <MudTabPanel Icon="@Icons.Material.Filled.Business"
-                                 Text="@Localization.GetString("Vendor")">
+                                 Text="@Localization.GetString("Vendor")"
+                                 PanelClass="pa-0">
                         <div class="px-4 pt-3 pb-1">
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
                                 @Localization.GetString("ByTotalSpend")
@@ -116,7 +117,8 @@ else
 
                     <!-- Company Clients (receivable invoices) -->
                     <MudTabPanel Icon="@Icons.Material.Filled.Business"
-                                 Text="@Localization.GetString("Client")">
+                                 Text="@Localization.GetString("Client")"
+                                 PanelClass="pa-0">
                         <div class="px-4 pt-3 pb-1">
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
                                 @Localization.GetString("ByTotalRevenue")
@@ -167,7 +169,8 @@ else
 
                     <!-- Individual Vendors (purchase notes) -->
                     <MudTabPanel Icon="@Icons.Material.Filled.Person"
-                                 Text="@Localization.GetString("Vendor")">
+                                 Text="@Localization.GetString("Vendor")"
+                                 PanelClass="pa-0">
                         <div class="px-4 pt-3 pb-1">
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
                                 @Localization.GetString("ByTotalSpend")
@@ -238,11 +241,12 @@ else
                 <MudTabs Elevation="0"
                          Rounded="false"
                          ApplyEffectsToContainer="true"
-                         PanelClass="pa-0">
+                         >
 
                     <!-- Overdue Payables (companies) -->
                     <MudTabPanel Icon="@Icons.Material.Filled.AccountBalance"
                                  Text="@Localization.GetString("Payables")"
+                                 PanelClass="pa-0"
                                  BadgeColor="Color.Error"
                                  BadgeDot="@(_overduePayableCompanies.Any())">
                         <div class="px-4 pt-3 pb-1">
@@ -294,6 +298,7 @@ else
                     <!-- Overdue Receivables (clients) -->
                     <MudTabPanel Icon="@Icons.Material.Filled.RequestQuote"
                                  Text="@Localization.GetString("Receivables")"
+                                 PanelClass="pa-0"
                                  BadgeColor="Color.Error"
                                  BadgeDot="@(_overdueClients.Any())">
                         <div class="px-4 pt-3 pb-1">
@@ -345,6 +350,7 @@ else
                     <!-- Unpaid Purchase Notes (individuals) -->
                     <MudTabPanel Icon="@Icons.Material.Filled.Receipt"
                                  Text="@Localization.GetString("PurchaseNotesShort")"
+                                 PanelClass="pa-0"
                                  BadgeColor="Color.Warning"
                                  BadgeDot="@(_unpaidVendors.Any())">
                         <div class="px-4 pt-3 pb-1">

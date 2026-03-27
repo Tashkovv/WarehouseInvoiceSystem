@@ -89,13 +89,13 @@ else
                                     <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
                                     <MudIconButton Icon="@Icons.Material.Filled.Close"
                                                    Size="Size.Small"
-                                                   Title="@Localization.GetString("Cancel")"
+
                                                    OnClick="CancelNotesEdit"
                                                    Disabled="@_notesSaving" />
                                     <MudIconButton Icon="@Icons.Material.Filled.Check"
                                                    Size="Size.Small"
                                                    Color="Color.Primary"
-                                                   Title="@Localization.GetString("Save")"
+
                                                    OnClick="SaveNotes"
                                                    Disabled="@_notesSaving" />
                                 </div>
@@ -112,7 +112,7 @@ else
                                     <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
                                     <MudIconButton Icon="@(string.IsNullOrWhiteSpace(_invoice.Notes) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
                                                    Size="Size.Small"
-                                                   Title="@Localization.GetString("Edit")"
+
                                                    OnClick="@(() => StartNotesEdit(_invoice?.Notes))" />
                                 </div>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
