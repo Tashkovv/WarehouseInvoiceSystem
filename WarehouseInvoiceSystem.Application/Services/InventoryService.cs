@@ -297,6 +297,10 @@
 
         public async Task ReverseTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, string reason)
         {
+            bool hasReversals = await transactionRepository
+                .HasTransactionsForDocumentAsync(sourceDocumentId, $"{sourceDocumentType}_Reversal");
+            if (hasReversals) return;
+
             IEnumerable<InventoryTransaction> existing = await transactionRepository
                 .GetBySourceDocumentAsync(sourceDocumentId, sourceDocumentType);
 
@@ -351,6 +355,24 @@
                     WarehouseId = reversal.WarehouseId,
                     Type = restoreType,
                     Quantity = restoreQuantity
+                });
+            }
+        }
+
+        public async Task SoftDeleteTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType)
+        {
+            IEnumerable<InventoryTransaction> deleted = await transactionRepository
+                .SoftDeleteByDocumentAsync(sourceDocumentId, sourceDocumentType);
+
+            foreach (InventoryTransaction t in deleted)
+            {
+                decimal undoQuantity = -ComputeStockChange(t);
+                await UpdateStockFromTransactionAsync(new InventoryTransaction
+                {
+                    ProductId = t.ProductId,
+                    WarehouseId = t.WarehouseId,
+                    Type = InventoryTransactionType.Reversed,
+                    Quantity = undoQuantity
                 });
             }
         }

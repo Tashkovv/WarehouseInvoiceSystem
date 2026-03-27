@@ -37,6 +37,7 @@
         Task TransferStockAsync(Guid productId, Guid sourceWarehouseId, Guid destinationWarehouseId, decimal quantity, string? note);
         Task ReverseTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, string reason);
         Task SoftDeleteReversalForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType);
+        Task SoftDeleteTransactionsForDocumentAsync(Guid sourceDocumentId, string sourceDocumentType);
 
         // ── Dashboard aggregates ──────────────────────────────────────────────────
         Task<WarehouseStockSummaryResult> GetWarehouseStockSummaryAsync(Guid? warehouseId, CancellationToken ct = default);

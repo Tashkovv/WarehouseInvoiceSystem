@@ -122,6 +122,21 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return (IEnumerable<InventoryTransaction>)reversals;
             });
 
+        public Task<IEnumerable<InventoryTransaction>> SoftDeleteByDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                List<InventoryTransaction> transactions = await AllTracked<InventoryTransaction>(context)
+                    .Where(t => t.SourceDocumentId == sourceDocumentId &&
+                                t.SourceDocumentType == sourceDocumentType)
+                    .ToListAsync(ct);
+
+                foreach (InventoryTransaction t in transactions)
+                    t.DeletedOn = DateTime.UtcNow;
+
+                await SaveAsync(context);
+                return (IEnumerable<InventoryTransaction>)transactions;
+            });
+
         public Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction) =>
             WithContextAsync(async context =>
             {

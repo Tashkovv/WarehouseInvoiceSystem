@@ -286,6 +286,8 @@
 
             try
             {
+                await inventoryService.SoftDeleteTransactionsForDocumentAsync(updated.Id, invoiceString);
+                await inventoryService.SoftDeleteReversalForDocumentAsync(updated.Id, invoiceString);
                 await CreateInventoryTransactionsIfNeededAsync(updated);
             }
             catch (Exception)
@@ -298,7 +300,7 @@
             return (MapToDto(updated), isDueDatePassed);
         }
 
-        /// <summary>Confirmed/Overdue → Draft. Reverses inventory transactions. Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
+        /// <summary>Confirmed/Overdue → Draft. Soft-deletes inventory transactions (undoes stock, no reversal trail). Not allowed for PartiallyPaid/Cancelled/Paid.</summary>
         public async Task<InvoiceDto> RevertToDraftAsync(Guid id)
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
@@ -314,7 +316,7 @@
 
             try
             {
-                await CreateReverseTransactionsIfNeeded(updated);
+                await inventoryService.SoftDeleteTransactionsForDocumentAsync(updated.Id, invoiceString);
             }
             catch (Exception)
             {

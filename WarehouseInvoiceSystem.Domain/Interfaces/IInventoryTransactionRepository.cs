@@ -22,6 +22,8 @@
 
         Task<IEnumerable<InventoryTransaction>> SoftDeleteReversalAsync(Guid sourceDocumentId, string sourceDocumentType, CancellationToken ct = default);
 
+        Task<IEnumerable<InventoryTransaction>> SoftDeleteByDocumentAsync(Guid sourceDocumentId, string sourceDocumentType, CancellationToken ct = default);
+
         Task<InventoryTransaction> CreateAsync(InventoryTransaction transaction);
         Task CreateBatchAsync(IEnumerable<InventoryTransaction> transactions);
 

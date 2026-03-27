@@ -242,6 +242,9 @@
             note.Status = PurchaseNoteStatus.Pending;
 
             await purchaseNoteRepository.UpdateAsync(note);
+
+            await inventoryService.SoftDeleteTransactionsForDocumentAsync(note.Id, DocumentType);
+            await inventoryService.SoftDeleteReversalForDocumentAsync(note.Id, DocumentType);
             await CreateInventoryTransactionsAsync(note);
 
             return MapToDto(note);
@@ -264,7 +267,7 @@
             return MapToDto(note);
         }
 
-        /// <summary>Pending → Draft. Reverses inventory transactions.</summary>
+        /// <summary>Pending → Draft. Soft-deletes inventory transactions (undoes stock, no reversal trail).</summary>
         public async Task<PurchaseNoteDto> RevertToDraftAsync(Guid id)
         {
             PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id)
@@ -274,14 +277,21 @@
                 throw new InvalidOperationException(
                     $"Purchase note {note.NoteNumber} must be Pending to revert to Draft (current: {note.Status}).");
 
+            PurchaseNoteStatus previousStatus = note.Status;
             note.Status = PurchaseNoteStatus.Draft;
 
             await purchaseNoteRepository.UpdateAsync(note);
 
-            await inventoryService.ReverseTransactionsForDocumentAsync(
-                id,
-                DocumentType,
-                $"{localizationService.GetString("PurchaseNoteRevertedToDraft")}: {note.NoteNumber}");
+            try
+            {
+                await inventoryService.SoftDeleteTransactionsForDocumentAsync(note.Id, DocumentType);
+            }
+            catch (Exception)
+            {
+                note.Status = previousStatus;
+                await purchaseNoteRepository.UpdateAsync(note);
+                throw;
+            }
 
             return MapToDto(note);
         }
