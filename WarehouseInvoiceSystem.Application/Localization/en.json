@@ -620,6 +620,7 @@
   "LicenseInvalidSignature": "Invalid license signature",
   "LicenseInvalidFormat": "Invalid license format",
   "LicenseValidationError": "License validation error",
+  "LicenseRevoked": "License has been revoked",
   "LicenseActivationKey": "Activation Key",
   "LicenseActivate": "Activate",
   "LicenseActivationSuccess": "License activated successfully",

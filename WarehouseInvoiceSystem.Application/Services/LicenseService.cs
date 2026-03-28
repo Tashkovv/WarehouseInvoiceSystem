@@ -23,7 +23,9 @@ namespace WarehouseInvoiceSystem.Application.Services
     {
         private const string TokenKey = "LicenseToken";
         private const string LastSeenKey = "LicenseLastSeenUtc";
+        private const string LastServerCheckKey = "LicenseLastServerCheckUtc";
         private static readonly TimeSpan ClockDriftTolerance = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan ServerCheckInterval = TimeSpan.FromHours(1);
 
         public LicenseStatus Status { get; private set; } = LicenseStatus.NotActivated;
         public LicenseInfo? CurrentLicense { get; private set; }
@@ -122,6 +124,15 @@ namespace WarehouseInvoiceSystem.Application.Services
                     return;
                 }
 
+                // Server revocation check (once per hour, non-blocking on failure)
+                if (await IsServerCheckDueAsync(ct) &&
+                    await IsRevokedOnServerAsync(payload.tid, ct))
+                {
+                    await appState.SetStringAsync(TokenKey, "");
+                    SetLocked(LicenseStatus.Locked, "LicenseRevoked");
+                    return;
+                }
+
                 // All good
                 Status = LicenseStatus.Active;
                 LockReason = null;
@@ -183,6 +194,46 @@ namespace WarehouseInvoiceSystem.Application.Services
             GraceDaysRemaining = null;
         }
 
+        private async Task<bool> IsServerCheckDueAsync(CancellationToken ct)
+        {
+            string? lastCheckStr = await appState.GetStringAsync(LastServerCheckKey, ct);
+            if (lastCheckStr is null)
+                return true;
+
+            if (!DateTime.TryParse(lastCheckStr, CultureInfo.InvariantCulture,
+                    DateTimeStyles.RoundtripKind, out DateTime lastCheck))
+                return true;
+
+            return DateTime.UtcNow - lastCheck > ServerCheckInterval;
+        }
+
+        private async Task<bool> IsRevokedOnServerAsync(string tenantId, CancellationToken ct)
+        {
+            try
+            {
+                using HttpClient client = httpClientFactory.CreateClient("LicenseServer");
+                HttpResponseMessage response = await client.PostAsJsonAsync(
+                    "/api/license/check", new { tenantId }, ct);
+
+                if (!response.IsSuccessStatusCode)
+                    return false; // Server error — don't lock, fail open
+
+                var result = await response.Content.ReadFromJsonAsync<ServerCheckResponse>(ct);
+
+                // Update last successful check timestamp
+                await appState.SetStringAsync(LastServerCheckKey,
+                    DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+
+                return result?.Valid == false;
+            }
+            catch (Exception ex)
+            {
+                // Server unreachable — fail open, don't lock
+                logger.LogWarning(ex, "License server check failed — continuing offline");
+                return false;
+            }
+        }
+
         private async Task<bool> IsClockTamperedAsync(CancellationToken ct)
         {
             string? lastSeenStr = await appState.GetStringAsync(LastSeenKey, ct);
@@ -230,5 +281,7 @@ namespace WarehouseInvoiceSystem.Application.Services
         private sealed record LicensePayload(string tid, string hwid, string exp, int grace);
 
         private sealed record ActivationResponse(string? token, string? expiresAt);
+
+        private sealed record ServerCheckResponse(bool Valid);
     }
 }
