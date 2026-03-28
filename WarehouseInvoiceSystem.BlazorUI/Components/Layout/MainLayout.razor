@@ -8,6 +8,7 @@
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
 @inject IOptions<NotificationSettings> NotificationSettingsOptions
+@inject ILicenseService LicenseService
 
 <MudThemeProvider Theme="_theme" />
 <MudPopoverProvider />
@@ -211,6 +212,15 @@
         }
     </MudAppBar>
 
+    @if (_licenseStatus == LicenseStatus.Warning)
+    {
+        <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true"
+                  Class="rounded-0" Style="z-index: 1100;">
+            @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
+            @Localization.GetString("DaysRemaining")
+        </MudAlert>
+    }
+
     <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
         <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6" Style="flex: 1 1 auto;">
             @Body
@@ -302,10 +312,20 @@
     private bool _settingsOpen = false;
     private bool _runningJob = false;
     private bool _runningNotifications = false;
+    private LicenseStatus _licenseStatus = LicenseStatus.Active;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += StateHasChanged;
+
+        await LicenseService.ValidateAsync();
+        _licenseStatus = LicenseService.Status;
+
+        if (_licenseStatus is LicenseStatus.Locked or LicenseStatus.NotActivated &&
+            !Navigation.Uri.Contains("/license", StringComparison.OrdinalIgnoreCase))
+        {
+            Navigation.NavigateTo("/license");
+        }
     }
 
     private void ChangeLanguage(string language)

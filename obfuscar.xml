@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Obfuscator>
+  <Var name="InPath" value=".\WarehouseInvoiceSystem.BlazorUI\bin\Release\net10.0\publish" />
+  <Var name="OutPath" value=".\WarehouseInvoiceSystem.BlazorUI\bin\Release\net10.0\obfuscated" />
+  <Var name="KeepPublicApi" value="false" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="HideStrings" value="true" />
+  <Var name="RenameProperties" value="true" />
+  <Var name="RenameEvents" value="true" />
+  <Var name="RenameFields" value="true" />
+  <Var name="UseUnicodeNames" value="true" />
+
+  <!-- Obfuscate all project DLLs -->
+  <Module file="$(InPath)\WarehouseInvoiceSystem.Application.dll" />
+  <Module file="$(InPath)\WarehouseInvoiceSystem.Domain.dll" />
+  <Module file="$(InPath)\WarehouseInvoiceSystem.Infrastructure.dll" />
+  <Module file="$(InPath)\WarehouseInvoiceSystem.BlazorUI.dll" />
+</Obfuscator>

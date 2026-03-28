@@ -1,0 +1,140 @@
+@page "/license"
+@inject ILicenseService LicenseService
+@inject ILocalizationService Localization
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-8">
+        <div class="d-flex align-center gap-3 mb-6">
+            <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.h4">@Localization.GetString("License")</MudText>
+        </div>
+
+        @* Status indicator *@
+        <MudAlert Severity="@GetStatusSeverity()" Variant="Variant.Filled" Class="mb-4" Dense="true">
+            @GetStatusText()
+        </MudAlert>
+
+        @* Lock reason *@
+        @if (LicenseService.LockReason is not null &&
+             LicenseService.Status is LicenseStatus.Locked or LicenseStatus.NotActivated)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4" Dense="true">
+                <strong>@Localization.GetString("LockReason"):</strong> @LicenseService.LockReason
+            </MudAlert>
+        }
+
+        @* Grace days warning *@
+        @if (LicenseService.Status == LicenseStatus.Warning && LicenseService.GraceDaysRemaining.HasValue)
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4" Dense="true">
+                @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
+                @Localization.GetString("DaysRemaining")
+            </MudAlert>
+        }
+
+        @* License info *@
+        @if (LicenseService.CurrentLicense is not null)
+        {
+            <MudSimpleTable Dense="true" Hover="true" Bordered="true" Class="mb-4">
+                <tbody>
+                    <tr>
+                        <td><strong>@Localization.GetString("LicenseExpiryDate")</strong></td>
+                        <td>@LicenseService.CurrentLicense.ExpiryDate.ToString("dd.MM.yyyy")</td>
+                    </tr>
+                </tbody>
+            </MudSimpleTable>
+        }
+
+        <MudDivider Class="my-4" />
+
+        @* Hardware fingerprint *@
+        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("HardwareFingerprint")</MudText>
+        <div class="d-flex align-center gap-2 mb-4">
+            <MudTextField @bind-Value="_hardwareId" ReadOnly="true" Variant="Variant.Outlined"
+                          Margin="Margin.Dense" Class="flex-grow-1"
+                          Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                          OnAdornmentClick="CopyHardwareId" />
+        </div>
+
+        <MudDivider Class="my-4" />
+
+        @* Activation *@
+        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("LicenseActivationKey")</MudText>
+        <MudTextField @bind-Value="_activationKey" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Class="mb-3"
+                      Placeholder="XXXX-XXXX-XXXX-XXXX"
+                      Disabled="_activating" />
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.VpnKey"
+                   OnClick="ActivateAsync"
+                   Disabled="@(string.IsNullOrWhiteSpace(_activationKey) || _activating)"
+                   FullWidth="true">
+            @if (_activating)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            }
+            @Localization.GetString("LicenseActivate")
+        </MudButton>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private string _hardwareId = "";
+    private string _activationKey = "";
+    private bool _activating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hardwareId = LicenseService.GetHardwareId();
+        await LicenseService.ValidateAsync();
+    }
+
+    private async Task CopyHardwareId()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _hardwareId);
+        Snackbar.Add(Localization.GetString("Copied"), Severity.Success);
+    }
+
+    private async Task ActivateAsync()
+    {
+        _activating = true;
+        try
+        {
+            bool success = await LicenseService.ActivateAsync(_activationKey);
+            if (success)
+            {
+                Snackbar.Add(Localization.GetString("LicenseActivationSuccess"), Severity.Success);
+                _activationKey = "";
+            }
+            else
+            {
+                Snackbar.Add(Localization.GetString("LicenseActivationFailed"), Severity.Error);
+            }
+        }
+        finally
+        {
+            _activating = false;
+        }
+    }
+
+    private Severity GetStatusSeverity() => LicenseService.Status switch
+    {
+        LicenseStatus.Active => Severity.Success,
+        LicenseStatus.Warning => Severity.Warning,
+        LicenseStatus.Locked => Severity.Error,
+        LicenseStatus.NotActivated => Severity.Info,
+        _ => Severity.Normal
+    };
+
+    private string GetStatusText() => LicenseService.Status switch
+    {
+        LicenseStatus.Active => Localization.GetString("LicenseActive"),
+        LicenseStatus.Warning => Localization.GetString("LicenseWarning"),
+        LicenseStatus.Locked => Localization.GetString("LicenseLocked"),
+        LicenseStatus.NotActivated => Localization.GetString("LicenseNotActivated"),
+        _ => ""
+    };
+}

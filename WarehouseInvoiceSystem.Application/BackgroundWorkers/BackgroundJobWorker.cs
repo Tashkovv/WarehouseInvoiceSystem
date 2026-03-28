@@ -12,6 +12,7 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
     public partial class BackgroundJobWorker(
         IServiceProvider serviceProvider,
         IAppStateService appState,
+        ILicenseService licenseService,
         ILogger<BackgroundJobWorker> logger) : BackgroundService
     {
         // Keys used to persist last-check dates across restarts (UTC date, ISO 8601)
@@ -30,6 +31,9 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
             {
                 try
                 {
+                    // Update monotonic timestamp + re-validate license every minute
+                    await licenseService.ValidateAsync(stoppingToken);
+
                     // All timestamps are UTC
                     DateTime now = DateTime.UtcNow;
                     DateTime todayAtCheckTime = now.Date.AddHours(_overdueCheckHour).AddMinutes(_overdueCheckMinute);

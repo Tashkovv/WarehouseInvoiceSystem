@@ -28,6 +28,29 @@
                      : null;
         }
 
+        public async Task<string?> GetStringAsync(string key, CancellationToken ct = default)
+        {
+            Dictionary<string, string> state = await ReadAsync();
+            return state.TryGetValue(key, out string? value) ? value : null;
+        }
+
+        public async Task SetStringAsync(string key, string value)
+        {
+            await _lock.WaitAsync();
+            try
+            {
+                Dictionary<string, string> state = await ReadAsync();
+                state[key] = value;
+                _cache = state;
+                string json = JsonSerializer.Serialize(state, jsonSerializerOptions);
+                await File.WriteAllTextAsync(_filePath, json);
+            }
+            finally
+            {
+                _lock.Release();
+            }
+        }
+
         public async Task SetDateAsync(string key, DateTime value)
         {
             await _lock.WaitAsync();
