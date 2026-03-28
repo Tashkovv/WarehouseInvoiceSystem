@@ -2,6 +2,7 @@
 @inject ILicenseService LicenseService
 @inject ILocalizationService Localization
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudPaper Elevation="3" Class="pa-8">
@@ -86,7 +87,8 @@
             if (success)
             {
                 Snackbar.Add(Localization.GetString("LicenseActivationSuccess"), Severity.Success);
-                _activationKey = "";
+                Navigation.NavigateTo("/", forceLoad: true);
+                return;
             }
             else
             {
