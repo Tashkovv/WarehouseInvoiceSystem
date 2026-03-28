@@ -2,7 +2,6 @@
 @inject ILicenseService LicenseService
 @inject ILocalizationService Localization
 @inject ISnackbar Snackbar
-@inject IJSRuntime JS
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudPaper Elevation="3" Class="pa-8">
@@ -16,12 +15,12 @@
             @GetStatusText()
         </MudAlert>
 
-        @* Lock reason *@
+        @* Lock reason — translate the key stored in LockReason *@
         @if (LicenseService.LockReason is not null &&
-             LicenseService.Status is LicenseStatus.Locked or LicenseStatus.NotActivated)
+             LicenseService.Status is LicenseStatus.Locked)
         {
             <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4" Dense="true">
-                <strong>@Localization.GetString("LockReason"):</strong> @LicenseService.LockReason
+                <strong>@Localization.GetString("LockReason"):</strong> @Localization.GetString(LicenseService.LockReason)
             </MudAlert>
         }
 
@@ -49,17 +48,6 @@
 
         <MudDivider Class="my-4" />
 
-        @* Hardware fingerprint *@
-        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("HardwareFingerprint")</MudText>
-        <div class="d-flex align-center gap-2 mb-4">
-            <MudTextField @bind-Value="_hardwareId" ReadOnly="true" Variant="Variant.Outlined"
-                          Margin="Margin.Dense" Class="flex-grow-1"
-                          Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
-                          OnAdornmentClick="CopyHardwareId" />
-        </div>
-
-        <MudDivider Class="my-4" />
-
         @* Activation *@
         <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("LicenseActivationKey")</MudText>
         <MudTextField @bind-Value="_activationKey" Variant="Variant.Outlined"
@@ -67,35 +55,26 @@
                       Placeholder="XXXX-XXXX-XXXX-XXXX"
                       Disabled="_activating" />
 
-        <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.VpnKey"
-                   OnClick="ActivateAsync"
-                   Disabled="@(string.IsNullOrWhiteSpace(_activationKey) || _activating)"
-                   FullWidth="true">
-            @if (_activating)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            }
-            @Localization.GetString("LicenseActivate")
-        </MudButton>
+        <WisButton Action="@(new WisDetailActionItem
+                   {
+                       Icon = Icons.Material.Filled.VpnKey,
+                       Label = _activating
+                           ? Localization.GetString("LicenseActivate") + "..."
+                           : Localization.GetString("LicenseActivate"),
+                       Color = Color.Primary,
+                       Disabled = string.IsNullOrWhiteSpace(_activationKey) || _activating,
+                       OnClick = EventCallback.Factory.Create(this, ActivateAsync)
+                   })" />
     </MudPaper>
 </MudContainer>
 
 @code {
-    private string _hardwareId = "";
     private string _activationKey = "";
     private bool _activating;
 
     protected override async Task OnInitializedAsync()
     {
-        _hardwareId = LicenseService.GetHardwareId();
         await LicenseService.ValidateAsync();
-    }
-
-    private async Task CopyHardwareId()
-    {
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", _hardwareId);
-        Snackbar.Add(Localization.GetString("Copied"), Severity.Success);
     }
 
     private async Task ActivateAsync()

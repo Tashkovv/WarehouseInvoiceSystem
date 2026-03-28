@@ -618,6 +618,8 @@
   "LicenseHardwareMismatch": "Hardware mismatch",
   "LicenseClockTampering": "Clock tampering detected",
   "LicenseInvalidSignature": "Invalid license signature",
+  "LicenseInvalidFormat": "Invalid license format",
+  "LicenseValidationError": "License validation error",
   "LicenseActivationKey": "Activation Key",
   "LicenseActivate": "Activate",
   "LicenseActivationSuccess": "License activated successfully",

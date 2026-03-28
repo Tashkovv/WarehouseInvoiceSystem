@@ -16,217 +16,275 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1" Color="Color.Primary">
-        <MudIconButton Icon="@Icons.Material.Filled.Dashboard"
-                       Color="Color.Inherit"
-                       Edge="Edge.Start"
-                       Href="/" />
-        <MudText Typo="Typo.h5" Class="ml-3">
-            @Localization.GetString("InvoiceSystem")
-        </MudText>
-        <MudSpacer />
-        <MudMenu ActivationEvent="@MouseEvent.MouseOver"
-                 AnchorOrigin="Origin.BottomLeft"
-                 TransformOrigin="Origin.TopLeft"
-                 Dense="true">
-            <ActivatorContent>
-                <MudButton Href="/partners-dashboard"
-                           StartIcon="@Icons.Material.Filled.Groups"
-                           IconSize="Size.Large"
-                           Color="Color.Inherit"
-                           @onmouseenter="@(() => { })"
-                           Style="text-transform: none;">
-                    <MudText Typo="Typo.h5">
-                        @Localization.GetString("Partners")
-                    </MudText>
-                </MudButton>
-            </ActivatorContent>
-            <ChildContent>
-                <MudMenuItem Href="/companies" Icon="@Icons.Material.Filled.Business">
-                    @Localization.GetString("Companies")
-                </MudMenuItem>
-                <MudMenuItem Href="/individuals" Icon="@Icons.Material.Filled.Person">
-                    @Localization.GetString("Individuals")
-                </MudMenuItem>
-            </ChildContent>
-        </MudMenu>
-
-        <MudMenu ActivationEvent="@MouseEvent.MouseOver"
-                 AnchorOrigin="Origin.BottomLeft"
-                 TransformOrigin="Origin.TopLeft"
-                 Dense="true">
-            <ActivatorContent>
-                <MudButton Href="/documents-dashboard"
-                           StartIcon="@Icons.Material.Filled.Description"
-                           IconSize="Size.Large"
-                           Color="Color.Inherit"
-                           @onmouseenter="@(() => { })"
-                           Style="text-transform: none;">
-                    <MudText Typo="Typo.h5">
-                        @Localization.GetString("Documents")
-                    </MudText>
-                </MudButton>
-            </ActivatorContent>
-            <ChildContent>
-                <MudMenuItem Href="/invoices" Icon="@Icons.Material.Filled.RequestQuote">
-                    @Localization.GetString("Invoices")
-                </MudMenuItem>
-                <MudMenuItem Href="/purchase-notes" Icon="@Icons.Material.Filled.Receipt">
-                    @Localization.GetString("PurchaseNotes")
-                </MudMenuItem>
-                <MudMenuItem Href="/payments" Icon="@Icons.Material.Filled.Payment">
-                    @Localization.GetString("Payments")
-                </MudMenuItem>
-            </ChildContent>
-        </MudMenu>
-
-        <MudMenu ActivationEvent="@MouseEvent.MouseOver"
-                 AnchorOrigin="Origin.BottomLeft"
-                 TransformOrigin="Origin.TopLeft"
-                 Dense="true">
-            <ActivatorContent>
-                <MudButton Href="/warehouse-dashboard"
-                           StartIcon="@Icons.Material.Filled.Warehouse"
-                           IconSize="Size.Large"
-                           Color="Color.Inherit"
-                           @onmouseenter="@(() => { })"
-                           Style="text-transform: none;">
-                    <MudText Typo="Typo.h5">
-                        @Localization.GetString("Warehouse")
-                    </MudText>
-                </MudButton>
-            </ActivatorContent>
-            <ChildContent>
-                <MudMenuItem Href="/products" Icon="@Icons.Material.Filled.Inventory2">
-                    @Localization.GetString("Products")
-                </MudMenuItem>
-                <MudMenuItem Href="/inventory" Icon="@Icons.Material.Filled.Assessment">
-                    @Localization.GetString("Stock")
-                </MudMenuItem>
-                <MudMenuItem Href="/warehouses" Icon="@Icons.Material.Filled.Warehouse">
-                    @Localization.GetString("Warehouses")
-                </MudMenuItem>
-            </ChildContent>
-        </MudMenu>
-        <MudSpacer />
-
-        <!-- Language Switcher -->
-        <MudIconButton Icon="@Icons.Material.Filled.Language"
-                       Color="Color.Inherit"
-                       OnClick="@(() => _langOpen = !_langOpen)" />
-
-        @if (_langOpen)
-        {
-            <MudOverlay Visible="true" OnClick="@(() => _langOpen = false)" LockScroll="false" />
-            <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                        AnchorOrigin="Origin.BottomRight"
-                        TransformOrigin="Origin.TopRight"
-                        Style="z-index: 1301; min-width: 160px;">
-                <MudList T="string" Dense="true" Class="pa-0">
-                    <MudListItem OnClick="@(() => { ChangeLanguage("en"); _langOpen = false; })"
-                                 Class="px-3 py-2" Style="cursor: pointer;">
-                        <div class="d-flex align-center gap-2">
-                            <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                            <span>English</span>
-                            @if (Localization.CurrentLanguage == "en")
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                            }
-                        </div>
-                    </MudListItem>
-                    <MudListItem OnClick="@(() => { ChangeLanguage("mk"); _langOpen = false; })"
-                                 Class="px-3 py-2" Style="cursor: pointer;">
-                        <div class="d-flex align-center gap-2">
-                            <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                            <span>Македонски</span>
-                            @if (Localization.CurrentLanguage == "mk")
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                            }
-                        </div>
-                    </MudListItem>
-                </MudList>
-            </MudPopover>
-        }
-
-        <NotificationBell />
-
-        <!-- Settings -->
-        <MudIconButton Icon="@Icons.Material.Filled.Settings"
-                       Color="Color.Inherit"
-                       OnClick="@(() => _settingsOpen = !_settingsOpen)" />
-
-        @if (_settingsOpen)
-        {
-            <MudOverlay Visible="true" OnClick="@(() => _settingsOpen = false)" LockScroll="false" />
-            <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                        AnchorOrigin="Origin.BottomRight"
-                        TransformOrigin="Origin.TopRight"
-                        Style="z-index: 1301; min-width: 220px;">
-                <MudList T="string" Dense="true" Class="pa-0">
-                    <MudListItem OnClick="@(() => { Navigation.NavigateTo("/profile"); _settingsOpen = false; })"
-                                 Class="px-3 py-2" Style="cursor: pointer;">
-                        <div class="d-flex align-center gap-2">
-                            <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Secondary" />
-                            <span>@Localization.GetString("Profile")</span>
-                        </div>
-                    </MudListItem>
-                    <MudDivider />
-                    <div class="px-4 py-2">
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
-                            @Localization.GetString("SystemJobs")
-                        </MudText>
-                    </div>
-                    <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunCheckOverdueInvoices(); })"
-                                 Disabled="_runningJob"
-                                 Class="px-3 py-2" Style="cursor: pointer;">
-                        <div class="d-flex align-center gap-2">
-                            @if (_runningJob)
-                            {
-                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
-                            }
-                            <span>@Localization.GetString("CheckOverdueInvoices")</span>
-                        </div>
-                    </MudListItem>
-                    <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunGenerateNotifications(); })"
-                                 Disabled="_runningNotifications"
-                                 Class="px-3 py-2" Style="cursor: pointer;">
-                        <div class="d-flex align-center gap-2">
-                            @if (_runningNotifications)
-                            {
-                                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Notifications" Size="Size.Small" Color="Color.Secondary" />
-                            }
-                            <span>@Localization.GetString("GenerateNotifications")</span>
-                        </div>
-                    </MudListItem>
-                </MudList>
-            </MudPopover>
-        }
-    </MudAppBar>
-
-    @if (_licenseStatus == LicenseStatus.Warning)
+    @if (_licenseStatus is LicenseStatus.Locked or LicenseStatus.NotActivated)
     {
-        <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true"
-                  Class="rounded-0" Style="z-index: 1100;">
-            @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
-            @Localization.GetString("DaysRemaining")
-        </MudAlert>
-    }
+        @* ── Locked: minimal app bar (title + language only), License page instead of Body ── *@
+        <MudAppBar Elevation="1" Color="Color.Primary">
+            <MudIcon Icon="@Icons.Material.Filled.Key" Color="Color.Inherit" Class="ml-2" />
+            <MudText Typo="Typo.h5" Class="ml-3">
+                @Localization.GetString("InvoiceSystem")
+            </MudText>
+            <MudSpacer />
 
-    <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
-        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6" Style="flex: 1 1 auto;">
-            @Body
-        </MudContainer>
-        <Footer />
-    </MudMainContent>
+            <!-- Language Switcher -->
+            <MudIconButton Icon="@Icons.Material.Filled.Language"
+                           Color="Color.Inherit"
+                           OnClick="@(() => _langOpen = !_langOpen)" />
+
+            @if (_langOpen)
+            {
+                <MudOverlay Visible="true" OnClick="@(() => _langOpen = false)" LockScroll="false" />
+                <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
+                            AnchorOrigin="Origin.BottomRight"
+                            TransformOrigin="Origin.TopRight"
+                            Style="z-index: 1301; min-width: 160px;">
+                    <MudList T="string" Dense="true" Class="pa-0">
+                        <MudListItem OnClick="@(() => { ChangeLanguage("en"); _langOpen = false; })"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
+                                <span>English</span>
+                                @if (Localization.CurrentLanguage == "en")
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
+                                }
+                            </div>
+                        </MudListItem>
+                        <MudListItem OnClick="@(() => { ChangeLanguage("mk"); _langOpen = false; })"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
+                                <span>Македонски</span>
+                                @if (Localization.CurrentLanguage == "mk")
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
+                                }
+                            </div>
+                        </MudListItem>
+                    </MudList>
+                </MudPopover>
+            }
+        </MudAppBar>
+
+        <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
+            <WarehouseInvoiceSystem.BlazorUI.Components.Pages.License />
+        </MudMainContent>
+    }
+    else
+    {
+        @* ── Licensed: full app bar with navigation ── *@
+        <MudAppBar Elevation="1" Color="Color.Primary">
+            <MudIconButton Icon="@Icons.Material.Filled.Dashboard"
+                           Color="Color.Inherit"
+                           Edge="Edge.Start"
+                           Href="/" />
+            <MudText Typo="Typo.h5" Class="ml-3">
+                @Localization.GetString("InvoiceSystem")
+            </MudText>
+            <MudSpacer />
+            <MudMenu ActivationEvent="@MouseEvent.MouseOver"
+                     AnchorOrigin="Origin.BottomLeft"
+                     TransformOrigin="Origin.TopLeft"
+                     Dense="true">
+                <ActivatorContent>
+                    <MudButton Href="/partners-dashboard"
+                               StartIcon="@Icons.Material.Filled.Groups"
+                               IconSize="Size.Large"
+                               Color="Color.Inherit"
+                               @onmouseenter="@(() => { })"
+                               Style="text-transform: none;">
+                        <MudText Typo="Typo.h5">
+                            @Localization.GetString("Partners")
+                        </MudText>
+                    </MudButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Href="/companies" Icon="@Icons.Material.Filled.Business">
+                        @Localization.GetString("Companies")
+                    </MudMenuItem>
+                    <MudMenuItem Href="/individuals" Icon="@Icons.Material.Filled.Person">
+                        @Localization.GetString("Individuals")
+                    </MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+
+            <MudMenu ActivationEvent="@MouseEvent.MouseOver"
+                     AnchorOrigin="Origin.BottomLeft"
+                     TransformOrigin="Origin.TopLeft"
+                     Dense="true">
+                <ActivatorContent>
+                    <MudButton Href="/documents-dashboard"
+                               StartIcon="@Icons.Material.Filled.Description"
+                               IconSize="Size.Large"
+                               Color="Color.Inherit"
+                               @onmouseenter="@(() => { })"
+                               Style="text-transform: none;">
+                        <MudText Typo="Typo.h5">
+                            @Localization.GetString("Documents")
+                        </MudText>
+                    </MudButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Href="/invoices" Icon="@Icons.Material.Filled.RequestQuote">
+                        @Localization.GetString("Invoices")
+                    </MudMenuItem>
+                    <MudMenuItem Href="/purchase-notes" Icon="@Icons.Material.Filled.Receipt">
+                        @Localization.GetString("PurchaseNotes")
+                    </MudMenuItem>
+                    <MudMenuItem Href="/payments" Icon="@Icons.Material.Filled.Payment">
+                        @Localization.GetString("Payments")
+                    </MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+
+            <MudMenu ActivationEvent="@MouseEvent.MouseOver"
+                     AnchorOrigin="Origin.BottomLeft"
+                     TransformOrigin="Origin.TopLeft"
+                     Dense="true">
+                <ActivatorContent>
+                    <MudButton Href="/warehouse-dashboard"
+                               StartIcon="@Icons.Material.Filled.Warehouse"
+                               IconSize="Size.Large"
+                               Color="Color.Inherit"
+                               @onmouseenter="@(() => { })"
+                               Style="text-transform: none;">
+                        <MudText Typo="Typo.h5">
+                            @Localization.GetString("Warehouse")
+                        </MudText>
+                    </MudButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Href="/products" Icon="@Icons.Material.Filled.Inventory2">
+                        @Localization.GetString("Products")
+                    </MudMenuItem>
+                    <MudMenuItem Href="/inventory" Icon="@Icons.Material.Filled.Assessment">
+                        @Localization.GetString("Stock")
+                    </MudMenuItem>
+                    <MudMenuItem Href="/warehouses" Icon="@Icons.Material.Filled.Warehouse">
+                        @Localization.GetString("Warehouses")
+                    </MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+            <MudSpacer />
+
+            <!-- Language Switcher -->
+            <MudIconButton Icon="@Icons.Material.Filled.Language"
+                           Color="Color.Inherit"
+                           OnClick="@(() => _langOpen = !_langOpen)" />
+
+            @if (_langOpen)
+            {
+                <MudOverlay Visible="true" OnClick="@(() => _langOpen = false)" LockScroll="false" />
+                <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
+                            AnchorOrigin="Origin.BottomRight"
+                            TransformOrigin="Origin.TopRight"
+                            Style="z-index: 1301; min-width: 160px;">
+                    <MudList T="string" Dense="true" Class="pa-0">
+                        <MudListItem OnClick="@(() => { ChangeLanguage("en"); _langOpen = false; })"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
+                                <span>English</span>
+                                @if (Localization.CurrentLanguage == "en")
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
+                                }
+                            </div>
+                        </MudListItem>
+                        <MudListItem OnClick="@(() => { ChangeLanguage("mk"); _langOpen = false; })"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
+                                <span>Македонски</span>
+                                @if (Localization.CurrentLanguage == "mk")
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
+                                }
+                            </div>
+                        </MudListItem>
+                    </MudList>
+                </MudPopover>
+            }
+
+            <NotificationBell />
+
+            <!-- Settings -->
+            <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                           Color="Color.Inherit"
+                           OnClick="@(() => _settingsOpen = !_settingsOpen)" />
+
+            @if (_settingsOpen)
+            {
+                <MudOverlay Visible="true" OnClick="@(() => _settingsOpen = false)" LockScroll="false" />
+                <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
+                            AnchorOrigin="Origin.BottomRight"
+                            TransformOrigin="Origin.TopRight"
+                            Style="z-index: 1301; min-width: 220px;">
+                    <MudList T="string" Dense="true" Class="pa-0">
+                        <MudListItem OnClick="@(() => { Navigation.NavigateTo("/profile"); _settingsOpen = false; })"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Secondary" />
+                                <span>@Localization.GetString("Profile")</span>
+                            </div>
+                        </MudListItem>
+                        <MudDivider />
+                        <div class="px-4 py-2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
+                                @Localization.GetString("SystemJobs")
+                            </MudText>
+                        </div>
+                        <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunCheckOverdueInvoices(); })"
+                                     Disabled="_runningJob"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                @if (_runningJob)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                                }
+                                <span>@Localization.GetString("CheckOverdueInvoices")</span>
+                            </div>
+                        </MudListItem>
+                        <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunGenerateNotifications(); })"
+                                     Disabled="_runningNotifications"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                @if (_runningNotifications)
+                                {
+                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Notifications" Size="Size.Small" Color="Color.Secondary" />
+                                }
+                                <span>@Localization.GetString("GenerateNotifications")</span>
+                            </div>
+                        </MudListItem>
+                    </MudList>
+                </MudPopover>
+            }
+        </MudAppBar>
+
+        @if (_licenseStatus == LicenseStatus.Warning)
+        {
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true"
+                      Class="rounded-0" Style="z-index: 1100;">
+                @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
+                @Localization.GetString("DaysRemaining")
+            </MudAlert>
+        }
+
+        <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
+            <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6" Style="flex: 1 1 auto;">
+                @Body
+            </MudContainer>
+            <Footer />
+        </MudMainContent>
+    }
 </MudLayout>
 
 @code {
@@ -320,12 +378,6 @@
 
         await LicenseService.ValidateAsync();
         _licenseStatus = LicenseService.Status;
-
-        if (_licenseStatus is LicenseStatus.Locked or LicenseStatus.NotActivated &&
-            !Navigation.Uri.Contains("/license", StringComparison.OrdinalIgnoreCase))
-        {
-            Navigation.NavigateTo("/license");
-        }
     }
 
     private void ChangeLanguage(string language)

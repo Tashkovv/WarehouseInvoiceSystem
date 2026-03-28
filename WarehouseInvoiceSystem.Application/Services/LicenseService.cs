@@ -40,7 +40,7 @@ namespace WarehouseInvoiceSystem.Application.Services
 
                 if (string.IsNullOrWhiteSpace(token))
                 {
-                    SetLocked(LicenseStatus.NotActivated, "Not activated");
+                    SetLocked(LicenseStatus.NotActivated, "LicenseNotActivated");
                     return;
                 }
 
@@ -48,7 +48,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 int dotIndex = token.IndexOf('.');
                 if (dotIndex < 0)
                 {
-                    SetLocked(LicenseStatus.Locked, "Invalid license format");
+                    SetLocked(LicenseStatus.Locked, "LicenseInvalidFormat");
                     return;
                 }
 
@@ -58,7 +58,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 // Verify RSA signature
                 if (!VerifySignature(payloadBase64Url, signatureBase64Url))
                 {
-                    SetLocked(LicenseStatus.Locked, "Invalid license signature");
+                    SetLocked(LicenseStatus.Locked, "LicenseInvalidSignature");
                     return;
                 }
 
@@ -67,7 +67,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 LicensePayload? payload = JsonSerializer.Deserialize<LicensePayload>(payloadBytes);
                 if (payload is null)
                 {
-                    SetLocked(LicenseStatus.Locked, "Invalid license payload");
+                    SetLocked(LicenseStatus.Locked, "LicenseInvalidFormat");
                     return;
                 }
 
@@ -87,7 +87,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 string currentHwId = hardwareIdService.GetHardwareId();
                 if (!string.Equals(payload.hwid, currentHwId, StringComparison.OrdinalIgnoreCase))
                 {
-                    SetLocked(LicenseStatus.Locked, "Hardware mismatch");
+                    SetLocked(LicenseStatus.Locked, "LicenseHardwareMismatch");
                     return;
                 }
 
@@ -95,7 +95,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 if (await IsClockTamperedAsync(ct))
                 {
                     CurrentLicense.ClockTamperingDetected = true;
-                    SetLocked(LicenseStatus.Locked, "Clock tampering detected");
+                    SetLocked(LicenseStatus.Locked, "LicenseClockTampering");
                     return;
                 }
 
@@ -109,7 +109,7 @@ namespace WarehouseInvoiceSystem.Application.Services
 
                 if (now.Date > graceEnd.Date)
                 {
-                    SetLocked(LicenseStatus.Locked, "License expired");
+                    SetLocked(LicenseStatus.Locked, "LicenseExpired");
                     return;
                 }
 
@@ -130,7 +130,7 @@ namespace WarehouseInvoiceSystem.Application.Services
             catch (Exception ex)
             {
                 logger.LogError(ex, "License validation failed");
-                SetLocked(LicenseStatus.Locked, "License validation error");
+                SetLocked(LicenseStatus.Locked, "LicenseValidationError");
             }
         }
 

@@ -618,6 +618,8 @@
   "LicenseHardwareMismatch": "Несовпаѓање на хардвер",
   "LicenseClockTampering": "Детектирана манипулација со часовник",
   "LicenseInvalidSignature": "Невалиден потпис на лиценца",
+  "LicenseInvalidFormat": "Невалиден формат на лиценца",
+  "LicenseValidationError": "Грешка при валидација на лиценца",
   "LicenseActivationKey": "Клуч за активација",
   "LicenseActivate": "Активирај",
   "LicenseActivationSuccess": "Лиценцата е успешно активирана",
