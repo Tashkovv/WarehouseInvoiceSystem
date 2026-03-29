@@ -212,8 +212,9 @@ namespace WarehouseInvoiceSystem.Application.Services
             try
             {
                 using HttpClient client = httpClientFactory.CreateClient("LicenseServer");
+                string hwId = hardwareIdService.GetHardwareId();
                 HttpResponseMessage response = await client.PostAsJsonAsync(
-                    "/api/license/check", new { tenantId }, ct);
+                    "/api/license/check", new { tenantId, hardwareId = hwId }, ct);
 
                 if (!response.IsSuccessStatusCode)
                     return false; // Server error — don't lock, fail open
@@ -223,6 +224,10 @@ namespace WarehouseInvoiceSystem.Application.Services
                 // Update last successful check timestamp
                 await appState.SetStringAsync(LastServerCheckKey,
                     DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+
+                // Store refreshed token (picks up renewed expiry dates)
+                if (result?.Valid == true && result.Token is not null)
+                    await appState.SetStringAsync(TokenKey, result.Token);
 
                 return result?.Valid == false;
             }
@@ -282,6 +287,6 @@ namespace WarehouseInvoiceSystem.Application.Services
 
         private sealed record ActivationResponse(string? token, string? expiresAt);
 
-        private sealed record ServerCheckResponse(bool Valid);
+        private sealed record ServerCheckResponse(bool Valid, string? Token);
     }
 }
