@@ -25,45 +25,7 @@
                 @Localization.GetString("InvoiceSystem")
             </MudText>
             <MudSpacer />
-
-            <!-- Language Switcher -->
-            <MudIconButton Icon="@Icons.Material.Filled.Language"
-                           Color="Color.Inherit"
-                           OnClick="@(() => _langOpen = !_langOpen)" />
-
-            @if (_langOpen)
-            {
-                <MudOverlay Visible="true" OnClick="@(() => _langOpen = false)" LockScroll="false" />
-                <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                            AnchorOrigin="Origin.BottomRight"
-                            TransformOrigin="Origin.TopRight"
-                            Style="z-index: 1301; min-width: 160px;">
-                    <MudList T="string" Dense="true" Class="pa-0">
-                        <MudListItem OnClick="@(() => { ChangeLanguage("en"); _langOpen = false; })"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                                <span>English</span>
-                                @if (Localization.CurrentLanguage == "en")
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                                }
-                            </div>
-                        </MudListItem>
-                        <MudListItem OnClick="@(() => { ChangeLanguage("mk"); _langOpen = false; })"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                                <span>Македонски</span>
-                                @if (Localization.CurrentLanguage == "mk")
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                                }
-                            </div>
-                        </MudListItem>
-                    </MudList>
-                </MudPopover>
-            }
+            <LanguageSwitcher />
         </MudAppBar>
 
         <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
@@ -166,46 +128,7 @@
                 </ChildContent>
             </MudMenu>
             <MudSpacer />
-
-            <!-- Language Switcher -->
-            <MudIconButton Icon="@Icons.Material.Filled.Language"
-                           Color="Color.Inherit"
-                           OnClick="@(() => _langOpen = !_langOpen)" />
-
-            @if (_langOpen)
-            {
-                <MudOverlay Visible="true" OnClick="@(() => _langOpen = false)" LockScroll="false" />
-                <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                            AnchorOrigin="Origin.BottomRight"
-                            TransformOrigin="Origin.TopRight"
-                            Style="z-index: 1301; min-width: 160px;">
-                    <MudList T="string" Dense="true" Class="pa-0">
-                        <MudListItem OnClick="@(() => { ChangeLanguage("en"); _langOpen = false; })"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                <span class="fi fi-gb" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                                <span>English</span>
-                                @if (Localization.CurrentLanguage == "en")
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                                }
-                            </div>
-                        </MudListItem>
-                        <MudListItem OnClick="@(() => { ChangeLanguage("mk"); _langOpen = false; })"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                <span class="fi fi-mk" style="width: 22px; height: 16px; border-radius: 2px; flex-shrink: 0;"></span>
-                                <span>Македонски</span>
-                                @if (Localization.CurrentLanguage == "mk")
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" Color="Color.Success" Class="ml-1" />
-                                }
-                            </div>
-                        </MudListItem>
-                    </MudList>
-                </MudPopover>
-            }
-
+            <LanguageSwitcher />
             <NotificationBell />
 
             <!-- Settings -->
@@ -226,6 +149,13 @@
                             <div class="d-flex align-center gap-2">
                                 <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Secondary" />
                                 <span>@Localization.GetString("Profile")</span>
+                            </div>
+                        </MudListItem>
+                        <MudListItem OnClick="@(() => { Navigation.NavigateTo("/license"); _settingsOpen = false; })"
+                                     Class="px-3 py-2" Style="cursor: pointer;">
+                            <div class="d-flex align-center gap-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Color="Color.Secondary" />
+                                <span>@Localization.GetString("License")</span>
                             </div>
                         </MudListItem>
                         <MudDivider />
@@ -268,16 +198,6 @@
                 </MudPopover>
             }
         </MudAppBar>
-
-        @if (_licenseStatus == LicenseStatus.Warning)
-        {
-            <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true"
-                      Class="rounded-0 cursor-pointer" Style="z-index: 1100;"
-                      OnClick="@(() => Navigation.NavigateTo("/license"))">
-                @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
-                @Localization.GetString("DaysRemaining")
-            </MudAlert>
-        }
 
         <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
             <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6" Style="flex: 1 1 auto;">
@@ -367,7 +287,6 @@
         }
     };
 
-    private bool _langOpen = false;
     private bool _settingsOpen = false;
     private bool _runningJob = false;
     private bool _runningNotifications = false;
@@ -379,11 +298,6 @@
 
         await LicenseService.ValidateAsync();
         _licenseStatus = LicenseService.Status;
-    }
-
-    private void ChangeLanguage(string language)
-    {
-        Localization.SetLanguage(language);
     }
 
     private async Task RunCheckOverdueInvoices()

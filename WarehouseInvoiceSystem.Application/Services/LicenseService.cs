@@ -41,90 +41,24 @@ namespace WarehouseInvoiceSystem.Application.Services
                     return;
                 }
 
-                // Split token: payload.signature
-                int dotIndex = token.IndexOf('.');
-                if (dotIndex < 0)
-                {
-                    SetLocked(LicenseStatus.Locked, "LicenseInvalidFormat");
-                    return;
-                }
-
-                string payloadBase64Url = token[..dotIndex];
-                string signatureBase64Url = token[(dotIndex + 1)..];
-
-                // Verify RSA signature
-                if (!VerifySignature(payloadBase64Url, signatureBase64Url))
-                {
-                    logger.LogWarning("RSA signature verification failed");
-                    SetLocked(LicenseStatus.Locked, "LicenseInvalidSignature");
-                    return;
-                }
-
-                // Deserialize payload
-                byte[] payloadBytes = Base64UrlDecode(payloadBase64Url);
-                LicensePayload? payload = JsonSerializer.Deserialize<LicensePayload>(payloadBytes);
+                LicensePayload? payload = ParseAndVerifyToken(token);
                 if (payload is null)
-                {
-                    SetLocked(LicenseStatus.Locked, "LicenseInvalidFormat");
+                    return; // SetLocked already called inside ParseAndVerifyToken
+
+                BuildLicenseInfo(payload);
+
+                if (!ValidateHardwareId(payload))
                     return;
-                }
 
-                // Build LicenseInfo
-                DateTime expiryDate = DateTime.ParseExact(payload.exp, "yyyy-MM-dd",
-                    CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-
-                CurrentLicense = new LicenseInfo
-                {
-                    TenantId = payload.tid,
-                    HardwareId = payload.hwid,
-                    ExpiryDate = expiryDate,
-                    GraceDays = payload.grace
-                };
-
-                // Hardware check
-                string currentHwId = hardwareIdService.GetHardwareId();
-                if (!string.Equals(payload.hwid, currentHwId, StringComparison.OrdinalIgnoreCase))
-                {
-                    logger.LogWarning("Hardware mismatch: token={TokenHwid}, current={CurrentHwid}", payload.hwid, currentHwId);
-                    SetLocked(LicenseStatus.Locked, "LicenseHardwareMismatch");
-                    return;
-                }
-
-                // Monotonic time guard
                 if (await IsClockTamperedAsync(ct))
                 {
-                    CurrentLicense.ClockTamperingDetected = true;
+                    CurrentLicense!.ClockTamperingDetected = true;
                     SetLocked(LicenseStatus.Locked, "LicenseClockTampering");
                     return;
                 }
 
-                // Update last seen
-                await appState.SetStringAsync(LastSeenKey,
-                    DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
-
-                // Check expiry + grace
-                DateTime now = DateTime.UtcNow;
-                DateTime graceEnd = expiryDate.AddDays(payload.grace);
-
-                if (now.Date > graceEnd.Date)
-                {
-                    SetLocked(LicenseStatus.Locked, "LicenseExpired");
-                    return;
-                }
-
-                if (now.Date > expiryDate.Date)
-                {
-                    int remaining = (graceEnd.Date - now.Date).Days;
-                    GraceDaysRemaining = remaining;
-                    Status = LicenseStatus.Warning;
-                    LockReason = null;
-                    return;
-                }
-
-                // All good
-                Status = LicenseStatus.Active;
-                LockReason = null;
-                GraceDaysRemaining = null;
+                await UpdateLastSeenAsync();
+                ApplyExpiryStatus(payload);
             }
             catch (Exception ex)
             {
@@ -140,9 +74,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 if (string.IsNullOrWhiteSpace(token))
                     return false;
 
-                // Validate the token before storing
                 string? previousToken = await appState.GetStringAsync(TokenKey, ct);
-                // Remove any whitespace/newlines from pasted token
                 string cleanToken = string.Concat(token.Where(c => !char.IsWhiteSpace(c)));
                 await appState.SetStringAsync(TokenKey, cleanToken);
                 await ValidateAsync(ct);
@@ -150,7 +82,6 @@ namespace WarehouseInvoiceSystem.Application.Services
                 if (Status is LicenseStatus.Active or LicenseStatus.Warning)
                     return true;
 
-                // Token invalid — restore previous state
                 await appState.SetStringAsync(TokenKey, previousToken ?? "");
                 await ValidateAsync(ct);
                 return false;
@@ -160,6 +91,92 @@ namespace WarehouseInvoiceSystem.Application.Services
                 logger.LogError(ex, "License activation failed");
                 return false;
             }
+        }
+
+        private LicensePayload? ParseAndVerifyToken(string token)
+        {
+            int dotIndex = token.IndexOf('.');
+            if (dotIndex < 0)
+            {
+                SetLocked(LicenseStatus.Locked, "LicenseInvalidFormat");
+                return null;
+            }
+
+            string payloadBase64Url = token[..dotIndex];
+            string signatureBase64Url = token[(dotIndex + 1)..];
+
+            if (!VerifySignature(payloadBase64Url, signatureBase64Url))
+            {
+                logger.LogWarning("RSA signature verification failed");
+                SetLocked(LicenseStatus.Locked, "LicenseInvalidSignature");
+                return null;
+            }
+
+            byte[] payloadBytes = Base64UrlDecode(payloadBase64Url);
+            LicensePayload? payload = JsonSerializer.Deserialize<LicensePayload>(payloadBytes);
+            if (payload is null)
+            {
+                SetLocked(LicenseStatus.Locked, "LicenseInvalidFormat");
+                return null;
+            }
+
+            return payload;
+        }
+
+        private void BuildLicenseInfo(LicensePayload payload)
+        {
+            DateTime expiryDate = DateTime.ParseExact(payload.exp, "yyyy-MM-dd",
+                CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+
+            CurrentLicense = new LicenseInfo
+            {
+                TenantId = payload.tid,
+                HardwareId = payload.hwid,
+                ExpiryDate = expiryDate,
+                GraceDays = payload.grace
+            };
+        }
+
+        private bool ValidateHardwareId(LicensePayload payload)
+        {
+            string currentHwId = hardwareIdService.GetHardwareId();
+            if (string.Equals(payload.hwid, currentHwId, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            logger.LogWarning("Hardware mismatch: token={TokenHwid}, current={CurrentHwid}", payload.hwid, currentHwId);
+            SetLocked(LicenseStatus.Locked, "LicenseHardwareMismatch");
+            return false;
+        }
+
+        private async Task UpdateLastSeenAsync()
+        {
+            await appState.SetStringAsync(LastSeenKey,
+                DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+        }
+
+        private void ApplyExpiryStatus(LicensePayload payload)
+        {
+            DateTime now = DateTime.UtcNow;
+            DateTime expiryDate = CurrentLicense!.ExpiryDate;
+            DateTime warningStart = expiryDate.AddDays(-payload.grace);
+
+            if (now.Date > expiryDate.Date)
+            {
+                SetLocked(LicenseStatus.Locked, "LicenseExpired");
+                return;
+            }
+
+            if (now.Date >= warningStart.Date)
+            {
+                GraceDaysRemaining = (expiryDate.Date - now.Date).Days;
+                Status = LicenseStatus.Warning;
+                LockReason = null;
+                return;
+            }
+
+            Status = LicenseStatus.Active;
+            LockReason = null;
+            GraceDaysRemaining = null;
         }
 
         private void SetLocked(LicenseStatus status, string reason)
@@ -173,7 +190,7 @@ namespace WarehouseInvoiceSystem.Application.Services
         {
             string? lastSeenStr = await appState.GetStringAsync(LastSeenKey, ct);
             if (lastSeenStr is null)
-                return false; // First run — no baseline yet
+                return false;
 
             if (!DateTime.TryParse(lastSeenStr, CultureInfo.InvariantCulture,
                     DateTimeStyles.RoundtripKind, out DateTime lastSeen))

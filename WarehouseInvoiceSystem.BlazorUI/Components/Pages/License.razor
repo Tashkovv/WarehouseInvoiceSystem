@@ -1,4 +1,5 @@
 @page "/license"
+@implements IDisposable
 @inject ILicenseService LicenseService
 @inject ILocalizationService Localization
 @inject ISnackbar Snackbar
@@ -12,26 +13,23 @@
             <MudText Typo="Typo.h4">@Localization.GetString("License")</MudText>
         </div>
 
-        @* Status indicator *@
-        <MudAlert Severity="@GetStatusSeverity()" Variant="Variant.Filled" Class="mb-4" Dense="true">
-            @GetStatusText()
-        </MudAlert>
-
-        @* Lock reason — translate the key stored in LockReason *@
-        @if (LicenseService.LockReason is not null &&
-             LicenseService.Status is LicenseStatus.Locked)
-        {
-            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4" Dense="true">
-                <strong>@Localization.GetString("LockReason"):</strong> @Localization.GetString(LicenseService.LockReason)
-            </MudAlert>
-        }
-
-        @* Grace days warning *@
+        @* Single status alert *@
         @if (LicenseService.Status == LicenseStatus.Warning && LicenseService.GraceDaysRemaining.HasValue)
         {
             <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4" Dense="true">
-                @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
-                @Localization.GetString("DaysRemaining")
+                @string.Format(Localization.GetString("LicenseExpiresInDays"), LicenseService.GraceDaysRemaining)
+            </MudAlert>
+        }
+        else if (LicenseService.Status == LicenseStatus.Locked && LicenseService.LockReason is not null)
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Class="mb-4" Dense="true">
+                @Localization.GetString(LicenseService.LockReason)
+            </MudAlert>
+        }
+        else
+        {
+            <MudAlert Severity="@GetStatusSeverity()" Variant="Variant.Outlined" Class="mb-4" Dense="true">
+                @GetStatusText()
             </MudAlert>
         }
 
@@ -89,7 +87,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Localization.OnLanguageChanged += OnLanguageChanged;
         await LicenseService.ValidateAsync();
+    }
+
+    private async void OnLanguageChanged() => await InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= OnLanguageChanged;
     }
 
     private async Task CopyHardwareIdAsync()
