@@ -8,6 +8,6 @@ namespace WarehouseInvoiceSystem.Application.Settings
     public static class LicenseSettings
     {
         // RSA public key (DER SubjectPublicKeyInfo, base64). Replace with real key after generating the key pair.
-        public const string PublicKeyBase64 = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvwfIYZcZa6wtWYmgzSj5xHtAuXqUmxzy7/BrK8krLiYpr2Luvkdaxl6lnxXdrrTgJb9JebtTXX1dxJOr0idA5DFgZiAn/7LdVMvX3/ppycvL5blqKg/RDeFpnxRMDN16h84D3cybVaAb9aK4BZ3cm2w346DR6c8PioUJkdphvlInlL3X5ljpt3dEKRFpPhgtDbLo9P33E6PYDIoIcFwnyCpinIGkYzqAoNRC7Lhah5hLLA4KjS0D61tfPUq9Re7TVf9eVhn2wAW/ZRxfxu/pv1HD+oLW+u/j75tovfqlMkxjnCsdpjGyAf6dql5Ll3uKXHWadz2gJn9Hleqe5MS9JQIDAQAB";
+        public const string PublicKeyBase64 = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4hmqYdSkiGiTNtFtabSXhcs1AA7q+QoLBCoTQBlDspbb9Br+QM3WN5M4gHVU9nvStdgB/C72Swu5WHVwWmHZiZJEXVxin2MWSyBDfqOp3UwEgPo20sW01qX0b/wXApw6kOCALBhEnw3oSNBJa2k1BTl4Uc4T7SIeCfCGckgTQsQNg6FRMq23+cmcqLy7WS/q4JdDFTJU+c9vFuBXKqjXzygOj9eyu5n+kkanbDwpcf1DVZ7juXTC6Jg3Ki7g/NA9I4BOYPSOy2Av4dpoe9UojYWuLwMj9tfr7fOhCOxZC/22Dr851IO95HJeEA8ywVndlnq1BlQgBnjGyMEQQ6ya3QIDAQAB";
     }
 }

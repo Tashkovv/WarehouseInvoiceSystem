@@ -55,6 +55,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 // Verify RSA signature
                 if (!VerifySignature(payloadBase64Url, signatureBase64Url))
                 {
+                    logger.LogWarning("RSA signature verification failed");
                     SetLocked(LicenseStatus.Locked, "LicenseInvalidSignature");
                     return;
                 }
@@ -84,6 +85,7 @@ namespace WarehouseInvoiceSystem.Application.Services
                 string currentHwId = hardwareIdService.GetHardwareId();
                 if (!string.Equals(payload.hwid, currentHwId, StringComparison.OrdinalIgnoreCase))
                 {
+                    logger.LogWarning("Hardware mismatch: token={TokenHwid}, current={CurrentHwid}", payload.hwid, currentHwId);
                     SetLocked(LicenseStatus.Locked, "LicenseHardwareMismatch");
                     return;
                 }
@@ -140,7 +142,9 @@ namespace WarehouseInvoiceSystem.Application.Services
 
                 // Validate the token before storing
                 string? previousToken = await appState.GetStringAsync(TokenKey, ct);
-                await appState.SetStringAsync(TokenKey, token.Trim());
+                // Remove any whitespace/newlines from pasted token
+                string cleanToken = string.Concat(token.Where(c => !char.IsWhiteSpace(c)));
+                await appState.SetStringAsync(TokenKey, cleanToken);
                 await ValidateAsync(ct);
 
                 if (Status is LicenseStatus.Active or LicenseStatus.Warning)
