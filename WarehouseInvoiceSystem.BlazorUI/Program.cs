@@ -10,7 +10,7 @@ using WarehouseInvoiceSystem.BlazorUI.Components;
 using WarehouseInvoiceSystem.Domain.Interfaces;
 using WarehouseInvoiceSystem.Infrastructure.Common;
 using WarehouseInvoiceSystem.Infrastructure.Data;
-using WarehouseInvoiceSystem.Application.Settings;
+
 using WarehouseInvoiceSystem.Infrastructure.Repositories;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -79,11 +79,6 @@ builder.Services.AddHostedService<BackgroundJobWorker>();
 builder.Services.AddSingleton<IHardwareIdService, HardwareIdService>();
 #pragma warning restore CA1416
 builder.Services.AddSingleton<ILicenseService, LicenseService>();
-builder.Services.AddHttpClient("LicenseServer", client =>
-{
-    client.BaseAddress = new Uri(LicenseSettings.ServerUrl);
-    client.Timeout = TimeSpan.FromSeconds(30);
-});
 
 WebApplication app = builder.Build();
 

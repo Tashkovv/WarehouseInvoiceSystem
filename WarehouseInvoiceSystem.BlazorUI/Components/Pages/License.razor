@@ -3,6 +3,7 @@
 @inject ILocalizationService Localization
 @inject ISnackbar Snackbar
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
     <MudPaper Elevation="3" Class="pa-8">
@@ -47,13 +48,26 @@
             </MudSimpleTable>
         }
 
+        @* Hardware fingerprint — client sends this to developer *@
+        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("HardwareFingerprint")</MudText>
+        <div class="d-flex align-center gap-2 mb-4">
+            <MudTextField Value="@LicenseService.GetHardwareId()" Variant="Variant.Outlined"
+                          Margin="Margin.Dense" ReadOnly="true"
+                          Style="font-family: monospace; font-size: 0.85rem;" />
+            <MudIconButton Icon="@Icons.Material.Filled.ContentCopy"
+                           Size="Size.Small" Color="Color.Default"
+                           OnClick="CopyHardwareIdAsync"
+                           title="@Localization.GetString("CopyToClipboard")" />
+        </div>
+
         <MudDivider Class="my-4" />
 
-        @* Activation *@
-        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("LicenseActivationKey")</MudText>
-        <MudTextField @bind-Value="_activationKey" Variant="Variant.Outlined"
+        @* Token activation *@
+        <MudText Typo="Typo.subtitle2" Class="mb-2">@Localization.GetString("LicenseToken")</MudText>
+        <MudTextField @bind-Value="_token" Variant="Variant.Outlined"
                       Margin="Margin.Dense" Class="mb-3"
-                      Placeholder="XXXX-XXXX-XXXX-XXXX"
+                      Placeholder="@Localization.GetString("LicensePasteToken")"
+                      Lines="4"
                       Disabled="_activating" />
 
         <WisButton Action="@(new WisDetailActionItem
@@ -63,14 +77,14 @@
                            ? Localization.GetString("LicenseActivate") + "..."
                            : Localization.GetString("LicenseActivate"),
                        Color = Color.Primary,
-                       Disabled = string.IsNullOrWhiteSpace(_activationKey) || _activating,
+                       Disabled = string.IsNullOrWhiteSpace(_token) || _activating,
                        OnClick = EventCallback.Factory.Create(this, ActivateAsync)
                    })" />
     </MudPaper>
 </MudContainer>
 
 @code {
-    private string _activationKey = "";
+    private string _token = "";
     private bool _activating;
 
     protected override async Task OnInitializedAsync()
@@ -78,12 +92,18 @@
         await LicenseService.ValidateAsync();
     }
 
+    private async Task CopyHardwareIdAsync()
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", LicenseService.GetHardwareId());
+        Snackbar.Add(Localization.GetString("Copied"), Severity.Success);
+    }
+
     private async Task ActivateAsync()
     {
         _activating = true;
         try
         {
-            bool success = await LicenseService.ActivateAsync(_activationKey);
+            bool success = await LicenseService.ActivateAsync(_token);
             if (success)
             {
                 Snackbar.Add(Localization.GetString("LicenseActivationSuccess"), Severity.Success);

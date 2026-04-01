@@ -19,6 +19,6 @@ namespace WarehouseInvoiceSystem.Application.Interfaces
         string GetHardwareId();
 
         Task ValidateAsync(CancellationToken ct = default);
-        Task<bool> ActivateAsync(string activationKey, CancellationToken ct = default);
+        Task<bool> ActivateAsync(string token, CancellationToken ct = default);
     }
 }

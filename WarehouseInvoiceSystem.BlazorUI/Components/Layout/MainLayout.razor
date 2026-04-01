@@ -272,7 +272,8 @@
         @if (_licenseStatus == LicenseStatus.Warning)
         {
             <MudAlert Severity="Severity.Warning" Variant="Variant.Filled" Dense="true"
-                      Class="rounded-0" Style="z-index: 1100;">
+                      Class="rounded-0 cursor-pointer" Style="z-index: 1100;"
+                      OnClick="@(() => Navigation.NavigateTo("/license"))">
                 @Localization.GetString("LicenseWarning") — @LicenseService.GraceDaysRemaining
                 @Localization.GetString("DaysRemaining")
             </MudAlert>
