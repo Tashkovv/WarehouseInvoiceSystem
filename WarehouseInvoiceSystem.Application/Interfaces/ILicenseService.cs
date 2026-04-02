@@ -12,6 +12,8 @@ namespace WarehouseInvoiceSystem.Application.Interfaces
 
     public interface ILicenseService
     {
+        event Action? OnStatusChanged;
+
         LicenseStatus Status { get; }
         LicenseInfo? CurrentLicense { get; }
         string? LockReason { get; }

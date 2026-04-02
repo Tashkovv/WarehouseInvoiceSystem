@@ -295,9 +295,16 @@
     protected override async Task OnInitializedAsync()
     {
         Localization.OnLanguageChanged += StateHasChanged;
+        LicenseService.OnStatusChanged += OnLicenseStatusChanged;
 
         await LicenseService.ValidateAsync();
         _licenseStatus = LicenseService.Status;
+    }
+
+    private void OnLicenseStatusChanged()
+    {
+        _licenseStatus = LicenseService.Status;
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task RunCheckOverdueInvoices()
@@ -351,5 +358,6 @@
     public void Dispose()
     {
         Localization.OnLanguageChanged -= StateHasChanged;
+        LicenseService.OnStatusChanged -= OnLicenseStatusChanged;
     }
 }

@@ -30,7 +30,14 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
                 try
                 {
                     await licenseService.ValidateAsync(stoppingToken);
-                    await CheckLicenseGraceNotificationAsync(stoppingToken);
+
+                    if (licenseService.Status is LicenseStatus.Locked or LicenseStatus.NotActivated)
+                    {
+                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                        continue;
+                    }
+
+                    await CheckLicenseExpiryNotificationAsync(stoppingToken);
                     await RunDailyJobsIfDueAsync(stoppingToken);
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
@@ -49,18 +56,13 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
             logger.LogInformation("Background job worker stopped");
         }
 
-        private async Task CheckLicenseGraceNotificationAsync(CancellationToken ct)
+        private async Task CheckLicenseExpiryNotificationAsync(CancellationToken ct)
         {
             if (licenseService.Status != LicenseStatus.Warning
-                || !licenseService.GraceDaysRemaining.HasValue
-                || licenseService.CurrentLicense is null)
+                || !licenseService.GraceDaysRemaining.HasValue)
                 return;
 
             int remaining = licenseService.GraceDaysRemaining.Value;
-            int totalGrace = licenseService.CurrentLicense.GraceDays;
-
-            if (remaining != totalGrace && remaining != 1)
-                return;
 
             using IServiceScope scope = serviceProvider.CreateScope();
             INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();

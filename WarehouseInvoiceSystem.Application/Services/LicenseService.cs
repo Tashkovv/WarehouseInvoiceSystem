@@ -11,7 +11,7 @@ namespace WarehouseInvoiceSystem.Application.Services
 
     /// <summary>
     /// Singleton license service. Validates the RSA-signed token from app-state.json,
-    /// enforces hardware binding, expiry + grace period, and monotonic time guard.
+    /// enforces hardware binding, expiry, and monotonic time guard.
     /// </summary>
     public class LicenseService(
         IAppStateService appState,
@@ -21,6 +21,8 @@ namespace WarehouseInvoiceSystem.Application.Services
         private const string TokenKey = "LicenseToken";
         private const string LastSeenKey = "LicenseLastSeenUtc";
         private static readonly TimeSpan ClockDriftTolerance = TimeSpan.FromMinutes(5);
+
+        public event Action? OnStatusChanged;
 
         public LicenseStatus Status { get; private set; } = LicenseStatus.NotActivated;
         public LicenseInfo? CurrentLicense { get; private set; }
@@ -132,8 +134,7 @@ namespace WarehouseInvoiceSystem.Application.Services
             {
                 TenantId = payload.tid,
                 HardwareId = payload.hwid,
-                ExpiryDate = expiryDate,
-                GraceDays = payload.grace
+                ExpiryDate = expiryDate
             };
         }
 
@@ -156,11 +157,12 @@ namespace WarehouseInvoiceSystem.Application.Services
 
         private void ApplyExpiryStatus(LicensePayload payload)
         {
+            LicenseStatus previous = Status;
             DateTime now = DateTime.UtcNow;
             DateTime expiryDate = CurrentLicense!.ExpiryDate;
             DateTime warningStart = expiryDate.AddDays(-payload.grace);
 
-            if (now.Date > expiryDate.Date)
+            if (now.Date >= expiryDate.Date)
             {
                 SetLocked(LicenseStatus.Locked, "LicenseExpired");
                 return;
@@ -171,19 +173,27 @@ namespace WarehouseInvoiceSystem.Application.Services
                 GraceDaysRemaining = (expiryDate.Date - now.Date).Days;
                 Status = LicenseStatus.Warning;
                 LockReason = null;
-                return;
+            }
+            else
+            {
+                Status = LicenseStatus.Active;
+                LockReason = null;
+                GraceDaysRemaining = null;
             }
 
-            Status = LicenseStatus.Active;
-            LockReason = null;
-            GraceDaysRemaining = null;
+            if (Status != previous)
+                OnStatusChanged?.Invoke();
         }
 
         private void SetLocked(LicenseStatus status, string reason)
         {
+            LicenseStatus previous = Status;
             Status = status;
             LockReason = reason;
             GraceDaysRemaining = null;
+
+            if (Status != previous)
+                OnStatusChanged?.Invoke();
         }
 
         private async Task<bool> IsClockTamperedAsync(CancellationToken ct)
@@ -194,7 +204,7 @@ namespace WarehouseInvoiceSystem.Application.Services
 
             if (!DateTime.TryParse(lastSeenStr, CultureInfo.InvariantCulture,
                     DateTimeStyles.RoundtripKind, out DateTime lastSeen))
-                return false;
+                return true;
 
             return DateTime.UtcNow < lastSeen - ClockDriftTolerance;
         }

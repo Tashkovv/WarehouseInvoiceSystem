@@ -9,7 +9,6 @@ namespace WarehouseInvoiceSystem.Domain.Entities
         public string TenantId { get; init; } = "";
         public string HardwareId { get; init; } = "";
         public DateTime ExpiryDate { get; init; }
-        public int GraceDays { get; init; }
         public DateTime LastSeenUtc { get; set; }
         public bool ClockTamperingDetected { get; set; }
     }
