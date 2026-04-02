@@ -22,6 +22,7 @@
             builder.Property(e => e.Address).HasMaxLength(500);
             builder.Property(e => e.Phone).HasMaxLength(50);
             builder.Property(e => e.Email).HasMaxLength(100);
+            builder.Property(e => e.BankAccount).HasMaxLength(50);
             builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
             // Ignore computed property

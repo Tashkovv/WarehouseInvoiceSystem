@@ -49,6 +49,13 @@
                               MaxLength="100" />
             </MudItem>
             <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_model.BankAccount"
+                              Label="@Localization.GetString("BankAccount")"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              MaxLength="50" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
                 <MudTextField @bind-Value="_model.Address"
                               Label="@Localization.GetString("Address")"
                               Variant="Variant.Outlined"
@@ -96,6 +103,7 @@
                 Address = Individual.Address,
                 Phone = Individual.Phone,
                 Email = Individual.Email,
+                BankAccount = Individual.BankAccount,
                 IsActive = Individual.IsActive,
                 CreatedAt = Individual.CreatedAt,
             };
@@ -122,6 +130,7 @@
                     IdentificationNumber = _model.IdentificationNumber,
                     Phone = _model.Phone,
                     Email = _model.Email,
+                    BankAccount = _model.BankAccount,
                     Address = _model.Address,
                     IsActive = _model.IsActive
                 });
@@ -136,6 +145,7 @@
                     IdentificationNumber = _model.IdentificationNumber,
                     Phone = _model.Phone,
                     Email = _model.Email,
+                    BankAccount = _model.BankAccount,
                     Address = _model.Address,
                     IsActive = _model.IsActive
                 });

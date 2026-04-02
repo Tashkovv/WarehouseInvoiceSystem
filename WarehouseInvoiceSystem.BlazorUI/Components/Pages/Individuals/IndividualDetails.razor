@@ -56,6 +56,13 @@ else
                                 <MudText Typo="Typo.body2">@_individual.Email</MudText>
                             </div>
                         }
+                        @if (!string.IsNullOrWhiteSpace(_individual.BankAccount))
+                        {
+                            <div class="wis-detail-contact-item">
+                                <MudIcon Icon="@Icons.Material.Outlined.AccountBalance" Size="Size.Small" Color="Color.Secondary" />
+                                <MudText Typo="Typo.body2">@_individual.BankAccount</MudText>
+                            </div>
+                        }
                         @if (!string.IsNullOrWhiteSpace(_individual.Address))
                         {
                             <div class="wis-detail-contact-item">

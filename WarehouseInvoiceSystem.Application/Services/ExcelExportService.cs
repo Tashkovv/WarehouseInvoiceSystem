@@ -484,7 +484,7 @@
             // ── Header area ─────────────────────────────────────────────────────
             int row = 1;
 
-            // Company name (top-left)
+            // Row 1: Company name (left) | Date (right)
             ws.Range(row, 1, row, 4).Merge().Value = tenant.CompanyName;
             ws.Range(row, 1, row, 4).Style.Font.Bold = true;
             ws.Range(row, 1, row, 4).Style.Font.FontSize = 11;
@@ -498,33 +498,45 @@
                     .WithSize(80, 40);
             }
 
-            // Date (top-right)
             ws.Range(row, 6, row, totalCols).Merge().Value = $"На ден {purchaseNote.PurchaseDate:dd.MM.yyyy} год.";
             ws.Range(row, 6, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
+            // Row 2: Company address (left)
             row++;
-            // Company address
             ws.Range(row, 1, row, 4).Merge().Value = tenant.Address ?? string.Empty;
             ws.Range(row, 1, row, 4).Style.Font.FontSize = 9;
 
-            // ── Title ────────────────────────────────────────────────────────────
-            row += 2;
-            ws.Range(row, 1, row, totalCols).Merge().Value = "ОТКУПНА БЕЛЕШКА";
+            // Row 3: empty gap
+            row++;
+
+            // Row 4: Title + Note number (centered)
+            row++;
+            ws.Range(row, 1, row, totalCols).Merge().Value = $"ОТКУПНА БЕЛЕШКА  Бр. {purchaseNote.NoteNumber}";
             ws.Range(row, 1, row, totalCols).Style.Font.Bold = true;
-            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 16;
+            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 14;
             ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            // ── Individual info ──────────────────────────────────────────────────
-            row += 2;
-            ws.Range(row, 1, row, totalCols).Merge().Value = $"Денес откупив од лицето {purchaseNote.IndividualFullName}";
-            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+            // Row 5: Individual name (left) | ЕМБГ (right)
+            row++;
+            ws.Range(row, 1, row, 5).Merge().Value = $"Денес откупив од лицето {purchaseNote.IndividualFullName}";
+            ws.Range(row, 1, row, 5).Style.Font.FontSize = 10;
+            ws.Range(row, 6, row, totalCols).Merge().Value = $"ЕМБГ: {purchaseNote.IndividualIdentificationNumber}";
+            ws.Range(row, 6, row, totalCols).Style.Font.FontSize = 10;
+            ws.Range(row, 6, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
+            // Row 6: Address (left) | Трансакциска сметка (right)
             row++;
             string addressLine = !string.IsNullOrWhiteSpace(purchaseNote.IndividualAddress)
                 ? $"Од {purchaseNote.IndividualAddress}  долу наведените производи:"
                 : "долу наведените производи:";
-            ws.Range(row, 1, row, totalCols).Merge().Value = addressLine;
-            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+            ws.Range(row, 1, row, 5).Merge().Value = addressLine;
+            ws.Range(row, 1, row, 5).Style.Font.FontSize = 10;
+            if (!string.IsNullOrWhiteSpace(purchaseNote.IndividualBankAccount))
+            {
+                ws.Range(row, 6, row, totalCols).Merge().Value = $"Трансакциска сметка: {purchaseNote.IndividualBankAccount}";
+                ws.Range(row, 6, row, totalCols).Style.Font.FontSize = 10;
+                ws.Range(row, 6, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            }
 
             // ── Line items table ─────────────────────────────────────────────────
             row += 2;
@@ -619,10 +631,11 @@
             ws.Range(row, 1, row, totalCols).Merge().Value = "Со букви исплатено ден. _______________________________________________________________";
             ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
 
-            // Signature blocks — single row with 4 columns
+            // Signature blocks — single row with 4 columns, all centered
             row += 2;
             ws.Range(row, 1, row, 2).Merge().Value = "Примил стоката,";
             ws.Range(row, 1, row, 2).Style.Font.FontSize = 10;
+            ws.Range(row, 1, row, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Range(row, 3, row, 4).Merge().Value = "Исплатил,";
             ws.Range(row, 3, row, 4).Style.Font.FontSize = 10;
             ws.Range(row, 3, row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -631,18 +644,18 @@
             ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             ws.Range(row, 7, row, 8).Merge().Value = "Предал стоката,";
             ws.Range(row, 7, row, 8).Style.Font.FontSize = 10;
-            ws.Range(row, 7, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            ws.Range(row, 7, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            // Signature lines
+            // Signature lines — centered under each label
             row += 2;
-            ws.Range(row, 1, row, 2).Merge();
-            ws.Range(row, 1, row, 2).Style.Border.TopBorder = XLBorderStyleValues.Thin;
-            ws.Range(row, 3, row, 4).Merge();
-            ws.Range(row, 3, row, 4).Style.Border.TopBorder = XLBorderStyleValues.Thin;
-            ws.Range(row, 5, row, 6).Merge();
-            ws.Range(row, 5, row, 6).Style.Border.TopBorder = XLBorderStyleValues.Thin;
-            ws.Range(row, 7, row, 8).Merge();
-            ws.Range(row, 7, row, 8).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 1, row, 2).Merge().Value = "_______________";
+            ws.Range(row, 1, row, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 3, row, 4).Merge().Value = "_______________";
+            ws.Range(row, 3, row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 5, row, 6).Merge().Value = "_______________";
+            ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 7, row, 8).Merge().Value = "_______________";
+            ws.Range(row, 7, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
             // Column widths
             ws.Column(1).Width = 5;    // Ред. Број

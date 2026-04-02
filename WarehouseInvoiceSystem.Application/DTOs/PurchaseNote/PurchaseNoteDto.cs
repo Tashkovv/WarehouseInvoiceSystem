@@ -10,6 +10,7 @@
         public string IndividualFullName { get; set; } = string.Empty;
         public string IndividualIdentificationNumber { get; set; } = string.Empty;
         public string? IndividualAddress { get; set; }
+        public string? IndividualBankAccount { get; set; }
         public Guid WarehouseId { get; set; }
         public string WarehouseName { get; set; } = string.Empty;
         public DateTime PurchaseDate { get; set; }

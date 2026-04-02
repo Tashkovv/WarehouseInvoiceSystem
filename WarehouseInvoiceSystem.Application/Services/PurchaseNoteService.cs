@@ -491,6 +491,7 @@
             IndividualFullName = note.Individual?.FullName ?? string.Empty,
             IndividualIdentificationNumber = note.Individual?.IdentificationNumber ?? string.Empty,
             IndividualAddress = note.Individual?.Address,
+            IndividualBankAccount = note.Individual?.BankAccount,
             WarehouseId = note.WarehouseId,
             WarehouseName = note.Warehouse.Name,
             PurchaseDate = note.PurchaseDate,

@@ -111,6 +111,7 @@
                 Address = createDto.Address,
                 Phone = createDto.Phone,
                 Email = createDto.Email,
+                BankAccount = createDto.BankAccount,
                 IsActive = createDto.IsActive
             };
 
@@ -132,6 +133,7 @@
             individual.Address = updateDto.Address;
             individual.Phone = updateDto.Phone;
             individual.Email = updateDto.Email;
+            individual.BankAccount = updateDto.BankAccount;
             individual.IsActive = updateDto.IsActive;
 
             await individualRepository.UpdateAsync(individual);
@@ -162,6 +164,7 @@
                 Address = individual.Address,
                 Phone = individual.Phone,
                 Email = individual.Email,
+                BankAccount = individual.BankAccount,
                 IsActive = individual.IsActive,
                 CreatedAt = individual.CreatedAt
             };
