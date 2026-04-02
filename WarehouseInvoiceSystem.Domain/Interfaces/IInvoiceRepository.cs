@@ -62,6 +62,7 @@
         Task<InvoicePeriodSummaryResult> GetDayInvoiceSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<InvoicePeriodSummaryResult> GetMonthInvoiceSummaryAsync(int year, int month, CancellationToken ct = default);
         Task<InvoicePeriodSummaryResult> GetYearInvoiceSummaryAsync(int year, CancellationToken ct = default);
+        Task<InvoicePeriodSummaryResult> GetRangeInvoiceSummaryAsync(DateTime from, DateTime to, CancellationToken ct = default);
 
         // ── Notification queries ────────────────────────────────────────────────
         Task<List<Invoice>> GetInvoicesDueInDaysAsync(int days, InvoiceType type, CancellationToken ct = default);

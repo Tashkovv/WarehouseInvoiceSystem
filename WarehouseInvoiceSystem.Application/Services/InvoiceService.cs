@@ -616,6 +616,9 @@
         public Task<InvoicePeriodSummaryResult> GetYearInvoiceSummaryAsync(int year, CancellationToken ct = default)
             => invoiceRepository.GetYearInvoiceSummaryAsync(year, ct);
 
+        public Task<InvoicePeriodSummaryResult> GetRangeInvoiceSummaryAsync(DateTime from, DateTime to, CancellationToken ct = default)
+            => invoiceRepository.GetRangeInvoiceSummaryAsync(from, to, ct);
+
         // ── Helpers ───────────────────────────────────────────────────────────────────
 
         private string GenerateNote(Invoice invoice, InventoryTransactionType transactionType)

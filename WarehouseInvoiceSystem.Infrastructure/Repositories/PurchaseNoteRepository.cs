@@ -621,6 +621,26 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return result ?? new DayPurchaseNoteSummaryResult();
             });
 
+        public Task<DayPurchaseNoteSummaryResult> GetRangeIssuedSummaryAsync(DateTime from, DateTime to, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime fromDate = from.Date;
+                DateTime toDate = to.Date;
+                var result = await All<PurchaseNote>(context)
+                    .Where(pn => pn.PurchaseDate.Date >= fromDate &&
+                                 pn.PurchaseDate.Date <= toDate &&
+                                 pn.Status != PurchaseNoteStatus.Cancelled &&
+                                 pn.Status != PurchaseNoteStatus.Draft)
+                    .GroupBy(_ => 1)
+                    .Select(g => new DayPurchaseNoteSummaryResult
+                    {
+                        Count = g.Count(),
+                        Amount = g.Sum(pn => pn.TotalAmount)
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return result ?? new DayPurchaseNoteSummaryResult();
+            });
+
         private static IQueryable<PurchaseNote> ApplySort(IQueryable<PurchaseNote> q, string? sortBy, bool ascending)
             => sortBy switch
             {

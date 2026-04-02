@@ -483,6 +483,9 @@
         public Task<DayPurchaseNoteSummaryResult> GetYearIssuedSummaryAsync(int year, CancellationToken ct = default)
             => purchaseNoteRepository.GetYearIssuedSummaryAsync(year, ct);
 
+        public Task<DayPurchaseNoteSummaryResult> GetRangeIssuedSummaryAsync(DateTime from, DateTime to, CancellationToken ct = default)
+            => purchaseNoteRepository.GetRangeIssuedSummaryAsync(from, to, ct);
+
         private static PurchaseNoteDto MapToDto(PurchaseNote note) => new()
         {
             Id = note.Id,

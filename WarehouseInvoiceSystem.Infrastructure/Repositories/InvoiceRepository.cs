@@ -834,6 +834,33 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
+        public Task<InvoicePeriodSummaryResult> GetRangeInvoiceSummaryAsync(
+            DateTime from, DateTime to, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime fromDate = from.Date;
+                DateTime toDate = to.Date;
+                var rows = await All<Invoice>(context)
+                    .Where(i => i.IssueDate.Date >= fromDate &&
+                                i.IssueDate.Date <= toDate &&
+                                i.Status != InvoiceStatus.Cancelled &&
+                                i.Status != InvoiceStatus.Draft)
+                    .GroupBy(i => i.Type)
+                    .Select(g => new { Type = g.Key, Count = g.Count(), Amount = g.Sum(i => i.TotalAmount) })
+                    .ToListAsync(ct);
+
+                var receivable = rows.FirstOrDefault(r => r.Type == InvoiceType.Receivable);
+                var payable    = rows.FirstOrDefault(r => r.Type == InvoiceType.Payable);
+
+                return new InvoicePeriodSummaryResult
+                {
+                    ReceivableCount  = receivable?.Count  ?? 0,
+                    ReceivableAmount = receivable?.Amount ?? 0,
+                    PayableCount     = payable?.Count     ?? 0,
+                    PayableAmount    = payable?.Amount    ?? 0
+                };
+            });
+
         // ── Notification queries ────────────────────────────────────────────────
 
         public Task<List<Invoice>> GetInvoicesDueInDaysAsync(int days, InvoiceType type, CancellationToken ct = default) =>

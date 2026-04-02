@@ -42,14 +42,33 @@ else
                             @onclick="@(() => SetPeriodMode(PeriodMode.Year))">
                         @Localization.GetString("Yearly")
                     </button>
+                    <button class="wis-pill-btn @(_periodMode == PeriodMode.Custom ? "wis-pill-btn--active" : "")"
+                            type="button"
+                            @onclick="@(() => SetPeriodMode(PeriodMode.Custom))">
+                        @Localization.GetString("Custom")
+                    </button>
                 </div>
 
-                <WisDatePicker Date="_selectedDate"
-                               DateChanged="OnDateChanged"
-                               DateFormat="@PeriodDateFormat"
-                               OpenTo="@PeriodOpenTo"
-                               Label="@PeriodLabel"
-                               MaxDate="DateTime.Today" />
+                @if (_periodMode == PeriodMode.Custom)
+                {
+                    <WisDateRangeFilter @ref="_customDateRangeFilter"
+                                        DateRange="_customDateRange"
+                                        DateRangeChanged="OnCustomDateRangeChanged"
+                                        DatePreset="_customDatePreset"
+                                        DatePresetChanged="OnCustomDatePresetChanged"
+                                        OnChanged="LoadPeriodData"
+                                        Label="@Localization.GetString("Period")"
+                                        MaxDate="DateTime.Today" />
+                }
+                else
+                {
+                    <WisDatePicker Date="_selectedDate"
+                                   DateChanged="OnDateChanged"
+                                   DateFormat="@PeriodDateFormat"
+                                   OpenTo="@PeriodOpenTo"
+                                   Label="@PeriodLabel"
+                                   MaxDate="DateTime.Today" />
+                }
             </div>
         </MudItem>
 
@@ -315,11 +334,16 @@ else
 }
 
 @code {
-    private enum PeriodMode { Day, Month, Year }
+    private enum PeriodMode { Day, Month, Year, Custom }
 
     // ── Period toggle ──
     private PeriodMode _periodMode = PeriodMode.Day;
     private DateTime _selectedDate = DateTime.Today;
+
+    // ── Custom range ──
+    private DateRange _customDateRange = new(DateTime.Today.AddDays(-7), DateTime.Today);
+    private int? _customDatePreset = 7;
+    private WisDateRangeFilter? _customDateRangeFilter;
 
     private string PeriodDateFormat => _periodMode switch
     {
@@ -390,8 +414,13 @@ else
 
     private async Task LoadPeriodData()
     {
+        // Custom mode requires both dates to be set
+        if (_periodMode == PeriodMode.Custom && (_customDateRange.Start == null || _customDateRange.End == null))
+            return;
+
         var invoiceTask = _periodMode switch
         {
+            PeriodMode.Custom => InvoiceService.GetRangeInvoiceSummaryAsync(_customDateRange.Start!.Value, _customDateRange.End!.Value, _cts.Token),
             PeriodMode.Year => InvoiceService.GetYearInvoiceSummaryAsync(_selectedDate.Year, _cts.Token),
             PeriodMode.Month => InvoiceService.GetMonthInvoiceSummaryAsync(_selectedDate.Year, _selectedDate.Month, _cts.Token),
             _ => InvoiceService.GetDayInvoiceSummaryAsync(_selectedDate, _cts.Token)
@@ -399,6 +428,7 @@ else
 
         var noteTask = _periodMode switch
         {
+            PeriodMode.Custom => PurchaseNoteService.GetRangeIssuedSummaryAsync(_customDateRange.Start!.Value, _customDateRange.End!.Value, _cts.Token),
             PeriodMode.Year => PurchaseNoteService.GetYearIssuedSummaryAsync(_selectedDate.Year, _cts.Token),
             PeriodMode.Month => PurchaseNoteService.GetMonthIssuedSummaryAsync(_selectedDate.Year, _selectedDate.Month, _cts.Token),
             _ => PurchaseNoteService.GetDayIssuedSummaryAsync(_selectedDate, _cts.Token)
@@ -434,6 +464,12 @@ else
             _ => DateTime.Today
         };
 
+        if (mode == PeriodMode.Custom)
+        {
+            _customDateRange = new(DateTime.Today.AddDays(-7), DateTime.Today);
+            _customDatePreset = 7;
+        }
+
         await LoadPeriodData();
     }
 
@@ -441,6 +477,18 @@ else
     {
         _selectedDate = date ?? DateTime.Today;
         await LoadPeriodData();
+    }
+
+    private Task OnCustomDateRangeChanged(DateRange range)
+    {
+        _customDateRange = range;
+        return Task.CompletedTask;
+    }
+
+    private Task OnCustomDatePresetChanged(int? preset)
+    {
+        _customDatePreset = preset;
+        return Task.CompletedTask;
     }
 
     private async Task OpenPaymentDialog()
@@ -465,6 +513,8 @@ else
     {
         return _periodMode switch
         {
+            PeriodMode.Custom when _customDateRange.Start != null && _customDateRange.End != null =>
+                (_customDateRange.Start.Value.ToString("yyyy-MM-dd"), _customDateRange.End.Value.ToString("yyyy-MM-dd")),
             PeriodMode.Month => (_selectedDate.ToString("yyyy-MM-dd"), _selectedDate.AddMonths(1).AddDays(-1).ToString("yyyy-MM-dd")),
             PeriodMode.Year => (_selectedDate.ToString("yyyy-MM-dd"), _selectedDate.AddYears(1).AddDays(-1).ToString("yyyy-MM-dd")),
             _ => (_selectedDate.ToString("yyyy-MM-dd"), _selectedDate.ToString("yyyy-MM-dd"))

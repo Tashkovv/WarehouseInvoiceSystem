@@ -51,5 +51,6 @@
         Task<DayPurchaseNoteSummaryResult> GetDayIssuedSummaryAsync(DateTime date, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetMonthIssuedSummaryAsync(int year, int month, CancellationToken ct = default);
         Task<DayPurchaseNoteSummaryResult> GetYearIssuedSummaryAsync(int year, CancellationToken ct = default);
+        Task<DayPurchaseNoteSummaryResult> GetRangeIssuedSummaryAsync(DateTime from, DateTime to, CancellationToken ct = default);
     }
 }
