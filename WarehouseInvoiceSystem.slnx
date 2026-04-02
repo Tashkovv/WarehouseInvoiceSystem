@@ -3,4 +3,5 @@
   <Project Path="WarehouseInvoiceSystem.BlazorUI/WarehouseInvoiceSystem.BlazorUI.csproj" />
   <Project Path="WarehouseInvoiceSystem.Domain/WarehouseInvoiceSystem.Domain.csproj" />
   <Project Path="WarehouseInvoiceSystem.Infrastructure/WarehouseInvoiceSystem.Infrastructure.csproj" />
+  <Project Path="WarehouseInvoiceSystem.Tests/WarehouseInvoiceSystem.Tests.csproj" />
 </Solution>
