@@ -124,6 +124,22 @@ namespace WarehouseInvoiceSystem.Application.Services
             }
         }
 
+        public async Task CreateLicenseExpiringNotificationAsync(int graceDaysRemaining, CancellationToken ct = default)
+        {
+            string data = JsonSerializer.Serialize(new { graceDaysRemaining });
+            if (await notificationRepository.ExistsTodayAsync(data, ct)) return;
+
+            var notification = new Notification
+            {
+                Type = NotificationType.LicenseExpiring,
+                Data = data,
+                IsRead = false,
+                IsEmailSent = false
+            };
+
+            await notificationRepository.CreateWithInvoicesAsync(notification, [], ct);
+        }
+
         private async Task SendOverdueEmailsAsync(List<Invoice> invoices, Guid notificationId, CancellationToken ct)
         {
             bool anySent = false;

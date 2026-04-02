@@ -7,7 +7,6 @@
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
-    using WarehouseInvoiceSystem.Domain.Queries.Results;
 
     public class PaymentService(IPaymentRepository paymentRepository,
                                 IInvoiceRepository invoiceRepository,
@@ -51,7 +50,7 @@
         public async Task CreatePaymentAsync(CreatePaymentDto createDto)
         {
             // Validate invoice exists
-            Invoice? invoice = await invoiceRepository.GetByIdAsync(createDto.InvoiceId)
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(createDto.InvoiceId) 
                 ?? throw new KeyNotFoundException($"Invoice with ID {createDto.InvoiceId} not found");
 
             // Validate payment amount doesn't exceed remaining balance

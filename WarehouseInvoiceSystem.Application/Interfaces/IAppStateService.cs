@@ -8,5 +8,7 @@
     {
         Task<DateTime?> GetDateAsync(string key, CancellationToken ct = default);
         Task SetDateAsync(string key, DateTime value);
+        Task<string?> GetStringAsync(string key, CancellationToken ct = default);
+        Task SetStringAsync(string key, string value);
     }
 }

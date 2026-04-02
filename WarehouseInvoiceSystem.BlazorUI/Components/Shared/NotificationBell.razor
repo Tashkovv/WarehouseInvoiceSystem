@@ -158,19 +158,23 @@
         }
 
         _isOpen = false;
+        Navigation.NavigateTo(GetNavigationUrl(n), forceLoad: n.Type != NotificationType.LicenseExpiring);
+    }
 
-        if (n.Type == NotificationType.InvoiceOverdue)
-        {
-            Navigation.NavigateTo("/invoices?status=Overdue", forceLoad: true);
-        }
-        else
-        {
-            var data = ParseData(n);
-            string invoiceType = data.InvoiceType ?? "Receivable";
-            DateTime targetDate = n.CreatedAt.Date.AddDays(data.DaysBeforeDue);
-            string dateStr = targetDate.ToString("yyyy-MM-dd");
-            Navigation.NavigateTo($"/invoices?type={invoiceType}&dueDateFrom={dateStr}&dueDateTo={dateStr}", forceLoad: true);
-        }
+    private string GetNavigationUrl(NotificationDto n) => n.Type switch
+    {
+        NotificationType.LicenseExpiring => "/license",
+        NotificationType.InvoiceOverdue => "/invoices?status=Overdue",
+        _ => BuildDueReminderUrl(n)
+    };
+
+    private string BuildDueReminderUrl(NotificationDto n)
+    {
+        var data = ParseData(n);
+        string invoiceType = data.InvoiceType ?? "Receivable";
+        DateTime targetDate = n.CreatedAt.Date.AddDays(data.DaysBeforeDue);
+        string dateStr = targetDate.ToString("yyyy-MM-dd");
+        return $"/invoices?type={invoiceType}&dueDateFrom={dateStr}&dueDateTo={dateStr}";
     }
 
     private async Task MarkAllAsRead()
@@ -192,33 +196,48 @@
 
     private string FormatTitle(NotificationDto n)
     {
-        if (n.Type == NotificationType.InvoiceOverdue)
-        {
-            var data = ParseData(n);
-            int count = data.Count > 0 ? data.Count : n.Invoices.Count;
-            return string.Format(Localization.GetString("InvoicesNowOverdue"), count);
-        }
-        else
-        {
-            var data = ParseData(n);
-            int count = n.Invoices.Count;
-            bool isReceivable = data.InvoiceType == "Receivable";
+        var data = ParseData(n);
 
-            if (data.DaysBeforeDue == 1)
-            {
-                string key = isReceivable ? "ReceivableInvoicesDueTomorrow" : "PayableInvoicesDueTomorrow";
-                return string.Format(Localization.GetString(key), count);
-            }
-            else
-            {
-                string key = isReceivable ? "ReceivableInvoicesDueInDays" : "PayableInvoicesDueInDays";
-                return string.Format(Localization.GetString(key), count, data.DaysBeforeDue);
-            }
-        }
+        return n.Type switch
+        {
+            NotificationType.LicenseExpiring => FormatLicenseExpiringTitle(data),
+            NotificationType.InvoiceOverdue => FormatOverdueTitle(data, n.Invoices.Count),
+            _ => FormatDueReminderTitle(data, n.Invoices.Count)
+        };
+    }
+
+    private string FormatLicenseExpiringTitle(NotificationData data) =>
+        data.GraceDaysRemaining <= 1
+            ? Localization.GetString("LicenseExpiringTomorrow")
+            : string.Format(Localization.GetString("LicenseExpiringNotification"), data.GraceDaysRemaining);
+
+    private string FormatOverdueTitle(NotificationData data, int invoiceCount)
+    {
+        int count = data.Count > 0 ? data.Count : invoiceCount;
+        return string.Format(Localization.GetString("InvoicesNowOverdue"), count);
+    }
+
+    private string FormatDueReminderTitle(NotificationData data, int invoiceCount)
+    {
+        bool isReceivable = data.InvoiceType == "Receivable";
+        string key = (data.DaysBeforeDue, isReceivable) switch
+        {
+            (1, true) => "ReceivableInvoicesDueTomorrow",
+            (1, false) => "PayableInvoicesDueTomorrow",
+            (_, true) => "ReceivableInvoicesDueInDays",
+            (_, false) => "PayableInvoicesDueInDays"
+        };
+
+        return data.DaysBeforeDue == 1
+            ? string.Format(Localization.GetString(key), invoiceCount)
+            : string.Format(Localization.GetString(key), invoiceCount, data.DaysBeforeDue);
     }
 
     private string FormatInvoiceList(NotificationDto n)
     {
+        if (n.Type == NotificationType.LicenseExpiring)
+            return "";
+
         const int maxShow = 3;
         var numbers = n.Invoices.Select(i => i.InvoiceNumber).ToList();
 
@@ -241,17 +260,26 @@
     }
 
     private static string GetNotificationIcon(NotificationDto n) =>
-        n.Type == NotificationType.InvoiceOverdue
-            ? Icons.Material.Filled.Warning
-            : Icons.Material.Filled.Schedule;
+        n.Type switch
+        {
+            NotificationType.LicenseExpiring => Icons.Material.Filled.Key,
+            NotificationType.InvoiceOverdue => Icons.Material.Filled.Warning,
+            _ => Icons.Material.Filled.Schedule
+        };
 
     private Color GetNotificationColor(NotificationDto n)
     {
+        if (n.Type == NotificationType.LicenseExpiring)
+        {
+            var data = ParseData(n);
+            return data.GraceDaysRemaining <= 1 ? Color.Error : Color.Warning;
+        }
+
         if (n.Type == NotificationType.InvoiceOverdue)
             return Color.Error;
 
-        var data = ParseData(n);
-        return data.DaysBeforeDue switch
+        var invoiceData = ParseData(n);
+        return invoiceData.DaysBeforeDue switch
         {
             <= 1 => Color.Error,
             <= 5 => Color.Warning,
@@ -273,6 +301,7 @@
         public int DaysBeforeDue { get; init; }
         public string? InvoiceType { get; init; }
         public int Count { get; init; }
+        public int GraceDaysRemaining { get; init; }
     }
 
     public void Dispose()

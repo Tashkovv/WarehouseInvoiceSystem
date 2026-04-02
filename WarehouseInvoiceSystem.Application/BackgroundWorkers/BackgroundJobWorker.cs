@@ -12,15 +12,14 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
     public partial class BackgroundJobWorker(
         IServiceProvider serviceProvider,
         IAppStateService appState,
+        ILicenseService licenseService,
         ILogger<BackgroundJobWorker> logger) : BackgroundService
     {
-        // Keys used to persist last-check dates across restarts (UTC date, ISO 8601)
         private const string LastOverdueCheckKey = "LastOverdueCheckDate";
         private const string LastNotificationCheckKey = "LastNotificationCheckDate";
 
-        // Time when overdue check should run (7 AM UTC)
-        private readonly int _overdueCheckHour = 7;  // 24-hour format (7 = 7 AM)
-        private readonly int _overdueCheckMinute = 0; // 0 minutes
+        private readonly int _overdueCheckHour = 7;
+        private readonly int _overdueCheckMinute = 0;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -30,54 +29,16 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
             {
                 try
                 {
-                    // All timestamps are UTC
-                    DateTime now = DateTime.UtcNow;
-                    DateTime todayAtCheckTime = now.Date.AddHours(_overdueCheckHour).AddMinutes(_overdueCheckMinute);
+                    await licenseService.ValidateAsync(stoppingToken);
 
-                    // Read persisted date so restarts don't re-run the check on the same day
-                    DateTime? lastCheckDate = await appState.GetDateAsync(LastOverdueCheckKey, stoppingToken);
-
-                    // Check if it's time to run the overdue check
-                    // Only run once per day at the specified time
-                    if (now >= todayAtCheckTime && lastCheckDate?.Date != now.Date)
+                    if (licenseService.Status is LicenseStatus.Locked or LicenseStatus.NotActivated)
                     {
-                        LogRunning(logger, now);
-
-                        using (IServiceScope scope = serviceProvider.CreateScope())
-                        {
-                            var backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-                            List<Guid> overdueIds = await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
-
-                            if (overdueIds.Count > 0)
-                            {
-                                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                                await notificationService.CreateOverdueNotificationAsync(overdueIds, stoppingToken);
-                            }
-                        }
-
-                        await appState.SetDateAsync(LastOverdueCheckKey, now.Date);
-                        LogCompleted(logger, _overdueCheckHour, _overdueCheckMinute);
+                        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                        continue;
                     }
 
-                    // ── Notification check (runs after overdue check so newly-overdue invoices are excluded) ──
-                    DateTime? lastNotificationCheck = await appState.GetDateAsync(LastNotificationCheckKey, stoppingToken);
-                    if (now >= todayAtCheckTime && lastNotificationCheck?.Date != now.Date)
-                    {
-                        LogNotificationRunning(logger, now);
-
-                        using (IServiceScope scope = serviceProvider.CreateScope())
-                        {
-                            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-                            timeoutCts.CancelAfter(TimeSpan.FromMinutes(5));
-                            var backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-                            await backgroundJobService.GenerateAndSendDueDateRemindersAsync(timeoutCts.Token);
-                        }
-
-                        await appState.SetDateAsync(LastNotificationCheckKey, now.Date);
-                        LogNotificationCompleted(logger);
-                    }
-
-                    // Run check every 1 minute to see if it's time to execute scheduled jobs
+                    await CheckLicenseExpiryNotificationAsync(stoppingToken);
+                    await RunDailyJobsIfDueAsync(stoppingToken);
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
                 catch (OperationCanceledException ex)
@@ -88,12 +49,80 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error in background job worker");
-                    // Continue running despite errors
                     await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
                 }
             }
 
             logger.LogInformation("Background job worker stopped");
+        }
+
+        private async Task CheckLicenseExpiryNotificationAsync(CancellationToken ct)
+        {
+            if (licenseService.Status != LicenseStatus.Warning
+                || !licenseService.GraceDaysRemaining.HasValue)
+                return;
+
+            int remaining = licenseService.GraceDaysRemaining.Value;
+
+            using IServiceScope scope = serviceProvider.CreateScope();
+            INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+            await notificationService.CreateLicenseExpiringNotificationAsync(remaining, ct);
+        }
+
+        private async Task RunDailyJobsIfDueAsync(CancellationToken ct)
+        {
+            DateTime now = DateTime.UtcNow;
+            DateTime todayAtCheckTime = now.Date.AddHours(_overdueCheckHour).AddMinutes(_overdueCheckMinute);
+
+            if (now < todayAtCheckTime)
+                return;
+
+            await RunOverdueCheckAsync(now, ct);
+            await RunNotificationCheckAsync(now, ct);
+        }
+
+        private async Task RunOverdueCheckAsync(DateTime now, CancellationToken ct)
+        {
+            DateTime? lastCheckDate = await appState.GetDateAsync(LastOverdueCheckKey, ct);
+            if (lastCheckDate?.Date == now.Date)
+                return;
+
+            LogRunning(logger, now);
+
+            using (IServiceScope scope = serviceProvider.CreateScope())
+            {
+                IBackgroundJobService backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
+                List<Guid> overdueIds = await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+
+                if (overdueIds.Count > 0)
+                {
+                    INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+                    await notificationService.CreateOverdueNotificationAsync(overdueIds, ct);
+                }
+            }
+
+            await appState.SetDateAsync(LastOverdueCheckKey, now.Date);
+            LogCompleted(logger, _overdueCheckHour, _overdueCheckMinute);
+        }
+
+        private async Task RunNotificationCheckAsync(DateTime now, CancellationToken ct)
+        {
+            DateTime? lastNotificationCheck = await appState.GetDateAsync(LastNotificationCheckKey, ct);
+            if (lastNotificationCheck?.Date == now.Date)
+                return;
+
+            LogNotificationRunning(logger, now);
+
+            using (IServiceScope scope = serviceProvider.CreateScope())
+            {
+                using CancellationTokenSource timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                timeoutCts.CancelAfter(TimeSpan.FromMinutes(5));
+                IBackgroundJobService backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
+                await backgroundJobService.GenerateAndSendDueDateRemindersAsync(timeoutCts.Token);
+            }
+
+            await appState.SetDateAsync(LastNotificationCheckKey, now.Date);
+            LogNotificationCompleted(logger);
         }
 
         [LoggerMessage(Level = LogLevel.Information, Message = "Overdue invoice check scheduled for {Hour}:{Minute:00} every day")]
