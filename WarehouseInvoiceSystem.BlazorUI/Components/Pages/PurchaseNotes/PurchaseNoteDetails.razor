@@ -110,7 +110,7 @@ else
 
                         <MudItem xs="3">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Total")</MudText>
-                            <div class="wis-stat-value mud-info-text">@_note.TotalAmount.ToString("C")</div>
+                            <div class="wis-stat-value mud-info-text">@Math.Round(_note.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")</div>
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.LineItems.Count @Localization.GetString("Products")</MudText>
                         </MudItem>
 
@@ -148,8 +148,9 @@ else
                               Class="wis-secondary-list">
                         <HeaderContent>
                             <MudTh>@Localization.GetString("Product")</MudTh>
-                            <MudTh>@Localization.GetString("Description")</MudTh>
-                            <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("GrossQuantity")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("KaloPercentage")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("NetQuantity")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
                         </HeaderContent>
@@ -157,21 +158,24 @@ else
                             <MudTd DataLabel="@Localization.GetString("Product")">
                                 <MudText Typo="Typo.body2">@context.ProductCode - @context.ProductName</MudText>
                             </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("Description")">
+                            <MudTd DataLabel="@Localization.GetString("GrossQuantity")" Class="text-right">
                                 <MudText Typo="Typo.body2">
-                                    @(string.IsNullOrEmpty(context.Description) ? "—" : context.Description)
+                                    @Math.Round(context.GrossQuantity, 0, MidpointRounding.AwayFromZero).ToString("N0") @context.ProductUnit
                                 </MudText>
                             </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
+                            <MudTd DataLabel="@Localization.GetString("KaloPercentage")" Class="text-right">
+                                <MudText Typo="Typo.body2">@context.KaloPercentage.ToString("N2")%</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("NetQuantity")" Class="text-right">
                                 <MudText Typo="Typo.body2" Style="font-weight: 500;">
-                                    @context.Quantity.ToString("N2") @context.ProductUnit
+                                    @Math.Round(context.Quantity, 0, MidpointRounding.AwayFromZero).ToString("N0") @context.ProductUnit
                                 </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
                                 <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
-                                <MudText Typo="Typo.body2" Color="Color.Primary">@context.Amount.ToString("C")</MudText>
+                                <MudText Typo="Typo.body2" Color="Color.Primary">@Math.Round(context.Amount, 0, MidpointRounding.AwayFromZero).ToString("C0")</MudText>
                             </MudTd>
                         </RowTemplate>
                     </MudTable>

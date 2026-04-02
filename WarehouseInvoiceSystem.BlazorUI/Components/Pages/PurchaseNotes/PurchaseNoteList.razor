@@ -160,7 +160,7 @@
 >
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
-                            @context.Item.TotalAmount.ToString("C")
+                            @Math.Round(context.Item.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")
                         </MudText>
                     </CellTemplate>
                 </PropertyColumn>

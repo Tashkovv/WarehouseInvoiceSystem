@@ -20,7 +20,9 @@
             builder.HasQueryFilter(e => e.DeletedOn == null);
 
             builder.Property(e => e.Description).IsRequired().HasMaxLength(500);
-            builder.Property(e => e.Quantity).IsRequired();
+            builder.Property(e => e.GrossQuantity).HasPrecision(18, 2).IsRequired();
+            builder.Property(e => e.KaloPercentage).HasPrecision(5, 2).IsRequired();
+            builder.Property(e => e.Quantity).HasPrecision(18, 2).IsRequired();
             builder.Property(e => e.UnitPrice).HasPrecision(18, 2).IsRequired();
 
             // Ignore computed property

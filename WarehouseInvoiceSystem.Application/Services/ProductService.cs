@@ -93,7 +93,7 @@
                 .Select(li => new { li.PurchaseNote.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.Amount })
                 .Concat(invoiceLines
                     .Where(li => li.Invoice.Type == InvoiceType.Payable && liveDocumentIds.Contains(li.InvoiceId))
-                    .Select(li => new { li.Invoice.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.TotalAmount }))
+                    .Select(li => new { li.Invoice.WarehouseId, Quantity = (decimal)li.Quantity, li.UnitPrice, TotalPrice = li.TotalAmount }))
                 .ToList();
 
             var purchasedByWarehouse = purchasedRows

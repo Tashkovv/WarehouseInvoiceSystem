@@ -10,7 +10,7 @@
         {
             // Build configuration
             var configuration = new ConfigurationBuilder()
-                .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../WarehouseInvoiceSystem.API"))
+                .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../WarehouseInvoiceSystem.BlazorUI"))
                 .AddJsonFile("appsettings.json", optional: false)
                 .AddJsonFile("appsettings.Development.json", optional: true)
                 .AddUserSecrets<ApplicationDbContextFactory>(optional: true)

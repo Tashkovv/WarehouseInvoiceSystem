@@ -107,9 +107,11 @@ else
                 <MudTable Items="_lineItems" Dense="true" Hover="true" Elevation="0" Class="mb-2" Style="table-layout: fixed; width: 100%" ContainerStyle="overflow: hidden">
                     <HeaderContent>
                         <MudTh>@Localization.GetString("Product")</MudTh>
-                        <MudTh Style="width:21%" Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                        <MudTh Style="width:24%" Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
-                        <MudTh Style="width:25%" Class="text-right">@Localization.GetString("Amount")</MudTh>
+                        <MudTh Style="width:13%" Class="text-right">@Localization.GetString("GrossQuantity")</MudTh>
+                        <MudTh Style="width:10%" Class="text-right">@Localization.GetString("KaloPercentage")</MudTh>
+                        <MudTh Style="width:13%" Class="text-right">@Localization.GetString("NetQuantity")</MudTh>
+                        <MudTh Style="width:15%" Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
+                        <MudTh Style="width:15%" Class="text-right">@Localization.GetString("Amount")</MudTh>
                         <MudTh Style="width:48px"></MudTh>
                     </HeaderContent>
                     <RowTemplate Context="item">
@@ -136,15 +138,32 @@ else
                             </MudAutocomplete>
                         </MudTd>
                         <MudTd Class="text-right">
-                            <MudNumericField T="int"
-                            @bind-Value="item.Quantity"
-                            @bind-Value:after="CalculateTotals"
+                            <MudNumericField T="decimal"
+                            @bind-Value="item.GrossQuantity"
+                            @bind-Value:after="() => RecalculateNet(item)"
                             Variant="Variant.Text"
-                            Min="1"
-                            Step="1"
+                            Format="N0"
+                            Min="0m"
                             Class="text-right"
                             Adornment="Adornment.End"
                             AdornmentText="@(item.SelectedProduct?.Unit ?? "")" />
+                        </MudTd>
+                        <MudTd Class="text-right">
+                            <MudNumericField T="decimal"
+                            @bind-Value="item.KaloPercentage"
+                            @bind-Value:after="() => RecalculateNet(item)"
+                            Variant="Variant.Text"
+                            Format="N2"
+                            Min="0m"
+                            Max="100m"
+                            Class="text-right"
+                            Adornment="Adornment.End"
+                            AdornmentText="%" />
+                        </MudTd>
+                        <MudTd Class="text-right">
+                            <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers text-right">
+                                @Math.Round(item.Quantity, 0, MidpointRounding.AwayFromZero).ToString("N0") @(item.SelectedProduct?.Unit ?? "")
+                            </MudText>
                         </MudTd>
                         <MudTd Class="text-right">
                             <MudNumericField @bind-Value="item.UnitPrice"
@@ -152,14 +171,13 @@ else
                             Variant="Variant.Text"
                             Format="N2"
                             Min="0m"
-
                             Class="text-right"
                             Adornment="Adornment.End"
                             AdornmentText="@Localization.CurrencySymbol" />
                         </MudTd>
                         <MudTd Class="text-right">
                             <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers text-right">
-                                @((item.Quantity * item.UnitPrice).ToString("C"))
+                                @(Math.Round(item.Quantity * item.UnitPrice, 0, MidpointRounding.AwayFromZero).ToString("C0"))
                             </MudText>
                         </MudTd>
                         <MudTd>
@@ -182,7 +200,7 @@ else
                 <div class="d-flex justify-end gap-4 px-2 pb-1">
                     <div class="d-flex align-center gap-2">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Total"):</MudText>
-                        <MudText Typo="Typo.h6" Color="Color.Primary" Class="font-weight-bold tabular-numbers">@_total.ToString("C")</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary" Class="font-weight-bold tabular-numbers">@Math.Round(_total, 0, MidpointRounding.AwayFromZero).ToString("C0")</MudText>
                     </div>
                 </div>
             </MudForm>
@@ -305,6 +323,8 @@ else
                     {
                         SelectedProduct = product,
                         Description = li.Description,
+                        GrossQuantity = li.GrossQuantity,
+                        KaloPercentage = li.KaloPercentage,
                         Quantity = li.Quantity,
                         UnitPrice = li.UnitPrice
                     });
@@ -362,12 +382,18 @@ else
 
     private void AddLineItem()
     {
-        _lineItems.Add(new LineItemModel { Quantity = 1 });
+        _lineItems.Add(new LineItemModel());
     }
 
     private void RemoveLineItem(LineItemModel item)
     {
         _lineItems.Remove(item);
+        CalculateTotals();
+    }
+
+    private void RecalculateNet(LineItemModel item)
+    {
+        item.Quantity = Math.Round(item.GrossQuantity - (item.GrossQuantity * item.KaloPercentage / 100m), 2);
         CalculateTotals();
     }
 
@@ -399,6 +425,8 @@ else
                     {
                         ProductId = li.SelectedProduct!.Id,
                         Description = li.Description,
+                        GrossQuantity = li.GrossQuantity,
+                        KaloPercentage = li.KaloPercentage,
                         Quantity = li.Quantity,
                         UnitPrice = li.UnitPrice
                     }).ToList()
@@ -447,7 +475,9 @@ else
     {
         public ProductDto? SelectedProduct { get; set; }
         public string Description { get; set; } = string.Empty;
-        public int Quantity { get; set; } = 1;
+        public decimal GrossQuantity { get; set; }
+        public decimal KaloPercentage { get; set; }
+        public decimal Quantity { get; set; }
         public decimal UnitPrice { get; set; }
     }
 }

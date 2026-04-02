@@ -479,7 +479,7 @@
             ws.PageSetup.Margins.Bottom = 0.5;
             ws.PageSetup.CenterHorizontally = true;
 
-            int totalCols = 9; // Ред.Број, Назив, Ед.Мера, Количина, Цена(2), Износ(2), Забелешка
+            int totalCols = 8; // Ред.Број, Наименование, Ед.мера, Примено, Кало%, Нето, Един.цена, Износ
 
             // ── Header area ─────────────────────────────────────────────────────
             int row = 1;
@@ -530,69 +530,52 @@
             row += 2;
             int headerRow = row;
 
-            // Header row 1 (merged headers for ЦЕНА and ИЗНОС)
-            ws.Cell(row, 1).Value = "Ред.";
-            ws.Cell(row, 2).Value = "НАЗИВ НА СТОКАТА";
-            ws.Cell(row, 3).Value = "Ед.";
-            ws.Cell(row, 4).Value = "Количина";
-            ws.Range(row, 5, row, 6).Merge().Value = "Ц Е Н А";
-            ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Range(row, 7, row, 8).Merge().Value = "И З Н О С";
-            ws.Range(row, 7, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Cell(row, 9).Value = "Забелешка";
+            // Header row
+            ws.Cell(row, 1).Value = "Ред.\nБрој";
+            ws.Cell(row, 2).Value = "Наименование";
+            ws.Cell(row, 3).Value = "Ед.\nмера";
+            ws.Cell(row, 4).Value = "Примено";
+            ws.Cell(row, 5).Value = "Се одбива\nкало %";
+            ws.Cell(row, 6).Value = "Нето";
+            ws.Cell(row, 7).Value = "Един.\nцена";
+            ws.Cell(row, 8).Value = "Износ\nден.";
 
-            // Header row 2 (sub-headers)
-            row++;
-            ws.Cell(row, 1).Value = "Број";
-            ws.Cell(row, 3).Value = "Мера";
-            ws.Cell(row, 5).Value = "Денари";
-            ws.Cell(row, 6).Value = "д.";
-            ws.Cell(row, 7).Value = "Денари";
-            ws.Cell(row, 8).Value = "д.";
-
-            // Style header rows
+            // Style header row
             IXLRange headerRange = ws.Range(headerRow, 1, row, totalCols);
             headerRange.Style.Font.Bold = true;
             headerRange.Style.Font.FontSize = 9;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            headerRange.Style.Alignment.WrapText = true;
             headerRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
             headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-
-            // Merge vertical headers across both header rows
-            ws.Range(headerRow, 1, row, 1).Merge(); // Ред. Број
-            ws.Range(headerRow, 2, row, 2).Merge(); // НАЗИВ НА СТОКАТА
-            ws.Range(headerRow, 3, row, 3).Merge(); // Ед. Мера
-            ws.Range(headerRow, 4, row, 4).Merge(); // Количина
-            ws.Range(headerRow, 9, row, 9).Merge(); // Забелешка
+            ws.Row(headerRow).Height = 35;
 
             // Data rows
             int itemNumber = 1;
             foreach (PurchaseNoteLineDto line in purchaseNote.LineItems)
             {
                 row++;
-                int wholePart = (int)Math.Truncate(line.UnitPrice);
-                int decPart = (int)((line.UnitPrice - Math.Truncate(line.UnitPrice)) * 100);
-                int amountWhole = (int)Math.Truncate(line.Amount);
-                int amountDec = (int)((line.Amount - Math.Truncate(line.Amount)) * 100);
-
                 ws.Cell(row, 1).Value = itemNumber++;
                 ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 ws.Cell(row, 2).Value = line.ProductName;
                 ws.Cell(row, 3).Value = line.ProductUnit;
                 ws.Cell(row, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Cell(row, 4).Value = line.Quantity;
+                ws.Cell(row, 4).Value = line.GrossQuantity;
                 ws.Cell(row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Cell(row, 5).Value = wholePart;
-                ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                ws.Cell(row, 6).Value = decPart.ToString("00");
-                ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-                ws.Cell(row, 7).Value = amountWhole;
+                ws.Cell(row, 4).Style.NumberFormat.Format = "#,##0";
+                ws.Cell(row, 5).Value = line.KaloPercentage;
+                ws.Cell(row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(row, 5).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, 6).Value = line.Quantity;
+                ws.Cell(row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Cell(row, 6).Style.NumberFormat.Format = "#,##0";
+                ws.Cell(row, 7).Value = line.UnitPrice;
                 ws.Cell(row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-                ws.Cell(row, 8).Value = amountDec.ToString("00");
-                ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-                ws.Cell(row, 9).Value = line.Description;
-                ws.Cell(row, 9).Style.Alignment.WrapText = true;
+                ws.Cell(row, 7).Style.NumberFormat.Format = "#,##0.00";
+                ws.Cell(row, 8).Value = line.Amount;
+                ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                ws.Cell(row, 8).Style.NumberFormat.Format = "#,##0";
 
                 IXLRange rowRange = ws.Range(row, 1, row, totalCols);
                 rowRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
@@ -601,8 +584,8 @@
                 ws.Row(row).Height = 30;
             }
 
-            // Ensure minimum empty rows for the table look
-            int minDataRows = 8;
+            // Ensure minimum 3 data rows
+            int minDataRows = 3;
             int dataRowsWritten = purchaseNote.LineItems.Count;
             for (int i = dataRowsWritten; i < minDataRows; i++)
             {
@@ -610,22 +593,19 @@
                 IXLRange emptyRow = ws.Range(row, 1, row, totalCols);
                 emptyRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 emptyRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+                ws.Row(row).Height = 30;
             }
 
             // ── Totals row ─────────────────────────────────────────────────────────
             row++;
-            ws.Range(row, 5, row, 6).Merge().Value = "Вкупно";
-            ws.Range(row, 5, row, 6).Style.Font.Bold = true;
-            ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 1, row, 7).Merge().Value = "Вкупно";
+            ws.Range(row, 1, row, 7).Style.Font.Bold = true;
+            ws.Range(row, 1, row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
             decimal totalAmount = purchaseNote.LineItems.Sum(l => l.Amount);
-            int totalWhole = (int)Math.Truncate(totalAmount);
-            int totalDec = (int)((totalAmount - Math.Truncate(totalAmount)) * 100);
-            ws.Range(row, 7, row, 7).Value = totalWhole;
-            ws.Range(row, 7, row, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-            ws.Range(row, 7, row, 7).Style.Font.Bold = true;
-            ws.Range(row, 8, row, 8).Value = totalDec.ToString("00");
-            ws.Range(row, 8, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-            ws.Range(row, 8, row, 8).Style.Font.Bold = true;
+            ws.Cell(row, 8).Value = totalAmount;
+            ws.Cell(row, 8).Style.Font.Bold = true;
+            ws.Cell(row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            ws.Cell(row, 8).Style.NumberFormat.Format = "#,##0";
             IXLRange totalRow = ws.Range(row, 1, row, totalCols);
             totalRow.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             totalRow.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
@@ -636,68 +616,43 @@
 
             // ── Footer area ──────────────────────────────────────────────────────
             row += 2;
-            ws.Range(row, 1, row, totalCols).Merge().Value = "Со букви денари _______________________________________________________________________________";
+            ws.Range(row, 1, row, totalCols).Merge().Value = "Со букви исплатено ден. _______________________________________________________________";
             ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
 
-            // Signature blocks
+            // Signature blocks — single row with 4 columns
             row += 2;
-            // Left: Стоката ја предал
-            ws.Range(row, 1, row, 3).Merge().Value = "Стоката ја предал,";
-            ws.Range(row, 1, row, 3).Style.Font.FontSize = 10;
-            // Center: Исплатил
-            ws.Range(row, 4, row, 5).Merge().Value = "Исплатил,";
-            ws.Range(row, 4, row, 5).Style.Font.FontSize = 10;
-            ws.Range(row, 4, row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            // Right: Стоката ја примил
-            ws.Range(row, 7, row, totalCols).Merge().Value = "Стоката ја примил лично";
-            ws.Range(row, 7, row, totalCols).Style.Font.FontSize = 10;
-            ws.Range(row, 7, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+            ws.Range(row, 1, row, 2).Merge().Value = "Примил стоката,";
+            ws.Range(row, 1, row, 2).Style.Font.FontSize = 10;
+            ws.Range(row, 3, row, 4).Merge().Value = "Исплатил,";
+            ws.Range(row, 3, row, 4).Style.Font.FontSize = 10;
+            ws.Range(row, 3, row, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 5, row, 6).Merge().Value = "Примил пари,";
+            ws.Range(row, 5, row, 6).Style.Font.FontSize = 10;
+            ws.Range(row, 5, row, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            ws.Range(row, 7, row, 8).Merge().Value = "Предал стоката,";
+            ws.Range(row, 7, row, 8).Style.Font.FontSize = 10;
+            ws.Range(row, 7, row, 8).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
-            row++;
-            ws.Range(row, 7, row, totalCols).Merge().Value = "овластен купувач,";
-            ws.Range(row, 7, row, totalCols).Style.Font.FontSize = 10;
-            ws.Range(row, 7, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-            // Pre-filled names (above the line)
-            row++;
-            // Individual name (left)
-            ws.Range(row, 1, row, 3).Merge().Value = purchaseNote.IndividualFullName;
-            ws.Range(row, 1, row, 3).Style.Font.Bold = true;
-            ws.Range(row, 1, row, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            // Company name (center)
-            ws.Range(row, 4, row, 5).Merge().Value = tenant.CompanyName;
-            ws.Range(row, 4, row, 5).Style.Font.Bold = true;
-            ws.Range(row, 4, row, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-
-            // Signature lines (below the names)
-            row++;
-            ws.Range(row, 1, row, 3).Merge();
-            ws.Range(row, 1, row, 3).Style.Border.TopBorder = XLBorderStyleValues.Thin;
-            ws.Range(row, 4, row, 5).Merge();
-            ws.Range(row, 4, row, 5).Style.Border.TopBorder = XLBorderStyleValues.Thin;
-            ws.Range(row, 7, row, totalCols).Merge();
-            ws.Range(row, 7, row, totalCols).Style.Border.TopBorder = XLBorderStyleValues.Thin;
-
-            // Парите ги примил
+            // Signature lines
             row += 2;
-            ws.Range(row, 7, row, totalCols).Merge().Value = "Парите ги примил,";
-            ws.Range(row, 7, row, totalCols).Style.Font.FontSize = 10;
-            ws.Range(row, 7, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
-
-            row += 2;
-            ws.Range(row, 7, row, totalCols).Merge();
-            ws.Range(row, 7, row, totalCols).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 1, row, 2).Merge();
+            ws.Range(row, 1, row, 2).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 3, row, 4).Merge();
+            ws.Range(row, 3, row, 4).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 5, row, 6).Merge();
+            ws.Range(row, 5, row, 6).Style.Border.TopBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, 7, row, 8).Merge();
+            ws.Range(row, 7, row, 8).Style.Border.TopBorder = XLBorderStyleValues.Thin;
 
             // Column widths
-            ws.Column(1).Width = 5;   // Ред. Број
-            ws.Column(2).Width = 30;  // Назив на стоката
-            ws.Column(3).Width = 7;   // Ед. Мера
-            ws.Column(4).Width = 10;  // Количина
-            ws.Column(5).Width = 10;  // Цена Денари
-            ws.Column(6).Width = 5;   // Цена д.
-            ws.Column(7).Width = 10;  // Износ Денари
-            ws.Column(8).Width = 5;   // Износ д.
-            ws.Column(9).Width = 30;  // Забелешка
+            ws.Column(1).Width = 5;    // Ред. Број
+            ws.Column(2).Width = 25;   // Наименование
+            ws.Column(3).Width = 7;    // Ед. мера
+            ws.Column(4).Width = 12;   // Примено
+            ws.Column(5).Width = 10;   // Кало %
+            ws.Column(6).Width = 12;   // Нето
+            ws.Column(7).Width = 10;   // Един. цена
+            ws.Column(8).Width = 14;   // Износ ден.
 
             return WorkbookToBytes(workbook);
         }

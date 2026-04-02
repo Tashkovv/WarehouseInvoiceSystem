@@ -95,8 +95,8 @@
 
         public async Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto)
         {
-            if (!await individualRepository.ExistsAsync(createDto.IndividualId))
-                throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
+            Individual individual = await individualRepository.GetByIdAsync(createDto.IndividualId)
+                ?? throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
 
             if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
@@ -111,6 +111,8 @@
             {
                 ProductId = li.ProductId,
                 Description = li.Description,
+                GrossQuantity = li.GrossQuantity,
+                KaloPercentage = li.KaloPercentage,
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
                 CreatedAt = DateTime.UtcNow,
@@ -145,7 +147,13 @@
             // Only create inventory transactions if goods are actually received (Paid = received + paid)
             // Draft notes do NOT create stock yet
             if (initialStatus == PurchaseNoteStatus.Paid)
-                await CreateInventoryTransactionsAsync(purchaseNote);
+            {
+                // Set navigation property after save so CreateInventoryTransactionsAsync can build the note text.
+                // Must not be set before CreateAsync — the Individual was loaded from a different DbContext
+                // and EF would try to INSERT it again, causing a PK_Individual duplicate key violation.
+                purchaseNote.Individual = individual;
+                await CreateInventoryTransactionsAsync(purchaseNote, individual.FullName);
+            }
         }
 
         // ── Update ────────────────────────────────────────────────────────────────────
@@ -203,6 +211,8 @@
                 {
                     existing.ProductId = li.ProductId;
                     existing.Description = li.Description;
+                    existing.GrossQuantity = li.GrossQuantity;
+                    existing.KaloPercentage = li.KaloPercentage;
                     existing.Quantity = li.Quantity;
                     existing.UnitPrice = li.UnitPrice;
                 }
@@ -212,6 +222,8 @@
                     {
                         ProductId = li.ProductId,
                         Description = li.Description,
+                        GrossQuantity = li.GrossQuantity,
+                        KaloPercentage = li.KaloPercentage,
                         Quantity = li.Quantity,
                         UnitPrice = li.UnitPrice
                     });
@@ -245,7 +257,7 @@
 
             await inventoryService.SoftDeleteTransactionsForDocumentAsync(note.Id, DocumentType);
             await inventoryService.SoftDeleteReversalForDocumentAsync(note.Id, DocumentType);
-            await CreateInventoryTransactionsAsync(note);
+            await CreateInventoryTransactionsAsync(note, note.Individual.FullName);
 
             return MapToDto(note);
         }
@@ -358,9 +370,9 @@
 
         // ── Helpers ───────────────────────────────────────────────────────────────────
 
-        private async Task CreateInventoryTransactionsAsync(PurchaseNote purchaseNote)
+        private async Task CreateInventoryTransactionsAsync(PurchaseNote purchaseNote, string individualName)
         {
-            string note = $"{localizationService.GetString("PurchaseFrom")} {purchaseNote.Individual?.FullName} - {purchaseNote.NoteNumber}";
+            string note = $"{localizationService.GetString("PurchaseFrom")} {individualName} - {purchaseNote.NoteNumber}";
 
             IEnumerable<CreateInventoryTransactionDto> items = purchaseNote.LineItems.Select(line =>
                 new CreateInventoryTransactionDto
@@ -497,6 +509,8 @@
                 ProductName = li.Product.Name,
                 ProductUnit = li.Product.Unit,
                 Description = li.Product.Description ?? string.Empty,
+                GrossQuantity = li.GrossQuantity,
+                KaloPercentage = li.KaloPercentage,
                 Quantity = li.Quantity,
                 UnitPrice = li.UnitPrice,
                 Amount = li.Amount
