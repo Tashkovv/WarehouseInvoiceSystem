@@ -152,26 +152,46 @@
 
             // ── Header area ──────────────────────────────────────────────────────
             int row = 1;
+            bool hasLogo = tenant.LogoData is { Length: > 0 };
+            int infoStartCol = hasLogo ? 3 : 1;
+            int infoEndCol = 5;
 
-            // Company name (centered)
-            ws.Range(row, 1, row, totalCols).Merge().Value = tenant.CompanyName;
-            ws.Range(row, 1, row, totalCols).Style.Font.Bold = true;
-            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 18;
-            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            // Logo (top-left, merged A1:B3, scaled to fit and centered)
+            if (hasLogo)
+            {
+                // Set header row heights for logo area
+                ws.Row(1).Height = 30;
+                ws.Row(2).Height = 30;
+                ws.Row(3).Height = 30;
+
+                IXLRange logoCell = ws.Range(1, 1, 3, 2);
+                logoCell.Merge();
+
+                using MemoryStream logoStream = new(tenant.LogoData!);
+                IXLPicture pic = ws.AddPicture(logoStream);
+
+                // Anchor from A1 top-left to C4 top-left (spans full A1:B3 area)
+                pic.MoveTo(ws.Cell("A1"), 0, 0, ws.Cell("C4"), 0, 0);
+            }
+
+            // Company name
+            ws.Range(row, infoStartCol, row, infoEndCol).Merge().Value = tenant.CompanyName;
+            ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.Bold = true;
+            ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.FontSize = 14;
 
             row++;
-            // Company address (centered)
-            ws.Range(row, 1, row, totalCols).Merge().Value = tenant.Address ?? string.Empty;
-            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 10;
+            // Company address
+            ws.Range(row, infoStartCol, row, infoEndCol).Merge().Value = tenant.Address ?? string.Empty;
+            ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.FontSize = 10;
 
-            // Logo (top-right)
-            if (tenant.LogoData is { Length: > 0 })
+            // Phone / Email
+            row++;
+            string contactLine = string.Join("  |  ",
+                new[] { tenant.Phone, tenant.Email }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            if (!string.IsNullOrEmpty(contactLine))
             {
-                using MemoryStream logoStream = new(tenant.LogoData);
-                ws.AddPicture(logoStream)
-                    .MoveTo(ws.Cell("F1"))
-                    .WithSize(80, 40);
+                ws.Range(row, infoStartCol, row, infoEndCol).Merge().Value = contactLine;
+                ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.FontSize = 9;
             }
 
             // ── Title ────────────────────────────────────────────────────────────
@@ -483,31 +503,50 @@
 
             // ── Header area ─────────────────────────────────────────────────────
             int row = 1;
+            bool pnHasLogo = tenant.LogoData is { Length: > 0 };
+            int pnInfoStartCol = pnHasLogo ? 3 : 1;
+            int pnInfoEndCol = 5;
+
+            // Logo (top-left, merged A1:B3, scaled to fit and centered)
+            if (pnHasLogo)
+            {
+                // Set header row heights for logo area
+                ws.Row(1).Height = 30;
+                ws.Row(2).Height = 30;
+                ws.Row(3).Height = 30;
+
+                IXLRange pnLogoCell = ws.Range(1, 1, 3, 2);
+                pnLogoCell.Merge();
+
+                using MemoryStream logoStream = new(tenant.LogoData!);
+                IXLPicture pic = ws.AddPicture(logoStream);
+
+                // Anchor from A1 top-left to C4 top-left (spans full A1:B3 area)
+                pic.MoveTo(ws.Cell("A1"), 0, 0, ws.Cell("C4"), 0, 0);
+            }
 
             // Row 1: Company name (left) | Date (right)
-            ws.Range(row, 1, row, 4).Merge().Value = tenant.CompanyName;
-            ws.Range(row, 1, row, 4).Style.Font.Bold = true;
-            ws.Range(row, 1, row, 4).Style.Font.FontSize = 11;
-
-            // Logo (top-left, above company)
-            if (tenant.LogoData is { Length: > 0 })
-            {
-                using MemoryStream logoStream = new(tenant.LogoData);
-                ws.AddPicture(logoStream)
-                    .MoveTo(ws.Cell("A1"))
-                    .WithSize(80, 40);
-            }
+            ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Merge().Value = tenant.CompanyName;
+            ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Style.Font.Bold = true;
+            ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Style.Font.FontSize = 11;
 
             ws.Range(row, 6, row, totalCols).Merge().Value = $"На ден {purchaseNote.PurchaseDate:dd.MM.yyyy} год.";
             ws.Range(row, 6, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
 
-            // Row 2: Company address (left)
+            // Row 2: Company address
             row++;
-            ws.Range(row, 1, row, 4).Merge().Value = tenant.Address ?? string.Empty;
-            ws.Range(row, 1, row, 4).Style.Font.FontSize = 9;
+            ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Merge().Value = tenant.Address ?? string.Empty;
+            ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Style.Font.FontSize = 9;
 
-            // Row 3: empty gap
+            // Row 3: Phone / Email
             row++;
+            string pnContactLine = string.Join("  |  ",
+                new[] { tenant.Phone, tenant.Email }.Where(s => !string.IsNullOrWhiteSpace(s)));
+            if (!string.IsNullOrEmpty(pnContactLine))
+            {
+                ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Merge().Value = pnContactLine;
+                ws.Range(row, pnInfoStartCol, row, pnInfoEndCol).Style.Font.FontSize = 9;
+            }
 
             // Row 4: Title + Note number (centered)
             row++;
