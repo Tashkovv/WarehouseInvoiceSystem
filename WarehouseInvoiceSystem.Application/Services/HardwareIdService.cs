@@ -33,7 +33,7 @@ namespace WarehouseInvoiceSystem.Application.Services
             try
             {
                 using var searcher = new ManagementObjectSearcher("SELECT SerialNumber FROM Win32_BaseBoard");
-                foreach (ManagementObject obj in searcher.Get())
+                foreach (ManagementObject obj in searcher.Get().OfType<ManagementObject>())
                 {
                     string? serial = obj["SerialNumber"]?.ToString();
                     if (!string.IsNullOrWhiteSpace(serial))

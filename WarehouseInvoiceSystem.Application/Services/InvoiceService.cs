@@ -105,6 +105,9 @@
 
         public async Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto)
         {
+            if (createDto.LineItems == null || createDto.LineItems.Count == 0)
+                throw new InvalidOperationException("An invoice must have at least one line item.");
+
             if (!await companyRepository.ExistsAsync(createDto.CompanyId))
                 throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
 
@@ -159,6 +162,9 @@
 
         public async Task UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto)
         {
+            if (updateDto.LineItems == null || updateDto.LineItems.Count == 0)
+                throw new InvalidOperationException("An invoice must have at least one line item.");
+
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
 
@@ -261,8 +267,9 @@
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id);
             if (invoice == null) return false;
 
-            if (invoice.Status != InvoiceStatus.Draft && invoice.Status != InvoiceStatus.Cancelled)
-                await CreateReverseTransactionsIfNeeded(invoice);
+            if (invoice.Status != InvoiceStatus.Cancelled)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} can only be deleted when Cancelled (current: {invoice.Status}).");
 
             return await invoiceRepository.DeleteAsync(id);
         }
@@ -413,6 +420,10 @@
         {
             Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status != InvoiceStatus.Confirmed && invoice.Status != InvoiceStatus.PartiallyPaid)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} can only be marked as overdue from Confirmed or PartiallyPaid (current: {invoice.Status}).");
 
             invoice.Status = InvoiceStatus.Overdue;
             Invoice updated = await invoiceRepository.UpdateAsync(invoice);
