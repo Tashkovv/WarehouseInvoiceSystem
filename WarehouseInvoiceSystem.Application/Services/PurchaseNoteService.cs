@@ -95,6 +95,9 @@
 
         public async Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto)
         {
+            if (createDto.LineItems == null || createDto.LineItems.Count == 0)
+                throw new InvalidOperationException("A purchase note must have at least one line item.");
+
             Individual individual = await individualRepository.GetByIdAsync(createDto.IndividualId)
                 ?? throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
 
@@ -113,7 +116,7 @@
                 Description = li.Description,
                 GrossQuantity = li.GrossQuantity,
                 KaloPercentage = li.KaloPercentage,
-                Quantity = li.Quantity,
+                Quantity = CalculateNetQuantity(li.GrossQuantity, li.KaloPercentage),
                 UnitPrice = li.UnitPrice,
                 CreatedAt = DateTime.UtcNow,
             })];
@@ -160,6 +163,9 @@
 
         public async Task UpdatePurchaseNoteAsync(Guid id, UpdatePurchaseNoteDto updateDto)
         {
+            if (updateDto.LineItems == null || updateDto.LineItems.Count == 0)
+                throw new InvalidOperationException("A purchase note must have at least one line item.");
+
             PurchaseNote? purchaseNote = await purchaseNoteRepository.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
 
@@ -213,7 +219,7 @@
                     existing.Description = li.Description;
                     existing.GrossQuantity = li.GrossQuantity;
                     existing.KaloPercentage = li.KaloPercentage;
-                    existing.Quantity = li.Quantity;
+                    existing.Quantity = CalculateNetQuantity(li.GrossQuantity, li.KaloPercentage);
                     existing.UnitPrice = li.UnitPrice;
                 }
                 else
@@ -224,7 +230,7 @@
                         Description = li.Description,
                         GrossQuantity = li.GrossQuantity,
                         KaloPercentage = li.KaloPercentage,
-                        Quantity = li.Quantity,
+                        Quantity = CalculateNetQuantity(li.GrossQuantity, li.KaloPercentage),
                         UnitPrice = li.UnitPrice
                     });
                 }
@@ -251,13 +257,23 @@
                 throw new InvalidOperationException(
                     $"Purchase note {note.NoteNumber} must be in Draft to receive goods (current: {note.Status}).");
 
+            PurchaseNoteStatus previousStatus = note.Status;
             note.Status = PurchaseNoteStatus.Pending;
 
             await purchaseNoteRepository.UpdateAsync(note);
 
-            await inventoryService.SoftDeleteTransactionsForDocumentAsync(note.Id, DocumentType);
-            await inventoryService.SoftDeleteReversalForDocumentAsync(note.Id, DocumentType);
-            await CreateInventoryTransactionsAsync(note, note.Individual.FullName);
+            try
+            {
+                await inventoryService.SoftDeleteTransactionsForDocumentAsync(note.Id, DocumentType);
+                await inventoryService.SoftDeleteReversalForDocumentAsync(note.Id, DocumentType);
+                await CreateInventoryTransactionsAsync(note, note.Individual.FullName);
+            }
+            catch (Exception)
+            {
+                note.Status = previousStatus;
+                await purchaseNoteRepository.UpdateAsync(note);
+                throw;
+            }
 
             return MapToDto(note);
         }
@@ -369,6 +385,9 @@
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────────────
+
+        private static decimal CalculateNetQuantity(decimal grossQuantity, decimal kaloPercentage)
+            => grossQuantity * (1 - kaloPercentage / 100);
 
         private async Task CreateInventoryTransactionsAsync(PurchaseNote purchaseNote, string individualName)
         {
