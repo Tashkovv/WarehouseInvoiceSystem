@@ -283,6 +283,11 @@
 
         public async Task<bool> DeleteProductAsync(Guid id)
         {
+            Product? product = await productRepository.GetByIdAsync(id);
+            if (product == null) return false;
+            if (product.IsActive)
+                throw new InvalidOperationException(
+                    $"Product '{product.Code}' must be deactivated before it can be deleted.");
             return await productRepository.DeleteAsync(id);
         }
 
