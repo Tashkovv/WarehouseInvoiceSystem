@@ -20,7 +20,11 @@
             builder.Property(e => e.OperatorName).HasMaxLength(100);
             builder.Property(e => e.Address).HasMaxLength(500);
             builder.Property(e => e.Phone).HasMaxLength(50);
-            builder.Property(e => e.Website).HasMaxLength(200);
+            builder.Property(e => e.TaxId).HasMaxLength(50);
+            builder.Property(e => e.Embs).HasMaxLength(50);
+            builder.Property(e => e.BankAccount).HasMaxLength(50);
+            builder.Property(e => e.BankName).HasMaxLength(200);
+            builder.Property(e => e.BankBranch).HasMaxLength(200);
             builder.Property(e => e.Email).HasMaxLength(100);
             builder.Property(e => e.EmailPasswordEncrypted).HasMaxLength(500);
 

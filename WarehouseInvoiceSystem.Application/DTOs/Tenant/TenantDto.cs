@@ -7,7 +7,11 @@
         public string? OperatorName { get; set; }
         public string? Address { get; set; }
         public string? Phone { get; set; }
-        public string? Website { get; set; }
+        public string? TaxId { get; set; }
+        public string? Embs { get; set; }
+        public string? BankAccount { get; set; }
+        public string? BankName { get; set; }
+        public string? BankBranch { get; set; }
         public string? Email { get; set; }
 
         /// <summary>

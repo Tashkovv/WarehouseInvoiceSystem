@@ -19,54 +19,103 @@ else
 {
     <MudStack Spacing="4">
 
-        @* ── Company Info ─────────────────────────────────────────────────── *@
-        <MudCard Elevation="2">
-            <MudCardHeader>
-                <CardHeaderAvatar>
-                    <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
-                </CardHeaderAvatar>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">@Localization.GetString("CompanyInfo")</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudDivider />
-            <MudCardContent>
-                <MudGrid>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField @bind-Value="_companyName"
-                                      Label="@Localization.GetString("Name")"
-                                      Variant="Variant.Outlined"
-                                      Required="true"
-                                      RequiredError="@Localization.GetString("CompanyName")"
-                                      MaxLength="200"
-                                      FullWidth="true" />
-                    </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField @bind-Value="_website"
-                                      Label="@Localization.GetString("Website")"
-                                      Variant="Variant.Outlined"
-                                      MaxLength="200"
-                                      FullWidth="true" />
-                    </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField @bind-Value="_phone"
-                                      Label="@Localization.GetString("Phone")"
-                                      Variant="Variant.Outlined"
-                                      MaxLength="50"
-                                      FullWidth="true" />
-                    </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField @bind-Value="_address"
-                                      Label="@Localization.GetString("Address")"
-                                      Variant="Variant.Outlined"
-                                      MaxLength="500"
-                                      FullWidth="true" />
-                    </MudItem>
-                </MudGrid>
-            </MudCardContent>
-        </MudCard>
+        @* ── Row 1: Company Info + Banking ───────────────────────────────── *@
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudCard Elevation="2" Style="height: 100%;">
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("CompanyInfo")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudDivider />
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_companyName"
+                                              Label="@Localization.GetString("Name")"
+                                              Variant="Variant.Outlined"
+                                              Required="true"
+                                              RequiredError="@Localization.GetString("CompanyName")"
+                                              MaxLength="200"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_taxId"
+                                              Label="@Localization.GetString("TaxId")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="50"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_embs"
+                                              Label="@Localization.GetString("Embs")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="50"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_phone"
+                                              Label="@Localization.GetString("Phone")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="50"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_address"
+                                              Label="@Localization.GetString("Address")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="500"
+                                              FullWidth="true" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudCard Elevation="2" Style="height: 100%;">
+                    <MudCardHeader>
+                        <CardHeaderAvatar>
+                            <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Color="Color.Primary" />
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("BankingSection")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudDivider />
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_bankAccount"
+                                              Label="@Localization.GetString("BankAccount")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="50"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_bankName"
+                                              Label="@Localization.GetString("BankName")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="200"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_bankBranch"
+                                              Label="@Localization.GetString("BankBranch")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="200"
+                                              FullWidth="true" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
 
-        @* ── Operator & Logo ───────────────────────────────────────────────── *@
+        @* ── Row 2: Operator & Email + Logo ──────────────────────────────── *@
         <MudGrid>
             <MudItem xs="12" sm="6">
                 <MudCard Elevation="2" Style="height: 100%;">
@@ -75,17 +124,42 @@ else
                             <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
                         </CardHeaderAvatar>
                         <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@Localization.GetString("OperatorSection")</MudText>
+                            <MudText Typo="Typo.h6">@Localization.GetString("OperatorAndEmail")</MudText>
                         </CardHeaderContent>
                     </MudCardHeader>
                     <MudDivider />
                     <MudCardContent>
-                        <MudTextField @bind-Value="_operatorName"
-                                      Label="@Localization.GetString("Name")"
-                                      Variant="Variant.Outlined"
-                                      MaxLength="100"
-                                      FullWidth="true"
-                                      HelperText="@Localization.GetString("OperatorNameHelp")" />
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudTextField @bind-Value="_operatorName"
+                                              Label="@Localization.GetString("OperatorName")"
+                                              Variant="Variant.Outlined"
+                                              MaxLength="100"
+                                              FullWidth="true"
+                                              HelperText="@Localization.GetString("OperatorNameHelp")" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_email"
+                                              Label="@Localization.GetString("Email")"
+                                              Variant="Variant.Outlined"
+                                              InputType="InputType.Email"
+                                              MaxLength="100"
+                                              FullWidth="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="_emailPassword"
+                                              Label="@Localization.GetString("EmailPassword")"
+                                              Variant="Variant.Outlined"
+                                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                              MaxLength="200"
+                                              FullWidth="true"
+                                              HelperText="@PasswordHelperText"
+                                              Adornment="Adornment.End"
+                                              AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                              AdornmentAriaLabel="Toggle password visibility"
+                                              OnAdornmentClick="() => _showPassword = !_showPassword" />
+                            </MudItem>
+                        </MudGrid>
                     </MudCardContent>
                 </MudCard>
             </MudItem>
@@ -130,44 +204,6 @@ else
             </MudItem>
         </MudGrid>
 
-        @* ── Email ────────────────────────────────────────────────────────── *@
-        <MudCard Elevation="2">
-            <MudCardHeader>
-                <CardHeaderAvatar>
-                    <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Primary" />
-                </CardHeaderAvatar>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h6">@Localization.GetString("EmailSection")</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudDivider />
-            <MudCardContent>
-                <MudGrid>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField @bind-Value="_email"
-                                      Label="@Localization.GetString("Email")"
-                                      Variant="Variant.Outlined"
-                                      InputType="InputType.Email"
-                                      MaxLength="100"
-                                      FullWidth="true" />
-                    </MudItem>
-                    <MudItem xs="12" sm="6">
-                        <MudTextField @bind-Value="_emailPassword"
-                                      Label="@Localization.GetString("EmailPassword")"
-                                      Variant="Variant.Outlined"
-                                      InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                                      MaxLength="200"
-                                      FullWidth="true"
-                                      HelperText="@PasswordHelperText"
-                                      Adornment="Adornment.End"
-                                      AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                                      AdornmentAriaLabel="Toggle password visibility"
-                                      OnAdornmentClick="() => _showPassword = !_showPassword" />
-                    </MudItem>
-                </MudGrid>
-            </MudCardContent>
-        </MudCard>
-
         @* ── Save ─────────────────────────────────────────────────────────── *@
         <MudStack Row="true" Justify="Justify.FlexEnd">
             <WisButton Action="@_saveAction" ButtonSize="Size.Large"/>
@@ -182,7 +218,11 @@ else
     private string? _operatorName;
     private string? _address;
     private string? _phone;
-    private string? _website;
+    private string? _taxId;
+    private string? _embs;
+    private string? _bankAccount;
+    private string? _bankName;
+    private string? _bankBranch;
     private string? _email;
     private string? _emailPassword;
     private bool _showPassword;
@@ -244,7 +284,11 @@ else
         _operatorName        = tenant.OperatorName;
         _address             = tenant.Address;
         _phone               = tenant.Phone;
-        _website             = tenant.Website;
+        _taxId               = tenant.TaxId;
+        _embs                = tenant.Embs;
+        _bankAccount         = tenant.BankAccount;
+        _bankName            = tenant.BankName;
+        _bankBranch          = tenant.BankBranch;
         _email               = tenant.Email;
         _hasExistingPassword = tenant.HasEmailPassword;
 
@@ -298,7 +342,11 @@ else
                 OperatorName  = _operatorName?.Trim(),
                 Address       = _address?.Trim(),
                 Phone         = _phone?.Trim(),
-                Website       = _website?.Trim(),
+                TaxId         = _taxId?.Trim(),
+                Embs          = _embs?.Trim(),
+                BankAccount   = _bankAccount?.Trim(),
+                BankName      = _bankName?.Trim(),
+                BankBranch    = _bankBranch?.Trim(),
                 Email         = _email?.Trim(),
                 EmailPassword = _emailPassword,
             }, _cts.Token);

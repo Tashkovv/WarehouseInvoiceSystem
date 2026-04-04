@@ -2,6 +2,7 @@
 {
     using ClosedXML.Excel;
     using ClosedXML.Excel.Drawings;
+    using DocumentFormat.OpenXml.Wordprocessing;
     using WarehouseInvoiceSystem.Application.DTOs.Invoice;
     using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
     using WarehouseInvoiceSystem.Application.DTOs.Tenant;
@@ -139,9 +140,26 @@
             IXLWorksheet ws = workbook.Worksheets.Add(translations.GetString("Invoice"));
 
             bool hasDiscount = invoice.DiscountTotal > 0;
-            int totalCols = hasDiscount ? 7 : 6; // #, Description, Quantity, UnitPrice, TaxRate, [Discount], Amount
+            int totalCols = hasDiscount ? 7 : 6;
 
-            // ── Page setup ───────────────────────────────────────────────────────
+            SetupInvoicePage(ws);
+
+            int row = WriteInvoiceHeader(ws, tenant);
+            row = WriteInvoiceTitle(ws, row, totalCols);
+            row = WriteInvoiceDetails(ws, row, invoice);
+            row = WriteInvoiceLineItems(ws, row, invoice, hasDiscount, totalCols);
+            row = WriteInvoiceTotalsAndPayment(ws, row, invoice, tenant, hasDiscount, totalCols);
+            row = WriteInvoiceNotes(ws, row, invoice, totalCols);
+            row = WriteInvoiceSigningArea(ws, row, invoice, tenant);
+            row = WriteInvoicePenaltyNotice(ws, row, invoice, totalCols);
+            WriteInvoiceFooter(ws, row, totalCols);
+
+            SetInvoiceColumnWidths(ws);
+            return WorkbookToBytes(workbook);
+        }
+
+        private static void SetupInvoicePage(IXLWorksheet ws)
+        {
             ws.PageSetup.PageOrientation = XLPageOrientation.Portrait;
             ws.PageSetup.PaperSize = XLPaperSize.LetterPaper;
             ws.PageSetup.Margins.Left = 0.5;
@@ -149,64 +167,67 @@
             ws.PageSetup.Margins.Top = 0.75;
             ws.PageSetup.Margins.Bottom = 0.75;
             ws.PageSetup.CenterHorizontally = true;
+        }
 
-            // ── Header area ──────────────────────────────────────────────────────
+        private static int WriteInvoiceHeader(IXLWorksheet ws, TenantDto tenant)
+        {
             int row = 1;
             bool hasLogo = tenant.LogoData is { Length: > 0 };
             int infoStartCol = hasLogo ? 3 : 1;
             int infoEndCol = 5;
 
-            // Logo (top-left, merged A1:B3, scaled to fit and centered)
             if (hasLogo)
             {
-                // Set header row heights for logo area
                 ws.Row(1).Height = 30;
                 ws.Row(2).Height = 30;
                 ws.Row(3).Height = 30;
 
-                IXLRange logoCell = ws.Range(1, 1, 3, 2);
-                logoCell.Merge();
-
+                ws.Range(1, 1, 3, 2).Merge();
                 using MemoryStream logoStream = new(tenant.LogoData!);
                 IXLPicture pic = ws.AddPicture(logoStream);
-
-                // Anchor from A1 top-left to C4 top-left (spans full A1:B3 area)
                 pic.MoveTo(ws.Cell("A1"), 0, 0, ws.Cell("C4"), 0, 0);
             }
 
-            // Company name
-            ws.Range(row, infoStartCol, row, infoEndCol).Merge().Value = tenant.CompanyName;
-            ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.Bold = true;
-            ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.FontSize = 14;
+            IXLRange nameRange = ws.Range(row, infoStartCol, row, infoEndCol).Merge();
+            nameRange.Value = tenant.CompanyName;
+            nameRange.Style.Font.Bold = true;
+            nameRange.Style.Font.FontSize = 14;
 
             row++;
-            // Company address
-            ws.Range(row, infoStartCol, row, infoEndCol).Merge().Value = tenant.Address ?? string.Empty;
-            ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.FontSize = 10;
+            IXLRange addrRange = ws.Range(row, infoStartCol, row, infoEndCol).Merge();
+            addrRange.Value = tenant.Address ?? string.Empty;
+            addrRange.Style.Font.FontSize = 10;
 
-            // Phone / Email
             row++;
             string contactLine = string.Join("  |  ",
                 new[] { tenant.Phone, tenant.Email }.Where(s => !string.IsNullOrWhiteSpace(s)));
             if (!string.IsNullOrEmpty(contactLine))
             {
-                ws.Range(row, infoStartCol, row, infoEndCol).Merge().Value = contactLine;
-                ws.Range(row, infoStartCol, row, infoEndCol).Style.Font.FontSize = 9;
+                IXLRange contactRange = ws.Range(row, infoStartCol, row, infoEndCol).Merge();
+                contactRange.Value = contactLine;
+                contactRange.Style.Font.FontSize = 9;
             }
 
-            // ── Title ────────────────────────────────────────────────────────────
-            row += 2;
-            ws.Range(row, 1, row, totalCols).Merge().Value = translations.GetString("Invoice").ToUpper();
-            ws.Range(row, 1, row, totalCols).Style.Font.Bold = true;
-            ws.Range(row, 1, row, totalCols).Style.Font.FontSize = 16;
-            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Range(row, 1, row, totalCols).Style.Fill.BackgroundColor = XLColor.LightGray;
+            return row;
+        }
 
-            // ── Invoice details ──────────────────────────────────────────────────
+        private int WriteInvoiceTitle(IXLWorksheet ws, int row, int totalCols)
+        {
+            row += 2;
+            IXLRange titleRange = ws.Range(row, 1, row, totalCols).Merge();
+            titleRange.Value = translations.GetString("Invoice").ToUpper();
+            titleRange.Style.Font.Bold = true;
+            titleRange.Style.Font.FontSize = 16;
+            titleRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            titleRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+            return row;
+        }
+
+        private int WriteInvoiceDetails(IXLWorksheet ws, int row, InvoiceDto invoice)
+        {
             row += 2;
             int detailsStartRow = row;
 
-            // Left side: Bill From/To + company name
             ws.Cell(row, 1).Value = invoice.Type == InvoiceType.Receivable
                 ? $"{translations.GetString("BillFrom")}:"
                 : $"{translations.GetString("BillTo")}:";
@@ -216,16 +237,18 @@
             ws.Cell(row, 1).Value = invoice.CompanyName;
             ws.Cell(row, 1).Style.Font.FontSize = 12;
 
-            // Right side: invoice number, issue date, due date
             row = detailsStartRow;
             WriteDetailRow(ws, row, 5, translations.GetString("InvoiceNumber"), invoice.InvoiceNumber);
             row++;
             WriteDetailRow(ws, row, 5, translations.GetString("IssueDate"), invoice.IssueDate.ToString(dateFormat));
             row++;
             WriteDetailRow(ws, row, 5, translations.GetString("DueDate"), invoice.DueDate.ToString(dateFormat));
+            return row;
+        }
 
-            // ── Line items table ─────────────────────────────────────────────────
-            row += 3;
+        private int WriteInvoiceLineItems(IXLWorksheet ws, int row, InvoiceDto invoice, bool hasDiscount, int totalCols)
+        {
+            row += 2;
 
             ws.Cell(row, 1).Value = "#";
             ws.Cell(row, 2).Value = translations.GetString("Product");
@@ -243,7 +266,6 @@
             headerRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
             headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-            // Data rows
             int itemNumber = 1;
             foreach (InvoiceLineDto line in invoice.LineItems)
             {
@@ -260,9 +282,21 @@
                 ws.Range(row, 1, row, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
             }
 
-            // ── Totals section ───────────────────────────────────────────────────
+            return row;
+        }
+
+        private int WriteInvoiceTotalsAndPayment(IXLWorksheet ws, int row, InvoiceDto invoice,
+            TenantDto tenant, bool hasDiscount, int totalCols)
+        {
             int labelCol = totalCols - 1;
             row += 2;
+
+            // Payment info (left side, cols 1-3) — only for receivable invoices
+            bool hasPayment = invoice.Type == InvoiceType.Receivable && !string.IsNullOrWhiteSpace(tenant.BankAccount);
+            if (hasPayment)
+                WritePaymentInfo(ws, row, tenant);
+
+            // Totals (right side)
             WriteTotalLine(ws, row, labelCol, $"{translations.GetString("Subtotal")}:", invoice.SubTotal.ToString("C"));
             if (hasDiscount)
             {
@@ -272,7 +306,6 @@
             row++;
             WriteTotalLine(ws, row, labelCol, $"{translations.GetString("Tax")}:", invoice.TaxAmount.ToString("C"));
 
-            // Grand total (highlighted)
             row++;
             WriteTotalLine(ws, row, labelCol, $"{translations.GetString(totalString).ToUpper()}:", invoice.TotalAmount.ToString("C"));
             ws.Range(row, labelCol, row, totalCols).Style.Font.FontSize = 14;
@@ -282,31 +315,116 @@
             row++;
             WriteTotalLine(ws, row, labelCol, $"{translations.GetString("AmountPaid")}:", invoice.AmountPaid.ToString("C"));
 
-            // Amount due (highlighted)
             row++;
             WriteTotalLine(ws, row, labelCol, $"{translations.GetString("AmountDue").ToUpper()}:", invoice.AmountDue.ToString("C"));
             ws.Range(row, labelCol, row, totalCols).Style.Font.FontSize = 14;
             ws.Range(row, labelCol, row, totalCols).Style.Fill.BackgroundColor = XLColor.Yellow;
             ws.Range(row, labelCol, row, totalCols).Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
-            // ── Notes ────────────────────────────────────────────────────────────
-            if (!string.IsNullOrWhiteSpace(invoice.Notes))
+            return row;
+        }
+
+        private void WritePaymentInfo(IXLWorksheet ws, int startRow, TenantDto tenant)
+        {
+            int pRow = startRow;
+
+            IXLRange titleRange = ws.Range(pRow, 1, pRow, 3).Merge();
+            titleRange.Value = translations.GetString("PaymentSectionTitle");
+            titleRange.Style.Font.Bold = true;
+            titleRange.Style.Font.FontSize = 11;
+
+            pRow++;
+            WritePaymentLine(ws, pRow, $"{translations.GetString("BankAccount")}: {tenant.BankAccount}");
+
+            if (!string.IsNullOrWhiteSpace(tenant.TaxId))
             {
-                row += 3;
-                ws.Cell(row, 1).Value = $"{translations.GetString("Notes")}:";
-                ws.Cell(row, 1).Style.Font.Bold = true;
-                row++;
-                ws.Range(row, 1, row, totalCols).Merge().Value = invoice.Notes;
-                ws.Range(row, 1, row, totalCols).Style.Alignment.WrapText = true;
+                pRow++;
+                WritePaymentLine(ws, pRow, $"ЕДБС: {tenant.TaxId}");
             }
 
-            // ── Footer ──────────────────────────────────────────────────────────
-            row += 3;
-            ws.Range(row, 1, row, totalCols).Merge().Value = translations.GetString("ThankYou");
-            ws.Range(row, 1, row, totalCols).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-            ws.Range(row, 1, row, totalCols).Style.Font.Italic = true;
+            if (!string.IsNullOrWhiteSpace(tenant.BankName))
+            {
+                pRow++;
+                string bankValue = tenant.BankName;
+                if (!string.IsNullOrWhiteSpace(tenant.BankBranch))
+                    bankValue += $", {tenant.BankBranch}";
+                WritePaymentLine(ws, pRow, $"{translations.GetString("BankName")}: {bankValue}");
+            }
+        }
 
-            // ── Column widths ────────────────────────────────────────────────────
+        private static void WritePaymentLine(IXLWorksheet ws, int row, string text)
+        {
+            IXLRange range = ws.Range(row, 1, row, 3).Merge();
+            range.Value = text;
+            range.Style.Font.Bold = true;
+        }
+
+        private int WriteInvoiceNotes(IXLWorksheet ws, int row, InvoiceDto invoice, int totalCols)
+        {
+            if (string.IsNullOrWhiteSpace(invoice.Notes))
+                return row;
+
+            row += 3;
+            ws.Cell(row, 1).Value = $"{translations.GetString("Notes")}:";
+            ws.Cell(row, 1).Style.Font.Bold = true;
+            row++;
+            ws.Range(row, 1, row, totalCols).Merge().Value = invoice.Notes;
+            ws.Range(row, 1, row, totalCols).Style.Alignment.WrapText = true;
+            return row;
+        }
+
+        private int WriteInvoiceSigningArea(IXLWorksheet ws, int row, InvoiceDto invoice, TenantDto tenant)
+        {
+            if (invoice.Type != InvoiceType.Receivable || string.IsNullOrWhiteSpace(tenant.BankAccount) || string.IsNullOrWhiteSpace(tenant.OperatorName))
+                return row;
+
+            row += 2;
+            int signStartRow = row;
+
+            // Label + name on same row
+            ws.Cell(row, 1).Value = $"{translations.GetString("AuthorizedPerson")}:  {tenant.OperatorName}";
+            ws.Cell(row, 1).Style.Font.FontSize = 10;
+            ws.Cell(row, 1).Style.Font.Bold = true;
+            ws.Range(row, 1, row, 3).Merge();
+            ws.Range(row, 1, row, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            // Empty row below for signature
+            row++;
+            ws.Range(row, 1, row, 3).Merge();
+
+            IXLRange signArea = ws.Range(signStartRow, 1, row, 3);
+            signArea.Style.Fill.BackgroundColor = XLColor.LightGray;
+            signArea.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+            return row;
+        }
+
+        private int WriteInvoicePenaltyNotice(IXLWorksheet ws, int row, InvoiceDto invoice, int totalCols)
+        {
+            row += 2;
+            int paymentDays = (invoice.DueDate - invoice.IssueDate).Days;
+            string penaltyText = string.Format(translations.GetString("LatePaymentNotice"), paymentDays);
+            IXLRange penaltyRange = ws.Range(row, 1, row, totalCols).Merge();
+            ws.Row(row).Height = 28;
+            penaltyRange.Value = penaltyText;
+            penaltyRange.Style.Font.FontSize = 11;
+            penaltyRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            penaltyRange.Style.Font.Italic = true;
+            penaltyRange.Style.Alignment.WrapText = true;
+            return row;
+        }
+
+        private void WriteInvoiceFooter(IXLWorksheet ws, int row, int totalCols)
+        {
+            row += 1;
+            IXLRange footerRange = ws.Range(row, 1, row, totalCols).Merge();
+            footerRange.Value = translations.GetString("ThankYou");
+            footerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            footerRange.Style.Font.Italic = true;
+        }
+
+        private static void SetInvoiceColumnWidths(IXLWorksheet ws)
+        {
             ws.Column(1).Width = 5;
             ws.Column(2).Width = 35;
             ws.Column(3).Width = 10;
@@ -314,8 +432,6 @@
             ws.Column(5).Width = 20;
             ws.Column(6).Width = 18;
             ws.Column(7).AdjustToContents();
-
-            return WorkbookToBytes(workbook);
         }
 
         private static void WriteDetailRow(IXLWorksheet ws, int row, int labelCol, string label, string value)
@@ -323,7 +439,6 @@
             ws.Cell(row, labelCol).Value = $"{label}:";
             ws.Cell(row, labelCol).Style.Font.Bold = true;
             ws.Cell(row, labelCol + 1).Value = value;
-            ws.Range(row, labelCol + 1, row, labelCol + 2).Merge();
         }
 
         private static void WriteTotalLine(IXLWorksheet ws, int row, int labelCol, string label, string value)

@@ -336,7 +336,6 @@
             List<string> lines = [];
             if (!string.IsNullOrWhiteSpace(tenant.Address)) lines.Add(tenant.Address);
             if (!string.IsNullOrWhiteSpace(tenant.Phone)) lines.Add(tenant.Phone);
-            if (!string.IsNullOrWhiteSpace(tenant.Website)) lines.Add(tenant.Website);
             return string.Join("", lines.Select(l => $"<p>{l}</p>"));
         }
 

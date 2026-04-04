@@ -23,7 +23,11 @@
             tenant.OperatorName = dto.OperatorName;
             tenant.Address = dto.Address;
             tenant.Phone = dto.Phone;
-            tenant.Website = dto.Website;
+            tenant.TaxId = dto.TaxId;
+            tenant.Embs = dto.Embs;
+            tenant.BankAccount = dto.BankAccount;
+            tenant.BankName = dto.BankName;
+            tenant.BankBranch = dto.BankBranch;
             tenant.Email = dto.Email;
 
             // Only replace the stored password when the caller supplies a new one.
@@ -59,7 +63,11 @@
             OperatorName = tenant.OperatorName,
             Address = tenant.Address,
             Phone = tenant.Phone,
-            Website = tenant.Website,
+            TaxId = tenant.TaxId,
+            Embs = tenant.Embs,
+            BankAccount = tenant.BankAccount,
+            BankName = tenant.BankName,
+            BankBranch = tenant.BankBranch,
             Email = tenant.Email,
             HasEmailPassword = !string.IsNullOrEmpty(tenant.EmailPasswordEncrypted),
             LogoData = tenant.LogoData,
