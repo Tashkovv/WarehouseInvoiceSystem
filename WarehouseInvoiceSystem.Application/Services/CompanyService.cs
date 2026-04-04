@@ -137,7 +137,7 @@
             analytics.ReceivableTotalCount      = recActive.Sum(r => r.Count);
             analytics.ReceivableTotalAmount     = recActive.Sum(r => r.TotalAmount);
             analytics.ReceivablePaidCount       = recPaid.Sum(r => r.Count);
-            analytics.ReceivablePaidAmount      = recActive.Sum(r => r.AmountPaid);
+            analytics.ReceivablePaidAmount      = recPaid.Sum(r => r.AmountPaid);
             analytics.ReceivableOpenCount       = recOpen.Sum(r => r.Count);
             analytics.ReceivableAmountDue       = recOpen.Sum(r => r.AmountDue);
             analytics.ReceivableOverdueCount    = recOverdue.Sum(r => r.Count);
@@ -157,7 +157,7 @@
             analytics.PayableTotalCount      = payActive.Sum(r => r.Count);
             analytics.PayableTotalAmount     = payActive.Sum(r => r.TotalAmount);
             analytics.PayablePaidCount       = payPaid.Sum(r => r.Count);
-            analytics.PayablePaidAmount      = payActive.Sum(r => r.AmountPaid);
+            analytics.PayablePaidAmount      = payPaid.Sum(r => r.AmountPaid);
             analytics.PayableOpenCount       = payOpen.Sum(r => r.Count);
             analytics.PayableAmountDue       = payOpen.Sum(r => r.AmountDue);
             analytics.PayableOverdueCount    = payOverdue.Sum(r => r.Count);
