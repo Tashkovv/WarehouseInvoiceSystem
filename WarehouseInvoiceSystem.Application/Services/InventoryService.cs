@@ -140,9 +140,15 @@
 
         public async Task<IEnumerable<InventoryTransactionDto>> GetAllFilteredTransactionsAsync(GetInventoryTransactionsQuery query, CancellationToken ct = default)
         {
-            query.Page = 1;
-            query.PageSize = int.MaxValue;
-            PagedResult<InventoryTransaction> result = await transactionRepository.GetPagedByProductAsync(query, ct);
+            var unpaged = new GetInventoryTransactionsQuery
+            {
+                ProductId = query.ProductId,
+                WarehouseId = query.WarehouseId,
+                Types = query.Types,
+                Page = 1,
+                PageSize = int.MaxValue
+            };
+            PagedResult<InventoryTransaction> result = await transactionRepository.GetPagedByProductAsync(unpaged, ct);
             return result.Items.Select(MapTransactionToDto);
         }
 
@@ -253,7 +259,7 @@
             List<InventoryTransaction> transactions = dtos.Select(d => new InventoryTransaction
             {
                 ProductId = d.ProductId,
-                WarehouseId = d.WarehouseId,
+                WarehouseId = warehouseId,
                 Type = d.Type,
                 Quantity = d.Quantity,
                 SourceDocumentId = d.SourceDocumentId,
@@ -280,7 +286,7 @@
                 InventoryTransactionType.TransferOut => -transaction.Quantity,
                 InventoryTransactionType.Adjustment => transaction.Quantity,
                 InventoryTransactionType.Reversed => transaction.Quantity, // signed: negated at creation
-                _ => 0
+                _ => throw new ArgumentOutOfRangeException(nameof(transaction), $"Unknown transaction type: {transaction.Type}")
             };
 
         private Task UpdateStockFromTransactionAsync(InventoryTransaction transaction)
