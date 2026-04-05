@@ -38,36 +38,35 @@
 
         public async Task<WarehouseDto?> GetWarehouseByIdAsync(Guid id, CancellationToken ct = default)
         {
-            Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id);
+            Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id, ct);
             return warehouse == null ? null : MapToDto(warehouse);
         }
 
         public async Task<WarehouseDto?> GetDefaultWarehouseAsync(CancellationToken ct = default)
         {
-            Warehouse? warehouse = await warehouseRepository.GetDefaultWarehouseAsync();
+            Warehouse? warehouse = await warehouseRepository.GetDefaultWarehouseAsync(ct);
             return warehouse == null ? null : MapToDto(warehouse);
         }
 
         public async Task<bool> SetDefaultWarehouseAsync(Guid id)
         {
             Warehouse? defaultWarehouse = await warehouseRepository.GetDefaultWarehouseAsync();
-            if (defaultWarehouse == null)
-            {
-                return false;
-            }
 
-            if (defaultWarehouse.Id == id)
+            if (defaultWarehouse?.Id == id)
             {
                 return true;
             }
-
-            defaultWarehouse.IsDefault = false;
-            await warehouseRepository.UpdateAsync(defaultWarehouse);
 
             Warehouse? newDefaultWarehouse = await warehouseRepository.GetByIdAsync(id);
             if (newDefaultWarehouse == null)
             {
                 return false;
+            }
+
+            if (defaultWarehouse != null)
+            {
+                defaultWarehouse.IsDefault = false;
+                await warehouseRepository.UpdateAsync(defaultWarehouse);
             }
 
             newDefaultWarehouse.IsDefault = true;
@@ -110,6 +109,13 @@
 
         public async Task<bool> SetActiveStatusAsync(Guid id, bool isActive)
         {
+            if (!isActive)
+            {
+                Warehouse? warehouse = await warehouseRepository.GetByIdAsync(id);
+                if (warehouse is { IsDefault: true })
+                    throw new InvalidOperationException("Cannot deactivate the default warehouse.");
+            }
+
             return await warehouseRepository.SetActiveStatusAsync(id, isActive);
         }
 
