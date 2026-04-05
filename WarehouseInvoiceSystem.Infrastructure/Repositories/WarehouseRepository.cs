@@ -45,6 +45,18 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(context =>
                 context.StockLevels.AnyAsync(s => s.WarehouseId == id && s.Quantity > 0, ct));
 
+        public Task<HashSet<Guid>> GetWarehouseIdsWithProductsAsync(IEnumerable<Guid> warehouseIds, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                List<Guid> ids = warehouseIds.ToList();
+                List<Guid> result = await context.StockLevels
+                    .Where(s => ids.Contains(s.WarehouseId) && s.Quantity > 0)
+                    .Select(s => s.WarehouseId)
+                    .Distinct()
+                    .ToListAsync(ct);
+                return result.ToHashSet();
+            });
+
         public Task<Warehouse?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>
                 All<Warehouse>(context).FirstOrDefaultAsync(w => w.Id == id, ct));

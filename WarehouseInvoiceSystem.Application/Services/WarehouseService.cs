@@ -19,17 +19,12 @@
         {
             PagedResult<Warehouse> result = await warehouseRepository.GetPagedAsync(query, ct);
 
-            // Check HasProducts for each warehouse in the page
-            List<WarehouseDto> items = [];
-            foreach (Warehouse w in result.Items)
-            {
-                bool hasProducts = await warehouseRepository.HasProductsAsync(w.Id, ct);
-                items.Add(MapToDto(w, hasProducts));
-            }
+            HashSet<Guid> idsWithProducts = await warehouseRepository
+                .GetWarehouseIdsWithProductsAsync(result.Items.Select(w => w.Id), ct);
 
             return new PagedResult<WarehouseDto>
             {
-                Items = items,
+                Items = [.. result.Items.Select(w => MapToDto(w, idsWithProducts.Contains(w.Id)))],
                 TotalCount = result.TotalCount,
                 Page = result.Page,
                 PageSize = result.PageSize

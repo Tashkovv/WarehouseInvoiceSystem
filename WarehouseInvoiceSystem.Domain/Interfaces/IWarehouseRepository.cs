@@ -15,6 +15,7 @@
         Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
 
         Task<bool> HasProductsAsync(Guid id, CancellationToken ct = default);
+        Task<HashSet<Guid>> GetWarehouseIdsWithProductsAsync(IEnumerable<Guid> warehouseIds, CancellationToken ct = default);
         Task CreateAsync(Warehouse warehouse);
         Task UpdateAsync(Warehouse warehouse);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);

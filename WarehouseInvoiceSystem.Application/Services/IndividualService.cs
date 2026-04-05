@@ -37,7 +37,7 @@
 
         public async Task<IndividualDto?> GetIndividualByIdAsync(Guid id, CancellationToken ct = default)
         {
-            Individual? individual = await individualRepository.GetByIdAsync(id);
+            Individual? individual = await individualRepository.GetByIdAsync(id, ct);
             return individual == null ? null : MapToDto(individual);
         }
 
