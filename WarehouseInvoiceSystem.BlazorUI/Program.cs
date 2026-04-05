@@ -82,6 +82,14 @@ builder.Services.AddSingleton<ILicenseService, LicenseService>();
 
 WebApplication app = builder.Build();
 
+// Seed database if --seed flag is passed
+if (args.Contains("--seed"))
+{
+    var dbFactory = app.Services.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+    await SeedData.RunAsync(dbFactory);
+    return;
+}
+
 // Validate license on startup
 var licenseService = app.Services.GetRequiredService<ILicenseService>();
 await licenseService.ValidateAsync();
