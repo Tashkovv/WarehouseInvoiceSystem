@@ -56,6 +56,7 @@ builder.Services.AddTransient<IIndividualRepository, IndividualRepository>();
 builder.Services.AddTransient<IPurchaseNoteRepository, PurchaseNoteRepository>();
 builder.Services.AddTransient<ITenantRepository, TenantRepository>();
 builder.Services.AddTransient<INotificationRepository, NotificationRepository>();
+builder.Services.AddTransient<IAuditLogRepository, AuditLogRepository>();
 
 // Register Services
 builder.Services.AddScoped<ICompanyService, CompanyService>();
@@ -74,6 +75,8 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IAuditContextService, AuditContextService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<WisDialogService>();
 
 // Authentication & Authorization

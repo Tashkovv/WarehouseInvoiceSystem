@@ -65,6 +65,7 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
             int remaining = licenseService.GraceDaysRemaining.Value;
 
             using IServiceScope scope = serviceProvider.CreateScope();
+            scope.ServiceProvider.GetRequiredService<IAuditContextService>().SetUsername("SYSTEM");
             INotificationService notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
             await notificationService.CreateLicenseExpiringNotificationAsync(remaining, ct);
         }
@@ -91,6 +92,7 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
 
             using (IServiceScope scope = serviceProvider.CreateScope())
             {
+                scope.ServiceProvider.GetRequiredService<IAuditContextService>().SetUsername("SYSTEM");
                 IBackgroundJobService backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
                 List<Guid> overdueIds = await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
 
@@ -115,6 +117,7 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
 
             using (IServiceScope scope = serviceProvider.CreateScope())
             {
+                scope.ServiceProvider.GetRequiredService<IAuditContextService>().SetUsername("SYSTEM");
                 using CancellationTokenSource timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 timeoutCts.CancelAfter(TimeSpan.FromMinutes(5));
                 IBackgroundJobService backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();

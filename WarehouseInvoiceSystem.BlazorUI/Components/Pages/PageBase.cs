@@ -17,6 +17,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         [Inject] protected WisDialogService WisDialog { get; set; } = default!;
         [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+        [Inject] private IAuditContextService AuditContext { get; set; } = default!;
 
         protected readonly CancellationTokenSource _cts = new();
         protected WisActionItem _act = null!;
@@ -63,10 +64,16 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             base.OnInitialized();
         }
 
-        protected override Task OnInitializedAsync()
+        protected override async Task OnInitializedAsync()
         {
             _act = new WisActionItem(this);
-            return base.OnInitializedAsync();
+
+            // Set audit context username from auth claims
+            string? username = await GetCurrentUsernameAsync();
+            if (username is not null)
+                AuditContext.SetUsername(username);
+
+            await base.OnInitializedAsync();
         }
 
         protected virtual async void OnLanguageChanged()
