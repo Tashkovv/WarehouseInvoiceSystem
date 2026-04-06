@@ -1,6 +1,7 @@
 namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 {
     using Microsoft.AspNetCore.Components;
+    using Microsoft.AspNetCore.Components.Authorization;
     using Microsoft.JSInterop;
     using MudBlazor;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -15,6 +16,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         [Inject] protected ISnackbar Snackbar { get; set; } = default!;
         [Inject] protected WisDialogService WisDialog { get; set; } = default!;
         [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
+        [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
         protected readonly CancellationTokenSource _cts = new();
         protected WisActionItem _act = null!;
@@ -70,6 +72,12 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         protected virtual async void OnLanguageChanged()
         {
             await InvokeAsync(StateHasChanged);
+        }
+
+        protected async Task<string?> GetCurrentUsernameAsync()
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            return authState.User.Identity?.Name;
         }
 
         protected void NavigateTo(string url) => Navigation.NavigateTo(url);

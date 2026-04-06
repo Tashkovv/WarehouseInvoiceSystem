@@ -1,4 +1,5 @@
 ﻿@page "/invoices"
+@attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Company
@@ -831,7 +832,8 @@
         _exportingRow = true;
         try
         {
-            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(item.Id);
+            string? username = await GetCurrentUsernameAsync();
+            byte[] fileBytes = await ExcelExportService.ExportInvoiceForPrintingAsync(item.Id, username);
             string fileName = $"{Localization.GetString("Invoice")}_{item.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }

@@ -7,8 +7,8 @@
     public interface IExcelExportService
     {
         Task<byte[]> ExportListToExcelAsync<T>(IEnumerable<T> data, IReadOnlyList<ExportColumn<T>> columns, ExportListOptions options);
-        Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId);
-        Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice);
+        Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId, string? username = null);
+        Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice, string? username = null);
         Task<byte[]> ExportPurchaseNoteForPrintingAsync(PurchaseNoteDto purchaseNote);
 
         [Obsolete("Use ExportListToExcelAsync with ExportColumnDefinitions.InvoiceColumns instead")]

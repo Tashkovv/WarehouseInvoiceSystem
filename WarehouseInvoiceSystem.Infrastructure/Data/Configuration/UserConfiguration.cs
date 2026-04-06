@@ -3,6 +3,7 @@
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.Metadata.Builders;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class UserConfiguration : IEntityTypeConfiguration<User>
     {
@@ -20,7 +21,7 @@
             builder.Property(e => e.Username).IsRequired().HasMaxLength(50);
             builder.Property(e => e.Email).IsRequired().HasMaxLength(100);
             builder.Property(e => e.PasswordHash).IsRequired().HasMaxLength(255);
-            builder.Property(e => e.Role).IsRequired().HasMaxLength(50).HasDefaultValue("Viewer");
+            builder.Property(e => e.Role).IsRequired().HasMaxLength(50).HasConversion<string>().HasDefaultValue(UserRole.User);
             builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
             // Indexes

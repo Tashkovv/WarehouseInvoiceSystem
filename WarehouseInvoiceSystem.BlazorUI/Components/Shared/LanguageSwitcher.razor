@@ -1,16 +1,17 @@
 @inject ILocalizationService Localization
 
-<MudIconButton Icon="@Icons.Material.Filled.Language"
-               Color="Color.Inherit"
-               OnClick="@(() => _open = !_open)" />
+<div class="appbar-popover-anchor">
+    <MudIconButton Icon="@Icons.Material.Filled.Language"
+                   Color="Color.Inherit"
+                   OnClick="@(() => _open = !_open)" />
 
-@if (_open)
-{
-    <MudOverlay Visible="true" OnClick="@(() => _open = false)" LockScroll="false" />
-    <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                AnchorOrigin="Origin.BottomRight"
-                TransformOrigin="Origin.TopRight"
-                Style="z-index: 1301; min-width: 160px;">
+    @if (_open)
+    {
+        <MudOverlay Visible="true" OnClick="@(() => _open = false)" LockScroll="false" />
+        <MudPopover Open="true" Fixed="false" Class="pa-0 mud-elevation-4"
+                    AnchorOrigin="Origin.BottomRight"
+                    TransformOrigin="Origin.TopRight"
+                    Style="z-index: 1301; min-width: 160px;">
         <MudList T="string" Dense="true" Class="pa-0">
             <MudListItem OnClick="@(() => SelectLanguage("en"))"
                          Class="px-3 py-2" Style="cursor: pointer;">
@@ -35,8 +36,9 @@
                 </div>
             </MudListItem>
         </MudList>
-    </MudPopover>
-}
+        </MudPopover>
+    }
+</div>
 
 @code {
     private bool _open;

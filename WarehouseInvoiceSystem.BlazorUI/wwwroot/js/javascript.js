@@ -1,4 +1,11 @@
-﻿globalThis.fileDownloadHelper = {
+﻿globalThis.wisAuth = {
+    submitForm: function (formId) {
+        const form = document.getElementById(formId);
+        if (form) form.submit();
+    }
+};
+
+globalThis.fileDownloadHelper = {
     downloadFileFromStream: async function (fileName, contentStreamReference) {
         const arrayBuffer = await contentStreamReference.arrayBuffer();
         const blob = new Blob([arrayBuffer]);

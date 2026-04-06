@@ -121,20 +121,20 @@
             totalsRange.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
         }
 
-        public async Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId)
+        public async Task<byte[]> ExportInvoiceForPrintingAsync(Guid invoiceId, string? username = null)
         {
             InvoiceDto invoice = await invoiceService.GetInvoiceByIdAsync(invoiceId)
                 ?? throw new KeyNotFoundException($"Invoice with ID {invoiceId} not found");
-            return await ExportInvoiceForPrintingAsync(invoice);
+            return await ExportInvoiceForPrintingAsync(invoice, username);
         }
 
-        public async Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice)
+        public async Task<byte[]> ExportInvoiceForPrintingAsync(InvoiceDto invoice, string? username = null)
         {
             TenantDto tenant = await tenantService.GetAsync();
-            return ExportInvoiceForPrinting(invoice, tenant);
+            return ExportInvoiceForPrinting(invoice, tenant, username);
         }
 
-        private byte[] ExportInvoiceForPrinting(InvoiceDto invoice, TenantDto tenant)
+        private byte[] ExportInvoiceForPrinting(InvoiceDto invoice, TenantDto tenant, string? username = null)
         {
             using XLWorkbook workbook = new();
             IXLWorksheet ws = workbook.Worksheets.Add(translations.GetString("Invoice"));
@@ -150,7 +150,7 @@
             row = WriteInvoiceLineItems(ws, row, invoice, hasDiscount, totalCols);
             row = WriteInvoiceTotalsAndPayment(ws, row, invoice, tenant, hasDiscount, totalCols);
             row = WriteInvoiceNotes(ws, row, invoice, totalCols);
-            row = WriteInvoiceSigningArea(ws, row, invoice, tenant);
+            row = WriteInvoiceSigningArea(ws, row, invoice, tenant, username);
             row = WriteInvoicePenaltyNotice(ws, row, invoice, totalCols);
             WriteInvoiceFooter(ws, row, totalCols);
 
@@ -373,16 +373,16 @@
             return row;
         }
 
-        private int WriteInvoiceSigningArea(IXLWorksheet ws, int row, InvoiceDto invoice, TenantDto tenant)
+        private int WriteInvoiceSigningArea(IXLWorksheet ws, int row, InvoiceDto invoice, TenantDto tenant, string? username = null)
         {
-            if (invoice.Type != InvoiceType.Receivable || string.IsNullOrWhiteSpace(tenant.BankAccount) || string.IsNullOrWhiteSpace(tenant.OperatorName))
+            if (invoice.Type != InvoiceType.Receivable || string.IsNullOrWhiteSpace(tenant.BankAccount) || string.IsNullOrWhiteSpace(username))
                 return row;
 
             row += 2;
             int signStartRow = row;
 
             // Label + name on same row
-            ws.Cell(row, 1).Value = $"{translations.GetString("AuthorizedPerson")}:  {tenant.OperatorName}";
+            ws.Cell(row, 1).Value = $"{translations.GetString("AuthorizedPerson")}:  {username}";
             ws.Cell(row, 1).Style.Font.FontSize = 10;
             ws.Cell(row, 1).Style.Font.Bold = true;
             ws.Range(row, 1, row, 3).Merge();

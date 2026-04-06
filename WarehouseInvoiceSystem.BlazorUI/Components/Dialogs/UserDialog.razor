@@ -1,0 +1,180 @@
+@using WarehouseInvoiceSystem.Application.DTOs.User
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject ILocalizationService Localization
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_username"
+                              Label="@Localization.GetString("Username")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("UsernameRequired")"
+                              FullWidth="true"
+                              MaxLength="100" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="_email"
+                              Label="@Localization.GetString("Email")"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              RequiredError="@Localization.GetString("EmailRequired")"
+                              InputType="InputType.Email"
+                              FullWidth="true"
+                              MaxLength="200" />
+            </MudItem>
+            @if (!IsEditMode)
+            {
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_password"
+                                  Label="@Localization.GetString("Password")"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="@Localization.GetString("PasswordRequired")"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="@(() => _showPassword = !_showPassword)"
+                                  FullWidth="true"
+                                  MaxLength="100" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudTextField @bind-Value="_confirmPassword"
+                                  Label="@Localization.GetString("ConfirmPassword")"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="@Localization.GetString("ConfirmPasswordRequired")"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  FullWidth="true"
+                                  MaxLength="100" />
+                </MudItem>
+            }
+            <MudItem xs="12" sm="6">
+                <MudSelect T="UserRole" @bind-Value="_role"
+                           Label="@Localization.GetString("Role")"
+                           Variant="Variant.Outlined"
+                           FullWidth="true">
+                    <MudSelectItem T="UserRole" Value="UserRole.Admin">@Localization.GetString("AdminRole")</MudSelectItem>
+                    <MudSelectItem T="UserRole" Value="UserRole.User">@Localization.GetString("UserRole")</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            @if (IsEditMode)
+            {
+                <MudItem xs="12" sm="6">
+                    <MudSwitch T="bool" @bind-Value="_isActive"
+                               Label="@Localization.GetString("Active")"
+                               Color="Color.Success" />
+                </MudItem>
+            }
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <WisDialogActions OnCancel="Cancel"
+                          OnSave="Save"
+                          SaveDisabled="@(!IsValid || _saving)" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public UserDto? User { get; set; }
+
+    private string _username = string.Empty;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+    private UserRole _role = UserRole.User;
+    private bool _isActive = true;
+    private bool _showPassword;
+    private bool _saving;
+
+    private bool IsEditMode => User is not null;
+
+    private bool IsValid
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_email))
+                return false;
+
+            if (!IsEditMode)
+            {
+                if (string.IsNullOrWhiteSpace(_password) || _password.Length < 6)
+                    return false;
+                if (_password != _confirmPassword)
+                    return false;
+            }
+
+            return true;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (User is not null)
+        {
+            _username = User.Username;
+            _email = User.Email;
+            _role = User.Role;
+            _isActive = User.IsActive;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (!IsEditMode && _password != _confirmPassword)
+        {
+            Snackbar.Add(Localization.GetString("PasswordsDoNotMatch"), Severity.Warning);
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                await UserService.UpdateUserAsync(User!.Id, new UpdateUserDto
+                {
+                    Username = _username,
+                    Email = _email,
+                    Role = _role,
+                    IsActive = _isActive
+                });
+                Snackbar.Add(Localization.GetString("UserUpdated"), Severity.Success);
+            }
+            else
+            {
+                await UserService.CreateUserAsync(new CreateUserDto
+                {
+                    Username = _username,
+                    Email = _email,
+                    Password = _password,
+                    Role = _role
+                });
+                Snackbar.Add(Localization.GetString("UserCreated"), Severity.Success);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving user: {ex.Message}");
+            Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingUser" : "ErrorCreatingUser"), Severity.Error);
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

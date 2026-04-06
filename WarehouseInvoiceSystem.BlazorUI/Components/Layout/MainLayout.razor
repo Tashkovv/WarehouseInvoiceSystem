@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @using Microsoft.Extensions.Options
+@using System.Security.Claims
 @using WarehouseInvoiceSystem.Application.Settings
 @inject ILocalizationService Localization
 @inject IBackgroundJobService BackgroundJobService
@@ -9,6 +10,7 @@
 @inject NavigationManager Navigation
 @inject IOptions<NotificationSettings> NotificationSettingsOptions
 @inject ILicenseService LicenseService
+@inject WisDialogService WisDialog
 
 <MudThemeProvider Theme="_theme" />
 <MudPopoverProvider />
@@ -131,72 +133,122 @@
             <LanguageSwitcher />
             <NotificationBell />
 
-            <!-- Settings -->
-            <MudIconButton Icon="@Icons.Material.Filled.Settings"
-                           Color="Color.Inherit"
-                           OnClick="@(() => _settingsOpen = !_settingsOpen)" />
+            <!-- User info chip -->
+            <AuthorizeView>
+                <Authorized>
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small"
+                             Icon="@Icons.Material.Filled.Person"
+                             Style="color: white; border: 1px solid rgba(255,255,255,0.3);">
+                        @context.User.Identity?.Name
+                        @if (context.User.IsInRole("Admin"))
+                        {
+                            <MudText Typo="Typo.caption" Style="margin-left: 4px; opacity: 0.7;">(Admin)</MudText>
+                        }
+                    </MudChip>
+                </Authorized>
+            </AuthorizeView>
 
-            @if (_settingsOpen)
-            {
-                <MudOverlay Visible="true" OnClick="@(() => _settingsOpen = false)" LockScroll="false" />
-                <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                            AnchorOrigin="Origin.BottomRight"
-                            TransformOrigin="Origin.TopRight"
-                            Style="z-index: 1301; min-width: 220px;">
+            <!-- Settings -->
+            <div class="appbar-popover-anchor">
+                <MudIconButton Icon="@Icons.Material.Filled.Settings"
+                               Color="Color.Inherit"
+                               OnClick="@(() => _settingsOpen = !_settingsOpen)" />
+
+                @if (_settingsOpen)
+                {
+                    <MudOverlay Visible="true" OnClick="@(() => _settingsOpen = false)" LockScroll="false" />
+                    <MudPopover Open="true" Fixed="false" Class="pa-0 mud-elevation-4"
+                                AnchorOrigin="Origin.BottomRight"
+                                TransformOrigin="Origin.TopRight"
+                                Style="z-index: 1301; min-width: 220px;">
                     <MudList T="string" Dense="true" Class="pa-0">
-                        <MudListItem OnClick="@(() => { Navigation.NavigateTo("/profile"); _settingsOpen = false; })"
+                        <AuthorizeView Roles="Admin">
+                            <Authorized>
+                                <MudListItem OnClick="@(() => { Navigation.NavigateTo("/profile"); _settingsOpen = false; })"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Secondary" />
+                                        <span>@Localization.GetString("Profile")</span>
+                                    </div>
+                                </MudListItem>
+                            </Authorized>
+                        </AuthorizeView>
+                        <MudListItem OnClick="@(() => { _settingsOpen = false; _ = OpenChangePasswordDialog(); })"
                                      Class="px-3 py-2" Style="cursor: pointer;">
                             <div class="d-flex align-center gap-2">
-                                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" Color="Color.Secondary" />
-                                <span>@Localization.GetString("Profile")</span>
+                                <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Color="Color.Secondary" />
+                                <span>@Localization.GetString("ChangePassword")</span>
                             </div>
                         </MudListItem>
-                        <MudListItem OnClick="@(() => { Navigation.NavigateTo("/license"); _settingsOpen = false; })"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Color="Color.Secondary" />
-                                <span>@Localization.GetString("License")</span>
-                            </div>
-                        </MudListItem>
+                        <AuthorizeView Roles="Admin">
+                            <Authorized>
+                                <MudListItem OnClick="@(() => { Navigation.NavigateTo("/users"); _settingsOpen = false; })"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Secondary" />
+                                        <span>@Localization.GetString("Users")</span>
+                                    </div>
+                                </MudListItem>
+                                <MudListItem OnClick="@(() => { Navigation.NavigateTo("/license"); _settingsOpen = false; })"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Key" Size="Size.Small" Color="Color.Secondary" />
+                                        <span>@Localization.GetString("License")</span>
+                                    </div>
+                                </MudListItem>
+                                <MudDivider />
+                                <div class="px-4 py-2">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
+                                        @Localization.GetString("SystemJobs")
+                                    </MudText>
+                                </div>
+                                <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunCheckOverdueInvoices(); })"
+                                             Disabled="_runningJob"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        @if (_runningJob)
+                                        {
+                                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
+                                        }
+                                        <span>@Localization.GetString("CheckOverdueInvoices")</span>
+                                    </div>
+                                </MudListItem>
+                                <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunGenerateNotifications(); })"
+                                             Disabled="_runningNotifications"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        @if (_runningNotifications)
+                                        {
+                                            <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                                        }
+                                        else
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Notifications" Size="Size.Small" Color="Color.Secondary" />
+                                        }
+                                        <span>@Localization.GetString("GenerateNotifications")</span>
+                                    </div>
+                                </MudListItem>
+                            </Authorized>
+                        </AuthorizeView>
                         <MudDivider />
-                        <div class="px-4 py-2">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
-                                @Localization.GetString("SystemJobs")
-                            </MudText>
-                        </div>
-                        <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunCheckOverdueInvoices(); })"
-                                     Disabled="_runningJob"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                @if (_runningJob)
-                                {
-                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                                }
-                                else
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Secondary" />
-                                }
-                                <span>@Localization.GetString("CheckOverdueInvoices")</span>
-                            </div>
-                        </MudListItem>
-                        <MudListItem OnClick="@(() => { _settingsOpen = false; _ = RunGenerateNotifications(); })"
-                                     Disabled="_runningNotifications"
-                                     Class="px-3 py-2" Style="cursor: pointer;">
-                            <div class="d-flex align-center gap-2">
-                                @if (_runningNotifications)
-                                {
-                                    <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                                }
-                                else
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Notifications" Size="Size.Small" Color="Color.Secondary" />
-                                }
-                                <span>@Localization.GetString("GenerateNotifications")</span>
-                            </div>
+                        <MudListItem Class="px-3 py-2" Style="cursor: pointer;">
+                            <form method="post" action="/api/auth/logout" style="margin: 0;">
+                                <button type="submit" style="background: none; border: none; cursor: pointer; padding: 0; width: 100%;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" Color="Color.Error" />
+                                        <span style="color: var(--mud-palette-error);">@Localization.GetString("Logout")</span>
+                                    </div>
+                                </button>
+                            </form>
                         </MudListItem>
                     </MudList>
-                </MudPopover>
-            }
+                    </MudPopover>
+                }
+            </div>
         </MudAppBar>
 
         <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
@@ -353,6 +405,13 @@
             Snackbar.Add(Localization.GetString("GenerateNotificationsError"), Severity.Error);
             _runningNotifications = false;
         }
+    }
+
+    private async Task OpenChangePasswordDialog()
+    {
+        await WisDialog.ShowFormAsync<WarehouseInvoiceSystem.BlazorUI.Components.Dialogs.ChangePasswordDialog, bool>(
+            Localization.GetString("ChangePassword"),
+            maxWidth: MaxWidth.Small);
     }
 
     public void Dispose()

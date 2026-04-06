@@ -46,6 +46,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    BankAccount = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -106,7 +107,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     OperatorName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Website = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    TaxId = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    Embs = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    BankAccount = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    BankName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    BankBranch = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     EmailPasswordEncrypted = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     LogoData = table.Column<byte[]>(type: "bytea", nullable: true),
@@ -128,7 +133,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     Username = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     PasswordHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    Role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "Viewer"),
+                    Role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, defaultValue: "User"),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     LastLogin = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -394,7 +399,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     PurchaseNoteId = table.Column<Guid>(type: "uuid", nullable: false),
                     ProductId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Quantity = table.Column<int>(type: "integer", nullable: false),
+                    GrossQuantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
+                    KaloPercentage = table.Column<decimal>(type: "numeric(5,2)", precision: 5, scale: 2, nullable: false),
+                    Quantity = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     UnitPrice = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -697,8 +704,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
             migrationBuilder.Sql("CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;");
             migrationBuilder.Sql("CREATE SEQUENCE IF NOT EXISTS bill_number_seq START 1;");
 
-            // Seed each sequence to the current highest number so existing invoices
-            // are not re-numbered. The subquery returns 0 if no invoices exist yet.
             migrationBuilder.Sql(@"
                 SELECT setval(
                     'invoice_number_seq',
@@ -710,7 +715,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     )
                 );
             ");
-
+            
             migrationBuilder.Sql(@"
                 SELECT setval(
                     'bill_number_seq',
@@ -723,19 +728,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 );
             ");
 
-            // vw_product_purchase_history
-            // UNIONs purchase-note lines (individual vendors) and payable invoice lines
-            // (company vendors) into a single queryable shape so the purchased transaction
-            // history can be filtered, sorted, and paginated entirely in SQL.
-            //
-            // Enum values used:
-            //   PurchaseNoteStatus.Cancelled = 4
-            //   InvoiceStatus.Cancelled      = 6
-            //   InvoiceType.Payable          = 2
-
             migrationBuilder.Sql(@"
                 CREATE OR REPLACE VIEW vw_product_purchase_history AS
-
+                
                 -- Purchase note lines (individual vendors)
                 SELECT
                     pnl.""ProductId"",
@@ -745,9 +740,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     (i.""FirstName"" || ' ' || i.""LastName"")               AS ""PartyName"",
                     pn.""WarehouseId"",
                     w.""Name""                                                AS ""WarehouseName"",
-                    CAST(pnl.""Quantity"" AS numeric)                        AS ""Quantity"",
+                    pnl.""Quantity""                                          AS ""Quantity"",
                     pnl.""UnitPrice"",
-                    CAST(pnl.""Quantity"" AS numeric) * pnl.""UnitPrice""    AS ""TotalPrice"",
+                    pnl.""Quantity"" * pnl.""UnitPrice""                     AS ""TotalPrice"",
                     pn.""IndividualId"",
                     NULL::uuid                                                AS ""CompanyId""
                 FROM ""PurchaseNoteLine"" pnl
@@ -756,9 +751,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 JOIN ""Warehouse""    w  ON w.""Id""  = pn.""WarehouseId""
                 WHERE pn.""DeletedOn"" IS NULL
                   AND pn.""Status"" != 4
-
+                
                 UNION ALL
-
+                
                 -- Payable invoice lines (company vendors)
                 SELECT
                     il.""ProductId"",
@@ -831,10 +826,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "Warehouse");
 
-            // Drop sequences
             migrationBuilder.Sql("DROP SEQUENCE IF EXISTS invoice_number_seq;");
             migrationBuilder.Sql("DROP SEQUENCE IF EXISTS bill_number_seq;");
-
             migrationBuilder.Sql("DROP VIEW IF EXISTS vw_product_purchase_history;");
         }
     }

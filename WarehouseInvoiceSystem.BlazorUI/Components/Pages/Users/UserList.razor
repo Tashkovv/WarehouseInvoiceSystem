@@ -1,0 +1,351 @@
+@page "/users"
+@attribute [Authorize(Roles = "Admin")]
+@inherits PageBase
+@using WarehouseInvoiceSystem.Application.DTOs.User
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject IUserService UserService
+
+<PageTitle>@Localization.GetString("Users") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<div class="wis-page-header">
+    <MudText Typo="Typo.h3" Class="wis-page-title">
+        @Localization.GetString("Users")
+    </MudText>
+</div>
+
+<WisGridToolbar CreateAction="OpenCreateDialog"
+                CreateLabel="@Localization.GetString("User")"
+                SearchValue="@_searchString"
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(_filterIsActive.HasValue || _filterRole.HasValue)"
+                OnClearAll="ClearAllFilters">
+    <Filters>
+        <FilterPopoverList TValue="UserRole?"
+                           Label="@Localization.GetString("Role")"
+                           Items="_roleFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterRole"
+                           FilterVariant="Variant.Outlined"
+                           SelectedValueChanged="OnRoleFilterChanged" />
+        <FilterPopoverList TValue="bool?"
+                           Label="@Localization.GetString("Status")"
+                           Items="_statusFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterIsActive"
+                           FilterVariant="Variant.Outlined"
+                           SelectedValueChanged="OnStatusFilterChanged" />
+    </Filters>
+</WisGridToolbar>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent Class="pa-0">
+        <MudDataGrid T="UserDto"
+                     @ref="_grid"
+                     Items="@_filteredUsers"
+                     ReadOnly="true"
+                     Hover="true"
+                     FixedHeader="true"
+                     Height="100%"
+                     Filterable="false"
+                     ShowColumnOptions="false"
+                     SortMode="SortMode.Single"
+                     Class="wis-data-grid"
+                     Loading="_loading">
+            <Columns>
+
+                <TemplateColumn Sortable="false"
+                                Filterable="false"
+                                HeaderClass="wis-col-actions-1"
+                                CellClass="wis-col-actions-1">
+                    <CellTemplate>
+                        <MudStack Row="true" Justify="Justify.Center" AlignItems="AlignItems.Center">
+                            <WisSplitButton Actions="@BuildRowActions(context.Item)"
+                                            AnchorOrigin="Origin.BottomLeft"
+                                            TransformOrigin="Origin.TopLeft"
+                                            HideLabel="true" />
+                        </MudStack>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <PropertyColumn Property="x => x.Username"
+                                Title="@Localization.GetString("Username")"
+                                Sortable="true"
+                                CellClass="wis-cell-primary" />
+
+                <PropertyColumn Property="x => x.Email"
+                                Title="@Localization.GetString("Email")"
+                                Sortable="true" />
+
+                <TemplateColumn Title="@Localization.GetString("Role")" Sortable="false">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Outlined"
+                                 Color="@(context.Item.Role == UserRole.Admin ? Color.Primary : Color.Default)">
+                            @GetRoleText(context.Item.Role)
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("Status")" Sortable="false">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Outlined"
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                            @(context.Item.IsActive ? Localization.GetString("ActiveUser")
+                                                    : Localization.GetString("InactiveUser"))
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("LastLogin")" Sortable="false">
+                    <CellTemplate>
+                        @if (context.Item.LastLogin.HasValue)
+                        {
+                            <MudText Typo="Typo.body2">@context.Item.LastLogin.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("CreatedAt")" Sortable="false">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2">@context.Item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+
+            </Columns>
+
+            <NoRecordsContent>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.People"
+                                     Message="@Localization.GetString("NoUsersFound")" />
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <WisLoadingContent />
+            </LoadingContent>
+
+        </MudDataGrid>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private MudDataGrid<UserDto> _grid = null!;
+    private List<UserDto> _allUsers = [];
+    private List<UserDto> _filteredUsers = [];
+    private string _searchString = string.Empty;
+    private bool? _filterIsActive;
+    private UserRole? _filterRole;
+
+    private List<FilterPopoverItem<bool?>> _statusFilterItems = [];
+    private List<FilterPopoverItem<UserRole?>> _roleFilterItems = [];
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        BuildFilterItems();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadUsers();
+    }
+
+    private void BuildFilterItems()
+    {
+        _statusFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),          Value = null,  Color = Color.Info },
+            new() { Label = Localization.GetString("ActiveUser"),   Value = true,  Color = Color.Success },
+            new() { Label = Localization.GetString("InactiveUser"), Value = false, Color = Color.Default },
+        ];
+
+        _roleFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),       Value = null,             Color = Color.Info },
+            new() { Label = Localization.GetString("AdminRole"), Value = UserRole.Admin,    Color = Color.Primary },
+            new() { Label = Localization.GetString("UserRole"),  Value = UserRole.User,     Color = Color.Default },
+        ];
+    }
+
+    protected override async void OnLanguageChanged()
+    {
+        BuildFilterItems();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadUsers()
+    {
+        await SafeLoadAsync(async () =>
+        {
+            _allUsers = (await UserService.GetAllUsersAsync(_cts.Token)).ToList();
+            ApplyFilters();
+        }, "ErrorLoadingUsers");
+    }
+
+    private void ApplyFilters()
+    {
+        IEnumerable<UserDto> result = _allUsers;
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+        {
+            string search = _searchString.Trim().ToLowerInvariant();
+            result = result.Where(u =>
+                u.Username.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (_filterIsActive.HasValue)
+            result = result.Where(u => u.IsActive == _filterIsActive.Value);
+
+        if (_filterRole.HasValue)
+            result = result.Where(u => u.Role == _filterRole.Value);
+
+        _filteredUsers = result.ToList();
+    }
+
+    private Task OnSearch(string text)
+    {
+        _searchString = text;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task OnStatusFilterChanged(bool? value)
+    {
+        _filterIsActive = value;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task OnRoleFilterChanged(UserRole? value)
+    {
+        _filterRole = value;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private Task ClearAllFilters()
+    {
+        _filterIsActive = null;
+        _filterRole = null;
+        _searchString = string.Empty;
+        ApplyFilters();
+        return Task.CompletedTask;
+    }
+
+    private string GetRoleText(UserRole role) => role switch
+    {
+        UserRole.Admin => Localization.GetString("AdminRole"),
+        UserRole.User  => Localization.GetString("UserRole"),
+        _              => role.ToString()
+    };
+
+    private async Task OpenCreateDialog()
+    {
+        if (await WisDialog.ShowFormAsync<UserDialog, bool>(
+                Localization.GetString("CreateUser")) == true)
+            await LoadUsers();
+    }
+
+    private async Task OpenEditDialog(UserDto user)
+    {
+        if (await WisDialog.ShowFormAsync<UserDialog, bool>(
+                Localization.GetString("EditUser"),
+                p => p.Add(x => x.User, user)) == true)
+            await LoadUsers();
+    }
+
+    private async Task OpenResetPasswordDialog(UserDto user)
+    {
+        await WisDialog.ShowFormAsync<ResetPasswordDialog, bool>(
+            Localization.GetString("ResetPassword"),
+            p => p.Add(x => x.UserId, user.Id),
+            MaxWidth.Small);
+    }
+
+    private async Task DeleteUser(UserDto user)
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("DeleteUser"),
+            Localization.GetString("DeleteUserConfirm"),
+            Localization.GetString("Delete"),
+            Localization.GetString("Back"));
+        if (!confirmed) return;
+
+        try
+        {
+            await UserService.DeleteUserAsync(user.Id, _cts.Token);
+            Snackbar.Add(Localization.GetString("UserDeleted"), Severity.Success);
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting user: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorDeletingUser"), Severity.Error);
+        }
+    }
+
+    private async Task SetActiveStatus(UserDto user, bool isActive)
+    {
+        if (!isActive)
+        {
+            bool confirmed = await WisDialog.ConfirmAsync(
+                Localization.GetString("DeactivateUser"),
+                Localization.GetString("DeactivateUserConfirm"),
+                Localization.GetString("Deactivate"),
+                Localization.GetString("Back"));
+            if (!confirmed) return;
+        }
+
+        try
+        {
+            await UserService.SetActiveStatusAsync(user.Id, isActive, _cts.Token);
+            string key = isActive ? "UserActivated" : "UserDeactivated";
+            Snackbar.Add(Localization.GetString(key), Severity.Success);
+            await LoadUsers();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating user status: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingUser"), Severity.Error);
+        }
+    }
+
+    private List<WisDetailActionItem> BuildRowActions(UserDto item) =>
+    [
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Edit,
+            Label   = Localization.GetString("Edit"),
+            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.LockReset,
+            Label   = Localization.GetString("ResetPassword"),
+            Color   = Color.Warning,
+            OnClick = EventCallback.Factory.Create(this, () => OpenResetPasswordDialog(item))
+        },
+        new WisDetailActionItem
+        {
+            Icon            = Icons.Material.Filled.PowerSettingsNew,
+            Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
+            Color           = item.IsActive ? Color.Warning : Color.Success,
+            IsDividerBefore = true,
+            OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
+        },
+        new WisDetailActionItem
+        {
+            Icon    = Icons.Material.Filled.Delete,
+            Label   = Localization.GetString("Delete"),
+            Color   = Color.Error,
+            OnClick = EventCallback.Factory.Create(this, () => DeleteUser(item))
+        },
+    ];
+}
