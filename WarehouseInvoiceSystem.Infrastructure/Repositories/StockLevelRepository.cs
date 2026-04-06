@@ -1,6 +1,7 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
@@ -8,8 +9,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class StockLevelRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), IStockLevelRepository
+    public class StockLevelRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), IStockLevelRepository
     {
         public Task<IEnumerable<StockLevel>> GetAllStockLevelAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>

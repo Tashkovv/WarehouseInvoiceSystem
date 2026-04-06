@@ -3,15 +3,13 @@ namespace WarehouseInvoiceSystem.Application.Services
     using WarehouseInvoiceSystem.Application.Interfaces;
 
     /// <summary>
-    /// Uses AsyncLocal to flow username across async calls and factory-created DbContexts.
-    /// Registered as Singleton — safe because AsyncLocal is per-execution-context.
+    /// Scoped service that holds the current username for the Blazor circuit lifetime.
+    /// Set once in PageBase.OnInitializedAsync, read by BaseRepository when stamping contexts.
     /// </summary>
     public class AuditContextService : IAuditContextService
     {
-        private static readonly AsyncLocal<string?> _username = new();
+        public string? CurrentUsername { get; private set; }
 
-        public string? CurrentUsername => _username.Value;
-
-        public void SetUsername(string username) => _username.Value = username;
+        public void SetUsername(string username) => CurrentUsername = username;
     }
 }

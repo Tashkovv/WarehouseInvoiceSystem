@@ -1,12 +1,13 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class UserRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), IUserRepository
+    public class UserRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), IUserRepository
     {
         public Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
             WithContextAsync(context =>

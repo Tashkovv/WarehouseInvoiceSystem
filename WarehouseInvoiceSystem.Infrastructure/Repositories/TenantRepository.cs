@@ -1,12 +1,13 @@
 ﻿namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class TenantRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), ITenantRepository
+    public class TenantRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), ITenantRepository
     {
         /// <summary>
         /// Returns the singleton Tenant row. If no row exists yet (e.g. on a fresh

@@ -1,14 +1,15 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class WarehouseRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), IWarehouseRepository
+    public class WarehouseRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), IWarehouseRepository
     {
         public Task<IEnumerable<Warehouse>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>

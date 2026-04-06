@@ -1,6 +1,7 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
@@ -9,8 +10,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class PaymentRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), IPaymentRepository
+    public class PaymentRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), IPaymentRepository
     {
         public Task<IEnumerable<Payment>> GetAllAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>

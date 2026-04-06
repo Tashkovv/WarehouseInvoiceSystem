@@ -75,7 +75,7 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
 builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddSingleton<IAuditContextService, AuditContextService>();
+builder.Services.AddScoped<IAuditContextService, AuditContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<WisDialogService>();
 
