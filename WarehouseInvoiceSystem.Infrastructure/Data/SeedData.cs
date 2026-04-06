@@ -7,6 +7,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
 
     public static class SeedData
     {
+        private const string address = "с. Брајковци, Валандово";
         public static async Task RunAsync(IDbContextFactory<ApplicationDbContext> factory)
         {
             await using var context = factory.CreateDbContext();
@@ -25,7 +26,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
             var warehouse = new Warehouse
             {
                 Name = "Брајковци",
-                Address = "с. Брајковци, Валандово",
+                Address = address,
                 IsDefault = true,
                 IsActive = true,
                 CreatedAt = now
@@ -120,7 +121,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
                 LastName = "Трајков",
                 IdentificationNumber = "0101980450001",
                 Phone = "+389 71 111222",
-                Address = "с. Брајковци, Валандово",
+                Address = address,
                 IsActive = true,
                 CreatedAt = now
             };
@@ -130,7 +131,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
                 LastName = "Митрев",
                 IdentificationNumber = "1506975450002",
                 Phone = "+389 72 333444",
-                Address = "с. Брајковци, Валандово",
+                Address = address,
                 IsActive = true,
                 CreatedAt = now
             };
@@ -140,7 +141,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
                 LastName = "Ристова",
                 IdentificationNumber = "2009985450003",
                 Phone = "+389 70 555666",
-                Address = "с. Брајковци, Валандово",
+                Address = address,
                 BankAccount = "300000000123456",
                 IsActive = true,
                 CreatedAt = now
