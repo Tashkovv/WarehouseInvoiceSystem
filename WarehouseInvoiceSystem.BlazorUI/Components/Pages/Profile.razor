@@ -1,4 +1,5 @@
 ﻿@page "/profile"
+@attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Tenant
 @inject ITenantService TenantService
@@ -115,29 +116,21 @@ else
             </MudItem>
         </MudGrid>
 
-        @* ── Row 2: Operator & Email + Logo ──────────────────────────────── *@
+        @* ── Row 2: Email + Logo ─────────────────────────────────────────── *@
         <MudGrid>
             <MudItem xs="12" sm="6">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader>
                         <CardHeaderAvatar>
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+                            <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Primary" />
                         </CardHeaderAvatar>
                         <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@Localization.GetString("OperatorAndEmail")</MudText>
+                            <MudText Typo="Typo.h6">@Localization.GetString("EmailSettings")</MudText>
                         </CardHeaderContent>
                     </MudCardHeader>
                     <MudDivider />
                     <MudCardContent>
                         <MudGrid>
-                            <MudItem xs="12">
-                                <MudTextField @bind-Value="_operatorName"
-                                              Label="@Localization.GetString("OperatorName")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="100"
-                                              FullWidth="true"
-                                              HelperText="@Localization.GetString("OperatorNameHelp")" />
-                            </MudItem>
                             <MudItem xs="12" sm="6">
                                 <MudTextField @bind-Value="_email"
                                               Label="@Localization.GetString("Email")"
@@ -215,7 +208,6 @@ else
 @code {
     // Form state
     private string _companyName = string.Empty;
-    private string? _operatorName;
     private string? _address;
     private string? _phone;
     private string? _taxId;
@@ -281,7 +273,6 @@ else
     private void PopulateForm(TenantDto tenant)
     {
         _companyName         = tenant.CompanyName;
-        _operatorName        = tenant.OperatorName;
         _address             = tenant.Address;
         _phone               = tenant.Phone;
         _taxId               = tenant.TaxId;
@@ -339,7 +330,7 @@ else
             await TenantService.UpdateAsync(new UpdateTenantDto
             {
                 CompanyName   = _companyName.Trim(),
-                OperatorName  = _operatorName?.Trim(),
+                OperatorName  = null,
                 Address       = _address?.Trim(),
                 Phone         = _phone?.Trim(),
                 TaxId         = _taxId?.Trim(),

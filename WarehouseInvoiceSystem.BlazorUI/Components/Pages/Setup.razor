@@ -1,0 +1,166 @@
+@page "/setup"
+@layout WarehouseInvoiceSystem.BlazorUI.Components.Layout.EmptyLayout
+@inject IUserService UserService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IHostEnvironment Environment
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudSnackbarProvider />
+
+<div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #F8FAFC;">
+    <MudCard Style="width: 420px;" Elevation="4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Color="Color.Primary" Size="Size.Medium" />
+                    <MudText Typo="Typo.h5" Color="Color.Primary">@Localization.GetString("InitialSetup")</MudText>
+                </div>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("SetupDescription")</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">@_error</MudAlert>
+            }
+
+            <MudTextField @bind-Value="_username"
+                          Label="@Localization.GetString("Username")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Person"
+                          Required="true"
+                          RequiredError="@Localization.GetString("UsernameRequired")"
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="_email"
+                          Label="@Localization.GetString("Email")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          Required="true"
+                          RequiredError="@Localization.GetString("EmailRequired")"
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="_password"
+                          Label="@Localization.GetString("Password")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Required="true"
+                          RequiredError="@Localization.GetString("PasswordRequired")"
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="_confirmPassword"
+                          Label="@Localization.GetString("ConfirmPassword")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Required="true"
+                          RequiredError="@Localization.GetString("ConfirmPasswordRequired")"
+                          Class="mb-4" />
+
+            <div class="d-flex justify-end">
+                <WisButton Action="@(new WisDetailActionItem
+                {
+                    Icon = Icons.Material.Filled.Add,
+                    Label = Localization.GetString("Create"),
+                    OnClick = EventCallback.Factory.Create(this, CreateAdmin),
+                    Disabled = _submitting,
+                    Color = Color.Primary
+                })" />
+            </div>
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    private string _username = "";
+    private string _email = "";
+    private string _password = "";
+    private string _confirmPassword = "";
+    private string? _error;
+    private bool _submitting;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1E40AF",
+            Background = "#F8FAFC",
+            Surface = "#FFFFFF",
+            TextPrimary = "#0F172A",
+            TextSecondary = "#475569",
+        },
+        Typography = new MudBlazor.Typography()
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"]
+            }
+        },
+        LayoutProperties = new LayoutProperties() { DefaultBorderRadius = "8px" }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        bool forceOpen = Environment.IsDevelopment() &&
+            Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).ContainsKey("force");
+
+        if (!forceOpen)
+        {
+            bool anyUsers = await UserService.AnyUsersExistAsync();
+            if (anyUsers)
+                Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task CreateAdmin()
+    {
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_email) ||
+            string.IsNullOrWhiteSpace(_password))
+        {
+            _error = Localization.GetString("AllFieldsRequired");
+            return;
+        }
+
+        if (_password.Length < 6)
+        {
+            _error = Localization.GetString("PasswordTooShort");
+            return;
+        }
+
+        if (_password != _confirmPassword)
+        {
+            _error = Localization.GetString("PasswordsDoNotMatch");
+            return;
+        }
+
+        _submitting = true;
+        try
+        {
+            await UserService.CreateUserAsync(new Application.DTOs.User.CreateUserDto
+            {
+                Username = _username,
+                Email = _email,
+                Password = _password,
+                Role = Domain.Enums.UserRole.Admin
+            });
+
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            _submitting = false;
+        }
+    }
+}

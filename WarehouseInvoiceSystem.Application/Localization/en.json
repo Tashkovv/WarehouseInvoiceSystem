@@ -450,6 +450,7 @@
   "CompanyInfo": "Company Information",
   "OperatorSection": "Operator",
   "OperatorAndEmail": "Operator & Email",
+  "EmailSettings": "Email Settings",
   "OperatorName": "Operator Name",
   "OperatorNameHelp": "Pre-filled as 'Recorded By' on new payments",
   "EmailSection": "Email",
@@ -647,5 +648,27 @@
   "DaysRemaining": "days remaining",
   "LockReason": "Lock Reason",
   "CopyToClipboard": "Copy to Clipboard",
-  "Copied": "Copied!"
+  "Copied": "Copied!",
+
+  "Login": "Login",
+  "LoginDescription": "Sign in to your account",
+  "Username": "Username",
+  "Password": "Password",
+  "RememberMe": "Remember me",
+  "InvalidCredentials": "Invalid username or password",
+  "Logout": "Logout",
+  "Users": "Users",
+
+  "InitialSetup": "Initial Setup",
+  "SetupDescription": "Create the first administrator account to get started.",
+  "CreateAdminAccount": "Create Admin Account",
+  "ConfirmPassword": "Confirm Password",
+  "AllFieldsRequired": "All fields are required",
+  "PasswordTooShort": "Password must be at least 6 characters",
+  "PasswordsDoNotMatch": "Passwords do not match",
+  "UsernameAlreadyExists": "Username already exists",
+  "UsernameRequired": "Username is required",
+  "EmailRequired": "Email is required",
+  "PasswordRequired": "Password is required",
+  "ConfirmPasswordRequired": "Confirm password is required"
 }

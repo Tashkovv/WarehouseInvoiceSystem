@@ -462,6 +462,7 @@
   "CompanyInfo": "Информации за компанија",
   "OperatorSection": "Оператор",
   "OperatorAndEmail": "Оператор и е-пошта",
+  "EmailSettings": "Е-пошта Подесувања",
   "OperatorName": "Име на операторот",
   "OperatorNameHelp": "Прет-пополнето како 'Евидентирано од' при нови плаќања",
   "EmailSection": "Е-пошта",
@@ -647,5 +648,27 @@
   "DaysRemaining": "дена преостануваат",
   "LockReason": "Причина за заклучување",
   "CopyToClipboard": "Копирај",
-  "Copied": "Копирано!"
+  "Copied": "Копирано!",
+
+  "Login": "Најава",
+  "LoginDescription": "Најавете се на вашата сметка",
+  "Username": "Корисничко име",
+  "Password": "Лозинка",
+  "RememberMe": "Запомни ме",
+  "InvalidCredentials": "Невалидно корисничко име или лозинка",
+  "Logout": "Одјава",
+  "Users": "Корисници",
+
+  "InitialSetup": "Почетно Подесување",
+  "SetupDescription": "Креирајте ја првата администраторска сметка за да започнете.",
+  "CreateAdminAccount": "Креирај Админ Сметка",
+  "ConfirmPassword": "Потврди Лозинка",
+  "AllFieldsRequired": "Сите полиња се задолжителни",
+  "PasswordTooShort": "Лозинката мора да има најмалку 6 карактери",
+  "PasswordsDoNotMatch": "Лозинките не се совпаѓаат",
+  "UsernameAlreadyExists": "Корисничкото име веќе постои",
+  "UsernameRequired": "Корисничкото име е задолжително",
+  "EmailRequired": "Емаилот е задолжителен",
+  "PasswordRequired": "Лозинката е задолжителна",
+  "ConfirmPasswordRequired": "Потврдата на лозинката е задолжителна"
 }

@@ -1,6 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @using Microsoft.Extensions.Options
+@using System.Security.Claims
 @using WarehouseInvoiceSystem.Application.Settings
 @inject ILocalizationService Localization
 @inject IBackgroundJobService BackgroundJobService
@@ -131,6 +132,21 @@
             <LanguageSwitcher />
             <NotificationBell />
 
+            <!-- User info chip -->
+            <AuthorizeView>
+                <Authorized>
+                    <MudChip T="string" Color="Color.Default" Size="Size.Small"
+                             Icon="@Icons.Material.Filled.Person"
+                             Style="color: white; border: 1px solid rgba(255,255,255,0.3);">
+                        @context.User.Identity?.Name
+                        @if (context.User.IsInRole("Admin"))
+                        {
+                            <MudText Typo="Typo.caption" Style="margin-left: 4px; opacity: 0.7;">(Admin)</MudText>
+                        }
+                    </MudChip>
+                </Authorized>
+            </AuthorizeView>
+
             <!-- Settings -->
             <MudIconButton Icon="@Icons.Material.Filled.Settings"
                            Color="Color.Inherit"
@@ -151,6 +167,17 @@
                                 <span>@Localization.GetString("Profile")</span>
                             </div>
                         </MudListItem>
+                        <AuthorizeView Roles="Admin">
+                            <Authorized>
+                                <MudListItem OnClick="@(() => { Navigation.NavigateTo("/users"); _settingsOpen = false; })"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Secondary" />
+                                        <span>@Localization.GetString("Users")</span>
+                                    </div>
+                                </MudListItem>
+                            </Authorized>
+                        </AuthorizeView>
                         <MudListItem OnClick="@(() => { Navigation.NavigateTo("/license"); _settingsOpen = false; })"
                                      Class="px-3 py-2" Style="cursor: pointer;">
                             <div class="d-flex align-center gap-2">
@@ -193,6 +220,17 @@
                                 }
                                 <span>@Localization.GetString("GenerateNotifications")</span>
                             </div>
+                        </MudListItem>
+                        <MudDivider />
+                        <MudListItem Class="px-3 py-2" Style="cursor: pointer;">
+                            <form method="post" action="/api/auth/logout" style="margin: 0;">
+                                <button type="submit" style="background: none; border: none; cursor: pointer; padding: 0; width: 100%;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" Color="Color.Error" />
+                                        <span style="color: var(--mud-palette-error);">@Localization.GetString("Logout")</span>
+                                    </div>
+                                </button>
+                            </form>
                         </MudListItem>
                     </MudList>
                 </MudPopover>

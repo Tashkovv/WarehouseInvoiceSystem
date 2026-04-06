@@ -1,0 +1,100 @@
+@page "/login"
+@layout WarehouseInvoiceSystem.BlazorUI.Components.Layout.EmptyLayout
+@inject IUserService UserService
+@inject ILocalizationService Localization
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+
+<div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #F8FAFC;">
+    <MudCard Style="width: 420px;" Elevation="4">
+        <MudCardHeader>
+            <CardHeaderContent>
+                <div class="d-flex align-center gap-2 mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Warehouse" Color="Color.Primary" Size="Size.Medium" />
+                    <MudText Typo="Typo.h5" Color="Color.Primary">@Localization.GetString("InvoiceSystem")</MudText>
+                </div>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("LoginDescription")</MudText>
+            </CardHeaderContent>
+        </MudCardHeader>
+        <MudCardContent>
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Class="mb-4">
+                    @Localization.GetString(_error)
+                </MudAlert>
+            }
+
+            <form id="loginForm" method="post" action="/api/auth/login">
+                <div class="mb-4">
+                    <label class="mud-input-label" for="username">@Localization.GetString("Username")</label>
+                    <input type="text" id="username" name="username" required autofocus
+                           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; font-family: Inter, sans-serif;" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="mud-input-label" for="password">@Localization.GetString("Password")</label>
+                    <input type="password" id="password" name="password" required
+                           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; font-family: Inter, sans-serif;" />
+                </div>
+
+                <div class="d-flex align-center mb-4">
+                    <input type="checkbox" id="remember" name="remember" value="true" style="margin-right: 8px;" />
+                    <label for="remember" style="font-size: 0.875rem; color: #475569;">@Localization.GetString("RememberMe")</label>
+                </div>
+
+                <div class="d-flex justify-end">
+                    <WisButton Action="@(new WisDetailActionItem
+                    {
+                        Icon = Icons.Material.Filled.Login,
+                        Label = Localization.GetString("Login"),
+                        Color = Color.Primary,
+                        OnClick = EventCallback.Factory.Create(this, SubmitLogin)
+                    })" />
+                </div>
+            </form>
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    private string? _error;
+
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#1E40AF",
+            Background = "#F8FAFC",
+            Surface = "#FFFFFF",
+            TextPrimary = "#0F172A",
+            TextSecondary = "#475569",
+        },
+        Typography = new MudBlazor.Typography()
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"]
+            }
+        },
+        LayoutProperties = new LayoutProperties() { DefaultBorderRadius = "8px" }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("error", out var errorValue))
+            _error = errorValue.ToString();
+
+        bool anyUsers = await UserService.AnyUsersExistAsync();
+        if (!anyUsers)
+            Navigation.NavigateTo("/setup");
+    }
+
+    private async Task SubmitLogin()
+    {
+        await JS.InvokeVoidAsync("wisAuth.submitForm", "loginForm");
+    }
+}

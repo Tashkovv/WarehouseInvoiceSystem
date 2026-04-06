@@ -1,8 +1,13 @@
 using WarehouseInvoiceSystem.BlazorUI.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using System.Globalization;
+using System.Security.Claims;
 using WarehouseInvoiceSystem.Application.BackgroundWorkers;
+using WarehouseInvoiceSystem.Application.DTOs.User;
 using WarehouseInvoiceSystem.Application.Interfaces;
 using WarehouseInvoiceSystem.Application.Services;
 using WarehouseInvoiceSystem.Application;
@@ -67,7 +72,24 @@ builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IEncryptionService, EncryptionService>();
+builder.Services.AddTransient<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<WisDialogService>();
+
+// Authentication & Authorization
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";
+        options.LogoutPath = "/api/auth/logout";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<WisAuthenticationStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
+    sp.GetRequiredService<WisAuthenticationStateProvider>());
 
 // Background job infrastructure
 builder.Services.AddSingleton<IAppStateService, AppStateService>();
@@ -105,7 +127,46 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
+
+// Auth endpoints (cookie auth requires HTTP response, not SignalR)
+app.MapPost("/api/auth/login", async (HttpContext httpContext, IUserService userService) =>
+{
+    var form = await httpContext.Request.ReadFormAsync();
+    string username = form["username"].ToString();
+    string password = form["password"].ToString();
+
+    LoginResultDto result = await userService.LoginAsync(new LoginDto { Username = username, Password = password });
+
+    if (!result.Success)
+        return Results.Redirect($"/login?error={result.ErrorMessage}");
+
+    var claims = new List<Claim>
+    {
+        new(ClaimTypes.NameIdentifier, result.User!.Id.ToString()),
+        new(ClaimTypes.Name, result.User.Username),
+        new(ClaimTypes.Email, result.User.Email),
+        new(ClaimTypes.Role, result.User.Role.ToString())
+    };
+
+    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+    var principal = new ClaimsPrincipal(identity);
+
+    await httpContext.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        principal,
+        new AuthenticationProperties { IsPersistent = form.ContainsKey("remember") });
+
+    return Results.Redirect("/");
+});
+
+app.MapPost("/api/auth/logout", async (HttpContext httpContext) =>
+{
+    await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Redirect("/login");
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

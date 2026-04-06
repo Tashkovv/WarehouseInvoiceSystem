@@ -2,10 +2,10 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries
-@using WarehouseInvoiceSystem.Application.DTOs.Tenant
+@using System.Security.Claims
 @inject ILocalizationService Localization
 @inject IInvoiceService InvoiceService
-@inject ITenantService TenantService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <MudDialog>
     <DialogContent>
@@ -234,13 +234,10 @@
             // Create: load unpaid invoices and pre-fill RecordedBy from tenant
             await LoadUnpaidInvoices();
 
-            try
-            {
-                TenantDto tenant = await TenantService.GetAsync();
-                if (!string.IsNullOrWhiteSpace(tenant.OperatorName))
-                    _recordedBy = tenant.OperatorName;
-            }
-            catch { /* RecordedBy field simply stays blank */ }
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var username = authState.User.Identity?.Name;
+            if (!string.IsNullOrWhiteSpace(username))
+                _recordedBy = username;
 
             if (PreSelectedInvoiceId.HasValue)
             {
