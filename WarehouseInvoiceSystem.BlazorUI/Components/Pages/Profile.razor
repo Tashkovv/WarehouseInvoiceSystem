@@ -1,5 +1,5 @@
 ﻿@page "/profile"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Admin")]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Tenant
 @inject ITenantService TenantService

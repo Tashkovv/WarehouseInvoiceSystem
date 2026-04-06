@@ -1,4 +1,5 @@
 @page "/license"
+@attribute [Authorize(Roles = "Admin")]
 @implements IDisposable
 @inject ILicenseService LicenseService
 @inject ILocalizationService Localization

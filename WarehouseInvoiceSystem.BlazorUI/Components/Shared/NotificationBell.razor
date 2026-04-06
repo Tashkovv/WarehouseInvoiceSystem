@@ -6,22 +6,23 @@
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 
-<MudBadge Content="@_unreadCount" Overlap="true" Color="Color.Error"
-          Visible="@(_unreadCount > 0)" Origin="Origin.TopRight"
-          BadgeClass="notification-badge">
-    <MudIconButton Icon="@Icons.Material.Filled.Notifications"
-                   Color="Color.Inherit"
-                   OnClick="TogglePopover" />
-</MudBadge>
+<div class="appbar-popover-anchor">
+    <MudBadge Content="@_unreadCount" Overlap="true" Color="Color.Error"
+              Visible="@(_unreadCount > 0)" Origin="Origin.TopRight"
+              BadgeClass="notification-badge">
+        <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                       Color="Color.Inherit"
+                       OnClick="TogglePopover" />
+    </MudBadge>
 
-@if (_isOpen)
-{
-    <MudOverlay Visible="true" OnClick="ClosePopover" LockScroll="false" />
+    @if (_isOpen)
+    {
+        <MudOverlay Visible="true" OnClick="ClosePopover" LockScroll="false" />
 
-    <MudPopover Open="true" Fixed="true" Class="pa-0 mud-elevation-4 appbar-popover"
-                AnchorOrigin="Origin.BottomRight"
-                TransformOrigin="Origin.TopRight"
-                Style="width: 420px; z-index: 1301; max-height: 500px; display: flex; flex-direction: column;">
+        <MudPopover Open="true" Fixed="false" Class="pa-0 mud-elevation-4"
+                    AnchorOrigin="Origin.BottomRight"
+                    TransformOrigin="Origin.TopRight"
+                    Style="width: 420px; z-index: 1301; max-height: 500px; display: flex; flex-direction: column;">
 
             @* ── Header ── *@
             <div class="d-flex justify-space-between align-center px-4 py-2" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
@@ -88,8 +89,9 @@
                     }
                 </MudList>
             }
-    </MudPopover>
-}
+        </MudPopover>
+    }
+</div>
 
 <style>
     .notification-unread {
