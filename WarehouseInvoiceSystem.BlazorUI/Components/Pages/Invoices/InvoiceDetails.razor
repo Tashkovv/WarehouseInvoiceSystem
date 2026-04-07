@@ -208,7 +208,9 @@ else
                                 <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode - @context.ProductName</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Description")">
-                                <MudText Typo="Typo.body2">@context.Description</MudText>
+                                <MudText Typo="Typo.body2">
+                                    @(string.IsNullOrWhiteSpace(context.Description) ? "—" : context.Description)
+                                </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                 <div class="d-flex align-center justify-end gap-2">

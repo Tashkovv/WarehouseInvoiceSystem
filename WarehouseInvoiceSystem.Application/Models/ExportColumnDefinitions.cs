@@ -14,7 +14,7 @@ namespace WarehouseInvoiceSystem.Application.Models
             new(t.GetString("InvoiceNumber"), x => x.InvoiceNumber),
             new(t.GetString("Company"), x => x.CompanyName),
             new(t.GetString("Type"), x => t.GetString(x.Type.ToString())),
-            new(t.GetString("Status"), x => t.GetString(x.Status.ToString())),
+            new(t.GetString("Status"), x => t.GetString($"InvoiceStatus_{x.Status}")),
             new(t.GetString("IssueDate"), x => x.IssueDate, ExportColumnType.Date),
             new(t.GetString("DueDate"), x => x.DueDate, ExportColumnType.Date),
             new(t.GetString("Subtotal"), x => x.SubTotal, ExportColumnType.Currency, IncludeInTotals: true),
@@ -28,7 +28,7 @@ namespace WarehouseInvoiceSystem.Application.Models
         [
             new(t.GetString("NoteNumber"), x => x.NoteNumber),
             new(t.GetString("Individual"), x => x.IndividualFullName),
-            new(t.GetString("Status"), x => t.GetString(x.Status.ToString())),
+            new(t.GetString("Status"), x => t.GetString($"PurchaseNoteStatus_{x.Status}")),
             new(t.GetString("PurchaseDate"), x => x.PurchaseDate, ExportColumnType.Date),
             new(t.GetString("Warehouse"), x => x.WarehouseName),
             new(t.GetString("Total"), x => x.TotalAmount, ExportColumnType.Currency, IncludeInTotals: true),

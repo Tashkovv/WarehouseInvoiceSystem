@@ -560,7 +560,6 @@ else
         item.SelectedProduct = product;
         if (product != null)
         {
-            item.Description = product.Name;
             item.UnitPrice = _selectedType == InvoiceType.Receivable
                 ? product.SellingPrice
                 : product.CostPrice;
@@ -670,7 +669,7 @@ else
                     {
                         Id = i.Id,
                         ProductId = i.SelectedProduct!.Id,
-                        Description = i.SelectedProduct.Name ?? i.Description,
+                        Description = i.Description ?? string.Empty,
                         Quantity = i.Quantity,
                         UnitPrice = i.UnitPrice,
                         TaxRate = i.TaxRate,

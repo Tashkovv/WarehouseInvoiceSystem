@@ -149,6 +149,7 @@ else
                               Class="wis-secondary-list">
                         <HeaderContent>
                             <MudTh>@Localization.GetString("Product")</MudTh>
+                            <MudTh>@Localization.GetString("Description")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("GrossQuantity")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("KaloPercentage")</MudTh>
                             <MudTh Class="text-right">@Localization.GetString("NetQuantity")</MudTh>
@@ -158,6 +159,11 @@ else
                         <RowTemplate>
                             <MudTd DataLabel="@Localization.GetString("Product")">
                                 <MudText Typo="Typo.body2">@context.ProductCode - @context.ProductName</MudText>
+                            </MudTd>
+                            <MudTd DataLabel="@Localization.GetString("Description")">
+                                <MudText Typo="Typo.body2">
+                                    @(string.IsNullOrWhiteSpace(context.Description) ? "—" : context.Description)
+                                </MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("GrossQuantity")" Class="text-right">
                                 <MudText Typo="Typo.body2">

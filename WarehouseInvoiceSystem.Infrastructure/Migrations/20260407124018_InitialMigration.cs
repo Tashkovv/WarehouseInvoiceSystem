@@ -12,6 +12,23 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "AuditLog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    EntityType = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    EntityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Action = table.Column<string>(type: "text", nullable: false),
+                    Changes = table.Column<string>(type: "jsonb", nullable: true),
+                    Username = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuditLog", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Company",
                 columns: table => new
                 {
@@ -425,6 +442,21 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuditLog_EntityType_EntityId",
+                table: "AuditLog",
+                columns: new[] { "EntityType", "EntityId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLog_Timestamp",
+                table: "AuditLog",
+                column: "Timestamp");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditLog_Username",
+                table: "AuditLog",
+                column: "Username");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Company_DeletedOn",
                 table: "Company",
                 column: "DeletedOn");
@@ -727,10 +759,19 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     )
                 );
             ");
-
+            
+            // Recreate vw_product_purchase_history to exclude Draft documents.
+            // Original definition only excluded Cancelled, which let drafts (no inventory
+            // transaction yet) leak into a product's purchase history.
+            //
+            // PurchaseNoteStatus: Draft=1, Pending=2, Paid=3, Cancelled=4
+            // InvoiceStatus:      Draft=1, Confirmed=2, PartiallyPaid=3, Paid=4, Overdue=5, Cancelled=6
+            //
+            // The receivable (sold) side already filters Draft + Cancelled in
+            // InvoiceRepository.ApplyLineItemFilters; this aligns the bought side.
             migrationBuilder.Sql(@"
                 CREATE OR REPLACE VIEW vw_product_purchase_history AS
-                
+            
                 -- Purchase note lines (individual vendors)
                 SELECT
                     pnl.""ProductId"",
@@ -750,10 +791,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 JOIN ""Individual""   i  ON i.""Id""  = pn.""IndividualId""
                 JOIN ""Warehouse""    w  ON w.""Id""  = pn.""WarehouseId""
                 WHERE pn.""DeletedOn"" IS NULL
-                  AND pn.""Status"" != 4
-                
+                  AND pn.""Status"" NOT IN (1, 4)
+            
                 UNION ALL
-                
+            
                 -- Payable invoice lines (company vendors)
                 SELECT
                     il.""ProductId"",
@@ -773,7 +814,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 JOIN ""Company""   c   ON c.""Id""  = inv.""CompanyId""
                 JOIN ""Warehouse"" w   ON w.""Id""  = inv.""WarehouseId""
                 WHERE inv.""DeletedOn"" IS NULL
-                  AND inv.""Status"" != 6
+                  AND inv.""Status"" NOT IN (1, 6)
                   AND inv.""Type""   = 2;
             ");
         }
@@ -781,6 +822,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "AuditLog");
+
             migrationBuilder.DropTable(
                 name: "InventoryTransaction");
 

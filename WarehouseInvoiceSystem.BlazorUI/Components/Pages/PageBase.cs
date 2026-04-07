@@ -119,16 +119,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                          => Color.Default
         };
 
-        protected string GetInvoiceStatusText(InvoiceStatus status) => status switch
-        {
-            InvoiceStatus.Draft        => Localization.GetString("Draft"),
-            InvoiceStatus.Confirmed    => Localization.GetString("Confirmed"),
-            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-            InvoiceStatus.Paid         => Localization.GetString("PaidStatus"),
-            InvoiceStatus.Overdue      => Localization.GetString("OverdueStatus"),
-            InvoiceStatus.Cancelled    => Localization.GetString("CancelledStatus"),
-            _                          => status.ToString()
-        };
+        protected string GetInvoiceStatusText(InvoiceStatus status) => GetEnumLabel(status);
 
         // ── PurchaseNoteStatus helpers ────────────────────────────────────────
 
@@ -141,14 +132,14 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                            => Color.Default
         };
 
-        protected string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
-        {
-            PurchaseNoteStatus.Draft     => Localization.GetString("Draft"),
-            PurchaseNoteStatus.Pending   => Localization.GetString("PendingStatus"),
-            PurchaseNoteStatus.Paid      => Localization.GetString("PaidStatus"),
-            PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-            _                            => status.ToString()
-        };
+        protected string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => GetEnumLabel(status);
+
+        // ── Generic enum localization helper ──────────────────────────────────
+        // Looks up "{EnumTypeName}_{Value}" — e.g. InvoiceStatus.Paid → "InvoiceStatus_Paid".
+        // Lets each enum's status have its own translation (and gender form in mk-MK)
+        // without colliding with bare-name keys used elsewhere.
+        protected string GetEnumLabel<TEnum>(TEnum value) where TEnum : struct, Enum
+            => Localization.GetString($"{typeof(TEnum).Name}_{value}");
 
         // ── PaymentMethod helpers ─────────────────────────────────────────────
 

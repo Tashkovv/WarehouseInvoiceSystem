@@ -271,7 +271,9 @@
             {
                 row++;
                 ws.Cell(row, 1).Value = itemNumber++;
-                ws.Cell(row, 2).Value = line.ProductName;
+                ws.Cell(row, 2).Value = string.IsNullOrWhiteSpace(line.Description)
+                    ? line.ProductName
+                    : $"{line.ProductName} ({line.Description})";
                 ws.Cell(row, 3).Value = $"{line.Quantity} {line.ProductUnit}";
                 ws.Cell(row, 4).Value = line.UnitPrice.ToString("C");
                 ws.Cell(row, 5).Value = $"{line.TaxRate}%";
@@ -480,7 +482,7 @@
                 worksheet.Cell(row, 1).Value = invoice.InvoiceNumber;
                 worksheet.Cell(row, 2).Value = invoice.CompanyName;
                 worksheet.Cell(row, 3).Value = translations.GetString(invoice.Type.ToString());
-                worksheet.Cell(row, 4).Value = translations.GetString(invoice.Status.ToString());
+                worksheet.Cell(row, 4).Value = translations.GetString($"InvoiceStatus_{invoice.Status}");
                 worksheet.Cell(row, 5).Value = invoice.IssueDate.ToString(dateFormat);
                 worksheet.Cell(row, 6).Value = invoice.DueDate.ToString(dateFormat);
                 worksheet.Cell(row, 7).Value = invoice.SubTotal.ToString("C");
@@ -561,7 +563,7 @@
                 worksheet.Cell(row, 1).Value = invoice.InvoiceNumber;
                 worksheet.Cell(row, 2).Value = invoice.CompanyName;
                 worksheet.Cell(row, 3).Value = translations.GetString(invoice.Type.ToString());
-                worksheet.Cell(row, 4).Value = translations.GetString(invoice.Status.ToString());
+                worksheet.Cell(row, 4).Value = translations.GetString($"InvoiceStatus_{invoice.Status}");
                 worksheet.Cell(row, 5).Value = invoice.IssueDate.ToString(dateFormat);
                 worksheet.Cell(row, 6).Value = invoice.DueDate.ToString(dateFormat);
                 worksheet.Cell(row, 7).Value = invoice.SubTotal.ToString("C");
@@ -724,7 +726,9 @@
                 row++;
                 ws.Cell(row, 1).Value = itemNumber++;
                 ws.Cell(row, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Cell(row, 2).Value = line.ProductName;
+                ws.Cell(row, 2).Value = string.IsNullOrWhiteSpace(line.Description)
+                    ? line.ProductName
+                    : $"{line.ProductName} ({line.Description})";
                 ws.Cell(row, 3).Value = line.ProductUnit;
                 ws.Cell(row, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 ws.Cell(row, 4).Value = line.GrossQuantity;
