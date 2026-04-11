@@ -155,7 +155,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (dateFrom.HasValue)
                     q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value);
                 if (dateTo.HasValue)
-                    q = q.Where(li => li.Invoice.IssueDate <= dateTo.Value);
+                    q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
 
                 return (IEnumerable<InvoiceLine>)await q
                     .Include(li => li.Invoice)
@@ -180,7 +180,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (dateFrom.HasValue)
                     q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value);
                 if (dateTo.HasValue)
-                    q = q.Where(li => li.Invoice.IssueDate <= dateTo.Value);
+                    q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
 
                 return (IEnumerable<InvoiceLine>)await q
                     .Include(li => li.Invoice)

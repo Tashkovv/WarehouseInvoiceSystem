@@ -140,7 +140,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (dateFrom.HasValue)
                     q = q.Where(li => li.PurchaseNote.PurchaseDate >= dateFrom.Value);
                 if (dateTo.HasValue)
-                    q = q.Where(li => li.PurchaseNote.PurchaseDate <= dateTo.Value);
+                    q = q.Where(li => li.PurchaseNote.PurchaseDate < dateTo.Value.Date.AddDays(1));
 
                 return (IEnumerable<PurchaseNoteLine>)await q
                     .Include(li => li.PurchaseNote)
@@ -163,7 +163,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (dateFrom.HasValue)
                     q = q.Where(li => li.PurchaseNote.PurchaseDate >= dateFrom.Value);
                 if (dateTo.HasValue)
-                    q = q.Where(li => li.PurchaseNote.PurchaseDate <= dateTo.Value);
+                    q = q.Where(li => li.PurchaseNote.PurchaseDate < dateTo.Value.Date.AddDays(1));
 
                 return (IEnumerable<PurchaseNoteLine>)await q
                     .Include(li => li.Product)
