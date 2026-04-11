@@ -197,7 +197,7 @@
 >
                     <CellTemplate>
                         <MudText Typo="Typo.body2" Class="wis-cell-amount">
-                            @context.Item.TotalAmount.ToString("C")
+                            @Math.Round(context.Item.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")
                         </MudText>
                     </CellTemplate>
                 </PropertyColumn>
@@ -744,17 +744,6 @@
             });
         }
 
-        if (canSend)
-        {
-            actions.Add(new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.Send,
-                Label   = Localization.GetString("Send"),
-                Color   = Color.Info,
-                OnClick = EventCallback.Factory.Create(this, () => OpenSendEmailDialog(item))
-            });
-        }
-
         if (canPay)
         {
             actions.Add(new WisDetailActionItem
@@ -763,6 +752,17 @@
                 Label   = Localization.GetString("Payment"),
                 Color   = Color.Success,
                 OnClick = EventCallback.Factory.Create(this, () => OpenPaymentDialog(item))
+            });
+        }
+
+        if (canSend)
+        {
+            actions.Add(new WisDetailActionItem
+            {
+                Icon    = Icons.Material.Filled.Send,
+                Label   = Localization.GetString("Send"),
+                Color   = Color.Info,
+                OnClick = EventCallback.Factory.Create(this, () => OpenSendEmailDialog(item))
             });
         }
 

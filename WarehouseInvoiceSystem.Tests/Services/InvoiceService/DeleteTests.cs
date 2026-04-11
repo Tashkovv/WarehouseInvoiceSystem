@@ -12,6 +12,8 @@ public class DeleteTests : InvoiceServiceTestBase
     {
         var invoice = CreateEntity(InvoiceStatus.Cancelled);
         SetupEntityLookup(invoice.Id, invoice);
+        TransactionRepo.SoftDeleteByDocumentAsync(invoice.Id, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
         InvoiceRepo.DeleteAsync(invoice.Id).Returns(true);
         var service = CreateService();
 
@@ -19,6 +21,7 @@ public class DeleteTests : InvoiceServiceTestBase
 
         result.Should().BeTrue();
         await InvoiceRepo.Received(1).DeleteAsync(invoice.Id);
+        await TransactionRepo.Received(2).SoftDeleteByDocumentAsync(invoice.Id, Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]

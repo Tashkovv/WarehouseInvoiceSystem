@@ -274,6 +274,11 @@
                 throw new InvalidOperationException(
                     $"Invoice {invoice.InvoiceNumber} can only be deleted when Cancelled (current: {invoice.Status}).");
 
+            // Clean up inventory transactions created during confirm and reversal during cancel.
+            // Stock is already correct after cancellation, so no stock adjustment — just remove the records.
+            await transactionRepository.SoftDeleteByDocumentAsync(id, invoiceString);
+            await transactionRepository.SoftDeleteByDocumentAsync(id, $"{invoiceString}_Reversal");
+
             return await invoiceRepository.DeleteAsync(id);
         }
 

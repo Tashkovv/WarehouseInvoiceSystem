@@ -130,32 +130,32 @@ else
 
                         <MudItem xs="4">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Total")</MudText>
-                            <div class="wis-stat-value mud-primary-text">@_invoice.TotalAmount.ToString("C")</div>
+                            <div class="wis-stat-value mud-primary-text">@Math.Round(_invoice.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")</div>
                             <div class="d-flex align-center gap-3 mt-1">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    @Localization.GetString("Subtotal"): @_invoice.SubTotal.ToString("C")
+                                    @Localization.GetString("Subtotal"): @Math.Round(_invoice.SubTotal, 0, MidpointRounding.AwayFromZero).ToString("C0")
                                 </MudText>
                                 @if (_invoice.DiscountTotal > 0)
                                 {
                                     <MudText Typo="Typo.caption" Class="mud-error-text">
-                                        @Localization.GetString("Discount"): -@_invoice.DiscountTotal.ToString("C")
+                                        @Localization.GetString("Discount"): -@Math.Round(_invoice.DiscountTotal, 0, MidpointRounding.AwayFromZero).ToString("C0")
                                     </MudText>
                                 }
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    @Localization.GetString("Tax"): @_invoice.TaxAmount.ToString("C")
+                                    @Localization.GetString("Tax"): @Math.Round(_invoice.TaxAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")
                                 </MudText>
                             </div>
                         </MudItem>
 
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AmountPaid")</MudText>
-                            <div class="wis-stat-value mud-success-text">@_invoice.AmountPaid.ToString("C")</div>
+                            <div class="wis-stat-value mud-success-text">@Math.Round(_invoice.AmountPaid, 0, MidpointRounding.AwayFromZero).ToString("C0")</div>
                         </MudItem>
 
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AmountDue")</MudText>
                             <div class="wis-stat-value @(_invoice.AmountDue > 0 ? "mud-error-text" : "mud-success-text")">
-                                @_invoice.AmountDue.ToString("C")
+                                @Math.Round(_invoice.AmountDue, 0, MidpointRounding.AwayFromZero).ToString("C0")
                             </div>
                         </MudItem>
 
@@ -221,11 +221,11 @@ else
                                                  Variant="Variant.Outlined"
                                                  Color="@(ok ? Color.Success : Color.Warning)"
                                                  Icon="@(ok ? Icons.Material.Outlined.Inventory2 : Icons.Material.Outlined.WarningAmber)">
-                                            @avail.ToString("N2") @context.ProductUnit
+                                            @Math.Round(avail, 0, MidpointRounding.AwayFromZero).ToString("N0") @context.ProductUnit
                                         </MudChip>
                                     }
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">
-                                        @context.Quantity.ToString("N2")
+                                        @context.Quantity.ToString("N0")
                                         <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">@context.ProductUnit</MudText>
                                     </MudText>
                                 </div>
@@ -246,7 +246,7 @@ else
                             }
                             <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
                                 <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
-                                    @context.TotalAmount.ToString("C")
+                                    @Math.Round(context.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")
                                 </MudText>
                             </MudTd>
                         </RowTemplate>
@@ -312,7 +312,7 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
-                                        @context.Amount.ToString("C")
+                                        @Math.Round(context.Amount, 0, MidpointRounding.AwayFromZero).ToString("C0")
                                     </MudText>
                                 </MudTd>
                             </RowTemplate>
@@ -443,34 +443,37 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Info(Icons.Material.Filled.Send,             Localization.GetString("Send"), OpenSendEmailDialog),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
+                if (_invoice.Type == InvoiceType.Receivable)
+                    _actions.Insert(0, _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog));
                 break;
 
             case InvoiceStatus.PartiallyPaid:
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Info(Icons.Material.Filled.Send,             Localization.GetString("Send"), OpenSendEmailDialog),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                 ];
+                if (_invoice.Type == InvoiceType.Receivable)
+                    _actions.Insert(0, _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog));
                 break;
 
             case InvoiceStatus.Overdue:
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Info(Icons.Material.Filled.Send,             Localization.GetString("Send"), OpenSendEmailDialog),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
+                if (_invoice.Type == InvoiceType.Receivable)
+                    _actions.Insert(0, _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog));
                 break;
 
             case InvoiceStatus.Paid:
