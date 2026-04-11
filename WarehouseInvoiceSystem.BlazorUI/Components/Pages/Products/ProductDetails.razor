@@ -135,10 +135,10 @@ else
                             <HeaderContent>
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
+                                <MudTh>@Localization.GetString("LastRestocked")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Reserved")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Available")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Minimum")</MudTh>
-                                <MudTh>@Localization.GetString("LastRestocked")</MudTh>
                                 <MudTh />
                             </HeaderContent>
                             <RowTemplate>
@@ -151,6 +151,9 @@ else
                                         @context.Quantity.ToString("N2") @_product.Unit
                                     </MudText>
                                 </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("LastRestocked")">
+                                    <MudText Typo="Typo.body2">@(context.LastRestockedAt?.ToString("dd MMM yyyy") ?? "-")</MudText>
+                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Reserved")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.ReservedQuantity.ToString("N2") @_product.Unit</MudText>
                                 </MudTd>
@@ -159,9 +162,6 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Minimum")" Class="text-right">
                                     <MudText Typo="Typo.body2">@(context.MinimumQuantity?.ToString("N2") ?? "0,00") @_product.Unit</MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("LastRestocked")">
-                                    <MudText Typo="Typo.body2">@(context.LastRestockedAt?.ToString("dd MMM yyyy") ?? "-")</MudText>
                                 </MudTd>
                                 <MudTd>
                                     <MudIconButton Icon="@Icons.Material.Filled.Tune"
@@ -441,6 +441,11 @@ else
                 : _act.Success(Icons.Material.Filled.PowerSettingsNew,  Localization.GetString("Activate"),   ToggleActiveStatus, dividerBefore: true),
         ];
 
+        if (!_product.IsActive)
+        {
+            _actions.Add(_act.Error(Icons.Material.Filled.DeleteForever, Localization.GetString("Delete"), DeleteProduct, dividerBefore: true));
+        }
+
         _transactionsAction = _act.Secondary(Icons.Material.Filled.SyncAlt, Localization.GetString("Transactions"), () => Navigation.NavigateTo($"/products/{Id}/transactions{(_selectedWarehouseId.HasValue ? $"?warehouse={_selectedWarehouseId}" : "")}"));
     }
 
@@ -478,6 +483,34 @@ else
             async () => { await ProductService.SetActiveStatusAsync(Id, true); await LoadProduct(); },
             "ProductActivated", "ErrorUpdatingProduct",
             Localization.GetString("Activate"), Localization.GetString("Cancel"));
+
+    private async Task DeleteProduct()
+    {
+        bool confirmed = await WisDialog.ConfirmAsync(
+            Localization.GetString("Delete"),
+            Localization.GetString("DeleteProductConfirm"),
+            Localization.GetString("Delete"),
+            Localization.GetString("Cancel"));
+        if (!confirmed) return;
+
+        try
+        {
+            await ProductService.DeleteProductAsync(Id);
+            Snackbar.Add(Localization.GetString("ProductDeleted"), Severity.Success);
+            Navigation.NavigateTo("/products");
+        }
+        catch (InvalidOperationException ex)
+        {
+            string key = ex.Message is "ProductInUseCannotDelete" or "ProductMustBeInactiveToDelete"
+                ? ex.Message : "ErrorDeletingProduct";
+            Snackbar.Add(Localization.GetString(key), Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting product: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
+        }
+    }
 
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {

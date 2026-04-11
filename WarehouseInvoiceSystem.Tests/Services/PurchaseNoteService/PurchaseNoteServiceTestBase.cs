@@ -108,7 +108,7 @@ public abstract class PurchaseNoteServiceTestBase
     protected void SetupValidCreate(CreatePurchaseNoteDto dto)
     {
         IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FirstName = "Test", LastName = "User" });
+            .Returns(new Individual { FirstName = "Test", LastName = "User", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(true);
         PurchaseNoteRepo.GenerateNoteNumberAsync(Arg.Any<CancellationToken>()).Returns("OB-000001");

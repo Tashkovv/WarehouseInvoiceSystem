@@ -116,7 +116,8 @@ public abstract class InvoiceServiceTestBase
 
     protected void SetupValidCreate(CreateInvoiceDto dto)
     {
-        CompanyRepo.ExistsAsync(dto.CompanyId, Arg.Any<CancellationToken>()).Returns(true);
+        CompanyRepo.GetByIdAsync(dto.CompanyId, Arg.Any<CancellationToken>())
+            .Returns(new Company { Name = "Test Company", Email = "test@test.com", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(true);
         InvoiceRepo.GenerateInvoiceNumberAsync(dto.Type, Arg.Any<CancellationToken>()).Returns("INV-000001");

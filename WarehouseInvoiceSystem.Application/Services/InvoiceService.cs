@@ -108,8 +108,11 @@
             if (createDto.LineItems == null || createDto.LineItems.Count == 0)
                 throw new InvalidOperationException("An invoice must have at least one line item.");
 
-            if (!await companyRepository.ExistsAsync(createDto.CompanyId))
-                throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
+            Company company = await companyRepository.GetByIdAsync(createDto.CompanyId)
+                ?? throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
+
+            if (!company.IsActive)
+                throw new InvalidOperationException("CompanyInactiveCannotCreate");
 
             if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");

@@ -122,6 +122,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(i => i.Payments)
                     .FirstOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber, ct));
 
+        public Task<bool> IsProductInActiveInvoicesAsync(Guid productId, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+                All<InvoiceLine>(context)
+                    .AnyAsync(li => li.ProductId == productId &&
+                                    li.Invoice.DeletedOn == null &&
+                                    li.Invoice.Status != InvoiceStatus.Paid &&
+                                    li.Invoice.Status != InvoiceStatus.Cancelled, ct));
+
         public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {

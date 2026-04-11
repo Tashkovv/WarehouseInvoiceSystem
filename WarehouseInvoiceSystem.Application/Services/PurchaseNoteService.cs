@@ -101,6 +101,9 @@
             Individual individual = await individualRepository.GetByIdAsync(createDto.IndividualId)
                 ?? throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
 
+            if (!individual.IsActive)
+                throw new InvalidOperationException("IndividualInactiveCannotCreate");
+
             if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
 

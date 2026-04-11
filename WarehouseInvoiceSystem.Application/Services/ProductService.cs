@@ -240,7 +240,7 @@
         {
             // Validate unique code
             if (await productRepository.CodeExistsAsync(createDto.Code))
-                throw new InvalidOperationException($"Product with code '{createDto.Code}' already exists");
+                throw new InvalidOperationException("ProductCodeAlreadyExists");
 
             Product product = new()
             {
@@ -286,8 +286,13 @@
             Product? product = await productRepository.GetByIdAsync(id);
             if (product == null) return false;
             if (product.IsActive)
-                throw new InvalidOperationException(
-                    $"Product '{product.Code}' must be deactivated before it can be deleted.");
+                throw new InvalidOperationException("ProductMustBeInactiveToDelete");
+
+            bool inActiveInvoices = await invoiceRepository.IsProductInActiveInvoicesAsync(id);
+            bool inActivePurchaseNotes = await purchaseNoteRepository.IsProductInActivePurchaseNotesAsync(id);
+            if (inActiveInvoices || inActivePurchaseNotes)
+                throw new InvalidOperationException("ProductInUseCannotDelete");
+
             return await productRepository.DeleteAsync(id);
         }
 

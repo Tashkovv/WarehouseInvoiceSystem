@@ -128,7 +128,7 @@ public class CreateTests : InvoiceServiceTestBase
     public async Task InvalidCompany_ThrowsKeyNotFound()
     {
         var dto = BuildCreateDto();
-        CompanyRepo.ExistsAsync(dto.CompanyId, Arg.Any<CancellationToken>()).Returns(false);
+        CompanyRepo.GetByIdAsync(dto.CompanyId, Arg.Any<CancellationToken>()).Returns((Company?)null);
         var service = CreateService();
 
         await service.Invoking(s => s.CreateInvoiceAsync(dto))
@@ -136,10 +136,24 @@ public class CreateTests : InvoiceServiceTestBase
     }
 
     [Fact]
+    public async Task InactiveCompany_ThrowsInvalidOperation()
+    {
+        var dto = BuildCreateDto();
+        CompanyRepo.GetByIdAsync(dto.CompanyId, Arg.Any<CancellationToken>())
+            .Returns(new Company { Name = "Test Company", Email = "test@test.com", IsActive = false });
+        var service = CreateService();
+
+        await service.Invoking(s => s.CreateInvoiceAsync(dto))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("CompanyInactiveCannotCreate");
+    }
+
+    [Fact]
     public async Task InvalidWarehouse_ThrowsKeyNotFound()
     {
         var dto = BuildCreateDto();
-        CompanyRepo.ExistsAsync(dto.CompanyId, Arg.Any<CancellationToken>()).Returns(true);
+        CompanyRepo.GetByIdAsync(dto.CompanyId, Arg.Any<CancellationToken>())
+            .Returns(new Company { Name = "Test Company", Email = "test@test.com", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(false);
         var service = CreateService();
 
@@ -151,7 +165,8 @@ public class CreateTests : InvoiceServiceTestBase
     public async Task InvalidProduct_ThrowsKeyNotFound()
     {
         var dto = BuildCreateDto();
-        CompanyRepo.ExistsAsync(dto.CompanyId, Arg.Any<CancellationToken>()).Returns(true);
+        CompanyRepo.GetByIdAsync(dto.CompanyId, Arg.Any<CancellationToken>())
+            .Returns(new Company { Name = "Test Company", Email = "test@test.com", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(false);
         var service = CreateService();

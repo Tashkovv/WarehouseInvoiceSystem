@@ -152,7 +152,10 @@
         }
         catch (InvalidOperationException ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            string msg = ex.Message == "ProductCodeAlreadyExists"
+                ? string.Format(Localization.GetString("ProductCodeAlreadyExists"), _product.Code)
+                : ex.Message;
+            Snackbar.Add(msg, Severity.Error);
         }
         catch (Exception ex)
         {

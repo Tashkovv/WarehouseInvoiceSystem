@@ -451,6 +451,10 @@ else
                 Navigation.NavigateTo("/purchase-notes");
             }
         }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(Localization.GetString(ex.Message), Severity.Error);
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"Error creating purchase note: {ex.Message}");

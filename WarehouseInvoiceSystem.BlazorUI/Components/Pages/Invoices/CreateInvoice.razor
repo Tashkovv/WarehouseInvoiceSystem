@@ -651,6 +651,10 @@ else
             Snackbar.Add(Localization.GetString("InvoiceCreated"), Severity.Success);
             Navigation.NavigateTo($"/invoices/{id}");
         }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add(Localization.GetString(ex.Message), Severity.Error);
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"Error creating invoice: {ex.Message}");

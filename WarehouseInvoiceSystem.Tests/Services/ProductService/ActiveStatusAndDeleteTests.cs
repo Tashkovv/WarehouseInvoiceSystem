@@ -40,6 +40,8 @@ public class ActiveStatusAndDeleteTests : ProductServiceTestBase
     {
         var product = CreateEntity(isActive: false);
         ProductRepo.GetByIdAsync(product.Id).Returns(product);
+        InvoiceRepo.IsProductInActiveInvoicesAsync(product.Id, Arg.Any<CancellationToken>()).Returns(false);
+        PurchaseNoteRepo.IsProductInActivePurchaseNotesAsync(product.Id, Arg.Any<CancellationToken>()).Returns(false);
         ProductRepo.DeleteAsync(product.Id).Returns(true);
         var service = CreateService();
 
@@ -58,7 +60,22 @@ public class ActiveStatusAndDeleteTests : ProductServiceTestBase
 
         await service.Invoking(s => s.DeleteProductAsync(product.Id))
             .Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*deactivated*");
+            .WithMessage("ProductMustBeInactiveToDelete");
+    }
+
+    [Fact]
+    public async Task Delete_ProductInActiveDocuments_ThrowsInvalidOperation()
+    {
+        var product = CreateEntity(isActive: false);
+        ProductRepo.GetByIdAsync(product.Id).Returns(product);
+        InvoiceRepo.IsProductInActiveInvoicesAsync(product.Id, Arg.Any<CancellationToken>()).Returns(true);
+        PurchaseNoteRepo.IsProductInActivePurchaseNotesAsync(product.Id, Arg.Any<CancellationToken>()).Returns(false);
+        var service = CreateService();
+
+        await service.Invoking(s => s.DeleteProductAsync(product.Id))
+            .Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("ProductInUseCannotDelete");
+        await ProductRepo.DidNotReceive().DeleteAsync(Arg.Any<Guid>());
     }
 
     [Fact]

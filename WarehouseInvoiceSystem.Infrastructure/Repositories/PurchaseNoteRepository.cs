@@ -109,6 +109,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .ToListAsync(ct);
             });
 
+        public Task<bool> IsProductInActivePurchaseNotesAsync(Guid productId, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+                All<PurchaseNoteLine>(context)
+                    .AnyAsync(li => li.ProductId == productId &&
+                                    li.PurchaseNote.DeletedOn == null &&
+                                    li.PurchaseNote.Status != PurchaseNoteStatus.Paid &&
+                                    li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled, ct));
+
         public Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
