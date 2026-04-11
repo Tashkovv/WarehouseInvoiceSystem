@@ -21,7 +21,7 @@
                 <MudItem xs="12" sm="6">
                     @if (_productLocked)
                     {
-                        <MudTextField Value="@_selectedProduct?.Name"
+                        <MudTextField Value="@(_selectedProduct is null ? string.Empty : $"{_selectedProduct.Code} - {_selectedProduct.Name}")"
                                       Label="@Localization.GetString("Product")"
                                       Variant="Variant.Outlined"
                                       ReadOnly="true"
@@ -33,7 +33,7 @@
                                          Value="_selectedProduct"
                                          ValueChanged="OnProductSelected"
                                          SearchFunc="SearchProducts"
-                                         ToStringFunc="@(p => p?.Name ?? string.Empty)"
+                                         ToStringFunc="@(p => p is null ? string.Empty : $"{p.Code} - {p.Name}")"
                                          Label="@Localization.GetString("Product")"
                                          Variant="Variant.Outlined"
                                          Required="true"
