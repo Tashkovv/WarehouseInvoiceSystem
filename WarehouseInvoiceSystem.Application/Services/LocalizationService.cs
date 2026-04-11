@@ -36,7 +36,7 @@ namespace WarehouseInvoiceSystem.Application.Services
             CultureInfo culture = new($"{language}-{language.ToUpper()}");
 
             culture.NumberFormat.CurrencySymbol = language == "mk" ? "ден." : "MKD";
-            culture.NumberFormat.CurrencyDecimalDigits = 2;
+            culture.NumberFormat.CurrencyDecimalDigits = 0;
             culture.NumberFormat.CurrencyPositivePattern = 3;
             CultureInfo.DefaultThreadCurrentCulture = culture;
             CultureInfo.DefaultThreadCurrentUICulture = culture;

@@ -100,19 +100,19 @@
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("CurrentStock")</MudText>
                                     <MudText Typo="Typo.subtitle2"
                                              Color="@(_sourceStock.Quantity <= 0 ? Color.Warning : Color.Primary)">
-                                        @_sourceStock.Quantity.ToString("N2") @_selectedProduct?.Unit
+                                        @_sourceStock.Quantity.ToString("N0") @_selectedProduct?.Unit
                                     </MudText>
                                 </MudItem>
                                 <MudItem xs="4" Class="text-center">
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MinimumQuantity")</MudText>
                                     <MudText Typo="Typo.subtitle2" Color="Color.Default">
-                                        @(_sourceStock.MinimumQuantity?.ToString("N2") ?? "—")
+                                        @(_sourceStock.MinimumQuantity?.ToString("N0") ?? "—")
                                     </MudText>
                                 </MudItem>
                                 <MudItem xs="4" Class="text-center">
                                     <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("ReorderPoint")</MudText>
                                     <MudText Typo="Typo.subtitle2" Color="Color.Default">
-                                        @(_sourceStock.ReorderPoint?.ToString("N2") ?? "—")
+                                        @(_sourceStock.ReorderPoint?.ToString("N0") ?? "—")
                                     </MudText>
                                 </MudItem>
                             </MudGrid>
@@ -132,7 +132,7 @@
                                      HideSpinButtons="true"
                                      FullWidth="true"
                                      Error="@_quantityExceedsStock"
-                                     ErrorText="@(_quantityExceedsStock ? $"{Localization.GetString("ExceedsStock")} ({_sourceStock!.Quantity:N2} {_selectedProduct?.Unit})" : null)" />
+                                     ErrorText="@(_quantityExceedsStock ? $"{Localization.GetString("ExceedsStock")} ({_sourceStock!.Quantity:N0} {_selectedProduct?.Unit})" : null)" />
                 </MudItem>
 
                 @* Note *@

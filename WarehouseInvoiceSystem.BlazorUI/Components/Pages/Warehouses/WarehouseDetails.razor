@@ -122,7 +122,7 @@ else
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
                                              Color="@GetQuantityColor(context)">
-                                        @context.Quantity.ToString("N2") @context.ProductUnit
+                                        @context.Quantity.ToString("N0") @context.ProductUnit
                                     </MudText>
                                 </MudTd>                                
                                 <MudTd DataLabel="@Localization.GetString("LastRestocked")">
@@ -132,7 +132,7 @@ else
                                     <MudText Typo="Typo.body2">
                                         @if (context.MinimumQuantity.HasValue)
                                         {
-                                            @($"{context.MinimumQuantity.Value.ToString("N2")} {context.ProductUnit}")
+                                            @($"{context.MinimumQuantity.Value.ToString("N0")} {context.ProductUnit}")
                                         }
                                         else
                                         {
@@ -144,7 +144,7 @@ else
                                     <MudText Typo="Typo.body2">
                                         @if (context.ReorderPoint.HasValue)
                                         {
-                                            @($"{context.ReorderPoint.Value.ToString("N2")} {context.ProductUnit}")
+                                            @($"{context.ReorderPoint.Value.ToString("N0")} {context.ProductUnit}")
                                         }
                                         else
                                         {

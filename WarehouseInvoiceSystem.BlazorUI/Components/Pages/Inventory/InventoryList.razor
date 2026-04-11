@@ -120,7 +120,7 @@
                             <MudText Typo="Typo.body2"
                                      Class="wis-cell-amount"
                                      Color="@(IsLowStock(context.Item) ? Color.Error : Color.Default)">
-                                @context.Item.Quantity.ToString("N2") @context.Item.ProductUnit
+                                @context.Item.Quantity.ToString("N0") @context.Item.ProductUnit
                             </MudText>
                             @if (IsLowStock(context.Item))
                             {
@@ -150,7 +150,7 @@
                     <CellTemplate>
                         @if (context.Item.MinimumQuantity.HasValue)
                         {
-                            @($"{context.Item.MinimumQuantity.Value.ToString("N2")} {context.Item.ProductUnit}")
+                            @($"{context.Item.MinimumQuantity.Value.ToString("N0")} {context.Item.ProductUnit}")
                         }
                         else
                         {
@@ -168,7 +168,7 @@
                     <CellTemplate>
                         @if (context.Item.ReorderPoint.HasValue)
                         {
-                            @($"{context.Item.ReorderPoint.Value.ToString("N2")} {context.Item.ProductUnit}")
+                            @($"{context.Item.ReorderPoint.Value.ToString("N0")} {context.Item.ProductUnit}")
                         }
                         else
                         {

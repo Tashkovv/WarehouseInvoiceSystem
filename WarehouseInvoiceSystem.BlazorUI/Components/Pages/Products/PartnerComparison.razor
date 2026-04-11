@@ -184,7 +184,7 @@ else
                                     <MudText Typo="Typo.body2">@context.DocumentCount</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@context.TotalQuantity.ToString("N2") @_product.Unit</MudText>
+                                    <MudText Typo="Typo.body2">@context.TotalQuantity.ToString("N0") @_product.Unit</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("AveragePrice")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.AverageUnitPrice.ToString("C")</MudText>

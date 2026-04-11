@@ -140,7 +140,7 @@ else
                                             <div class="wis-detail-history-product-text">
                                                 <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("MostPurchasedProduct")</MudText>
                                                 <MudText Typo="Typo.body2" Class="wis-capitalize font-weight-medium wis-truncate">@_analytics.MostPurchasedProduct</MudText>
-                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.MostPurchasedProductQuantity.ToString("N2") @_analytics.MostPurchasedProductUnit</MudText>
+                                                <MudText Typo="Typo.body2" Color="Color.Secondary">@_analytics.MostPurchasedProductQuantity.ToString("N0") @_analytics.MostPurchasedProductUnit</MudText>
                                             </div>
                                         </div>
                                     }

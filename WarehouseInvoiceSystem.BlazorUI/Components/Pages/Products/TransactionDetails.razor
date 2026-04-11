@@ -74,7 +74,7 @@ else
                             <div class="wis-detail-contact-item">
                                 <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                    @Localization.GetString("Stock"): @_currentStock.Value.ToString("N2") @_product.Unit
+                                    @Localization.GetString("Stock"): @_currentStock.Value.ToString("N0") @_product.Unit
                                     @if (!string.IsNullOrEmpty(_selectedWarehouseName))
                                     {
                                         <span class="ml-1">(@_selectedWarehouseName)</span>
@@ -85,13 +85,13 @@ else
                         <div class="wis-detail-contact-item">
                             <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Size="Size.Small" Color="Color.Success" />
                             <MudText Typo="Typo.body2" Color="Color.Success">
-                                @Localization.GetString("TotalIncoming"): @_totalIncoming.ToString("N2") @_product.Unit
+                                @Localization.GetString("TotalIncoming"): @_totalIncoming.ToString("N0") @_product.Unit
                             </MudText>
                         </div>
                         <div class="wis-detail-contact-item">
                             <MudIcon Icon="@Icons.Material.Filled.ArrowUpward" Size="Size.Small" Color="Color.Error" />
                             <MudText Typo="Typo.body2" Color="Color.Error">
-                                @Localization.GetString("TotalOutgoing"): @_totalOutgoing.ToString("N2") @_product.Unit
+                                @Localization.GetString("TotalOutgoing"): @_totalOutgoing.ToString("N0") @_product.Unit
                             </MudText>
                         </div>
                     </div>
@@ -316,7 +316,7 @@ else
                             <div class="d-flex align-center gap-2 ml-auto">
                                 <MudChip T="string" Size="Size.Small" Color="Color.Default"
                                          Icon="@Icons.Material.Filled.Scale">
-                                    @_historyTotalQuantity.ToString("N2") @_product!.Unit
+                                    @_historyTotalQuantity.ToString("N0") @_product!.Unit
                                 </MudChip>
                                 <MudChip T="string" Size="Size.Small"
                                          Color="@(_historyMode == HistoryMode.Purchased ? Color.Info : Color.Success)"
@@ -375,7 +375,7 @@ else
                                     <MudText Typo="Typo.body2">@context.Date.ToString("dd MMM yyyy")</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@context.Quantity.ToString("N2") @_product!.Unit</MudText>
+                                    <MudText Typo="Typo.body2">@context.Quantity.ToString("N0") @_product!.Unit</MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
                                     <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
@@ -701,9 +701,9 @@ else
                     Localization.GetString("StockMovements"),
                     $"{Localization.GetString("StockMovementsFor")} {_product.Name}",
                     [
-                        $"{Localization.GetString("TotalIncoming")}: +{totalIncoming:N2} {unit}",
-                        $"{Localization.GetString("TotalOutgoing")}: -{totalOutgoing:N2} {unit}",
-                        $"{Localization.GetString("CurrentStock")}: {_currentStock?.ToString("N2") ?? "0.00"} {unit}",
+                        $"{Localization.GetString("TotalIncoming")}: +{totalIncoming:N0} {unit}",
+                        $"{Localization.GetString("TotalOutgoing")}: -{totalOutgoing:N0} {unit}",
+                        $"{Localization.GetString("CurrentStock")}: {_currentStock?.ToString("N0") ?? "0.00"} {unit}",
                     ]));
 
             string fileName = $"{Localization.GetString("StockMovements")}_{_product.Name}_{DateTime.UtcNow:yyyyMMdd}.xlsx";

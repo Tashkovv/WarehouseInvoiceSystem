@@ -23,7 +23,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 // Culture setup 
 CultureInfo mkdCulture = new("mk-MK");
 mkdCulture.NumberFormat.CurrencySymbol = "ден.";
-mkdCulture.NumberFormat.CurrencyDecimalDigits = 2;
+mkdCulture.NumberFormat.CurrencyDecimalDigits = 0;
 mkdCulture.NumberFormat.CurrencyPositivePattern = 3;
 
 CultureInfo.DefaultThreadCurrentCulture = mkdCulture;

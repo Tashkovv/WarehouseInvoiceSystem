@@ -130,32 +130,32 @@ else
 
                         <MudItem xs="4">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("Total")</MudText>
-                            <div class="wis-stat-value mud-primary-text">@Math.Round(_invoice.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")</div>
+                            <div class="wis-stat-value mud-primary-text">@_invoice.TotalAmount.ToString("C")</div>
                             <div class="d-flex align-center gap-3 mt-1">
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    @Localization.GetString("Subtotal"): @Math.Round(_invoice.SubTotal, 0, MidpointRounding.AwayFromZero).ToString("C0")
+                                    @Localization.GetString("Subtotal"): @_invoice.SubTotal.ToString("C")
                                 </MudText>
                                 @if (_invoice.DiscountTotal > 0)
                                 {
                                     <MudText Typo="Typo.caption" Class="mud-error-text">
-                                        @Localization.GetString("Discount"): -@Math.Round(_invoice.DiscountTotal, 0, MidpointRounding.AwayFromZero).ToString("C0")
+                                        @Localization.GetString("Discount"): -@_invoice.DiscountTotal.ToString("C")
                                     </MudText>
                                 }
                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    @Localization.GetString("Tax"): @Math.Round(_invoice.TaxAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")
+                                    @Localization.GetString("Tax"): @_invoice.TaxAmount.ToString("C")
                                 </MudText>
                             </div>
                         </MudItem>
 
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AmountPaid")</MudText>
-                            <div class="wis-stat-value mud-success-text">@Math.Round(_invoice.AmountPaid, 0, MidpointRounding.AwayFromZero).ToString("C0")</div>
+                            <div class="wis-stat-value mud-success-text">@_invoice.AmountPaid.ToString("C")</div>
                         </MudItem>
 
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("AmountDue")</MudText>
                             <div class="wis-stat-value @(_invoice.AmountDue > 0 ? "mud-error-text" : "mud-success-text")">
-                                @Math.Round(_invoice.AmountDue, 0, MidpointRounding.AwayFromZero).ToString("C0")
+                                @_invoice.AmountDue.ToString("C")
                             </div>
                         </MudItem>
 
@@ -221,7 +221,7 @@ else
                                                  Variant="Variant.Outlined"
                                                  Color="@(ok ? Color.Success : Color.Warning)"
                                                  Icon="@(ok ? Icons.Material.Outlined.Inventory2 : Icons.Material.Outlined.WarningAmber)">
-                                            @Math.Round(avail, 0, MidpointRounding.AwayFromZero).ToString("N0") @context.ProductUnit
+                                            @avail.ToString("N0") @context.ProductUnit
                                         </MudChip>
                                     }
                                     <MudText Typo="Typo.body2" Class="font-weight-medium">
@@ -246,7 +246,7 @@ else
                             }
                             <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
                                 <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
-                                    @Math.Round(context.TotalAmount, 0, MidpointRounding.AwayFromZero).ToString("C0")
+                                    @context.TotalAmount.ToString("C")
                                 </MudText>
                             </MudTd>
                         </RowTemplate>
@@ -312,7 +312,7 @@ else
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
                                     <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
-                                        @Math.Round(context.Amount, 0, MidpointRounding.AwayFromZero).ToString("C0")
+                                        @context.Amount.ToString("C")
                                     </MudText>
                                 </MudTd>
                             </RowTemplate>

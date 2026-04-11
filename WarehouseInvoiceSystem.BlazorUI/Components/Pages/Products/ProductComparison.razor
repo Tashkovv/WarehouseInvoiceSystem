@@ -139,13 +139,13 @@
                                 <MudText Typo="Typo.body2">@context.DocumentCount</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Incoming")" Class="text-right">
-                                <MudText Typo="Typo.body2">@context.IncomingQuantity.ToString("N2") @context.ProductUnit</MudText>
+                                <MudText Typo="Typo.body2">@context.IncomingQuantity.ToString("N0") @context.ProductUnit</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("IncomingAmount")" Class="text-right">
                                 <MudText Typo="Typo.body2">@context.IncomingAmount.ToString("C")</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("Outgoing")" Class="text-right">
-                                <MudText Typo="Typo.body2">@context.OutgoingQuantity.ToString("N2") @context.ProductUnit</MudText>
+                                <MudText Typo="Typo.body2">@context.OutgoingQuantity.ToString("N0") @context.ProductUnit</MudText>
                             </MudTd>
                             <MudTd DataLabel="@Localization.GetString("OutgoingAmount")" Class="text-right">
                                 <MudText Typo="Typo.body2">@context.OutgoingAmount.ToString("C")</MudText>

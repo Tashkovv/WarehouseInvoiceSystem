@@ -174,7 +174,7 @@ else
                         </MudTd>
                         <MudTd Class="text-right">
                             <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers text-right">
-                                @Math.Round(item.Quantity, 0, MidpointRounding.AwayFromZero).ToString("N0") @(item.SelectedProduct?.Unit ?? "")
+                                @item.Quantity.ToString("N0") @(item.SelectedProduct?.Unit ?? "")
                             </MudText>
                         </MudTd>
                         <MudTd Class="text-right">
@@ -189,7 +189,7 @@ else
                         </MudTd>
                         <MudTd Class="text-right">
                             <MudText Typo="Typo.body2" Class="font-weight-medium tabular-numbers text-right">
-                                @(Math.Round(item.Quantity * item.UnitPrice, 0, MidpointRounding.AwayFromZero).ToString("C0"))
+                                @((item.Quantity * item.UnitPrice).ToString("C"))
                             </MudText>
                         </MudTd>
                         <MudTd>
@@ -212,7 +212,7 @@ else
                 <div class="d-flex justify-end gap-4 px-2 pb-1">
                     <div class="d-flex align-center gap-2">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Total"):</MudText>
-                        <MudText Typo="Typo.h6" Color="Color.Primary" Class="font-weight-bold tabular-numbers">@Math.Round(_total, 0, MidpointRounding.AwayFromZero).ToString("C0")</MudText>
+                        <MudText Typo="Typo.h6" Color="Color.Primary" Class="font-weight-bold tabular-numbers">@_total.ToString("C")</MudText>
                     </div>
                 </div>
             </MudForm>

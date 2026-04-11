@@ -212,13 +212,13 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 
         protected static string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
         {
-            InventoryTransactionType.Inbound => $"+{quantity:N2}",
-            InventoryTransactionType.Outbound => $"-{quantity:N2}",
-            InventoryTransactionType.TransferIn => $"+{quantity:N2}",
-            InventoryTransactionType.TransferOut => $"-{quantity:N2}",
-            InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-            InventoryTransactionType.Reversed => quantity > 0 ? $"+{quantity:N2}" : quantity.ToString("N2"),
-            _ => quantity.ToString("N2")
+            InventoryTransactionType.Inbound => $"+{quantity:N0}",
+            InventoryTransactionType.Outbound => $"-{quantity:N0}",
+            InventoryTransactionType.TransferIn => $"+{quantity:N0}",
+            InventoryTransactionType.TransferOut => $"-{quantity:N0}",
+            InventoryTransactionType.Adjustment => quantity > 0 ? $"+{quantity:N0}" : quantity.ToString("N0"),
+            InventoryTransactionType.Reversed => quantity > 0 ? $"+{quantity:N0}" : quantity.ToString("N0"),
+            _ => quantity.ToString("N0")
         };
 
         protected static Color GetQuantityColor(InventoryTransactionType type, decimal quantity) => type switch
