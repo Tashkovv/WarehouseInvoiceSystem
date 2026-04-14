@@ -1,6 +1,7 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
@@ -8,8 +9,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class StockLevelRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), IStockLevelRepository
+    public class StockLevelRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), IStockLevelRepository
     {
         public Task<IEnumerable<StockLevel>> GetAllStockLevelAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
@@ -199,7 +200,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (warehouseId.HasValue)
                     q = q.Where(s => s.WarehouseId == warehouseId.Value);
 
-                int totalProducts = await q.Select(s => s.ProductId).Distinct().CountAsync(ct);
+                // Total Products = catalog count of active products. Counting from StockLevel
+                // would miss any product that has never had an inventory transaction
+                // (StockLevel rows are only created on first ApplyDeltaAsync call).
+                int totalProducts = await All<Product>(context)
+                    .Where(p => p.IsActive)
+                    .CountAsync(ct);
+
                 int inStockCount = await q.Where(s => s.Quantity > 0).Select(s => s.ProductId).Distinct().CountAsync(ct);
                 decimal totalStockValue = await q.SumAsync(s => s.Quantity * s.Product.SellingPrice, ct);
                 int lowStockCount = await q.CountAsync(

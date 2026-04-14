@@ -1,6 +1,7 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Common;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
@@ -13,17 +14,28 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     public abstract class BaseRepository
     {
         private readonly IDbContextFactory<ApplicationDbContext> _factory;
+        private readonly IAuditContextService _auditContext;
 
-        protected BaseRepository(IDbContextFactory<ApplicationDbContext> factory)
+        protected BaseRepository(
+            IDbContextFactory<ApplicationDbContext> factory,
+            IAuditContextService auditContext)
         {
             _factory = factory;
+            _auditContext = auditContext;
+        }
+
+        private ApplicationDbContext CreateContext()
+        {
+            var context = _factory.CreateDbContext();
+            context.CurrentUsername = _auditContext.CurrentUsername;
+            return context;
         }
 
         protected async Task<TResult> WithContextAsync<TResult>(
             Func<ApplicationDbContext, Task<TResult>> action,
             CancellationToken ct = default)
         {
-            await using var context = _factory.CreateDbContext();
+            await using var context = CreateContext();
             ct.ThrowIfCancellationRequested();
             return await action(context);
         }
@@ -32,7 +44,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             Func<ApplicationDbContext, Task> action,
             CancellationToken ct = default)
         {
-            await using var context = _factory.CreateDbContext();
+            await using var context = CreateContext();
             ct.ThrowIfCancellationRequested();
             await action(context);
         }
@@ -40,7 +52,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         protected async Task<TResult> WithTransactionAsync<TResult>(
             Func<ApplicationDbContext, Task<TResult>> action)
         {
-            await using var context = _factory.CreateDbContext();
+            await using var context = CreateContext();
             await using var tx = await context.Database.BeginTransactionAsync();
 
             var result = await action(context);

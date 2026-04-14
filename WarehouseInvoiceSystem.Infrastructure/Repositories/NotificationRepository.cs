@@ -1,12 +1,13 @@
 namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 {
     using Microsoft.EntityFrameworkCore;
+    using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
-    public class NotificationRepository(IDbContextFactory<ApplicationDbContext> factory)
-        : BaseRepository(factory), INotificationRepository
+    public class NotificationRepository(IDbContextFactory<ApplicationDbContext> factory, IAuditContextService auditContext)
+        : BaseRepository(factory, auditContext), INotificationRepository
     {
         public Task<int> GetUnreadCountAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>

@@ -6,7 +6,8 @@
     using WarehouseInvoiceSystem.Domain.Queries.Results;
     using WarehouseInvoiceSystem.Infrastructure.Data.Configuration;
 
-    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+    public class ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options) : DbContext(options)
     {
         public DbSet<Company> Companies { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
@@ -24,6 +25,7 @@
         public DbSet<Tenant> Tenants { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<NotificationInvoice> NotificationInvoices { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,6 +47,7 @@
             modelBuilder.ApplyConfiguration(new TenantConfiguration());
             modelBuilder.ApplyConfiguration(new NotificationConfiguration());
             modelBuilder.ApplyConfiguration(new NotificationInvoiceConfiguration());
+            modelBuilder.ApplyConfiguration(new AuditLogConfiguration());
 
             modelBuilder.Entity<ProductPurchaseHistoryView>(e =>
             {
@@ -53,22 +56,13 @@
             });
         }
 
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            DateTime now = DateTime.UtcNow;
+        public string? CurrentUsername { get; set; }
 
-            foreach (Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry<Domain.Common.AuditableEntity> entry
-                     in ChangeTracker.Entries<Domain.Common.AuditableEntity>())
-            {
-                if (entry.State == EntityState.Added)
-                    entry.Entity.CreatedAt = now;
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+            => AuditInterceptor.ExecuteAsync(this, cancellationToken);
 
-                if (entry.State == EntityState.Modified)
-                    entry.Entity.UpdatedAt = now;
-            }
-
-            return await base.SaveChangesAsync(cancellationToken);
-        }
+        internal Task<int> BaseSaveChangesAsync(CancellationToken cancellationToken)
+            => base.SaveChangesAsync(cancellationToken);
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {

@@ -1,0 +1,164 @@
+@using System.Text.Json
+@using WarehouseInvoiceSystem.Application.DTOs.AuditLog
+@using WarehouseInvoiceSystem.Domain.Enums
+@inject ILocalizationService Localization
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudGrid>
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("EntityType")</MudText>
+                    <MudText Typo="Typo.body1">@GetEntityTypeLabel(Entry.EntityType)</MudText>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("Action")</MudText>
+                    <div>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                 Color="@GetActionColor(Entry.Action)">
+                            @GetActionLabel(Entry.Action)
+                        </MudChip>
+                    </div>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("ChangedBy")</MudText>
+                    <MudText Typo="Typo.body1">@(Entry.Username == "Unknown" ? Localization.GetString("Unknown") : Entry.Username)</MudText>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("Timestamp")</MudText>
+                    <MudText Typo="Typo.body1">@Entry.Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</MudText>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">ID</MudText>
+                    <MudText Typo="Typo.body2" Class="wis-cell-mono">@Entry.EntityId</MudText>
+                </MudItem>
+            </MudGrid>
+
+            @if (_changes is { Count: > 0 })
+            {
+                <MudDivider />
+                <MudText Typo="Typo.h6">@Localization.GetString("Changes")</MudText>
+                <MudSimpleTable Dense="true" Hover="true" Bordered="true" Style="overflow-x: auto;">
+                    <thead>
+                        <tr>
+                            <th>@Localization.GetString("PropertyName")</th>
+                            <th>@Localization.GetString("OldValue")</th>
+                            <th>@Localization.GetString("NewValue")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (AuditChangeEntry change in _changes)
+                        {
+                            <tr>
+                                <td><strong>@Localization.GetString(change.Property)</strong></td>
+                                <td style="color: var(--mud-palette-error); word-break: break-all;">
+                                    @(FormatValue(change.OldValue) ?? "—")
+                                </td>
+                                <td style="color: var(--mud-palette-success); word-break: break-all;">
+                                    @(FormatValue(change.NewValue) ?? "—")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+            }
+            else if (Entry.Action == AuditAction.Deleted)
+            {
+                <MudDivider />
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                    @Localization.GetString("AuditDeletedMessage")
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+    <TitleContent>
+        <div class="d-flex align-center justify-space-between" style="width: 100%;">
+            <MudText Typo="Typo.h6">@Localization.GetString("AuditLogDetail")</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Size="Size.Small"
+                           OnClick="Close" />
+        </div>
+    </TitleContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public AuditLogDto Entry { get; set; } = null!;
+
+    private List<AuditChangeEntry>? _changes;
+
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrEmpty(Entry.Changes))
+        {
+            try
+            {
+                _changes = JsonSerializer.Deserialize<List<AuditChangeEntry>>(Entry.Changes, _jsonOptions);
+            }
+            catch
+            {
+                _changes = null;
+            }
+        }
+    }
+
+    private string GetEntityTypeLabel(string entityType) => Localization.GetString(entityType switch
+    {
+        "Invoice" => "Invoice",
+        "InvoiceLine" => "InvoiceLine",
+        "Company" => "Company",
+        "Product" => "Product",
+        "Payment" => "Payment",
+        "Warehouse" => "Warehouse",
+        "InventoryTransaction" => "InventoryTransaction",
+        "StockLevel" => "StockLevel",
+        "User" => "User",
+        "Individual" => "Individual",
+        "PurchaseNote" => "PurchaseNote",
+        "PurchaseNoteLine" => "PurchaseNoteLine",
+        "Tenant" => "Tenant",
+        _ => entityType
+    });
+
+    private string GetActionLabel(AuditAction action) => action switch
+    {
+        AuditAction.Created => Localization.GetString("AuditCreated"),
+        AuditAction.Updated => Localization.GetString("AuditUpdated"),
+        AuditAction.Deleted => Localization.GetString("AuditDeleted"),
+        _ => action.ToString()
+    };
+
+    private static Color GetActionColor(AuditAction action) => action switch
+    {
+        AuditAction.Created => Color.Success,
+        AuditAction.Updated => Color.Warning,
+        AuditAction.Deleted => Color.Error,
+        _ => Color.Default
+    };
+
+    private static string? FormatValue(string? value)
+    {
+        if (value is null) return null;
+
+        // New records use InvariantCulture ("1500.00"), old records may use mk-MK ("1500,00")
+        // If no dot but has comma → likely comma-as-decimal (old mk-MK records)
+        if (!value.Contains('.') && value.Contains(','))
+        {
+            if (decimal.TryParse(value, System.Globalization.NumberStyles.Number,
+                    System.Globalization.CultureInfo.CurrentCulture, out decimal localNum))
+                return localNum.ToString("N2");
+        }
+
+        return decimal.TryParse(value, System.Globalization.NumberStyles.Number,
+                System.Globalization.CultureInfo.InvariantCulture, out decimal num)
+            ? num.ToString("N2")
+            : value;
+    }
+
+    private void Close() => MudDialog.Cancel();
+}

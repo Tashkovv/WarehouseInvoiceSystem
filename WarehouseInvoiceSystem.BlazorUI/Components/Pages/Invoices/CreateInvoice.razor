@@ -567,7 +567,6 @@ else
     {
         if (product == null) return;
         item.SelectedProduct = product;
-        item.Description = product.Name;
         item.UnitPrice = _selectedType == InvoiceType.Receivable
             ? product.SellingPrice
             : product.CostPrice;
@@ -639,7 +638,7 @@ else
                     .Select(i => new CreateInvoiceLineDto
                     {
                         ProductId = i.SelectedProduct!.Id,
-                        Description = i.SelectedProduct.Name,
+                        Description = i.Description ?? string.Empty,
                         Quantity = i.Quantity,
                         UnitPrice = i.UnitPrice,
                         TaxRate = i.TaxRate,

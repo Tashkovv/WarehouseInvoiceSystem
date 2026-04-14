@@ -189,6 +189,13 @@
                                         <span>@Localization.GetString("Users")</span>
                                     </div>
                                 </MudListItem>
+                                <MudListItem OnClick="@(() => { Navigation.NavigateTo("/audit-log"); _settingsOpen = false; })"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Small" Color="Color.Secondary" />
+                                        <span>@Localization.GetString("AuditLog")</span>
+                                    </div>
+                                </MudListItem>
                                 <MudListItem OnClick="@(() => { Navigation.NavigateTo("/license"); _settingsOpen = false; })"
                                              Class="px-3 py-2" Style="cursor: pointer;">
                                     <div class="d-flex align-center gap-2">

@@ -17,6 +17,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         [Inject] protected WisDialogService WisDialog { get; set; } = default!;
         [Inject] protected IJSRuntime JSRuntime { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+        [Inject] private IAuditContextService AuditContext { get; set; } = default!;
 
         protected readonly CancellationTokenSource _cts = new();
         protected WisActionItem _act = null!;
@@ -63,10 +64,16 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             base.OnInitialized();
         }
 
-        protected override Task OnInitializedAsync()
+        protected override async Task OnInitializedAsync()
         {
             _act = new WisActionItem(this);
-            return base.OnInitializedAsync();
+
+            // Set audit context username from auth claims
+            string? username = await GetCurrentUsernameAsync();
+            if (username is not null)
+                AuditContext.SetUsername(username);
+
+            await base.OnInitializedAsync();
         }
 
         protected virtual async void OnLanguageChanged()
@@ -112,16 +119,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                          => Color.Default
         };
 
-        protected string GetInvoiceStatusText(InvoiceStatus status) => status switch
-        {
-            InvoiceStatus.Draft        => Localization.GetString("Draft"),
-            InvoiceStatus.Confirmed    => Localization.GetString("Confirmed"),
-            InvoiceStatus.PartiallyPaid => Localization.GetString("PartiallyPaid"),
-            InvoiceStatus.Paid         => Localization.GetString("PaidStatus"),
-            InvoiceStatus.Overdue      => Localization.GetString("OverdueStatus"),
-            InvoiceStatus.Cancelled    => Localization.GetString("CancelledStatus"),
-            _                          => status.ToString()
-        };
+        protected string GetInvoiceStatusText(InvoiceStatus status) => GetEnumLabel(status);
 
         // ── PurchaseNoteStatus helpers ────────────────────────────────────────
 
@@ -134,14 +132,14 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                            => Color.Default
         };
 
-        protected string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => status switch
-        {
-            PurchaseNoteStatus.Draft     => Localization.GetString("Draft"),
-            PurchaseNoteStatus.Pending   => Localization.GetString("PendingStatus"),
-            PurchaseNoteStatus.Paid      => Localization.GetString("PaidStatus"),
-            PurchaseNoteStatus.Cancelled => Localization.GetString("CancelledStatus"),
-            _                            => status.ToString()
-        };
+        protected string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => GetEnumLabel(status);
+
+        // ── Generic enum localization helper ──────────────────────────────────
+        // Looks up "{EnumTypeName}_{Value}" — e.g. InvoiceStatus.Paid → "InvoiceStatus_Paid".
+        // Lets each enum's status have its own translation (and gender form in mk-MK)
+        // without colliding with bare-name keys used elsewhere.
+        protected string GetEnumLabel<TEnum>(TEnum value) where TEnum : struct, Enum
+            => Localization.GetString($"{typeof(TEnum).Name}_{value}");
 
         // ── PaymentMethod helpers ─────────────────────────────────────────────
 

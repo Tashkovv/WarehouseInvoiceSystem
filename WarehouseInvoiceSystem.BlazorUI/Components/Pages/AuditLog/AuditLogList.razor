@@ -1,0 +1,330 @@
+@page "/audit-log"
+@attribute [Authorize(Roles = "Admin")]
+@inherits PageBase
+@using System.Text.Json
+@using WarehouseInvoiceSystem.Application.DTOs.AuditLog
+@using WarehouseInvoiceSystem.Domain.Enums
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@inject IAuditLogService AuditLogService
+
+<PageTitle>@Localization.GetString("AuditLog") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<div class="wis-page-header">
+    <MudText Typo="Typo.h3" Class="wis-page-title">
+        @Localization.GetString("AuditLog")
+    </MudText>
+</div>
+
+<WisGridToolbar SearchValue="@_searchString"
+                SearchValueChanged="OnSearch"
+                HasAnyActiveFilter="@(!string.IsNullOrEmpty(_filterEntityType) || _filterAction.HasValue || _filterDateRange?.Start is not null)"
+                OnClearAll="ClearAllFilters">
+    <Filters>
+        <FilterPopoverList TValue="string"
+                           Label="@Localization.GetString("EntityType")"
+                           Items="_entityTypeFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="@(_filterEntityType ?? "")"
+                           FilterVariant="Variant.Outlined"
+                           SelectedValueChanged="OnEntityTypeFilterChanged" />
+        <FilterPopoverList TValue="AuditAction?"
+                           Label="@Localization.GetString("Action")"
+                           Items="_actionFilterItems"
+                           Mode="FilterSelectionMode.Single"
+                           SelectedValue="_filterAction"
+                           FilterVariant="Variant.Outlined"
+                           SelectedValueChanged="OnActionFilterChanged" />
+        <WisDateRangeFilter Label="@Localization.GetString("DateRange")"
+                            DateRange="_filterDateRange"
+                            DateRangeChanged="OnDateRangeChanged"
+                            DatePreset="_filterDatePreset"
+                            DatePresetChanged="OnDatePresetChanged"
+                            OnChanged="ReloadGrid"
+                            MaxDate="DateTime.Today" />
+    </Filters>
+</WisGridToolbar>
+
+<MudCard Elevation="2" Class="mb-4">
+    <MudCardContent Class="pa-0">
+        <MudDataGrid T="AuditLogDto"
+                     @ref="_grid"
+                     ServerData="LoadServerData"
+                     ReadOnly="true"
+                     Hover="true"
+                     FixedHeader="true"
+                     Height="100%"
+                     Filterable="false"
+                     ShowColumnOptions="false"
+                     SortMode="SortMode.Single"
+                     Class="wis-data-grid">
+            <Columns>
+
+                <TemplateColumn Title="@Localization.GetString("Timestamp")" Sortable="true" SortBy="@(x => x.Timestamp)">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2">@context.Item.Timestamp.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")</MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("EntityType")" Sortable="true" SortBy="@(x => x.EntityType)">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">
+                            @GetEntityTypeLabel(context.Item.EntityType)
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("Action")" Sortable="true" SortBy="@(x => x.Action)">
+                    <CellTemplate>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                 Color="@GetActionColor(context.Item.Action)">
+                            @GetActionLabel(context.Item.Action)
+                        </MudChip>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("ChangedBy")" Sortable="true" SortBy="@(x => x.Username)">
+                    <CellTemplate>
+                        <MudText Typo="Typo.body2">
+                            @(context.Item.Username == "Unknown" ? Localization.GetString("Unknown") : context.Item.Username)
+                        </MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("Changes")" Sortable="false">
+                    <CellTemplate>
+                        @{
+                            string summary = GetChangesSummary(context.Item);
+                        }
+                        @if (!string.IsNullOrEmpty(summary))
+                        {
+                            <MudTooltip Text="@Localization.GetString("ViewChanges")">
+                                <MudLink Underline="Underline.Hover" Color="Color.Primary"
+                                         OnClick="@(() => OpenDetailDialog(context.Item))">
+                                    @summary
+                                </MudLink>
+                            </MudTooltip>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">—</MudText>
+                        }
+                    </CellTemplate>
+                </TemplateColumn>
+
+            </Columns>
+
+            <NoRecordsContent>
+                <WisNoRecordsContent Icon="@Icons.Material.Filled.History"
+                                     Message="@Localization.GetString("NoAuditLogsFound")" />
+            </NoRecordsContent>
+
+            <LoadingContent>
+                <WisLoadingContent />
+            </LoadingContent>
+
+            <PagerContent>
+                <WisPagerContent T="AuditLogDto" />
+            </PagerContent>
+
+        </MudDataGrid>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private MudDataGrid<AuditLogDto> _grid = null!;
+    private string _searchString = string.Empty;
+    private string? _filterEntityType;
+    private AuditAction? _filterAction;
+    private DateRange? _filterDateRange = new(null, null);
+    private int? _filterDatePreset = null;
+
+    private List<FilterPopoverItem<string>> _entityTypeFilterItems = [];
+    private List<FilterPopoverItem<AuditAction?>> _actionFilterItems = [];
+
+    private static readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        BuildFilterItems();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadEntityTypeFilters();
+    }
+
+    private async Task LoadEntityTypeFilters()
+    {
+        try
+        {
+            IEnumerable<string> types = await AuditLogService.GetAuditedEntityTypesAsync(_cts.Token);
+            _entityTypeFilterItems =
+            [
+                new() { Label = Localization.GetString("All"), Value = "", Color = Color.Info },
+                .. types.Select(t => new FilterPopoverItem<string>
+                {
+                    Label = GetEntityTypeLabel(t),
+                    Value = t,
+                    Color = Color.Default
+                })
+            ];
+        }
+        catch
+        {
+            _entityTypeFilterItems = [new() { Label = Localization.GetString("All"), Value = "", Color = Color.Info }];
+        }
+    }
+
+    private void BuildFilterItems()
+    {
+        _actionFilterItems =
+        [
+            new() { Label = Localization.GetString("All"),             Value = null,                  Color = Color.Info },
+            new() { Label = Localization.GetString("AuditCreated"),    Value = AuditAction.Created,   Color = Color.Success },
+            new() { Label = Localization.GetString("AuditUpdated"),    Value = AuditAction.Updated,   Color = Color.Warning },
+            new() { Label = Localization.GetString("AuditDeleted"),    Value = AuditAction.Deleted,   Color = Color.Error },
+        ];
+    }
+
+    protected override async void OnLanguageChanged()
+    {
+        BuildFilterItems();
+        await LoadEntityTypeFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<GridData<AuditLogDto>> LoadServerData(GridState<AuditLogDto> state, CancellationToken ct)
+    {
+        string? sortBy = state.SortDefinitions.FirstOrDefault()?.SortBy;
+        bool ascending = state.SortDefinitions.FirstOrDefault()?.Descending == false;
+
+        GetAuditLogsQuery query = new()
+        {
+            Search = _searchString,
+            EntityType = _filterEntityType,
+            Action = _filterAction,
+            DateFrom = _filterDateRange?.Start is { } from
+                ? DateTime.SpecifyKind(from, DateTimeKind.Utc) : null,
+            DateTo = _filterDateRange?.End is { } to
+                ? DateTime.SpecifyKind(to.AddDays(1).AddTicks(-1), DateTimeKind.Utc) : null,
+            Page = state.Page + 1,
+            PageSize = state.PageSize,
+            SortBy = sortBy,
+            SortAscending = ascending,
+        };
+
+        PagedResult<AuditLogDto> result = await AuditLogService.GetPagedAsync(query, ct);
+
+        return new GridData<AuditLogDto>
+        {
+            Items = result.Items,
+            TotalItems = result.TotalCount
+        };
+    }
+
+    private async Task OnSearch(string text)
+    {
+        _searchString = text;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnEntityTypeFilterChanged(string value)
+    {
+        _filterEntityType = string.IsNullOrEmpty(value) ? null : value;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OnActionFilterChanged(AuditAction? value)
+    {
+        _filterAction = value;
+        await _grid.ReloadServerData();
+    }
+
+    private void OnDateRangeChanged(DateRange? range) => _filterDateRange = range;
+    private void OnDatePresetChanged(int? preset) => _filterDatePreset = preset;
+    private async Task ReloadGrid() => await _grid.ReloadServerData();
+
+    private async Task ClearAllFilters()
+    {
+        _filterEntityType = null;
+        _filterAction = null;
+        _filterDateRange = new(null, null);
+        _filterDatePreset = null;
+        _searchString = string.Empty;
+        await _grid.ReloadServerData();
+    }
+
+    private async Task OpenDetailDialog(AuditLogDto entry)
+    {
+        await WisDialog.ShowFormAsync<AuditLogDetailDialog, bool>(
+            Localization.GetString("AuditLogDetail"),
+            p => p.Add(x => x.Entry, entry),
+            MaxWidth.Medium);
+    }
+
+    // ── Display helpers ──
+
+    private string GetEntityTypeLabel(string entityType)
+    {
+        string key = entityType switch
+        {
+            "Invoice" => "Invoice",
+            "InvoiceLine" => "InvoiceLine",
+            "Company" => "Company",
+            "Product" => "Product",
+            "Payment" => "Payment",
+            "Warehouse" => "Warehouse",
+            "InventoryTransaction" => "InventoryTransaction",
+            "StockLevel" => "StockLevel",
+            "User" => "User",
+            "Individual" => "Individual",
+            "PurchaseNote" => "PurchaseNote",
+            "PurchaseNoteLine" => "PurchaseNoteLine",
+            "Tenant" => "Tenant",
+            _ => entityType
+        };
+        return Localization.GetString(key);
+    }
+
+    private string GetActionLabel(AuditAction action) => action switch
+    {
+        AuditAction.Created => Localization.GetString("AuditCreated"),
+        AuditAction.Updated => Localization.GetString("AuditUpdated"),
+        AuditAction.Deleted => Localization.GetString("AuditDeleted"),
+        _ => action.ToString()
+    };
+
+    private static Color GetActionColor(AuditAction action) => action switch
+    {
+        AuditAction.Created => Color.Success,
+        AuditAction.Updated => Color.Warning,
+        AuditAction.Deleted => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetChangesSummary(AuditLogDto entry)
+    {
+        if (string.IsNullOrEmpty(entry.Changes))
+            return entry.Action == AuditAction.Deleted
+                ? Localization.GetString("AuditDeleted")
+                : string.Empty;
+
+        try
+        {
+            List<AuditChangeEntry>? changes = JsonSerializer.Deserialize<List<AuditChangeEntry>>(entry.Changes, _jsonOptions);
+            if (changes is null || changes.Count == 0) return string.Empty;
+
+            if (changes.Count == 1)
+                return Localization.GetString(changes[0].Property);
+
+            return string.Format(Localization.GetString("AuditChangesSummary"), Localization.GetString(changes[0].Property), changes.Count - 1);
+        }
+        catch
+        {
+            return "...";
+        }
+    }
+}
