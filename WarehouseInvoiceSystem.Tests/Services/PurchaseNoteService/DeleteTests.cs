@@ -12,6 +12,8 @@ public class DeleteTests : PurchaseNoteServiceTestBase
     {
         var note = CreateEntity(PurchaseNoteStatus.Cancelled);
         SetupEntityLookup(note.Id, note);
+        TransactionRepo.SoftDeleteByDocumentAsync(note.Id, Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
         PurchaseNoteRepo.DeleteAsync(note.Id).Returns(true);
         var service = CreateService();
 
@@ -19,6 +21,7 @@ public class DeleteTests : PurchaseNoteServiceTestBase
 
         result.Should().BeTrue();
         await PurchaseNoteRepo.Received(1).DeleteAsync(note.Id);
+        await TransactionRepo.Received(2).SoftDeleteByDocumentAsync(note.Id, Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Theory]

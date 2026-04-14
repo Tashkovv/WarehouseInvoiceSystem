@@ -151,12 +151,12 @@
         {
             if (decimal.TryParse(value, System.Globalization.NumberStyles.Number,
                     System.Globalization.CultureInfo.CurrentCulture, out decimal localNum))
-                return localNum.ToString("N2");
+                return localNum.ToString("N0");
         }
 
         return decimal.TryParse(value, System.Globalization.NumberStyles.Number,
                 System.Globalization.CultureInfo.InvariantCulture, out decimal num)
-            ? num.ToString("N2")
+            ? num.ToString("N0")
             : value;
     }
 

@@ -16,9 +16,10 @@ public abstract class PurchaseNoteServiceTestBase
     protected readonly IProductRepository ProductRepo = Substitute.For<IProductRepository>();
     protected readonly IInventoryService InventoryService = Substitute.For<IInventoryService>();
     protected readonly ILocalizationService LocalizationService = Substitute.For<ILocalizationService>();
+    protected readonly IInventoryTransactionRepository TransactionRepo = Substitute.For<IInventoryTransactionRepository>();
 
     protected PurchaseNoteService CreateService() =>
-        new(PurchaseNoteRepo, IndividualRepo, WarehouseRepo, ProductRepo, InventoryService, LocalizationService);
+        new(PurchaseNoteRepo, IndividualRepo, WarehouseRepo, ProductRepo, InventoryService, LocalizationService, TransactionRepo);
 
     protected static CreatePurchaseNoteDto BuildCreateDto(bool markAsPaid = false) => new()
     {

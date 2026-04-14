@@ -17,7 +17,8 @@
         IWarehouseRepository warehouseRepository,
         IProductRepository productRepository,
         IInventoryService inventoryService,
-        ILocalizationService localizationService) : IPurchaseNoteService
+        ILocalizationService localizationService,
+        IInventoryTransactionRepository transactionRepository) : IPurchaseNoteService
     {
         private const string DocumentType = "PurchaseNote";
 
@@ -383,6 +384,11 @@
             if (note.Status != PurchaseNoteStatus.Cancelled)
                 throw new InvalidOperationException(
                     $"Purchase note {note.NoteNumber} can only be deleted when Cancelled (current: {note.Status}).");
+
+            // Clean up inventory transactions created during receive and reversal during cancel.
+            // Stock is already correct after cancellation, so no stock adjustment — just remove the records.
+            await transactionRepository.SoftDeleteByDocumentAsync(id, DocumentType);
+            await transactionRepository.SoftDeleteByDocumentAsync(id, $"{DocumentType}_Reversal");
 
             return await purchaseNoteRepository.DeleteAsync(id);
         }
