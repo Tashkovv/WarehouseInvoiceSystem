@@ -104,27 +104,26 @@ else
                                   RowsPerPage="10"
                                   Class="wis-secondary-list">
                             <HeaderContent>
-                                <MudTh>@Localization.GetString("Code")</MudTh>
-                                <MudTh>@Localization.GetString("Name")</MudTh>
+                                <MudTh>@Localization.GetString("Product")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("LastRestocked")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("MinimumQuantity")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("ReorderPoint")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("TotalValue")</MudTh>
                                 <MudTh />
                             </HeaderContent>
                             <RowTemplate>
-                                <MudTd DataLabel="@Localization.GetString("Code")">
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode</MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Name")">
-                                    <MudText Typo="Typo.body2">@context.ProductName</MudText>
+                                <MudTd DataLabel="@Localization.GetString("Product")">
+                                    <MudText Typo="Typo.body2">
+                                        <span class="font-weight-medium">@context.ProductCode</span> - @context.ProductName
+                                    </MudText>
                                 </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
                                     <MudText Typo="Typo.body2"
                                              Color="@GetQuantityColor(context)">
                                         @context.Quantity.ToString("N0") @context.ProductUnit
                                     </MudText>
-                                </MudTd>                                
+                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("LastRestocked")">
                                     <MudText Typo="Typo.body2">@(context.LastRestockedAt.ToString("dd MMM yyyy") ?? "—")</MudText>
                                 </MudTd>
@@ -140,17 +139,11 @@ else
                                         }
                                     </MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("ReorderPoint")" Class="text-right">
-                                    <MudText Typo="Typo.body2">
-                                        @if (context.ReorderPoint.HasValue)
-                                        {
-                                            @($"{context.ReorderPoint.Value.ToString("N0")} {context.ProductUnit}")
-                                        }
-                                        else
-                                        {
-                                            <text>—</text>
-                                        }
-                                    </MudText>
+                                <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("TotalValue")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@context.TotalValue.ToString("C")</MudText>
                                 </MudTd>
                                 <MudTd Style="text-align:center">
                                     <MudTooltip Text="@Localization.GetString("EditThresholds")">
