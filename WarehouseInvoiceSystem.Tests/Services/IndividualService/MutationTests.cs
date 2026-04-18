@@ -9,15 +9,14 @@ public class MutationTests : IndividualServiceTestBase
     [Fact]
     public async Task Create_MapsAllDtoFieldsToEntity()
     {
-        var dto = BuildCreateDto("Maria", "Petrova", "1112223334445");
+        var dto = BuildCreateDto("Maria Petrova", "1112223334445");
         IndividualRepo.IdentificationNumberExistsAsync(dto.IdentificationNumber, Arg.Any<Guid?>()).Returns(false);
         var service = CreateService();
 
         await service.CreateIndividualAsync(dto);
 
         await IndividualRepo.Received(1).CreateAsync(Arg.Is<Individual>(i =>
-            i.FirstName == "Maria" &&
-            i.LastName == "Petrova" &&
+            i.FullName == "Maria Petrova" &&
             i.IdentificationNumber == "1112223334445" &&
             i.Address == "456 Orchard Ln" &&
             i.Phone == "+389 71 333444" &&
@@ -44,14 +43,13 @@ public class MutationTests : IndividualServiceTestBase
         var entity = CreateEntity();
         IndividualRepo.GetByIdAsync(entity.Id, Arg.Any<CancellationToken>()).Returns(entity);
         IndividualRepo.IdentificationNumberExistsAsync(Arg.Any<string>(), entity.Id).Returns(false);
-        var dto = BuildUpdateDto("Updated", "Name", "9999999999999");
+        var dto = BuildUpdateDto("Updated Name", "9999999999999");
         var service = CreateService();
 
         await service.UpdateIndividualAsync(entity.Id, dto);
 
         await IndividualRepo.Received(1).UpdateAsync(Arg.Is<Individual>(i =>
-            i.FirstName == "Updated" &&
-            i.LastName == "Name" &&
+            i.FullName == "Updated Name" &&
             i.IdentificationNumber == "9999999999999" &&
             i.Address == "789 Updated St" &&
             i.Phone == "+389 72 555666" &&

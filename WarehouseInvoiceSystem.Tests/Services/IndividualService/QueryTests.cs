@@ -11,7 +11,7 @@ public class QueryTests : IndividualServiceTestBase
     [Fact]
     public async Task GetAll_MapsEntitiesToDtos()
     {
-        var entities = new[] { CreateEntity("John", "Doe"), CreateEntity("Jane", "Smith") };
+        var entities = new[] { CreateEntity("John Doe"), CreateEntity("Jane Smith") };
         IndividualRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(entities);
         var service = CreateService();
 
@@ -19,8 +19,6 @@ public class QueryTests : IndividualServiceTestBase
 
         result.Should().HaveCount(2);
         var first = result.First();
-        first.FirstName.Should().Be("John");
-        first.LastName.Should().Be("Doe");
         first.FullName.Should().Be("John Doe");
         first.IdentificationNumber.Should().Be("1234567890123");
         first.Address.Should().Be("123 Farm Rd");
@@ -66,7 +64,7 @@ public class QueryTests : IndividualServiceTestBase
     [Fact]
     public async Task GetById_Found_ReturnsDto()
     {
-        var entity = CreateEntity("Found", "Individual");
+        var entity = CreateEntity("Found Individual");
         IndividualRepo.GetByIdAsync(entity.Id, Arg.Any<CancellationToken>()).Returns(entity);
         var service = CreateService();
 
@@ -74,8 +72,7 @@ public class QueryTests : IndividualServiceTestBase
 
         result.Should().NotBeNull();
         result!.Id.Should().Be(entity.Id);
-        result.FirstName.Should().Be("Found");
-        result.LastName.Should().Be("Individual");
+        result.FullName.Should().Be("Found Individual");
     }
 
     [Fact]

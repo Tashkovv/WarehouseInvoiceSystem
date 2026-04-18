@@ -4,8 +4,7 @@
 
     public class Individual : AuditableEntity
     {
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
         public string IdentificationNumber { get; set; } = string.Empty;
 
         // Optional fields
@@ -15,9 +14,6 @@
         public string? BankAccount { get; set; }
 
         public bool IsActive { get; set; } = true;
-
-        // Computed property
-        public string FullName => $"{FirstName} {LastName}";
 
         // Navigation properties
         public ICollection<PurchaseNote> PurchaseNotes { get; set; } = [];

@@ -103,7 +103,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
     {
         var dto = BuildCreateDto();
         IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FirstName = "Test", LastName = "User", IsActive = false });
+            .Returns(new Individual { FullName = "Test User", IsActive = false });
 
         var service = CreateService();
 
@@ -117,7 +117,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
     {
         var dto = BuildCreateDto();
         IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FirstName = "Test", LastName = "User", IsActive = true });
+            .Returns(new Individual { FullName = "Test User", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(false);
 
         var service = CreateService();
@@ -131,7 +131,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
     {
         var dto = BuildCreateDto();
         IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FirstName = "Test", LastName = "User", IsActive = true });
+            .Returns(new Individual { FullName = "Test User", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(false);
 

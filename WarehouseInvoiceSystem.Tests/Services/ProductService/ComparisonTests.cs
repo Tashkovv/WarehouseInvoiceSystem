@@ -27,7 +27,7 @@ public class ComparisonTests : ProductServiceTestBase
             {
                 IndividualId = individualId,
                 WarehouseId = Guid.NewGuid(),
-                Individual = new Individual { FirstName = "John", LastName = "Doe" },
+                Individual = new Individual { FullName = "John Doe" },
                 Warehouse = new Warehouse { Name = "WH1" }
             },
             Product = CreateEntity()
@@ -100,7 +100,7 @@ public class ComparisonTests : ProductServiceTestBase
             {
                 IndividualId = includedId,
                 WarehouseId = Guid.NewGuid(),
-                Individual = new Individual { FirstName = "Included", LastName = "Person" },
+                Individual = new Individual { FullName = "Included Person" },
                 Warehouse = new Warehouse { Name = "WH1" }
             },
             Product = CreateEntity()
@@ -117,7 +117,7 @@ public class ComparisonTests : ProductServiceTestBase
             {
                 IndividualId = excludedId,
                 WarehouseId = Guid.NewGuid(),
-                Individual = new Individual { FirstName = "Excluded", LastName = "Person" },
+                Individual = new Individual { FullName = "Excluded Person" },
                 Warehouse = new Warehouse { Name = "WH1" }
             },
             Product = CreateEntity()

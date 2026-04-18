@@ -15,15 +15,13 @@ public abstract class IndividualServiceTestBase
     protected Application.Services.IndividualService CreateService() => new(IndividualRepo, PurchaseNoteRepo);
 
     protected static Individual CreateEntity(
-        string firstName = "John",
-        string lastName = "Doe",
+        string fullName = "John Doe",
         string identificationNumber = "1234567890123",
         bool isActive = true)
     {
         var individual = new Individual
         {
-            FirstName = firstName,
-            LastName = lastName,
+            FullName = fullName,
             IdentificationNumber = identificationNumber,
             Address = "123 Farm Rd",
             Phone = "+389 70 111222",
@@ -36,12 +34,10 @@ public abstract class IndividualServiceTestBase
     }
 
     protected static CreateIndividualDto BuildCreateDto(
-        string firstName = "Jane",
-        string lastName = "Smith",
+        string fullName = "Jane Smith",
         string identificationNumber = "9876543210987") => new()
     {
-        FirstName = firstName,
-        LastName = lastName,
+        FullName = fullName,
         IdentificationNumber = identificationNumber,
         Address = "456 Orchard Ln",
         Phone = "+389 71 333444",
@@ -51,12 +47,10 @@ public abstract class IndividualServiceTestBase
     };
 
     protected static UpdateIndividualDto BuildUpdateDto(
-        string firstName = "Updated",
-        string lastName = "Person",
+        string fullName = "Updated Person",
         string identificationNumber = "1111111111111") => new()
     {
-        FirstName = firstName,
-        LastName = lastName,
+        FullName = fullName,
         IdentificationNumber = identificationNumber,
         Address = "789 Updated St",
         Phone = "+389 72 555666",

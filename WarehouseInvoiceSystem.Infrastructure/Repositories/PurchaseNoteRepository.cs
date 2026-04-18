@@ -292,8 +292,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
             else if (!string.IsNullOrWhiteSpace(query.IndividualName))
                 q = q.Where(p =>
-                    EF.Functions.ILike(p.Individual.FirstName, $"%{query.IndividualName}%") ||
-                    EF.Functions.ILike(p.Individual.LastName, $"%{query.IndividualName}%"));
+                    EF.Functions.ILike(p.Individual.FullName, $"%{query.IndividualName}%"));
 
             if (query.AmountMin.HasValue)
                 q = q.Where(p => p.TotalAmount >= query.AmountMin.Value);
@@ -312,8 +311,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 string search = $"%{query.Search}%";
                 q = q.Where(p =>
                     EF.Functions.ILike(p.NoteNumber, search) ||
-                    EF.Functions.ILike(p.Individual.FirstName, search) ||
-                    EF.Functions.ILike(p.Individual.LastName, search));
+                    EF.Functions.ILike(p.Individual.FullName, search));
             }
 
             return q;
@@ -401,11 +399,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                  pn.Status != PurchaseNoteStatus.Cancelled &&
                                  pn.PurchaseDate >= from.Date &&
                                  pn.PurchaseDate < to.Date.AddDays(1))
-                    .GroupBy(pn => new { pn.IndividualId, pn.Individual.FirstName, pn.Individual.LastName })
+                    .GroupBy(pn => new { pn.IndividualId, pn.Individual.FullName })
                     .Select(g => new PartnerSummaryResult
                     {
                         PartnerId = g.Key.IndividualId,
-                        PartnerName = g.Key.FirstName + " " + g.Key.LastName,
+                        PartnerName = g.Key.FullName,
                         Count = g.Count(),
                         Amount = g.Sum(pn => pn.TotalAmount)
                     })
@@ -419,11 +417,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<PartnerSummaryResult>)await All<PurchaseNote>(context)
                     .Where(pn => pn.Status == PurchaseNoteStatus.Pending)
-                    .GroupBy(pn => new { pn.IndividualId, pn.Individual.FirstName, pn.Individual.LastName })
+                    .GroupBy(pn => new { pn.IndividualId, pn.Individual.FullName })
                     .Select(g => new PartnerSummaryResult
                     {
                         PartnerId = g.Key.IndividualId,
-                        PartnerName = g.Key.FirstName + " " + g.Key.LastName,
+                        PartnerName = g.Key.FullName,
                         Count = g.Count(),
                         Amount = g.Sum(pn => pn.TotalAmount)
                     })
@@ -654,7 +652,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             => sortBy switch
             {
                 "NoteNumber" => ascending ? q.OrderBy(p => p.NoteNumber) : q.OrderByDescending(p => p.NoteNumber),
-                "IndividualLastName" => ascending ? q.OrderBy(p => p.Individual.LastName) : q.OrderByDescending(p => p.Individual.LastName),
+                "IndividualFullName" => ascending ? q.OrderBy(p => p.Individual.FullName) : q.OrderByDescending(p => p.Individual.FullName),
                 "PurchaseDate" => ascending ? q.OrderBy(p => p.PurchaseDate) : q.OrderByDescending(p => p.PurchaseDate),
                 "TotalAmount" => ascending ? q.OrderBy(p => p.TotalAmount) : q.OrderByDescending(p => p.TotalAmount),
                 _ => q.OrderByDescending(p => p.CreatedAt)

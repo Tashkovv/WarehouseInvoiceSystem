@@ -73,7 +73,7 @@ public abstract class PurchaseNoteServiceTestBase
             PurchaseDate = DateTime.Today,
             SubTotal = 980m,
             TotalAmount = 980m,
-            Individual = new Individual { FirstName = "Test", LastName = "User" },
+            Individual = new Individual { FullName = "Test User" },
             Warehouse = new Warehouse { Name = "Main" },
             LineItems = []
         };
@@ -109,7 +109,7 @@ public abstract class PurchaseNoteServiceTestBase
     protected void SetupValidCreate(CreatePurchaseNoteDto dto)
     {
         IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FirstName = "Test", LastName = "User", IsActive = true });
+            .Returns(new Individual { FullName = "Test User", IsActive = true });
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(true);
         PurchaseNoteRepo.GenerateNoteNumberAsync(Arg.Any<CancellationToken>()).Returns("OB-000001");

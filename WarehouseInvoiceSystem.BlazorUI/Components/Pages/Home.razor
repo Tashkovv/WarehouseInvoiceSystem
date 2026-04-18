@@ -374,8 +374,7 @@ else
         {
             await IndividualService.CreateIndividualAsync(new CreateIndividualDto
             {
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
+                FullName = dto.FullName,
                 IdentificationNumber = dto.IdentificationNumber,
                 Phone = dto.Phone,
                 Email = dto.Email,

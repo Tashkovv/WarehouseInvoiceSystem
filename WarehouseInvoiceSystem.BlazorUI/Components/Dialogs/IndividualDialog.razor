@@ -1,4 +1,4 @@
-﻿@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
 @inject ILocalizationService Localization
 @inject IIndividualService IndividualService
 @inject ISnackbar Snackbar
@@ -6,61 +6,35 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.FirstName"
-                              Label="@Localization.GetString("FirstName")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("FirstNameRequired")"
-                              FullWidth="true"
-                              MaxLength="100" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_model.FullName"
+                          Label="@Localization.GetString("FullName")"
+                          Required="true" />
             </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.LastName"
-                              Label="@Localization.GetString("LastName")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("LastNameRequired")"
-                              FullWidth="true"
-                              MaxLength="100" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_model.IdentificationNumber"
+                          Label="@Localization.GetString("IdentificationNumber")"
+                          Required="true" />
             </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.IdentificationNumber"
-                              Label="@Localization.GetString("IdentificationNumber")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("IdentificationNumberRequired")"
-                              FullWidth="true"
-                              MaxLength="50" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_model.BankAccount"
+                          Label="@Localization.GetString("BankAccount")" />
             </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.Phone"
-                              Label="@Localization.GetString("Phone")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true"
-                              MaxLength="50" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_model.Phone"
+                          Label="@Localization.GetString("Phone")"
+                          InputType="tel"
+                          Autocomplete="tel" />
             </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.Email"
-                              Label="@Localization.GetString("Email")"
-                              Variant="Variant.Outlined"
-                              InputType="InputType.Email"
-                              FullWidth="true"
-                              MaxLength="100" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_model.Email"
+                          Label="@Localization.GetString("Email")"
+                          InputType="email"
+                          Autocomplete="email" />
             </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.BankAccount"
-                              Label="@Localization.GetString("BankAccount")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true"
-                              MaxLength="50" />
-            </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_model.Address"
-                              Label="@Localization.GetString("Address")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true"
-                              MaxLength="500" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_model.Address"
+                          Label="@Localization.GetString("Address")" />
             </MudItem>
         </MudGrid>
     </DialogContent>
@@ -85,8 +59,7 @@
     private bool IsEditMode => Individual is not null;
 
     private bool IsValid =>
-        !string.IsNullOrWhiteSpace(_model.FirstName) &&
-        !string.IsNullOrWhiteSpace(_model.LastName) &&
+        !string.IsNullOrWhiteSpace(_model.FullName) &&
         !string.IsNullOrWhiteSpace(_model.IdentificationNumber);
 
     protected override void OnParametersSet()
@@ -96,8 +69,6 @@
             _model = new IndividualDto
             {
                 Id = Individual.Id,
-                FirstName = Individual.FirstName,
-                LastName = Individual.LastName,
                 FullName = Individual.FullName,
                 IdentificationNumber = Individual.IdentificationNumber,
                 Address = Individual.Address,
@@ -125,8 +96,7 @@
             {
                 await IndividualService.UpdateIndividualAsync(_model.Id, new UpdateIndividualDto
                 {
-                    FirstName = _model.FirstName,
-                    LastName = _model.LastName,
+                    FullName = _model.FullName,
                     IdentificationNumber = _model.IdentificationNumber,
                     Phone = _model.Phone,
                     Email = _model.Email,
@@ -140,8 +110,7 @@
             {
                 await IndividualService.CreateIndividualAsync(new CreateIndividualDto
                 {
-                    FirstName = _model.FirstName,
-                    LastName = _model.LastName,
+                    FullName = _model.FullName,
                     IdentificationNumber = _model.IdentificationNumber,
                     Phone = _model.Phone,
                     Email = _model.Email,

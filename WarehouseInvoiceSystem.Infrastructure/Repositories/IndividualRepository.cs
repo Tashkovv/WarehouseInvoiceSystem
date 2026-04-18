@@ -15,8 +15,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             WithContextAsync(async context =>
             {
                 return (IEnumerable<Individual>)await All<Individual>(context)
-                    .OrderBy(i => i.LastName)
-                    .ThenBy(i => i.FirstName)
+                    .OrderBy(i => i.FullName)
                     .ToListAsync(ct);
             });
 
@@ -47,8 +46,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 return (IEnumerable<Individual>)await All<Individual>(context)
                     .Where(i => i.IsActive)
-                    .OrderBy(i => i.LastName)
-                    .ThenBy(i => i.FirstName)
+                    .OrderBy(i => i.FullName)
                     .ToListAsync(ct);
             });
 
@@ -128,12 +126,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             {
                 string search = $"%{query.Search}%";
                 q = query.SearchByNameOnly
-                    ? q.Where(i =>
-                        EF.Functions.ILike(i.FirstName + " " + i.LastName, search) ||
-                        EF.Functions.ILike(i.LastName + " " + i.FirstName, search))
+                    ? q.Where(i => EF.Functions.ILike(i.FullName, search))
                     : q.Where(i =>
-                        EF.Functions.ILike(i.FirstName + " " + i.LastName, search) ||
-                        EF.Functions.ILike(i.LastName + " " + i.FirstName, search) ||
+                        EF.Functions.ILike(i.FullName, search) ||
                         EF.Functions.ILike(i.IdentificationNumber, search));
             }
 
@@ -152,10 +147,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         private static IQueryable<Individual> ApplySort(IQueryable<Individual> q, string? sortBy, bool ascending)
             => sortBy switch
             {
-                "FirstName" => ascending ? q.OrderBy(i => i.FirstName) : q.OrderByDescending(i => i.FirstName),
-                "LastName" => ascending ? q.OrderBy(i => i.LastName) : q.OrderByDescending(i => i.LastName),
+                "FullName" => ascending ? q.OrderBy(i => i.FullName) : q.OrderByDescending(i => i.FullName),
                 "IdentificationNumber" => ascending ? q.OrderBy(i => i.IdentificationNumber) : q.OrderByDescending(i => i.IdentificationNumber),
-                _ => q.OrderBy(i => i.LastName)
+                _ => q.OrderBy(i => i.FullName)
             };
     }
 }

@@ -9,16 +9,16 @@
         <MudGrid>
 
             <!-- Identity -->
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <WisInput @bind-Value="_company.Name"
                           Label="@Localization.GetString("Name")"
                           Required="true" />
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <WisInput @bind-Value="_company.ContactPerson"
                           Label="@Localization.GetString("ContactPerson")" />
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <WisSelect T="CompanyType"
                            Items="_companyTypes"
                            @bind-Value="_company.Type"
@@ -26,19 +26,19 @@
                            Required="true"
                            ItemTemplate="CompanyTypeItem" />
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <WisInput @bind-Value="_company.Address"
                           Label="@Localization.GetString("Address")" />
             </MudItem>
 
             <!-- Contact -->
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <WisInput @bind-Value="_company.Email"
                           Label="@Localization.GetString("Email")"
                           InputType="email"
                           Autocomplete="email" />
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" sm="4">
                 <WisInput @bind-Value="_company.Phone"
                           Label="@Localization.GetString("Phone")"
                           InputType="tel"

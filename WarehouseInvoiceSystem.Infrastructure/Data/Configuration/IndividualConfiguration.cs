@@ -16,8 +16,7 @@
             builder.Property(e => e.UpdatedAt);
             builder.Property(e => e.DeletedOn);
 
-            builder.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
-            builder.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            builder.Property(e => e.FullName).IsRequired().HasMaxLength(200);
             builder.Property(e => e.IdentificationNumber).IsRequired().HasMaxLength(50);
             builder.Property(e => e.Address).HasMaxLength(500);
             builder.Property(e => e.Phone).HasMaxLength(50);
@@ -25,12 +24,9 @@
             builder.Property(e => e.BankAccount).HasMaxLength(50);
             builder.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
-            // Ignore computed property
-            builder.Ignore(e => e.FullName);
-
             // Indexes
             builder.HasIndex(e => e.IdentificationNumber);
-            builder.HasIndex(e => e.LastName);
+            builder.HasIndex(e => e.FullName);
             builder.HasIndex(e => e.DeletedOn);
             builder.HasIndex(e => e.IsActive);
         }

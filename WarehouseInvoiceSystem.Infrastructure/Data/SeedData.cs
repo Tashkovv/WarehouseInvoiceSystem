@@ -117,8 +117,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
             // ── Individuals ────────────────────────────────────────────────
             var individual1 = new Individual
             {
-                FirstName = "Горан",
-                LastName = "Трајков",
+                FullName = "Горан Трајков",
                 IdentificationNumber = "0101980450001",
                 Phone = "+389 71 111222",
                 Address = address,
@@ -127,8 +126,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
             };
             var individual2 = new Individual
             {
-                FirstName = "Стојан",
-                LastName = "Митрев",
+                FullName = "Стојан Митрев",
                 IdentificationNumber = "1506975450002",
                 Phone = "+389 72 333444",
                 Address = address,
@@ -137,8 +135,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Data
             };
             var individual3 = new Individual
             {
-                FirstName = "Благица",
-                LastName = "Ристова",
+                FullName = "Благица Ристова",
                 IdentificationNumber = "2009985450003",
                 Phone = "+389 70 555666",
                 Address = address,

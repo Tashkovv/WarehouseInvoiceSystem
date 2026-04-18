@@ -246,7 +246,7 @@ public class ProductDetailsTests : ProductServiceTestBase
             {
                 WarehouseId = warehouseId,
                 IndividualId = Guid.NewGuid(),
-                Individual = new Individual { FirstName = "Test", LastName = "Individual" },
+                Individual = new Individual { FullName = "Test Individual" },
                 Warehouse = new Warehouse { Name = "WH1" }
             }
         };

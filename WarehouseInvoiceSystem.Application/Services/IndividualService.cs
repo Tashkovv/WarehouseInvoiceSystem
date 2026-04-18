@@ -105,8 +105,7 @@
 
             Individual individual = new()
             {
-                FirstName = createDto.FirstName,
-                LastName = createDto.LastName,
+                FullName = createDto.FullName,
                 IdentificationNumber = createDto.IdentificationNumber,
                 Address = createDto.Address,
                 Phone = createDto.Phone,
@@ -127,8 +126,7 @@
             if (await individualRepository.IdentificationNumberExistsAsync(updateDto.IdentificationNumber, id))
                 throw new InvalidOperationException($"Individual with identification number '{updateDto.IdentificationNumber}' already exists");
 
-            individual.FirstName = updateDto.FirstName;
-            individual.LastName = updateDto.LastName;
+            individual.FullName = updateDto.FullName;
             individual.IdentificationNumber = updateDto.IdentificationNumber;
             individual.Address = updateDto.Address;
             individual.Phone = updateDto.Phone;
@@ -157,8 +155,6 @@
             return new IndividualDto
             {
                 Id = individual.Id,
-                FirstName = individual.FirstName,
-                LastName = individual.LastName,
                 FullName = individual.FullName,
                 IdentificationNumber = individual.IdentificationNumber,
                 Address = individual.Address,
