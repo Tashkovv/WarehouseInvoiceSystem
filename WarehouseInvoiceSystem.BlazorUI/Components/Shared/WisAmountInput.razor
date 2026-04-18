@@ -18,7 +18,7 @@
       - Mirrors the MudBlazor Outlined / Dense visual style via CSS.
 *@
 
-<div class="wis-amt-field @(_isFocused ? "wis-amt-field--focused" : "")">
+<div class="wis-amt-field @(FullWidth ? "wis-amt-field--full" : "") @(_isFocused ? "wis-amt-field--focused" : "")">
     <label class="wis-amt-field__label @(_hasValue || _isFocused ? "wis-amt-field__label--float" : "")">
         @Label
     </label>
@@ -51,6 +51,9 @@
 
     [Parameter]
     public string AdornmentText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool FullWidth { get; set; }
 
     // ── Internal state ────────────────────────────────────────────────────────
 

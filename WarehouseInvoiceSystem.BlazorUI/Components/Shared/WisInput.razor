@@ -1,0 +1,81 @@
+@*
+    Shared text input — pill-style, floating label, mirrors the WisAmountInput visual
+    language. Intended to replace MudTextField in create/edit dialogs and profile pages.
+
+    Two-way binds via Value / ValueChanged (supports @bind-Value).
+    Fires ValueChanged on every keystroke so validation (IsValid, etc.) stays live.
+*@
+
+<div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isFocused ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @CssClass">
+    <label class="wis-field__label @(_hasValue || _isFocused ? "wis-field__label--float" : "")"
+           for="@_id">
+        @Label
+        @if (Required)
+        {
+            <span class="wis-field__required">*</span>
+        }
+    </label>
+    <div class="wis-field__inner">
+        <input id="@_id"
+               class="wis-field__input"
+               type="@InputType"
+               value="@Value"
+               placeholder="@(_isFocused ? Placeholder : null)"
+               disabled="@Disabled"
+               readonly="@ReadOnly"
+               autocomplete="@Autocomplete"
+               @onfocus="OnFocus"
+               @onblur="OnBlur"
+               @oninput="OnInput"
+               @onkeydown="OnKeyDown" />
+    </div>
+    @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
+    {
+        <div class="wis-field__helper wis-field__helper--error">@ErrorText</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(HelperText))
+    {
+        <div class="wis-field__helper">@HelperText</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public bool FullWidth { get; set; } = true;
+    [Parameter] public string InputType { get; set; } = "text";
+    [Parameter] public string? Autocomplete { get; set; }
+    [Parameter] public string? CssClass { get; set; }
+
+    [Parameter] public EventCallback OnEnter { get; set; }
+
+    private readonly string _id = $"wis-in-{Guid.NewGuid():N}";
+    private bool _isFocused;
+    private bool _hasValue => !string.IsNullOrEmpty(Value);
+
+    private void OnFocus() => _isFocused = true;
+
+    private void OnBlur(FocusEventArgs _) => _isFocused = false;
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        string? next = e.Value?.ToString();
+        if (next == Value) return;
+        Value = next;
+        await ValueChanged.InvokeAsync(next);
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await OnEnter.InvokeAsync();
+    }
+}

@@ -10,97 +10,59 @@
 
             <!-- Identity -->
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_company.Name"
-                              Label="@Localization.GetString("Name")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("PleaseEnterCompanyName")"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_company.Name"
+                          Label="@Localization.GetString("Name")"
+                          Required="true" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_company.ContactPerson"
-                              Label="@Localization.GetString("ContactPerson")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_company.ContactPerson"
+                          Label="@Localization.GetString("ContactPerson")" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudSelect T="CompanyType"
+                <WisSelect T="CompanyType"
+                           Items="_companyTypes"
                            @bind-Value="_company.Type"
                            Label="@Localization.GetString("CompanyType")"
-                           Variant="Variant.Outlined"
                            Required="true"
-                           FullWidth="true">
-                    <MudSelectItem Value="CompanyType.Client">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" Color="Color.Success" />
-                            <MudText>@Localization.GetString("Client")</MudText>
-                        </MudStack>
-                    </MudSelectItem>
-                    <MudSelectItem Value="CompanyType.Vendor">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudIcon Icon="@Icons.Material.Filled.TrendingDown" Size="Size.Small" Color="Color.Warning" />
-                            <MudText>@Localization.GetString("Vendor")</MudText>
-                        </MudStack>
-                    </MudSelectItem>
-                    <MudSelectItem Value="CompanyType.Both">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-                            <MudIcon Icon="@Icons.Material.Filled.SyncAlt" Size="Size.Small" Color="Color.Primary" />
-                            <MudText>@Localization.GetString("ClientAndVendor")</MudText>
-                        </MudStack>
-                    </MudSelectItem>
-                </MudSelect>
+                           ItemTemplate="CompanyTypeItem" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_company.Address"
-                              Label="@Localization.GetString("Address")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_company.Address"
+                          Label="@Localization.GetString("Address")" />
             </MudItem>
 
             <!-- Contact -->
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_company.Email"
-                              Label="@Localization.GetString("Email")"
-                              Variant="Variant.Outlined"
-                              InputType="InputType.Email"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_company.Email"
+                          Label="@Localization.GetString("Email")"
+                          InputType="email"
+                          Autocomplete="email" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_company.Phone"
-                              Label="@Localization.GetString("Phone")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_company.Phone"
+                          Label="@Localization.GetString("Phone")"
+                          InputType="tel"
+                          Autocomplete="tel" />
             </MudItem>
 
             <!-- Financial -->
             <MudItem xs="12" sm="4">
-                <MudTextField @bind-Value="_company.TaxId"
-                              Label="@Localization.GetString("TaxId")"
-                              Variant="Variant.Outlined"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_company.TaxId"
+                          Label="@Localization.GetString("TaxId")" />
             </MudItem>
             <MudItem xs="12" sm="4">
-                <MudNumericField T="int"
-                                 @bind-Value="_company.PaymentTermsDays"
-                                 Label="@Localization.GetString("PaymentTerms")"
-                                 Variant="Variant.Outlined"
-                                 HideSpinButtons="true"
-                                 Min="0"
-                                 FullWidth="true"
-                                 Adornment="Adornment.End"
-                                 AdornmentText="@Localization.GetString("Days")" />
+                <WisAmountInput Value="_paymentTermsDays"
+                                ValueChanged="OnPaymentTermsChanged"
+                                Label="@Localization.GetString("PaymentTerms")"
+                                AdornmentText="@Localization.GetString("Days")"
+                                FullWidth="true" />
             </MudItem>
             <MudItem xs="12" sm="4">
-                <MudNumericField T="decimal"
-                                 @bind-Value="_company.CreditLimit"
-                                 Label="@Localization.GetString("CreditLimit")"
-                                 Variant="Variant.Outlined"
-                                 HideSpinButtons="true"
-                                 Format="N2"
-                                 Min="0m"
-                                 FullWidth="true"
-                                 Adornment="Adornment.End"
-                                 AdornmentText="@Localization.CurrencySymbol" />
+                <WisAmountInput Value="_creditLimit"
+                                ValueChanged="OnCreditLimitChanged"
+                                Label="@Localization.GetString("CreditLimit")"
+                                AdornmentText="@Localization.CurrencySymbol"
+                                FullWidth="true" />
             </MudItem>
 
         </MudGrid>
@@ -126,6 +88,41 @@
     private bool IsEditMode => Company is not null;
 
     private bool IsValid => !string.IsNullOrWhiteSpace(_company.Name);
+
+    private static readonly CompanyType[] _companyTypes =
+        [CompanyType.Client, CompanyType.Vendor, CompanyType.Both];
+
+    private RenderFragment<CompanyType> CompanyTypeItem => type => __builder =>
+    {
+        (string icon, Color color, string key) = type switch
+        {
+            CompanyType.Client => (Icons.Material.Filled.TrendingUp, Color.Success, "Client"),
+            CompanyType.Vendor => (Icons.Material.Filled.TrendingDown, Color.Warning, "Vendor"),
+            CompanyType.Both   => (Icons.Material.Filled.SyncAlt, Color.Primary, "ClientAndVendor"),
+            _                  => (Icons.Material.Filled.Business, Color.Default, type.ToString())
+        };
+
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+            <MudIcon Icon="@icon" Size="Size.Small" Color="@color" />
+            <MudText>@Localization.GetString(key)</MudText>
+        </MudStack>
+    };
+
+    // WisAmountInput binds to decimal?; DTO uses int / decimal. Bridge via nullable mirrors.
+    private decimal? _paymentTermsDays;
+    private decimal? _creditLimit;
+
+    private void OnPaymentTermsChanged(decimal? v)
+    {
+        _paymentTermsDays = v;
+        _company.PaymentTermsDays = v.HasValue ? (int)v.Value : 0;
+    }
+
+    private void OnCreditLimitChanged(decimal? v)
+    {
+        _creditLimit = v;
+        _company.CreditLimit = v ?? 0m;
+    }
 
     protected override void OnParametersSet()
     {
@@ -156,6 +153,9 @@
                 PaymentTermsDays = 30
             };
         }
+
+        _paymentTermsDays = _company.PaymentTermsDays;
+        _creditLimit = _company.CreditLimit > 0 ? _company.CreditLimit : null;
     }
 
     private bool _saving;

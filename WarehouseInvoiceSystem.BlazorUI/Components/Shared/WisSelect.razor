@@ -1,0 +1,145 @@
+@typeparam T
+
+@*
+    Shared dropdown — pill trigger + absolute-positioned option list,
+    sharing the wis-field primitive with WisInput/WisAmountInput.
+
+    Native implementation (no MudSelect wrapper) so focus/border/halo
+    behave identically to the other inputs and we avoid MudBlazor's
+    premature ValueChanged firings.
+*@
+
+<div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isOpen ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @(Disabled ? "wis-field--disabled" : "") wis-select @CssClass">
+    <label class="wis-field__label @(_hasValue || _isOpen ? "wis-field__label--float" : "")">
+        @Label
+        @if (Required)
+        {
+            <span class="wis-field__required">*</span>
+        }
+    </label>
+
+    <div class="wis-field__inner wis-select__trigger"
+         tabindex="@(Disabled ? -1 : 0)"
+         @onclick="Toggle"
+         @onclick:stopPropagation
+         @onkeydown="OnKeyDown">
+        <div class="wis-select__value">
+            @if (_hasValue)
+            {
+                @if (SelectedTemplate is not null)
+                {
+                    @SelectedTemplate(Value!)
+                }
+                else if (ItemTemplate is not null)
+                {
+                    @ItemTemplate(Value!)
+                }
+                else
+                {
+                    <span>@GetDisplay(Value!)</span>
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(Placeholder))
+            {
+                <span class="wis-select__placeholder">@Placeholder</span>
+            }
+        </div>
+        <MudIcon Icon="@(_isOpen ? Icons.Material.Filled.ArrowDropUp : Icons.Material.Filled.ArrowDropDown)"
+                 Size="Size.Small"
+                 Class="wis-select__chevron" />
+    </div>
+
+    @if (_isOpen)
+    {
+        <div class="wis-select__dropdown" @onclick:stopPropagation>
+            @foreach (var it in Items)
+            {
+                var item = it;
+                bool isSelected = EqualityComparer<T>.Default.Equals(item, Value!);
+                <div class="wis-select__option @(isSelected ? "wis-select__option--active" : "")"
+                     @onclick="@(() => SelectItem(item))">
+                    @if (ItemTemplate is not null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                    else
+                    {
+                        <span>@GetDisplay(item)</span>
+                    }
+                </div>
+            }
+        </div>
+        <div class="wis-select__backdrop" @onclick="Close" @onclick:stopPropagation />
+    }
+
+    @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
+    {
+        <div class="wis-field__helper wis-field__helper--error">@ErrorText</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(HelperText))
+    {
+        <div class="wis-field__helper">@HelperText</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IEnumerable<T> Items { get; set; } = [];
+    [Parameter] public T? Value { get; set; }
+    [Parameter] public EventCallback<T?> ValueChanged { get; set; }
+
+    /// <summary>Template used for both the dropdown options and the trigger when SelectedTemplate is not set.</summary>
+    [Parameter] public RenderFragment<T>? ItemTemplate { get; set; }
+
+    /// <summary>Optional override for how the selected value is shown in the trigger.</summary>
+    [Parameter] public RenderFragment<T>? SelectedTemplate { get; set; }
+
+    /// <summary>Fallback display when no template is supplied.</summary>
+    [Parameter] public Func<T, string>? ToStringFunc { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+    [Parameter] public string? ErrorText { get; set; }
+    [Parameter] public bool HasError { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool FullWidth { get; set; } = true;
+    [Parameter] public string? CssClass { get; set; }
+
+    private bool _isOpen;
+    private bool _hasValue => Value is not null;
+
+    private void Toggle()
+    {
+        if (Disabled) return;
+        _isOpen = !_isOpen;
+    }
+
+    private void Close() => _isOpen = false;
+
+    private async Task SelectItem(T item)
+    {
+        _isOpen = false;
+        if (EqualityComparer<T>.Default.Equals(item, Value!)) return;
+        Value = item;
+        await ValueChanged.InvokeAsync(item);
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (Disabled) return;
+        switch (e.Key)
+        {
+            case "Enter":
+            case " ":
+                _isOpen = !_isOpen;
+                break;
+            case "Escape":
+                _isOpen = false;
+                break;
+        }
+    }
+
+    private string GetDisplay(T item)
+        => ToStringFunc is not null ? ToStringFunc(item) : item?.ToString() ?? string.Empty;
+}

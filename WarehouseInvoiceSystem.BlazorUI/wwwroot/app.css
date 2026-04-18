@@ -1591,6 +1591,12 @@ html {
     width: 200px;
 }
 
+.wis-amt-field--full {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+}
+
 /* The border box that wraps input + adornment */
 .wis-amt-field__inner {
     display: flex;
@@ -1667,6 +1673,202 @@ html {
     margin-left: 5px;
     flex-shrink: 0;
     user-select: none;
+}
+
+/* =============================================
+   WisField — shared primitive for all Wis* inputs
+   (WisInput, WisNumberInput, WisSelect, WisAutocomplete, WisDateInput…)
+   Mirrors the WisAmountInput language: 40px pill, floating label,
+   primary-tinted focus halo.
+   ============================================= */
+
+.wis-field {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.wis-field--full {
+    display: flex;
+    width: 100%;
+}
+
+.wis-field__inner {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid rgba(var(--mud-palette-text-primary-rgb), 0.23);
+    border-radius: 20px;
+    height: 40px;
+    padding: 0 14px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: transparent;
+}
+
+.wis-field:focus-within .wis-field__inner,
+.wis-field--focused .wis-field__inner {
+    border-color: var(--mud-palette-primary);
+    border-width: 2px;
+    box-shadow: 0 0 0 3px rgba(var(--mud-palette-primary-rgb), 0.10);
+    padding: 0 13px; /* compensate for extra border px */
+}
+
+.wis-field--error .wis-field__inner {
+    border-color: var(--mud-palette-error);
+}
+
+.wis-field--error:focus-within .wis-field__inner,
+.wis-field--error.wis-field--focused .wis-field__inner {
+    border-color: var(--mud-palette-error);
+    box-shadow: 0 0 0 3px rgba(var(--mud-palette-error-rgb), 0.10);
+}
+
+.wis-field__label {
+    position: absolute;
+    left: 14px;
+    top: 20px;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.55);
+    pointer-events: none;
+    transition: top 0.15s ease, font-size 0.15s ease, color 0.15s ease, left 0.15s ease;
+    background: var(--mud-palette-surface);
+    padding: 0 4px;
+    line-height: 1;
+    white-space: nowrap;
+    border-radius: 4px;
+}
+
+.wis-field__label--float {
+    top: 0;
+    left: 12px;
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+}
+
+.wis-field:focus-within .wis-field__label,
+.wis-field--focused .wis-field__label {
+    color: var(--mud-palette-primary);
+}
+
+.wis-field--error .wis-field__label {
+    color: var(--mud-palette-error);
+}
+
+.wis-field__required {
+    color: var(--mud-palette-error);
+    margin-left: 2px;
+}
+
+.wis-field__input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+    min-width: 0;
+    padding: 0;
+}
+
+    .wis-field__input:disabled {
+        color: rgba(var(--mud-palette-text-primary-rgb), 0.45);
+        cursor: not-allowed;
+    }
+
+.wis-field__helper {
+    font-size: 0.72rem;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.55);
+    margin: 4px 14px 0;
+    line-height: 1.2;
+}
+
+    .wis-field__helper--error {
+        color: var(--mud-palette-error);
+    }
+
+.wis-field--disabled .wis-field__inner {
+    background: rgba(var(--mud-palette-text-primary-rgb), 0.03);
+    cursor: not-allowed;
+}
+
+/* ── WisSelect (extends wis-field) ── */
+.wis-select__trigger {
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+}
+
+    .wis-select__trigger:focus {
+        outline: none;
+    }
+
+.wis-select__value {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+}
+
+.wis-select__placeholder {
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.45);
+}
+
+.wis-select__chevron {
+    color: var(--mud-palette-text-secondary);
+    flex-shrink: 0;
+    margin-left: 4px;
+}
+
+.wis-select__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    overflow: hidden;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.wis-select__option {
+    padding: 8px 14px;
+    font-size: 0.875rem;
+    color: var(--mud-palette-text-primary);
+    cursor: pointer;
+    transition: background 0.1s ease;
+    display: flex;
+    align-items: center;
+}
+
+    .wis-select__option .mud-typography,
+    .wis-select__value .mud-typography {
+        font-size: inherit;
+    }
+
+    .wis-select__option:hover {
+        background: rgba(var(--mud-palette-primary-rgb), 0.08);
+    }
+
+    .wis-select__option--active {
+        background: rgba(var(--mud-palette-primary-rgb), 0.12);
+        color: var(--mud-palette-primary);
+        font-weight: 500;
+    }
+
+.wis-select__backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9;
 }
 
 /* ── WisPagerContent ── */
