@@ -707,7 +707,7 @@
             Localization.GetString("RevertInvoiceToDraft"), Localization.GetString("Back"));
 
     private bool CanPay(InvoiceStatus status) =>
-        status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
+        status != InvoiceStatus.Draft && status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
 
     private bool CanSendEmail(InvoiceType type, InvoiceStatus status) =>
         type == InvoiceType.Receivable &&

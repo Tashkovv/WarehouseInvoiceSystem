@@ -1,6 +1,7 @@
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject ILocalizationService Localization
 @inject IProductService ProductService
 @inject IWarehouseService WarehouseService
@@ -21,25 +22,18 @@
                 <MudItem xs="12">
                     @if (_productLocked)
                     {
-                        <MudTextField Value="@(_selectedProduct is null ? string.Empty : $"{_selectedProduct.Code} - {_selectedProduct.Name}")"
-                                      Label="@Localization.GetString("Product")"
-                                      Variant="Variant.Outlined"
-                                      ReadOnly="true"
-                                      FullWidth="true" />
+                        <WisInput Value="@(_selectedProduct is null ? string.Empty : $"{_selectedProduct.Code} - {_selectedProduct.Name}")"
+                                  Label="@Localization.GetString("Product")"
+                                  ReadOnly="true" />
                     }
                     else
                     {
-                        <MudAutocomplete T="ProductDto"
-                                         Value="_selectedProduct"
-                                         ValueChanged="OnProductSelected"
-                                         SearchFunc="SearchProducts"
-                                         ToStringFunc="@(p => p is null ? string.Empty : $"{p.Code} - {p.Name}")"
-                                         Label="@Localization.GetString("Product")"
-                                         Variant="Variant.Outlined"
-                                         Required="true"
-                                         Clearable="true"
-                                         ResetValueOnEmptyText="true"
-                                         FullWidth="true" />
+                        <WisAutocompleteInput TValue="Guid"
+                                             SelectedValue="@(_selectedProduct?.Id ?? Guid.Empty)"
+                                             SelectedValueChanged="OnProductSelected"
+                                             LoadItems="LoadProductItems"
+                                             Label="@Localization.GetString("Product")"
+                                             Required="true" />
                     }
                 </MudItem>
 
@@ -47,45 +41,31 @@
                 <MudItem xs="12" sm="6">
                     @if (_sourceWarehouseLocked)
                     {
-                        <MudTextField Value="@(_warehouses.FirstOrDefault(w => w.Id == _sourceWarehouseId)?.Name)"
-                                      Label="@Localization.GetString("SourceWarehouse")"
-                                      Variant="Variant.Outlined"
-                                      ReadOnly="true"
-                                      FullWidth="true" />
+                        <WisInput Value="@(_warehouses.FirstOrDefault(w => w.Id == _sourceWarehouseId)?.Name ?? "")"
+                                  Label="@Localization.GetString("SourceWarehouse")"
+                                  ReadOnly="true" />
                     }
                     else
                     {
-                        <MudSelect T="Guid?"
-                                   Value="_sourceWarehouseId"
+                        <WisSelect T="WarehouseDto"
+                                   Items="_warehouses"
+                                   Value="@(_warehouses.FirstOrDefault(w => w.Id == _sourceWarehouseId))"
                                    ValueChanged="OnSourceWarehouseSelected"
                                    Label="@Localization.GetString("SourceWarehouse")"
-                                   Variant="Variant.Outlined"
-                                   Required="true"
-                                   FullWidth="true"
-                                   AnchorOrigin="Origin.BottomLeft">
-                            @foreach (WarehouseDto w in _warehouses)
-                            {
-                                <MudSelectItem Value="@((Guid?)w.Id)">@w.Name</MudSelectItem>
-                            }
-                        </MudSelect>
+                                   ToStringFunc="@(w => w?.Name ?? "")"
+                                   Required="true" />
                     }
                 </MudItem>
 
                 @* Destination Warehouse *@
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="Guid?"
-                               Value="_destinationWarehouseId"
-                               ValueChanged="OnDestinationWarehouseSelected"
+                    <WisSelect T="WarehouseDto"
+                               Items="@(_warehouses.Where(w => w.Id != _sourceWarehouseId).ToList())"
+                               Value="@(_warehouses.FirstOrDefault(w => w.Id == _destinationWarehouseId))"
+                               ValueChanged="@(w => _destinationWarehouseId = w?.Id)"
                                Label="@Localization.GetString("DestinationWarehouse")"
-                               Variant="Variant.Outlined"
-                               Required="true"
-                               FullWidth="true"
-                               AnchorOrigin="Origin.BottomLeft">
-                        @foreach (WarehouseDto w in _warehouses.Where(w => w.Id != _sourceWarehouseId))
-                        {
-                            <MudSelectItem Value="@((Guid?)w.Id)">@w.Name</MudSelectItem>
-                        }
-                    </MudSelect>
+                               ToStringFunc="@(w => w?.Name ?? "")"
+                               Required="true" />
                 </MudItem>
 
                 @* Current stock at source *@
@@ -122,26 +102,18 @@
 
                 @* Quantity *@
                 <MudItem xs="12" sm="6">
-                    <MudNumericField T="decimal"
-                                     @bind-Value="_quantity"
-                                     Label="@Localization.GetString("Quantity")"
-                                     Variant="Variant.Outlined"
-                                     Required="true"
-                                     Min="0.01m"
-                                     Format="N2"
-                                     HideSpinButtons="true"
-                                     FullWidth="true"
-                                     Error="@_quantityExceedsStock"
-                                     ErrorText="@(_quantityExceedsStock ? $"{Localization.GetString("ExceedsStock")} ({_sourceStock!.Quantity:N0} {_selectedProduct?.Unit})" : null)" />
+                    <WisAmountInput @bind-Value="_quantity"
+                                    Label="@Localization.GetString("Quantity")"
+                                    AdornmentText="@(_selectedProduct?.Unit ?? "")"
+                                    FullWidth="true"
+                                    HasError="@_quantityExceedsStock"
+                                    ErrorText="@(_quantityExceedsStock ? $"{Localization.GetString("ExceedsStock")} ({_sourceStock!.Quantity:N0} {_selectedProduct?.Unit})" : null)" />
                 </MudItem>
 
                 @* Note *@
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="_note"
-                                  Label="@Localization.GetString("Note")"
-                                  Variant="Variant.Outlined"
-                                  MaxLength="300"
-                                  FullWidth="true" />
+                    <WisInput @bind-Value="_note"
+                              Label="@Localization.GetString("Note")" />
                 </MudItem>
 
             </MudGrid>
@@ -175,18 +147,18 @@
     private Guid? _destinationWarehouseId;
     private StockLevelDto? _sourceStock;
 
-    private decimal _quantity = 1m;
+    private decimal? _quantity;
     private string? _note;
 
     private bool _quantityExceedsStock =>
-        _sourceStock is not null && _quantity > _sourceStock.Quantity;
+        _sourceStock is not null && _quantity.HasValue && _quantity.Value > _sourceStock.Quantity;
 
     private bool IsValid =>
         _selectedProduct is not null &&
         _sourceWarehouseId.HasValue &&
         _destinationWarehouseId.HasValue &&
         _sourceWarehouseId != _destinationWarehouseId &&
-        _quantity > 0 &&
+        _quantity is > 0 &&
         !_quantityExceedsStock;
 
     protected override async Task OnInitializedAsync()
@@ -242,34 +214,42 @@
         }
     }
 
-    private async Task<IEnumerable<ProductDto>> SearchProducts(string value, CancellationToken ct)
+    private Task<PagedResult<WisAutocompleteItem<Guid>>> LoadProductItems(
+        string search, int page, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(value))
-            return _products;
+        var filtered = string.IsNullOrWhiteSpace(search)
+            ? _products
+            : _products.Where(p =>
+                p.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                p.Code.Contains(search, StringComparison.OrdinalIgnoreCase)).ToList();
 
-        return _products.Where(p =>
-            p.Name.Contains(value, StringComparison.OrdinalIgnoreCase) ||
-            p.Code.Contains(value, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = filtered.Select(p => new WisAutocompleteItem<Guid>
+            {
+                Value = p.Id,
+                Label = p.Name,
+                SubLabel = p.Code,
+            }).ToList(),
+            Page = 1,
+            PageSize = Math.Max(1, filtered.Count),
+            TotalCount = filtered.Count,
+        });
     }
 
-    private async Task OnProductSelected(ProductDto? product)
+    private async Task OnProductSelected(Guid id)
     {
-        _selectedProduct = product;
+        _selectedProduct = id == Guid.Empty ? null : _products.FirstOrDefault(p => p.Id == id);
         await LoadSourceStock();
     }
 
-    private async Task OnSourceWarehouseSelected(Guid? id)
+    private async Task OnSourceWarehouseSelected(WarehouseDto? warehouse)
     {
-        _sourceWarehouseId = id;
-        // If destination was the same, clear it
-        if (_destinationWarehouseId == id)
+        _sourceWarehouseId = warehouse?.Id;
+        // If destination was the same as new source, clear it
+        if (_destinationWarehouseId == _sourceWarehouseId)
             _destinationWarehouseId = null;
         await LoadSourceStock();
-    }
-
-    private void OnDestinationWarehouseSelected(Guid? id)
-    {
-        _destinationWarehouseId = id;
     }
 
     private async Task Save()
@@ -279,7 +259,7 @@
         {
             await InventoryService.TransferStockAsync(
                 _selectedProduct!.Id, _sourceWarehouseId!.Value,
-                _destinationWarehouseId!.Value, _quantity, _note);
+                _destinationWarehouseId!.Value, _quantity!.Value, _note);
             Snackbar.Add(Localization.GetString("StockTransferred"), Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }

@@ -1505,6 +1505,73 @@ html {
     flex-shrink: 0;
 }
 
+/* ── WisAutocompleteInput ───────────────────────────────────────────────── */
+
+.wis-ac-input__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    overflow: hidden;
+    padding: 8px;
+}
+
+
+.wis-ac-input__list {
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.wis-ac-input__status {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.wis-ac-input__status-text {
+    display: block;
+    padding: 6px 8px;
+}
+
+/* Clear (×) button inside the trigger */
+.wis-ac-input__clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    color: var(--mud-palette-text-secondary);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+}
+
+    .wis-ac-input__clear:hover {
+        background: rgba(var(--mud-palette-text-primary-rgb), 0.08);
+        color: var(--mud-palette-text-primary);
+    }
+
+
+/* ── WisDateInput ───────────────────────────────────────────────────────── */
+
+.wis-date-input__dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-divider);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    overflow: hidden;
+}
+
 /* ── Global: disable MudBlazor's default uppercase on all buttons ── */
 .mud-button-root span.mud-button-label {
     text-transform: none;
@@ -1673,6 +1740,30 @@ html {
     margin-left: 5px;
     flex-shrink: 0;
     user-select: none;
+}
+
+.wis-amt-field--error .wis-amt-field__inner {
+    border-color: var(--mud-palette-error);
+}
+
+.wis-amt-field--error:focus-within .wis-amt-field__inner,
+.wis-amt-field--error.wis-amt-field--focused .wis-amt-field__inner {
+    border-color: var(--mud-palette-error);
+    box-shadow: 0 0 0 3px rgba(var(--mud-palette-error-rgb), 0.10);
+}
+
+.wis-amt-field--error .wis-amt-field__label {
+    color: var(--mud-palette-error);
+}
+
+.wis-amt-field__helper {
+    font-size: 0.72rem;
+    margin: 4px 14px 0;
+    line-height: 1.2;
+}
+
+.wis-amt-field__helper--error {
+    color: var(--mud-palette-error);
 }
 
 /* =============================================

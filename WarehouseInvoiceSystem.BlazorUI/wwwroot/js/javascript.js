@@ -40,12 +40,19 @@ globalThis.wisAutocomplete = {
         return elementId; // use as token for removal
     },
 
-    removeScrollListener: function (elementId) {
+    removeScrollListener: function(elementId) {
         const el = document.getElementById(elementId);
         if (el) {
             // Clone to strip all listeners (simplest approach for this use case)
             const clone = el.cloneNode(true);
             el.parentNode.replaceChild(clone, el);
         }
+    }
+};
+
+globalThis.wisUtils = {
+    /** Focus a Blazor ElementReference (passed as an HTMLElement by the JS interop layer). */
+    focusElement: function (el) {
+        if (el) el.focus();
     }
 };

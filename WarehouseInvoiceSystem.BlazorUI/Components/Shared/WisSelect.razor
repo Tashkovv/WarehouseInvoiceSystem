@@ -9,7 +9,9 @@
     premature ValueChanged firings.
 *@
 
-<div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isOpen ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @(Disabled ? "wis-field--disabled" : "") wis-select @CssClass">
+<div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isOpen ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @(Disabled ? "wis-field--disabled" : "") wis-select @CssClass"
+     tabindex="-1"
+     @onfocusout="OnFocusOut">
     <label class="wis-field__label @(_hasValue || _isOpen ? "wis-field__label--float" : "")">
         @Label
         @if (Required)
@@ -51,7 +53,7 @@
 
     @if (_isOpen)
     {
-        <div class="wis-select__dropdown" @onclick:stopPropagation>
+        <div class="wis-select__dropdown" @onclick:stopPropagation @onmousedown:preventDefault>
             @foreach (var it in Items)
             {
                 var item = it;
@@ -69,7 +71,6 @@
                 </div>
             }
         </div>
-        <div class="wis-select__backdrop" @onclick="Close" @onclick:stopPropagation />
     }
 
     @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
@@ -116,6 +117,8 @@
     }
 
     private void Close() => _isOpen = false;
+
+    private void OnFocusOut(FocusEventArgs e) => _isOpen = false;
 
     private async Task SelectItem(T item)
     {

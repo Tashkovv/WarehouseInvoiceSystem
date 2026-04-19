@@ -7,20 +7,13 @@
     <DialogContent>
         <MudGrid>
             <MudItem xs="12">
-                <MudTextField @bind-Value="_name"
-                              Label="@Localization.GetString("Name")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("WarehouseNameRequired")"
-                              MaxLength="200"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_name"
+                          Label="@Localization.GetString("Name")"
+                          Required="true" />
             </MudItem>
             <MudItem xs="12">
-                <MudTextField @bind-Value="_address"
-                              Label="@Localization.GetString("Address")"
-                              Variant="Variant.Outlined"
-                              MaxLength="500"
-                              FullWidth="true" />
+                <WisInput @bind-Value="_address"
+                          Label="@Localization.GetString("Address")" />
             </MudItem>
         </MudGrid>
     </DialogContent>

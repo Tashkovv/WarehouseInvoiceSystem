@@ -10,26 +10,16 @@
         </MudText>
         <MudGrid>
             <MudItem xs="12" sm="6">
-                <MudNumericField T="decimal?"
-                                 @bind-Value="_minimumQuantity"
-                                 Label="@Localization.GetString("MinimumQuantity")"
-                                 Variant="Variant.Outlined"
-                                 Min="0"
-                                 Format="N2"
-                                 Adornment="Adornment.End"
-                                 AdornmentText="@StockLevel.ProductUnit"
-                                 FullWidth="true" />
+                <WisAmountInput @bind-Value="_minimumQuantity"
+                                Label="@Localization.GetString("MinimumQuantity")"
+                                AdornmentText="@StockLevel.ProductUnit"
+                                FullWidth="true" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudNumericField T="decimal?"
-                                 @bind-Value="_reorderPoint"
-                                 Label="@Localization.GetString("ReorderPoint")"
-                                 Variant="Variant.Outlined"
-                                 Min="0"
-                                 Format="N2"
-                                 Adornment="Adornment.End"
-                                 AdornmentText="@StockLevel.ProductUnit"
-                                 FullWidth="true" />
+                <WisAmountInput @bind-Value="_reorderPoint"
+                                Label="@Localization.GetString("ReorderPoint")"
+                                AdornmentText="@StockLevel.ProductUnit"
+                                FullWidth="true" />
             </MudItem>
         </MudGrid>
     </DialogContent>

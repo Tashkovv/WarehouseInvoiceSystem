@@ -416,11 +416,8 @@ else
                 WisDetailActionItem confirmRecAction = _act.Info(Icons.Material.Filled.CheckCircle, Localization.GetString("ConfirmInvoice"), ConfirmInvoice);
                 confirmRecAction.Disabled = _hasInsufficientStock;
                 _primaryAction = confirmRecAction;
-                WisDetailActionItem payAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
-                payAction.Disabled = _hasInsufficientStock;
                 _actions =
                 [
-                    payAction,
                     _act.Primary(Icons.Material.Filled.Edit,           Localization.GetString("Edit"),    GoToEdit),
                     _act.Secondary(Icons.Material.Filled.ContentCopy,  Localization.GetString("Copy"),    CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,        Localization.GetString("Export"),  ExportForPrinting),
@@ -433,7 +430,6 @@ else
                 _primaryAction = confirmAction;
                 _actions =
                 [
-                    _act.Success(Icons.Material.Filled.Payment,       Localization.GetString("Payment"), RecordPayment),
                     _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
