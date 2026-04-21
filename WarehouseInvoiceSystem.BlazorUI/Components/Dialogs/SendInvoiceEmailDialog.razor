@@ -29,15 +29,9 @@
         }
 
         @* ── Message field ── *@
-        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">
-            @Localization.GetString("CustomMessage")
-        </MudText>
-        <MudTextField T="string"
-                      @bind-Value="_customMessage"
-                      Placeholder="@Localization.GetString("CustomMessageHelper")"
-                      Variant="Variant.Outlined"
-                      Lines="5"
-                      FullWidth="true" />
+        <WisInput @bind-Value="_customMessage"
+                  Label="@Localization.GetString("CustomMessage")"
+                  Placeholder="@Localization.GetString("CustomMessageHelper")" />
 
     </DialogContent>
     <DialogActions>

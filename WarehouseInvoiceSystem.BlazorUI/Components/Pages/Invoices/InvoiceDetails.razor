@@ -100,11 +100,8 @@ else
                                                    OnClick="SaveNotes"
                                                    Disabled="@_notesSaving" />
                                 </div>
-                                <MudTextField @bind-Value="_notesEditValue"
-                                              Variant="Variant.Outlined"
-                                              FullWidth="true"
-                                              Margin="Margin.Dense"
-                                              Class="mt-0 wis-notes-input" />
+                                <WisInput @bind-Value="_notesEditValue"
+                                          CssClass="mt-2" />
                             }
                             else
                             {

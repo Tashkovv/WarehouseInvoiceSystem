@@ -20,65 +20,84 @@ else
 {
     <MudStack Spacing="4">
 
-        @* ── Row 1: Company Info + Banking ───────────────────────────────── *@
+        @* ── Row: Company Info + Banking + Email ─────────────────────────── *@
         <MudGrid>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" md="4">
                 <MudCard Elevation="2" Style="height: 100%;">
-                    <MudCardHeader>
+                    <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
                             <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
                         </CardHeaderAvatar>
                         <CardHeaderContent>
                             <MudText Typo="Typo.h6">@Localization.GetString("CompanyInfo")</MudText>
                         </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                @if (_logoPreviewUrl is not null)
+                                {
+                                    <button type="button" class="wis-logo-preview-btn"
+                                            @onclick="@(() => _showLightbox = true)">
+                                        <img src="@_logoPreviewUrl"
+                                             alt="Logo preview"
+                                             style="max-height: 36px; max-width: 120px; object-fit: contain; border-radius: 4px; display: block;" />
+                                    </button>
+                                    <MudIconButton Icon="@Icons.Material.Filled.DeleteForever"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="RemoveLogo"
+                                                   Title="@Localization.GetString("Remove")" />
+                                }
+                                <MudFileUpload @ref="_fileUploadRef"
+                                               T="IBrowserFile"
+                                               Accept=".png,.jpg,.jpeg"
+                                               FilesChanged="OnLogoSelected"
+                                               MaximumFileCount="1">
+                                    <CustomContent>
+                                        <MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+                                                       Color="Color.Primary"
+                                                       Size="Size.Small"
+                                                       OnClick="OpenFilePickerAsync"
+                                                       Title="@Localization.GetString("Upload")" />
+                                    </CustomContent>
+                                </MudFileUpload>
+                            </MudStack>
+                        </CardHeaderActions>
                     </MudCardHeader>
                     <MudDivider />
                     <MudCardContent>
                         <MudGrid>
                             <MudItem xs="12">
-                                <MudTextField @bind-Value="_companyName"
-                                              Label="@Localization.GetString("Name")"
-                                              Variant="Variant.Outlined"
-                                              Required="true"
-                                              RequiredError="@Localization.GetString("CompanyName")"
-                                              MaxLength="200"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_companyName"
+                                          Label="@Localization.GetString("Name")"
+                                          Required="true" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_taxId"
-                                              Label="@Localization.GetString("TaxId")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="50"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_taxId"
+                                          Label="@Localization.GetString("TaxId")" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_embs"
-                                              Label="@Localization.GetString("Embs")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="50"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_embs"
+                                          Label="@Localization.GetString("Embs")" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_phone"
-                                              Label="@Localization.GetString("Phone")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="50"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_phone"
+                                          Label="@Localization.GetString("Phone")" />
                             </MudItem>
                             <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_address"
-                                              Label="@Localization.GetString("Address")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="500"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_address"
+                                          Label="@Localization.GetString("Address")" />
                             </MudItem>
                         </MudGrid>
+                        @if (_logoValidationError is not null)
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Error" Class="mt-2 d-block">@_logoValidationError</MudText>
+                        }
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" md="4">
                 <MudCard Elevation="2" Style="height: 100%;">
-                    <MudCardHeader>
+                    <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
                             <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Color="Color.Primary" />
                         </CardHeaderAvatar>
@@ -90,37 +109,24 @@ else
                     <MudCardContent>
                         <MudGrid>
                             <MudItem xs="12">
-                                <MudTextField @bind-Value="_bankAccount"
-                                              Label="@Localization.GetString("BankAccount")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="50"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_bankAccount"
+                                          Label="@Localization.GetString("BankAccount")" />
                             </MudItem>
                             <MudItem xs="12">
-                                <MudTextField @bind-Value="_bankName"
-                                              Label="@Localization.GetString("BankName")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="200"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_bankName"
+                                          Label="@Localization.GetString("BankName")" />
                             </MudItem>
                             <MudItem xs="12">
-                                <MudTextField @bind-Value="_bankBranch"
-                                              Label="@Localization.GetString("BankBranch")"
-                                              Variant="Variant.Outlined"
-                                              MaxLength="200"
-                                              FullWidth="true" />
+                                <WisInput @bind-Value="_bankBranch"
+                                          Label="@Localization.GetString("BankBranch")" />
                             </MudItem>
                         </MudGrid>
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-        </MudGrid>
-
-        @* ── Row 2: Email + Logo ─────────────────────────────────────────── *@
-        <MudGrid>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="12" md="4">
                 <MudCard Elevation="2" Style="height: 100%;">
-                    <MudCardHeader>
+                    <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
                             <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Primary" />
                         </CardHeaderAvatar>
@@ -131,67 +137,20 @@ else
                     <MudDivider />
                     <MudCardContent>
                         <MudGrid>
-                            <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_email"
-                                              Label="@Localization.GetString("Email")"
-                                              Variant="Variant.Outlined"
-                                              InputType="InputType.Email"
-                                              MaxLength="100"
-                                              FullWidth="true" />
+                            <MudItem xs="12">
+                                <WisInput @bind-Value="_email"
+                                          Label="@Localization.GetString("Email")"
+                                          InputType="email" />
                             </MudItem>
-                            <MudItem xs="12" sm="6">
-                                <MudTextField @bind-Value="_emailPassword"
-                                              Label="@Localization.GetString("EmailPassword")"
-                                              Variant="Variant.Outlined"
-                                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                                              MaxLength="200"
-                                              FullWidth="true"
-                                              HelperText="@PasswordHelperText"
-                                              Adornment="Adornment.End"
-                                              AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                                              AdornmentAriaLabel="Toggle password visibility"
-                                              OnAdornmentClick="() => _showPassword = !_showPassword" />
+                            <MudItem xs="12">
+                                <WisInput @bind-Value="_emailPassword"
+                                          Label="@Localization.GetString("EmailPassword")"
+                                          InputType="@(_showPassword ? "text" : "password")"
+                                          HelperText="@PasswordHelperText"
+                                          SuffixIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                          OnSuffixIconClick="@(() => _showPassword = !_showPassword)" />
                             </MudItem>
                         </MudGrid>
-                    </MudCardContent>
-                </MudCard>
-            </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudCard Elevation="2" Style="height: 100%;">
-                    <MudCardHeader>
-                        <CardHeaderAvatar>
-                            <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Primary" />
-                        </CardHeaderAvatar>
-                        <CardHeaderContent>
-                            <MudText Typo="Typo.h6">@Localization.GetString("LogoSection")</MudText>
-                        </CardHeaderContent>
-                    </MudCardHeader>
-                    <MudDivider />
-                    <MudCardContent>
-                        <MudStack Spacing="3">
-                            @if (_logoPreviewUrl is not null)
-                            {
-                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
-                                    <img src="@_logoPreviewUrl"
-                                         alt="Logo preview"
-                                         style="max-height: 80px; max-width: 240px; object-fit: contain; border: 1px solid var(--mud-palette-lines-default); border-radius: 8px; padding: 8px;" />
-                                    <WisButton Action="@_removeLogo" ButtonSize="Size.Small" />
-                                </MudStack>
-                            }
-                            <MudFileUpload @ref="_fileUploadRef"
-                                           T="IBrowserFile"
-                                           Accept=".png,.jpg,.jpeg"
-                                           FilesChanged="OnLogoSelected"
-                                           MaximumFileCount="1">
-                                <CustomContent>
-                                    <WisButton Action="@_uploadLogoAction" />
-                                </CustomContent>
-                            </MudFileUpload>
-                            @if (_logoValidationError is not null)
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Error">@_logoValidationError</MudText>
-                            }
-                        </MudStack>
                     </MudCardContent>
                 </MudCard>
             </MudItem>
@@ -203,6 +162,19 @@ else
         </MudStack>
 
     </MudStack>
+}
+
+@if (_showLightbox && _logoPreviewUrl is not null)
+{
+    <div class="wis-lightbox" @onclick="@(() => _showLightbox = false)">
+        <img src="@_logoPreviewUrl"
+             class="wis-lightbox__img"
+             alt="Logo"
+             @onclick:stopPropagation />
+        <button type="button" class="wis-lightbox__close" @onclick="@(() => _showLightbox = false)">
+            <MudIcon Icon="@Icons.Material.Filled.Close" />
+        </button>
+    </div>
 }
 
 @code {
@@ -218,6 +190,7 @@ else
     private string? _email;
     private string? _emailPassword;
     private bool _showPassword;
+    private bool _showLightbox;
     private bool _hasExistingPassword;
 
     // Logo state

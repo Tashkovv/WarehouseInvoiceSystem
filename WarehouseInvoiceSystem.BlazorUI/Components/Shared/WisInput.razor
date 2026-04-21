@@ -28,6 +28,13 @@
                @onblur="OnBlur"
                @oninput="OnInput"
                @onkeydown="OnKeyDown" />
+        @if (SuffixIcon is not null)
+        {
+            <button type="button" class="wis-field__suffix-btn" tabindex="-1"
+                    @onclick="OnSuffixIconClick" @onmousedown:preventDefault>
+                <MudIcon Icon="@SuffixIcon" Size="Size.Small" />
+            </button>
+        }
     </div>
     @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
     {
@@ -55,6 +62,9 @@
     [Parameter] public string InputType { get; set; } = "text";
     [Parameter] public string? Autocomplete { get; set; }
     [Parameter] public string? CssClass { get; set; }
+
+    [Parameter] public string? SuffixIcon { get; set; }
+    [Parameter] public EventCallback OnSuffixIconClick { get; set; }
 
     [Parameter] public EventCallback OnEnter { get; set; }
 

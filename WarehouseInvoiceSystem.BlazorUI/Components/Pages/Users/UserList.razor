@@ -42,6 +42,7 @@
         <MudDataGrid T="UserDto"
                      @ref="_grid"
                      Items="@_filteredUsers"
+                     RowClassFunc="GetRowClass"
                      ReadOnly="true"
                      Hover="true"
                      FixedHeader="true"
@@ -87,18 +88,6 @@
                     </CellTemplate>
                 </TemplateColumn>
 
-                <TemplateColumn Title="@Localization.GetString("Status")" Sortable="false">
-                    <CellTemplate>
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Variant="Variant.Outlined"
-                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
-                            @(context.Item.IsActive ? Localization.GetString("ActiveUser")
-                                                    : Localization.GetString("InactiveUser"))
-                        </MudChip>
-                    </CellTemplate>
-                </TemplateColumn>
-
                 <TemplateColumn Title="@Localization.GetString("LastLogin")" Sortable="false">
                     <CellTemplate>
                         @if (context.Item.LastLogin.HasValue)
@@ -115,6 +104,18 @@
                 <TemplateColumn Title="@Localization.GetString("CreatedAt")" Sortable="false">
                     <CellTemplate>
                         <MudText Typo="Typo.body2">@context.Item.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")</MudText>
+                    </CellTemplate>
+                </TemplateColumn>
+
+                <TemplateColumn Title="@Localization.GetString("Status")" Sortable="false">
+                    <CellTemplate>
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Outlined"
+                                 Color="@(context.Item.IsActive ? Color.Success : Color.Default)">
+                            @(context.Item.IsActive ? Localization.GetString("ActiveUser")
+                                                    : Localization.GetString("InactiveUser"))
+                        </MudChip>
                     </CellTemplate>
                 </TemplateColumn>
 
@@ -317,35 +318,58 @@
         }
     }
 
-    private List<WisDetailActionItem> BuildRowActions(UserDto item) =>
-    [
-        new WisDetailActionItem
+    private string GetRowClass(UserDto item, int index) =>
+        item.Role == UserRole.Admin ? "row-status-primary" : "row-status-default";
+
+    private List<WisDetailActionItem> BuildRowActions(UserDto item)
+    {
+        var actions = new List<WisDetailActionItem>
         {
-            Icon    = Icons.Material.Filled.Edit,
-            Label   = Localization.GetString("Edit"),
-            OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
-        },
-        new WisDetailActionItem
+            new()
+            {
+                Icon    = Icons.Material.Filled.Edit,
+                Label   = Localization.GetString("Edit"),
+                OnClick = EventCallback.Factory.Create(this, () => OpenEditDialog(item))
+            },
+            new()
+            {
+                Icon    = Icons.Material.Filled.LockReset,
+                Label   = Localization.GetString("ResetPassword"),
+                Color   = Color.Info,
+                OnClick = EventCallback.Factory.Create(this, () => OpenResetPasswordDialog(item))
+            },
+        };
+
+        if (item.IsActive)
         {
-            Icon    = Icons.Material.Filled.LockReset,
-            Label   = Localization.GetString("ResetPassword"),
-            Color   = Color.Warning,
-            OnClick = EventCallback.Factory.Create(this, () => OpenResetPasswordDialog(item))
-        },
-        new WisDetailActionItem
+            actions.Add(new()
+            {
+                Icon            = Icons.Material.Filled.PowerSettingsNew,
+                Label           = Localization.GetString("Deactivate"),
+                Color           = Color.Warning,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, false))
+            });
+        }
+        else
         {
-            Icon            = Icons.Material.Filled.PowerSettingsNew,
-            Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
-            Color           = item.IsActive ? Color.Warning : Color.Success,
-            IsDividerBefore = true,
-            OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, !item.IsActive))
-        },
-        new WisDetailActionItem
-        {
-            Icon    = Icons.Material.Filled.Delete,
-            Label   = Localization.GetString("Delete"),
-            Color   = Color.Error,
-            OnClick = EventCallback.Factory.Create(this, () => DeleteUser(item))
-        },
-    ];
+            actions.Add(new()
+            {
+                Icon            = Icons.Material.Filled.PowerSettingsNew,
+                Label           = Localization.GetString("Activate"),
+                Color           = Color.Success,
+                IsDividerBefore = true,
+                OnClick         = EventCallback.Factory.Create(this, () => SetActiveStatus(item, true))
+            });
+            actions.Add(new()
+            {
+                Icon    = Icons.Material.Filled.Delete,
+                Label   = Localization.GetString("Delete"),
+                Color   = Color.Error,
+                OnClick = EventCallback.Factory.Create(this, () => DeleteUser(item))
+            });
+        }
+
+        return actions;
+    }
 }

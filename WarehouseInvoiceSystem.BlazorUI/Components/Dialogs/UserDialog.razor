@@ -7,66 +7,41 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_username"
-                              Label="@Localization.GetString("Username")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("UsernameRequired")"
-                              FullWidth="true"
-                              MaxLength="100" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_username"
+                          Label="@Localization.GetString("Username")"
+                          Required="true" />
             </MudItem>
-            <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="_email"
-                              Label="@Localization.GetString("Email")"
-                              Variant="Variant.Outlined"
-                              Required="true"
-                              RequiredError="@Localization.GetString("EmailRequired")"
-                              InputType="InputType.Email"
-                              FullWidth="true"
-                              MaxLength="200" />
+            <MudItem xs="12" sm="4">
+                <WisInput @bind-Value="_email"
+                          Label="@Localization.GetString("Email")"
+                          InputType="email"
+                          Required="true" />                
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <WisSelect T="UserRole"
+                           Items="_userRoles"
+                           Value="@_role"
+                           ValueChanged="@(v => _role = v)"
+                           Label="@Localization.GetString("Role")"
+                           ToStringFunc="@(r => r == UserRole.Admin ? Localization.GetString("AdminRole") : Localization.GetString("UserRole"))"
+                           Required="true" />
             </MudItem>
             @if (!IsEditMode)
             {
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="_password"
-                                  Label="@Localization.GetString("Password")"
-                                  Variant="Variant.Outlined"
-                                  Required="true"
-                                  RequiredError="@Localization.GetString("PasswordRequired")"
-                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                                  Adornment="Adornment.End"
-                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
-                                  OnAdornmentClick="@(() => _showPassword = !_showPassword)"
-                                  FullWidth="true"
-                                  MaxLength="100" />
+                    <WisInput @bind-Value="_password"
+                              Label="@Localization.GetString("Password")"
+                              InputType="@(_showPassword ? "text" : "password")"
+                              Required="true"
+                              SuffixIcon="@(_showPassword ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                              OnSuffixIconClick="@(() => _showPassword = !_showPassword)" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="_confirmPassword"
-                                  Label="@Localization.GetString("ConfirmPassword")"
-                                  Variant="Variant.Outlined"
-                                  Required="true"
-                                  RequiredError="@Localization.GetString("ConfirmPasswordRequired")"
-                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                                  FullWidth="true"
-                                  MaxLength="100" />
-                </MudItem>
-            }
-            <MudItem xs="12" sm="6">
-                <MudSelect T="UserRole" @bind-Value="_role"
-                           Label="@Localization.GetString("Role")"
-                           Variant="Variant.Outlined"
-                           FullWidth="true">
-                    <MudSelectItem T="UserRole" Value="UserRole.Admin">@Localization.GetString("AdminRole")</MudSelectItem>
-                    <MudSelectItem T="UserRole" Value="UserRole.User">@Localization.GetString("UserRole")</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            @if (IsEditMode)
-            {
-                <MudItem xs="12" sm="6">
-                    <MudSwitch T="bool" @bind-Value="_isActive"
-                               Label="@Localization.GetString("Active")"
-                               Color="Color.Success" />
+                    <WisInput @bind-Value="_confirmPassword"
+                              Label="@Localization.GetString("ConfirmPassword")"
+                              InputType="@(_showPassword ? "text" : "password")"
+                              Required="true" />
                 </MudItem>
             }
         </MudGrid>
@@ -85,12 +60,13 @@
     [Parameter]
     public UserDto? User { get; set; }
 
+    private static readonly UserRole[] _userRoles = [UserRole.Admin, UserRole.User];
+
     private string _username = string.Empty;
     private string _email = string.Empty;
     private string _password = string.Empty;
     private string _confirmPassword = string.Empty;
     private UserRole _role = UserRole.User;
-    private bool _isActive = true;
     private bool _showPassword;
     private bool _saving;
 
@@ -122,7 +98,6 @@
             _username = User.Username;
             _email = User.Email;
             _role = User.Role;
-            _isActive = User.IsActive;
         }
     }
 
@@ -143,8 +118,7 @@
                 {
                     Username = _username,
                     Email = _email,
-                    Role = _role,
-                    IsActive = _isActive
+                    Role = _role
                 });
                 Snackbar.Add(Localization.GetString("UserUpdated"), Severity.Success);
             }

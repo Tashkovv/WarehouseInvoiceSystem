@@ -1448,10 +1448,6 @@ html {
     font-size: 0.72rem !important;
 }
 
-.wis-notes-input fieldset {
-    border-radius: 28px !important;
-    border-color: var(--mud-palette-secondary) !important;
-}
 
 /* Medium-size override for page-level action buttons (create/edit pages) */
 .wis-page-actions .wis-split-btn,
@@ -1883,6 +1879,29 @@ html {
     cursor: not-allowed;
 }
 
+.wis-field__suffix-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-left: 6px;
+    cursor: pointer;
+    color: rgba(var(--mud-palette-text-primary-rgb), 0.45);
+    line-height: 0;
+    transition: color 0.15s ease;
+    flex-shrink: 0;
+}
+
+.wis-field__suffix-btn:hover {
+    color: var(--mud-palette-text-primary);
+}
+
+.wis-field__suffix-btn:focus {
+    outline: none;
+}
+
 /* ── WisSelect (extends wis-field) ── */
 .wis-select__trigger {
     cursor: pointer;
@@ -2112,4 +2131,76 @@ html {
     font-size: 11px !important;
     padding: 0 3px !important;
     border-radius: 50% !important;
+}
+
+/* ── MudFileUpload — always hide the filename chip ── */
+.mud-file-upload-files {
+    display: none !important;
+}
+
+/* ── Logo preview (card header) ── */
+.wis-logo-preview-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    padding: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wis-logo-preview-btn:hover {
+    background-color: rgba(var(--mud-palette-text-primary-rgb), 0.10);
+}
+
+.wis-logo-preview-btn:focus {
+    outline: none;
+}
+
+/* ── Logo lightbox ── */
+.wis-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+}
+
+.wis-lightbox__img {
+    max-width: 90vw;
+    max-height: 90vh;
+    object-fit: contain;
+    border-radius: 8px;
+    cursor: default;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.wis-lightbox__close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    transition: background 0.15s ease;
+}
+
+.wis-lightbox__close:hover {
+    background: rgba(255, 255, 255, 0.30);
+}
+
+.wis-lightbox__close:focus {
+    outline: none;
 }
