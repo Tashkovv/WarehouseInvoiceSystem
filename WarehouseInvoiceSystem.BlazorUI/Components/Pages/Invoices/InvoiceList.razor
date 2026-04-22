@@ -22,7 +22,7 @@
     </MudText>
 </div>
 
-<WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/invoices/create"))"
+<WisGridToolbar CreateAction="@OpenCreateDialog"
                 CreateLabel="@Localization.GetString("Invoice")"
                 CreateActions="@_createActions"
                 SearchValue="@_searchString"
@@ -319,6 +319,30 @@
                 OnClick = EventCallback.Factory.Create(this, PerformExport)
             }
         ];
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        Guid? result = await WisDialog.ShowFormAsync<CreateInvoiceDialog, Guid>(
+            Localization.GetString("CreateInvoice"),
+            maxWidth: MaxWidth.Small);
+
+        if (result.HasValue && result.Value != Guid.Empty)
+            Navigation.NavigateTo($"/invoices/{result.Value}");
+    }
+
+    private async Task CopyInvoice(InvoiceDto item)
+    {
+        try
+        {
+            Guid newId = await InvoiceService.DuplicateInvoiceAsync(item.Id);
+            Navigation.NavigateTo($"/invoices/{newId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error duplicating invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingInvoice"), Severity.Error);
+        }
     }
 
     private void ApplyQueryParams()
@@ -721,7 +745,6 @@
     {
         bool isCancelled = item.Status == InvoiceStatus.Cancelled;
         bool isPaid      = item.Status == InvoiceStatus.Paid;
-        bool canEdit     = item.Status == InvoiceStatus.Draft;
         bool canConfirm  = CanConfirm(item.Status);
         bool canSend     = CanSendEmail(item.Type, item.Status);
         bool canPay      = CanPay(item.Status);
@@ -766,16 +789,6 @@
             });
         }
 
-        if (canEdit)
-        {
-            actions.Add(new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.Edit,
-                Label   = Localization.GetString("Edit"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/edit/{item.Id}"))
-            });
-        }
-
         actions.Add(new WisDetailActionItem
         {
             Icon     = Icons.Material.Filled.FileDownload,
@@ -788,7 +801,7 @@
         {
             Icon    = Icons.Material.Filled.ContentCopy,
             Label   = Localization.GetString("Copy"),
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/invoices/create?copyFrom={item.Id}"))
+            OnClick = EventCallback.Factory.Create(this, () => CopyInvoice(item))
         });
 
         if (canRevert)

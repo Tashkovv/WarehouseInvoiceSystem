@@ -22,6 +22,21 @@
         Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto);
         Task UpdateInvoiceAsync(Guid id, UpdateInvoiceDto updateDto);
         Task UpdateNotesAsync(Guid id, string? notes, CancellationToken ct = default);
+
+        // ── Draft-only field updates ────────────────────────────────────────────
+
+        /// <summary>Draft-only. Updates IssueDate without touching any other field.</summary>
+        Task UpdateIssueDateAsync(Guid id, DateTime issueDate);
+
+        /// <summary>Draft-only. Updates DueDate without touching any other field.</summary>
+        Task UpdateDueDateAsync(Guid id, DateTime dueDate);
+
+        /// <summary>Draft-only. Validates warehouse exists and updates WarehouseId only.</summary>
+        Task UpdateWarehouseAsync(Guid id, Guid warehouseId);
+
+        /// <summary>Creates a Draft copy: same company/type/warehouse/notes/items, IssueDate=today, DueDate=today+(source span).</summary>
+        Task<Guid> DuplicateInvoiceAsync(Guid sourceId);
+
         Task<bool> DeleteInvoiceAsync(Guid id);
 
         // ── Status transitions ──────────────────────────────────────────────────

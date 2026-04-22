@@ -34,7 +34,7 @@ else
                 <div class="d-flex flex-wrap gap-3 justify-space-between">
                     <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Business, Label = Localization.GetString("NewCompany"), Color = Color.Success, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewCompanyDialog()) })" ButtonSize="Size.Large" />
                     <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Person, Label = Localization.GetString("NewIndividual"), Color = Color.Dark, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewIndividualDialog()) })" ButtonSize="Size.Large" />
-                    <WisButton Action="@NavAction(Icons.Material.Filled.RequestQuote, Localization.GetString("NewInvoice"), "/invoices/create", Color.Primary)" ButtonSize="Size.Large" />
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.RequestQuote, Label = Localization.GetString("NewInvoice"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, async () => await OpenCreateInvoiceDialog()) })" ButtonSize="Size.Large" />
                     <WisButton Action="@NavAction(Icons.Material.Filled.Receipt, Localization.GetString("NewPurchaseNote"), "/purchase-notes/create", Color.Info)" ButtonSize="Size.Large" />
                     <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Payment, Label = Localization.GetString("NewPayment"), Color = Color.Success, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewPaymentDialog()) })" ButtonSize="Size.Large" />
                     <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Inventory2, Label = Localization.GetString("NewProduct"), Color = Color.Warning, OnClick = EventCallback.Factory.Create(this, async () => await OpenNewProductDialog()) })" ButtonSize="Size.Large" />
@@ -361,6 +361,16 @@ else
             Console.WriteLine($"Error creating company: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingCompany"), Severity.Error);
         }
+    }
+
+    private async Task OpenCreateInvoiceDialog()
+    {
+        Guid? result = await WisDialog.ShowFormAsync<CreateInvoiceDialog, Guid>(
+            Localization.GetString("CreateInvoice"),
+            maxWidth: MaxWidth.Small);
+
+        if (result.HasValue && result.Value != Guid.Empty)
+            Navigation.NavigateTo($"/invoices/{result.Value}");
     }
 
     private async Task OpenNewIndividualDialog()

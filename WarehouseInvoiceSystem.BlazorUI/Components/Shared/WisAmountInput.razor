@@ -19,9 +19,12 @@
 *@
 
 <div class="wis-amt-field @(FullWidth ? "wis-amt-field--full" : "") @(_isFocused ? "wis-amt-field--focused" : "") @(HasError ? "wis-amt-field--error" : "")">
-    <label class="wis-amt-field__label @(_hasValue || _isFocused ? "wis-amt-field__label--float" : "")">
-        @Label
-    </label>
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="wis-amt-field__label @(_hasValue || _isFocused ? "wis-amt-field__label--float" : "")">
+            @Label
+        </label>
+    }
     <div class="wis-amt-field__inner">
         <input class="wis-amt-field__input"
                type="text"

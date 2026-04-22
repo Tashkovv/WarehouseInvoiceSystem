@@ -7,14 +7,17 @@
 *@
 
 <div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isFocused ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @CssClass">
-    <label class="wis-field__label @(_hasValue || _isFocused ? "wis-field__label--float" : "")"
-           for="@_id">
-        @Label
-        @if (Required)
-        {
-            <span class="wis-field__required">*</span>
-        }
-    </label>
+    @if (!string.IsNullOrEmpty(Label) || Required)
+    {
+        <label class="wis-field__label @(_hasValue || _isFocused ? "wis-field__label--float" : "")"
+               for="@_id">
+            @Label
+            @if (Required)
+            {
+                <span class="wis-field__required">*</span>
+            }
+        </label>
+    }
     <div class="wis-field__inner">
         <input id="@_id"
                class="wis-field__input"

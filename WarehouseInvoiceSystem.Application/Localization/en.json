@@ -293,6 +293,7 @@
   "ErrorCreatingInvoice": "Error creating invoice",
   "ErrorUpdatingInvoice": "Error updating invoice",
   "AddLineItems": "Add at least one line item",
+  "AddItemsBeforeConfirm": "Add at least one line item before confirming the invoice.",
   "IssueDateRequired": "Issue date is required",
   "DueDateRequired": "Due date is required",
   "PurchaseDateRequired": "Purchase date is required",

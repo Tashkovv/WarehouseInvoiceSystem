@@ -176,7 +176,7 @@ public class CreateTests : InvoiceServiceTestBase
     }
 
     [Fact]
-    public async Task EmptyLineItems_ThrowsInvalidOperation()
+    public async Task EmptyLineItems_CreatesDraftWithZeroTotals()
     {
         var dto = new CreateInvoiceDto
         {
@@ -187,10 +187,16 @@ public class CreateTests : InvoiceServiceTestBase
             DueDate = DateTime.Today.AddDays(30),
             LineItems = []
         };
+        SetupValidCreate(dto);
         var service = CreateService();
 
-        await service.Invoking(s => s.CreateInvoiceAsync(dto))
-            .Should().ThrowAsync<InvalidOperationException>();
+        await service.CreateInvoiceAsync(dto);
+
+        await InvoiceRepo.Received(1).CreateAsync(Arg.Is<Invoice>(inv =>
+            inv.Status == InvoiceStatus.Draft &&
+            inv.SubTotal == 0m &&
+            inv.TotalAmount == 0m &&
+            inv.LineItems.Count == 0));
     }
 
     [Fact]

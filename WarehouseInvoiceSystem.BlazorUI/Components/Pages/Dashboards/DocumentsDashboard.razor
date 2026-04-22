@@ -196,7 +196,7 @@ else
                                 </MudText>
                             </CardHeaderContent>
                             <CardHeaderActions>
-                                <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Add, Label = Localization.GetString("Invoice"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo("/invoices/create")) })" />
+                                <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Add, Label = Localization.GetString("Invoice"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, async () => await OpenCreateInvoiceDialog()) })" />
                             </CardHeaderActions>
                         </MudCardHeader>
                         @if (_recentInvoices.Any())
@@ -490,6 +490,16 @@ else
     {
         _customDatePreset = preset;
         return Task.CompletedTask;
+    }
+
+    private async Task OpenCreateInvoiceDialog()
+    {
+        Guid? result = await WisDialog.ShowFormAsync<CreateInvoiceDialog, Guid>(
+            Localization.GetString("CreateInvoice"),
+            maxWidth: MaxWidth.Small);
+
+        if (result.HasValue && result.Value != Guid.Empty)
+            Navigation.NavigateTo($"/invoices/{result.Value}");
     }
 
     private async Task OpenPaymentDialog()

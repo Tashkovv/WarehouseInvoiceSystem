@@ -20,15 +20,16 @@ globalThis.fileDownloadHelper = {
 };
 
 globalThis.wisAutocomplete = {
-    /**
-     * Attaches a scroll listener to the element identified by @elementId.
-     * Invokes @dotnetRef.invokeMethodAsync('OnScrolledToBottom') when the user
-     * scrolls within @thresholdPx of the bottom.
-     * Returns a cleanup token (the listener function) — call removeScrollListener to detach.
-     */
+    _listeners: new Map(),
+
     attachScrollListener: function (elementId, dotnetRef, thresholdPx) {
         const el = document.getElementById(elementId);
         if (!el) return null;
+
+        if (this._listeners.has(elementId)) {
+            el.removeEventListener('scroll', this._listeners.get(elementId));
+            this._listeners.delete(elementId);
+        }
 
         const handler = function () {
             if (el.scrollTop + el.clientHeight >= el.scrollHeight - thresholdPx) {
@@ -37,15 +38,16 @@ globalThis.wisAutocomplete = {
         };
 
         el.addEventListener('scroll', handler);
-        return elementId; // use as token for removal
+        this._listeners.set(elementId, handler);
+        return elementId;
     },
 
-    removeScrollListener: function(elementId) {
-        const el = document.getElementById(elementId);
-        if (el) {
-            // Clone to strip all listeners (simplest approach for this use case)
-            const clone = el.cloneNode(true);
-            el.parentNode.replaceChild(clone, el);
+    removeScrollListener: function (elementId) {
+        const handler = this._listeners.get(elementId);
+        if (handler) {
+            const el = document.getElementById(elementId);
+            if (el) el.removeEventListener('scroll', handler);
+            this._listeners.delete(elementId);
         }
     }
 };

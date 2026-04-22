@@ -293,6 +293,7 @@
   "ErrorCreatingInvoice": "Грешка при креирање на фактура",
   "ErrorUpdatingInvoice": "Грешка при ажурирање на фактура",
   "AddLineItems": "Додадете барем една ставка",
+  "AddItemsBeforeConfirm": "Додадете барем една ставка пред да ја потврдите фактурата.",
   "IssueDateRequired": "Потребен е датум на издавање",
   "DueDateRequired": "Потребен е краен рок",
   "PurchaseDateRequired": "Потребен е датум на набавка",

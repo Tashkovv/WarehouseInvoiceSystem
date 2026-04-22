@@ -13,15 +13,17 @@
 *@
 
 <div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isOpen ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @(Disabled ? "wis-field--disabled" : "") @CssClass"
-     tabindex="-1"
-     @onfocusout="OnFocusOut">
-    <label class="wis-field__label @(!string.IsNullOrEmpty(_inputText) || _isOpen ? "wis-field__label--float" : "")">
-        @Label
-        @if (Required)
-        {
-            <span class="wis-field__required">*</span>
-        }
-    </label>
+     tabindex="-1">
+    @if (!string.IsNullOrEmpty(Label) || Required)
+    {
+        <label class="wis-field__label @(!string.IsNullOrEmpty(_inputText) || _isOpen ? "wis-field__label--float" : "")">
+            @Label
+            @if (Required)
+            {
+                <span class="wis-field__required">*</span>
+            }
+        </label>
+    }
 
     <div class="wis-field__inner" @onclick="FocusInputAsync">
         <input @ref="_inputRef"
@@ -54,52 +56,59 @@
 
     @if (_isOpen)
     {
-        <div class="wis-ac-input__dropdown" @onclick:stopPropagation @onmousedown:preventDefault>
-            <div id="@_scrollContainerId" class="wis-ac-input__list">
-                @if (_loading)
+        <div class="wis-overlay" @onclick="CloseDropdown" @onclick:stopPropagation></div>
+    }
+
+    <MudPopover Open="_isOpen"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="false"
+                Class="wis-ac-input__dropdown"
+                Style="z-index: 1400;">
+        <div id="@_scrollContainerId" class="wis-ac-input__list">
+            @if (_loading)
+            {
+                <div class="wis-ac-input__status">
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
+                </div>
+            }
+            else if (_inputText.Length == 1)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-ac-input__status-text">
+                    @Localization.GetString("TypeMoreCharacters")
+                </MudText>
+            }
+            else if (!_items.Any() && !_isLoadingMore)
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-ac-input__status-text">
+                    @Localization.GetString("NoResults")
+                </MudText>
+            }
+            else
+            {
+                @foreach (WisAutocompleteItem<TValue> item in _items)
+                {
+                    bool isSelected = _selectedItem is not null && Equals(_selectedItem.Value, item.Value);
+                    var captured = item;
+                    <div class="wis-autocomplete-item @(isSelected ? "wis-autocomplete-item--selected" : "")"
+                         @onclick="@(() => SelectItemAsync(captured))">
+                        <span class="wis-autocomplete-item__label">@captured.Label</span>
+                        @if (!string.IsNullOrEmpty(captured.SubLabel))
+                        {
+                            <span class="wis-autocomplete-item__sublabel">@captured.SubLabel</span>
+                        }
+                    </div>
+                }
+
+                @if (_isLoadingMore)
                 {
                     <div class="wis-ac-input__status">
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
                     </div>
                 }
-                else if (_inputText.Length == 1)
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-ac-input__status-text">
-                        @Localization.GetString("TypeMoreCharacters")
-                    </MudText>
-                }
-                else if (!_items.Any() && !_isLoadingMore)
-                {
-                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-ac-input__status-text">
-                        @Localization.GetString("NoResults")
-                    </MudText>
-                }
-                else
-                {
-                    @foreach (WisAutocompleteItem<TValue> item in _items)
-                    {
-                        bool isSelected = _selectedItem is not null && Equals(_selectedItem.Value, item.Value);
-                        var captured = item;
-                        <div class="wis-autocomplete-item @(isSelected ? "wis-autocomplete-item--selected" : "")"
-                             @onclick="@(() => SelectItemAsync(captured))">
-                            <span class="wis-autocomplete-item__label">@captured.Label</span>
-                            @if (!string.IsNullOrEmpty(captured.SubLabel))
-                            {
-                                <span class="wis-autocomplete-item__sublabel">@captured.SubLabel</span>
-                            }
-                        </div>
-                    }
-
-                    @if (_isLoadingMore)
-                    {
-                        <div class="wis-ac-input__status">
-                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Primary" />
-                        </div>
-                    }
-                }
-            </div>
+            }
         </div>
-    }
+    </MudPopover>
 
     @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
     {
@@ -219,13 +228,12 @@
         await JS.InvokeVoidAsync("wisAutocomplete.attachScrollListener", _scrollContainerId, _dotNetRef, 40);
     }
 
-    // ── Close / FocusOut ──────────────────────────────────────────────────────
+    // ── Close ─────────────────────────────────────────────────────────────────
 
-    private void OnFocusOut(FocusEventArgs e)
+    private void CloseDropdown()
     {
         _isOpen = false;
         _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-        // Restore the displayed text to the committed selection
         _inputText = _selectedItem?.Label ?? string.Empty;
         _ = JS.InvokeVoidAsync("wisAutocomplete.removeScrollListener", _scrollContainerId);
     }
@@ -324,7 +332,7 @@
     private void OnKeyDown(KeyboardEventArgs e)
     {
         if (Disabled) return;
-        if (e.Key == "Escape") _isOpen = false;
+        if (e.Key == "Escape") CloseDropdown();
     }
 
     // ── Disposal ──────────────────────────────────────────────────────────────

@@ -10,15 +10,17 @@
 *@
 
 <div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isOpen ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @(Disabled ? "wis-field--disabled" : "") wis-select @CssClass"
-     tabindex="-1"
-     @onfocusout="OnFocusOut">
-    <label class="wis-field__label @(_hasValue || _isOpen ? "wis-field__label--float" : "")">
-        @Label
-        @if (Required)
-        {
-            <span class="wis-field__required">*</span>
-        }
-    </label>
+     tabindex="-1">
+    @if (!string.IsNullOrEmpty(Label) || Required)
+    {
+        <label class="wis-field__label @(_hasValue || _isOpen ? "wis-field__label--float" : "")">
+            @Label
+            @if (Required)
+            {
+                <span class="wis-field__required">*</span>
+            }
+        </label>
+    }
 
     <div class="wis-field__inner wis-select__trigger"
          tabindex="@(Disabled ? -1 : 0)"
@@ -53,25 +55,32 @@
 
     @if (_isOpen)
     {
-        <div class="wis-select__dropdown" @onclick:stopPropagation @onmousedown:preventDefault>
-            @foreach (var it in Items)
-            {
-                var item = it;
-                bool isSelected = EqualityComparer<T>.Default.Equals(item, Value!);
-                <div class="wis-select__option @(isSelected ? "wis-select__option--active" : "")"
-                     @onclick="@(() => SelectItem(item))">
-                    @if (ItemTemplate is not null)
-                    {
-                        @ItemTemplate(item)
-                    }
-                    else
-                    {
-                        <span>@GetDisplay(item)</span>
-                    }
-                </div>
-            }
-        </div>
+        <div class="wis-overlay" @onclick="Close" @onclick:stopPropagation></div>
     }
+
+    <MudPopover Open="_isOpen"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="false"
+                Class="wis-select__dropdown"
+                Style="z-index: 1400;">
+        @foreach (var it in Items)
+        {
+            var item = it;
+            bool isSelected = EqualityComparer<T>.Default.Equals(item, Value!);
+            <div class="wis-select__option @(isSelected ? "wis-select__option--active" : "")"
+                 @onclick="@(() => SelectItem(item))">
+                @if (ItemTemplate is not null)
+                {
+                    @ItemTemplate(item)
+                }
+                else
+                {
+                    <span>@GetDisplay(item)</span>
+                }
+            </div>
+        }
+    </MudPopover>
 
     @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
     {
@@ -117,8 +126,6 @@
     }
 
     private void Close() => _isOpen = false;
-
-    private void OnFocusOut(FocusEventArgs e) => _isOpen = false;
 
     private async Task SelectItem(T item)
     {

@@ -1,14 +1,17 @@
-﻿@page "/invoices/{Id:guid}"
+@page "/invoices/{Id:guid}"
 @attribute [Authorize]
 @inherits PageBase
 @using System.Globalization
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
+@using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject IInvoiceService InvoiceService
 @inject IInventoryService InventoryService
 @inject IPaymentService PaymentService
+@inject IWarehouseService WarehouseService
 @inject IExcelExportService ExcelExportService
 @inject IEmailService EmailService
 
@@ -33,6 +36,10 @@ else
     {
         <MudAlert Severity="Severity.Warning" Class="mb-3">@Localization.GetString("InsufficientStockToSend")</MudAlert>
     }
+    @if (_invoice.Status == InvoiceStatus.Draft && _invoice.LineItems.Count == 0)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-3">@Localization.GetString("AddItemsBeforeConfirm")</MudAlert>
+    }
 
     <MudGrid>
 
@@ -41,7 +48,7 @@ else
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
 
-                    @* Top section: identity + pills (left 6) | notes (right 6) *@
+                    @* Top section: identity + pills (left) | notes (right) *@
                     <div class="wis-contact-row mb-4">
                         <div class="wis-contact-row-left">
 
@@ -72,10 +79,43 @@ else
                                 </div>
                                 @if (!string.IsNullOrWhiteSpace(_invoice.WarehouseName))
                                 {
-                                    <div class="wis-detail-contact-item">
-                                        <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
-                                        <MudText Typo="Typo.body2">@_invoice.WarehouseName</MudText>
-                                    </div>
+                                    @if (_warehouseEditing && _invoice.Status == InvoiceStatus.Draft)
+                                    {
+                                        <div class="wis-detail-contact-item">
+                                            <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" Style="flex-shrink:0" />
+                                            <div style="flex:1;min-width:0;">
+                                                <WisSelect T="WarehouseDto"
+                                                           Items="_warehouses"
+                                                           Value="_warehouseEdit"
+                                                           ValueChanged="@(w => _warehouseEdit = w)"
+                                                           ToStringFunc="@(w => w?.Name ?? "")"
+                                                           Label="@Localization.GetString("Warehouse")"
+                                                           FullWidth="true" />
+                                            </div>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                           Size="Size.Small"
+                                                           OnClick="CancelWarehouseEdit"
+                                                           Disabled="@_warehouseSaving" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           OnClick="SaveWarehouse"
+                                                           Disabled="@(_warehouseSaving || _warehouseEdit == null)" />
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="wis-detail-contact-item">
+                                            <MudIcon Icon="@Icons.Material.Filled.Warehouse" Size="Size.Small" Color="Color.Secondary" />
+                                            <MudText Typo="Typo.body2">@_invoice.WarehouseName</MudText>
+                                            @if (_invoice.Status == InvoiceStatus.Draft)
+                                            {
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                               Size="Size.Small"
+                                                               OnClick="StartWarehouseEdit" />
+                                            }
+                                        </div>
+                                    }
                                 }
                             </div>
 
@@ -90,13 +130,11 @@ else
                                     <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
                                     <MudIconButton Icon="@Icons.Material.Filled.Close"
                                                    Size="Size.Small"
-
                                                    OnClick="CancelNotesEdit"
                                                    Disabled="@_notesSaving" />
                                     <MudIconButton Icon="@Icons.Material.Filled.Check"
                                                    Size="Size.Small"
                                                    Color="Color.Primary"
-
                                                    OnClick="SaveNotes"
                                                    Disabled="@_notesSaving" />
                                 </div>
@@ -110,7 +148,6 @@ else
                                     <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
                                     <MudIconButton Icon="@(string.IsNullOrWhiteSpace(_invoice.Notes) ? Icons.Material.Filled.Add : Icons.Material.Filled.Edit)"
                                                    Size="Size.Small"
-
                                                    OnClick="@(() => StartNotesEdit(_invoice?.Notes))" />
                                 </div>
                                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-0" Style="line-height: 1.6;">
@@ -156,16 +193,74 @@ else
                             </div>
                         </MudItem>
 
+                        @* ── IssueDate stat (inline edit for Draft) ── *@
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("IssueDate")</MudText>
-                            <div class="wis-stat-value">@_invoice.IssueDate.ToString("dd MMM yyyy")</div>
+                            @if (_issueDateEditing && _invoice.Status == InvoiceStatus.Draft)
+                            {
+                                <div class="d-flex align-center gap-0">
+                                    <WisDateInput Date="@_issueDateEdit"
+                                                  DateChanged="@(d => _issueDateEdit = d)"
+                                                  Label="" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                   Size="Size.Small"
+                                                   OnClick="CancelIssueDateEdit"
+                                                   Disabled="@_issueDateSaving" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
+                                                   OnClick="SaveIssueDate"
+                                                   Disabled="@(_issueDateSaving || !_issueDateEdit.HasValue)" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-center gap-1">
+                                    <div class="wis-stat-value">@_invoice.IssueDate.ToString("dd MMM yyyy")</div>
+                                    @if (_invoice.Status == InvoiceStatus.Draft)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.EditCalendar"
+                                                       Size="Size.Small"
+                                                       OnClick="StartIssueDateEdit" />
+                                    }
+                                </div>
+                            }
                         </MudItem>
 
+                        @* ── DueDate stat (inline edit for Draft) ── *@
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("DueDate")</MudText>
-                            <div class="wis-stat-value @(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? "mud-error-text" : "")">
-                                @_invoice.DueDate.ToString("dd MMM yyyy")
-                            </div>
+                            @if (_dueDateEditing && _invoice.Status == InvoiceStatus.Draft)
+                            {
+                                <div class="d-flex align-center gap-0">
+                                    <WisDateInput Date="@_dueDateEdit"
+                                                  DateChanged="@(d => _dueDateEdit = d)"
+                                                  Label="" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                                   Size="Size.Small"
+                                                   OnClick="CancelDueDateEdit"
+                                                   Disabled="@_dueDateSaving" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
+                                                   OnClick="SaveDueDate"
+                                                   Disabled="@(_dueDateSaving || !_dueDateEdit.HasValue)" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex align-center gap-1">
+                                    <div class="wis-stat-value @(_invoice.DueDate < DateTime.UtcNow && _invoice.Status != InvoiceStatus.Paid ? "mud-error-text" : "")">
+                                        @_invoice.DueDate.ToString("dd MMM yyyy")
+                                    </div>
+                                    @if (_invoice.Status == InvoiceStatus.Draft)
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.EditCalendar"
+                                                       Size="Size.Small"
+                                                       OnClick="StartDueDateEdit" />
+                                    }
+                                </div>
+                            }
                         </MudItem>
 
                     </MudGrid>
@@ -181,76 +276,47 @@ else
                     <CardHeaderContent>
                         <MudText Typo="Typo.h6">@Localization.GetString("LineItems")</MudText>
                     </CardHeaderContent>
+                    <CardHeaderActions>
+                        @if (_invoice.Status == InvoiceStatus.Draft)
+                        {
+                            @if (_itemsEditing)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                               Size="Size.Small"
+                                               OnClick="DiscardItemsEdit"
+                                               Disabled="@_itemsSaving" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Check"
+                                               Size="Size.Small"
+                                               Color="Color.Primary"
+                                               OnClick="SaveItems"
+                                               Disabled="@_itemsSaving" />
+                            }
+                            else
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               OnClick="StartItemsEdit" />
+                            }
+                        }
+                    </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
-                    <MudTable Items="_invoice.LineItems"
-                              Hover="true"
-                              Breakpoint="Breakpoint.Sm"
-                              Elevation="0"
-                              Class="wis-secondary-list">
-                        <HeaderContent>
-                            <MudTh>@Localization.GetString("Product")</MudTh>
-                            <MudTh>@Localization.GetString("Description")</MudTh>
-                            <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
-                            <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
-                            <MudTh Class="text-right">@Localization.GetString("TaxRate")</MudTh>
-                            @if (_invoice!.Type == InvoiceType.Receivable && _invoice.LineItems.Any(li => li.DiscountPercentage > 0))
-                            {
-                                <MudTh Class="text-right">@Localization.GetString("Discount")</MudTh>
-                            }
-                            <MudTh Class="text-right">@Localization.GetString("Total")</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="@Localization.GetString("Product")">
-                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductCode - @context.ProductName</MudText>
-                            </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("Description")">
-                                <MudText Typo="Typo.body2">
-                                    @(string.IsNullOrWhiteSpace(context.Description) ? "—" : context.Description)
-                                </MudText>
-                            </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("Quantity")" Class="text-right">
-                                <div class="d-flex align-center justify-end gap-2">
-                                    @if (_stockByProduct.Count > 0)
-                                    {
-                                        decimal avail = _stockByProduct.TryGetValue(context.ProductId, out decimal s) ? s : 0;
-                                        bool ok = avail >= context.Quantity;
-                                        <MudChip T="string"
-                                                 Size="Size.Small"
-                                                 Variant="Variant.Outlined"
-                                                 Color="@(ok ? Color.Success : Color.Warning)"
-                                                 Icon="@(ok ? Icons.Material.Outlined.Inventory2 : Icons.Material.Outlined.WarningAmber)">
-                                            @avail.ToString("N0") @context.ProductUnit
-                                        </MudChip>
-                                    }
-                                    <MudText Typo="Typo.body2" Class="font-weight-medium">
-                                        @context.Quantity.ToString("N0")
-                                        <MudText Typo="Typo.caption" Color="Color.Dark" Inline="true">@context.ProductUnit</MudText>
-                                    </MudText>
-                                </div>
-                            </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
-                                <MudText Typo="Typo.body2" Color="Color.Dark">@context.UnitPrice.ToString("C")</MudText>
-                            </MudTd>
-                            <MudTd DataLabel="@Localization.GetString("TaxRate")" Class="text-right">
-                                <MudText Typo="Typo.body2" Color="Color.Dark">
-                                    @context.TaxRate.ToString("0.00", CultureInfo.CurrentCulture)%
-                                </MudText>
-                            </MudTd>
-                            @if (_invoice!.Type == InvoiceType.Receivable && _invoice.LineItems.Any(li => li.DiscountPercentage > 0))
-                            {
-                                <MudTd DataLabel="@Localization.GetString("Discount")" Class="text-right">
-                                    <MudText Typo="Typo.body2" Color="Color.Dark">@context.DiscountPercentage%</MudText>
-                                </MudTd>
-                            }
-                            <MudTd DataLabel="@Localization.GetString("Total")" Class="text-right">
-                                <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Primary">
-                                    @context.TotalAmount.ToString("C")
-                                </MudText>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
-
+                    @if (_itemsEditing)
+                    {
+                        <InvoiceLineItemsEditor Type="@_invoice.Type"
+                                                WarehouseId="@_invoice.WarehouseId"
+                                                StockByProduct="@_stockByProduct"
+                                                @bind-Items="_editItems"
+                                                ReadOnly="false" />
+                    }
+                    else
+                    {
+                        <InvoiceLineItemsEditor Type="@_invoice.Type"
+                                                WarehouseId="@_invoice.WarehouseId"
+                                                StockByProduct="@_stockByProduct"
+                                                Items="@_readOnlyLineItems"
+                                                ReadOnly="true" />
+                    }
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -329,11 +395,43 @@ else
 
     private InvoiceDto? _invoice;
     private List<PaymentDto> _payments = [];
-    private bool _hasInsufficientStock = false;
-    private Dictionary<Guid, decimal> _stockByProduct = [];
+    private bool _hasInsufficientStock;
+    private Dictionary<Guid, StockLevelDto> _stockByProduct = [];
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
+
+    // ── Read-only line items view model ──────────────────────────────────────
+
+    private List<LineItemEditorModel> _readOnlyLineItems = [];
+
+    // ── Inline IssueDate editing (Draft only) ─────────────────────────────────
+
+    private bool _issueDateEditing;
+    private bool _issueDateSaving;
+    private DateTime? _issueDateEdit;
+
+    // ── Inline DueDate editing (Draft only) ──────────────────────────────────
+
+    private bool _dueDateEditing;
+    private bool _dueDateSaving;
+    private DateTime? _dueDateEdit;
+
+    // ── Inline Warehouse editing (Draft only) ─────────────────────────────────
+
+    private bool _warehouseEditing;
+    private bool _warehouseSaving;
+    private WarehouseDto? _warehouseEdit;
+    private List<WarehouseDto> _warehouses = [];
+    private bool _warehousesLoaded;
+
+    // ── Inline line items editing (Draft only) ────────────────────────────────
+
+    private bool _itemsEditing;
+    private bool _itemsSaving;
+    private List<LineItemEditorModel> _editItems = [];
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
@@ -352,6 +450,7 @@ else
         {
             _invoice = await InvoiceService.GetInvoiceByIdAsync(Id, CancellationToken.None);
             await LoadStockAsync();
+            BuildReadOnlyLineItems();
             BuildActions();
         }, "ErrorLoadingInvoice");
 
@@ -387,15 +486,38 @@ else
         try
         {
             IEnumerable<StockLevelDto> levels = await InventoryService.GetStockByWarehouseAsync(_invoice.WarehouseId, CancellationToken.None);
-            _stockByProduct = levels.ToDictionary(s => s.ProductId, s => s.AvailableQuantity);
+            _stockByProduct = levels.ToDictionary(s => s.ProductId);
             _hasInsufficientStock = _invoice.LineItems.Any(li =>
-                !_stockByProduct.TryGetValue(li.ProductId, out decimal available) || li.Quantity > available);
+                !_stockByProduct.TryGetValue(li.ProductId, out StockLevelDto? s) ||
+                li.Quantity > s.AvailableQuantity);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading stock: {ex.Message}");
             _hasInsufficientStock = false;
         }
+    }
+
+    // ── Read-only line items view model ───────────────────────────────────────
+
+    private void BuildReadOnlyLineItems()
+    {
+        _readOnlyLineItems = _invoice?.LineItems.Select(li => new LineItemEditorModel
+        {
+            Id = li.Id,
+            SelectedProduct = new ProductDto
+            {
+                Id = li.ProductId,
+                Code = li.ProductCode,
+                Name = li.ProductName,
+                Unit = li.ProductUnit
+            },
+            Description = li.Description,
+            Quantity = li.Quantity,
+            UnitPrice = li.UnitPrice,
+            TaxRate = li.TaxRate,
+            DiscountPercentage = li.DiscountPercentage
+        }).ToList() ?? [];
     }
 
     // ── Action builder ────────────────────────────────────────────────────────
@@ -411,23 +533,22 @@ else
         {
             case InvoiceStatus.Draft when _invoice.Type == InvoiceType.Receivable:
                 WisDetailActionItem confirmRecAction = _act.Info(Icons.Material.Filled.CheckCircle, Localization.GetString("ConfirmInvoice"), ConfirmInvoice);
-                confirmRecAction.Disabled = _hasInsufficientStock;
+                confirmRecAction.Disabled = _hasInsufficientStock || _invoice.LineItems.Count == 0;
                 _primaryAction = confirmRecAction;
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Edit,           Localization.GetString("Edit"),    GoToEdit),
-                    _act.Secondary(Icons.Material.Filled.ContentCopy,  Localization.GetString("Copy"),    CopyInvoice),
-                    _act.Secondary(Icons.Material.Filled.Print,        Localization.GetString("Export"),  ExportForPrinting),
-                    _act.Error(Icons.Material.Filled.Cancel,           Localization.GetString("Cancel"),  CancelInvoice, dividerBefore: true),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
+                    _act.Secondary(Icons.Material.Filled.Print,        Localization.GetString("Export"), ExportForPrinting),
+                    _act.Error(Icons.Material.Filled.Cancel,           Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
 
             case InvoiceStatus.Draft:
                 WisDetailActionItem confirmAction = _act.Info(Icons.Material.Filled.CheckCircle, Localization.GetString("ConfirmInvoice"), ConfirmInvoice);
+                confirmAction.Disabled = _invoice.LineItems.Count == 0;
                 _primaryAction = confirmAction;
                 _actions =
                 [
-                    _act.Primary(Icons.Material.Filled.Edit,          Localization.GetString("Edit"),   GoToEdit),
                     _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
@@ -491,8 +612,19 @@ else
 
     // ── Actions ───────────────────────────────────────────────────────────────
 
-    private void GoToEdit() => Navigation.NavigateTo($"/invoices/edit/{Id}");
-    private void CopyInvoice() => Navigation.NavigateTo($"/invoices/create?copyFrom={Id}");
+    private async Task CopyInvoice()
+    {
+        try
+        {
+            Guid newId = await InvoiceService.DuplicateInvoiceAsync(Id);
+            Navigation.NavigateTo($"/invoices/{newId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error duplicating invoice: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingInvoice"), Severity.Error);
+        }
+    }
 
     private async Task RecordPayment()
     {
@@ -610,6 +742,176 @@ else
         }
     }
 
+    // ── Inline IssueDate editing ──────────────────────────────────────────────
+
+    private void StartIssueDateEdit()
+    {
+        _issueDateEdit = _invoice?.IssueDate;
+        _issueDateEditing = true;
+    }
+
+    private void CancelIssueDateEdit() => _issueDateEditing = false;
+
+    private async Task SaveIssueDate()
+    {
+        if (!_issueDateEdit.HasValue || _invoice is null) return;
+        _issueDateSaving = true;
+        try
+        {
+            await InvoiceService.UpdateIssueDateAsync(Id, _issueDateEdit.Value);
+            _issueDateEditing = false;
+            await LoadInvoice();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating issue date: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _issueDateSaving = false;
+        }
+    }
+
+    // ── Inline DueDate editing ────────────────────────────────────────────────
+
+    private void StartDueDateEdit()
+    {
+        _dueDateEdit = _invoice?.DueDate;
+        _dueDateEditing = true;
+    }
+
+    private void CancelDueDateEdit() => _dueDateEditing = false;
+
+    private async Task SaveDueDate()
+    {
+        if (!_dueDateEdit.HasValue || _invoice is null) return;
+        _dueDateSaving = true;
+        try
+        {
+            await InvoiceService.UpdateDueDateAsync(Id, _dueDateEdit.Value);
+            _dueDateEditing = false;
+            await LoadInvoice();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating due date: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _dueDateSaving = false;
+        }
+    }
+
+    // ── Inline Warehouse editing ──────────────────────────────────────────────
+
+    private async Task StartWarehouseEdit()
+    {
+        if (!_warehousesLoaded)
+        {
+            try
+            {
+                IEnumerable<WarehouseDto> all = await WarehouseService.GetAllWarehousesAsync();
+                _warehouses = all.Where(w => w.IsActive).ToList();
+                _warehousesLoaded = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading warehouses: {ex.Message}");
+                Snackbar.Add(Localization.GetString("ErrorLoadingWarehouse"), Severity.Error);
+                return;
+            }
+        }
+        _warehouseEdit = _warehouses.FirstOrDefault(w => w.Id == _invoice?.WarehouseId);
+        _warehouseEditing = true;
+    }
+
+    private void CancelWarehouseEdit() => _warehouseEditing = false;
+
+    private async Task SaveWarehouse()
+    {
+        if (_warehouseEdit is null || _invoice is null) return;
+        _warehouseSaving = true;
+        try
+        {
+            await InvoiceService.UpdateWarehouseAsync(Id, _warehouseEdit.Id);
+            _warehouseEditing = false;
+            await LoadInvoice();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating warehouse: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _warehouseSaving = false;
+        }
+    }
+
+    // ── Inline line items editing ─────────────────────────────────────────────
+
+    private void StartItemsEdit()
+    {
+        _editItems = _readOnlyLineItems.Select(li => new LineItemEditorModel
+        {
+            Id = li.Id,
+            SelectedProduct = li.SelectedProduct,
+            Description = li.Description,
+            Quantity = li.Quantity,
+            UnitPrice = li.UnitPrice,
+            TaxRate = li.TaxRate,
+            DiscountPercentage = li.DiscountPercentage
+        }).ToList();
+        _itemsEditing = true;
+    }
+
+    private void DiscardItemsEdit() => _itemsEditing = false;
+
+    private async Task SaveItems()
+    {
+        if (_invoice is null) return;
+        _itemsSaving = true;
+        try
+        {
+            UpdateInvoiceDto dto = new()
+            {
+                CompanyId = _invoice.CompanyId,
+                Type = _invoice.Type,
+                WarehouseId = _invoice.WarehouseId,
+                IssueDate = _invoice.IssueDate,
+                DueDate = _invoice.DueDate,
+                Notes = _invoice.Notes,
+                LineItems = _editItems
+                    .Where(i => i.SelectedProduct != null)
+                    .Select(i => new UpdateInvoiceLineDto
+                    {
+                        Id = i.Id,
+                        ProductId = i.SelectedProduct!.Id,
+                        Description = i.Description,
+                        Quantity = (int)i.Quantity,
+                        UnitPrice = i.UnitPrice,
+                        TaxRate = i.TaxRate,
+                        DiscountPercentage = i.DiscountPercentage
+                    }).ToList()
+            };
+
+            await InvoiceService.UpdateInvoiceAsync(Id, dto);
+            _itemsEditing = false;
+            await LoadInvoice();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving line items: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
+        }
+        finally
+        {
+            _itemsSaving = false;
+        }
+    }
+
     // ── Inline notes editing ──────────────────────────────────────────────────
 
     private async Task SaveNotes()
@@ -621,10 +923,5 @@ else
             _invoice.Notes = notes;
         }, "ErrorUpdatingInvoice");
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private bool CanPay(InvoiceStatus status) =>
-        status != InvoiceStatus.Paid && status != InvoiceStatus.Cancelled;
 
 }

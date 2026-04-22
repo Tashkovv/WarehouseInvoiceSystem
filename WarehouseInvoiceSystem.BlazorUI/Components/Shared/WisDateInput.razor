@@ -7,8 +7,7 @@
 *@
 
 <div class="wis-field @(FullWidth ? "wis-field--full" : "") @(_isOpen ? "wis-field--focused" : "") @(HasError ? "wis-field--error" : "") @(Disabled ? "wis-field--disabled" : "") @CssClass"
-     tabindex="-1"
-     @onfocusout="OnFocusOut">
+     tabindex="-1">
     <label class="wis-field__label @(_hasValue || _isOpen ? "wis-field__label--float" : "")">
         @Label
         @if (Required)
@@ -35,87 +34,92 @@
 
     @if (_isOpen)
     {
-        <div class="wis-date-input__dropdown" @onclick:stopPropagation @onmousedown:preventDefault>
-
-            @if (OpenTo == OpenTo.Year)
-            {
-                <div class="wis-dp-month-grid">
-                    <div class="wis-dp-month-nav">
-                        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
-                                       Size="Size.Small"
-                                       OnClick="@(() => _viewYearOffset -= 12)" />
-                        <span class="wis-dp-month-year">
-                            @(_viewYear + _viewYearOffset) – @(_viewYear + _viewYearOffset + 11)
-                        </span>
-                        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
-                                       Size="Size.Small"
-                                       OnClick="@(() => _viewYearOffset += 12)" />
-                    </div>
-                    <div class="wis-dp-month-cells" style="grid-template-columns: repeat(3, 1fr);">
-                        @for (int i = 0; i < 12; i++)
-                        {
-                            var year = _viewYear + _viewYearOffset + i;
-                            bool isSelected = _localDate.HasValue && _localDate.Value.Year == year;
-                            bool isDisabled = MaxDate.HasValue && year > MaxDate.Value.Year;
-                            <button type="button"
-                                    class="wis-dp-month-cell @(isSelected ? "wis-dp-month-cell--selected" : "")"
-                                    disabled="@isDisabled"
-                                    @onclick="@(() => SelectYear(year))">
-                                @year
-                            </button>
-                        }
-                    </div>
-                </div>
-            }
-            else if (OpenTo == OpenTo.Month)
-            {
-                <div class="wis-dp-month-grid">
-                    <div class="wis-dp-month-nav">
-                        <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
-                                       Size="Size.Small"
-                                       OnClick="@(() => _viewYear--)" />
-                        <span class="wis-dp-month-year">@_viewYear</span>
-                        <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
-                                       Size="Size.Small"
-                                       OnClick="@(() => _viewYear++)" />
-                    </div>
-                    <div class="wis-dp-month-cells">
-                        @for (int m = 1; m <= 12; m++)
-                        {
-                            var month = m;
-                            var dt = new DateTime(_viewYear, month, 1);
-                            bool isSelected = _localDate.HasValue
-                                && _localDate.Value.Year == _viewYear
-                                && _localDate.Value.Month == month;
-                            bool isDisabled = MaxDate.HasValue && dt > MaxDate.Value;
-                            <button type="button"
-                                    class="wis-dp-month-cell @(isSelected ? "wis-dp-month-cell--selected" : "")"
-                                    disabled="@isDisabled"
-                                    @onclick="@(() => SelectMonth(month))">
-                                @dt.ToString("MMM")
-                            </button>
-                        }
-                    </div>
-                </div>
-            }
-            else
-            {
-                <div class="wis-dp-calendar">
-                    <MudDatePicker Date="@_localDate"
-                                   DateChanged="OnDateChanged"
-                                   PickerVariant="PickerVariant.Static"
-                                   Variant="Variant.Text"
-                                   Margin="Margin.None"
-                                   DateFormat="@DateFormat"
-                                   OpenTo="@OpenTo"
-                                   MaxDate="@MaxDate"
-                                   Elevation="0"
-                                   Class="wis-date-static" />
-                </div>
-            }
-
-        </div>
+        <div class="wis-overlay" @onclick="Close" @onclick:stopPropagation></div>
     }
+
+    <MudPopover Open="_isOpen"
+                AnchorOrigin="Origin.BottomLeft"
+                TransformOrigin="Origin.TopLeft"
+                Paper="false"
+                Class="wis-date-input__dropdown"
+                Style="z-index: 1400;">
+        @if (OpenTo == OpenTo.Year)
+        {
+            <div class="wis-dp-month-grid">
+                <div class="wis-dp-month-nav">
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _viewYearOffset -= 12)" />
+                    <span class="wis-dp-month-year">
+                        @(_viewYear + _viewYearOffset) – @(_viewYear + _viewYearOffset + 11)
+                    </span>
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _viewYearOffset += 12)" />
+                </div>
+                <div class="wis-dp-month-cells" style="grid-template-columns: repeat(3, 1fr);">
+                    @for (int i = 0; i < 12; i++)
+                    {
+                        var year = _viewYear + _viewYearOffset + i;
+                        bool isSelected = _localDate.HasValue && _localDate.Value.Year == year;
+                        bool isDisabled = MaxDate.HasValue && year > MaxDate.Value.Year;
+                        <button type="button"
+                                class="wis-dp-month-cell @(isSelected ? "wis-dp-month-cell--selected" : "")"
+                                disabled="@isDisabled"
+                                @onclick="@(() => SelectYear(year))">
+                            @year
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        else if (OpenTo == OpenTo.Month)
+        {
+            <div class="wis-dp-month-grid">
+                <div class="wis-dp-month-nav">
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronLeft"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _viewYear--)" />
+                    <span class="wis-dp-month-year">@_viewYear</span>
+                    <MudIconButton Icon="@Icons.Material.Filled.ChevronRight"
+                                   Size="Size.Small"
+                                   OnClick="@(() => _viewYear++)" />
+                </div>
+                <div class="wis-dp-month-cells">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        var month = m;
+                        var dt = new DateTime(_viewYear, month, 1);
+                        bool isSelected = _localDate.HasValue
+                            && _localDate.Value.Year == _viewYear
+                            && _localDate.Value.Month == month;
+                        bool isDisabled = MaxDate.HasValue && dt > MaxDate.Value;
+                        <button type="button"
+                                class="wis-dp-month-cell @(isSelected ? "wis-dp-month-cell--selected" : "")"
+                                disabled="@isDisabled"
+                                @onclick="@(() => SelectMonth(month))">
+                            @dt.ToString("MMM")
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="wis-dp-calendar">
+                <MudDatePicker Date="@_localDate"
+                               DateChanged="OnDateChanged"
+                               PickerVariant="PickerVariant.Static"
+                               Variant="Variant.Text"
+                               Margin="Margin.None"
+                               DateFormat="@DateFormat"
+                               OpenTo="@OpenTo"
+                               MaxDate="@MaxDate"
+                               Elevation="0"
+                               Class="wis-date-static" />
+            </div>
+        }
+    </MudPopover>
 
     @if (HasError && !string.IsNullOrWhiteSpace(ErrorText))
     {
@@ -172,8 +176,6 @@
     }
 
     private void Close() => _isOpen = false;
-
-    private void OnFocusOut(FocusEventArgs e) => _isOpen = false;
 
     private void OnKeyDown(KeyboardEventArgs e)
     {

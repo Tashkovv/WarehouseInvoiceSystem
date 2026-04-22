@@ -1,0 +1,236 @@
+@using WarehouseInvoiceSystem.Application.DTOs.Company
+@using WarehouseInvoiceSystem.Application.DTOs.Invoice
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@inject ILocalizationService Localization
+@inject IInvoiceService InvoiceService
+@inject ICompanyService CompanyService
+@inject IWarehouseService WarehouseService
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            @* ── Company ── *@
+            <MudItem xs="12">
+                <WisAutocompleteInput TValue="Guid"
+                                      SelectedValue="@(_selectedCompanyId ?? default)"
+                                      SelectedValueChanged="OnCompanySelected"
+                                      LoadItems="LoadCompanyItems"
+                                      Label="@Localization.GetString("Company")"
+                                      Required="true"
+                                      FullWidth="true" />
+            </MudItem>
+
+            @* ── Info alert (shown after company selection) ── *@
+            @if (_selectedCompany is not null)
+            {
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info"
+                              Variant="Variant.Outlined"
+                              Class="py-2 wis-alert-fullwidth">
+                        <MudGrid Spacing="0">
+                            <MudItem xs="5" Class="text-center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Type")</MudText>
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="@GetCompanyTypeColor(_selectedCompany.Type)"
+                                         Variant="Variant.Outlined"
+                                         Class="mt-1"
+                                         Style="max-width: 100%;">
+                                    @GetCompanyTypeLabel(_selectedCompany.Type)
+                                </MudChip>
+                            </MudItem>
+                            <MudItem xs="3" Class="text-center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Terms")</MudText>
+                                <MudText Typo="Typo.subtitle2">@_selectedCompany.PaymentTermsDays @Localization.GetString("Days")</MudText>
+                            </MudItem>
+                            <MudItem xs="3" Class="text-center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("TaxId")</MudText>
+                                <MudText Typo="Typo.subtitle2">
+                                    @(string.IsNullOrWhiteSpace(_selectedCompany.TaxId) ? "—" : _selectedCompany.TaxId)
+                                </MudText>
+                            </MudItem>
+                        </MudGrid>
+                    </MudAlert>
+                </MudItem>
+            }
+
+            @* ── Invoice Type ── *@
+            <MudItem xs="12" sm="6">
+                <WisSelect T="InvoiceType"
+                           Items="_invoiceTypes"
+                           @bind-Value="_selectedType"
+                           Label="@Localization.GetString("Type")"
+                           Required="true"
+                           Disabled="@(_selectedCompany != null && _selectedCompany.Type != CompanyType.Both)">
+                    <ItemTemplate Context="t">
+                        @if (t == InvoiceType.Receivable)
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Size="Size.Small" Color="Color.Success" />
+                                <MudText>@Localization.GetString("Receivable")</MudText>
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                <MudIcon Icon="@Icons.Material.Filled.TrendingDown" Size="Size.Small" Color="Color.Warning" />
+                                <MudText>@Localization.GetString("Payable")</MudText>
+                            </MudStack>
+                        }
+                    </ItemTemplate>
+                </WisSelect>
+            </MudItem>
+
+            @* ── Issue Date ── *@
+            <MudItem xs="12" sm="6">
+                <WisDateInput Date="@_issueDate"
+                              DateChanged="@(d => _issueDate = d)"
+                              Label="@Localization.GetString("IssueDate")"
+                              Required="true"
+                              FullWidth="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <WisDialogActions OnCancel="Cancel"
+                          OnSave="Save"
+                          SaveDisabled="@(!IsValid || _saving)" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private static readonly InvoiceType[] _invoiceTypes = [InvoiceType.Receivable, InvoiceType.Payable];
+
+    private bool _saving;
+    private Guid? _selectedCompanyId;
+    private CompanyDto? _selectedCompany;
+    private InvoiceType _selectedType = InvoiceType.Receivable;
+    private DateTime? _issueDate = DateTime.Today;
+
+    private bool IsValid =>
+        _selectedCompanyId.HasValue &&
+        _issueDate.HasValue;
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadCompanyItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<CompanyDto> paged = await CompanyService.GetPagedAsync(new GetCompaniesQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            IsActive = true
+        }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = paged.Items.Select(c => new WisAutocompleteItem<Guid>
+            {
+                Value = c.Id,
+                Label = c.Name,
+                SubLabel = c.TaxId
+            }).ToList(),
+            Page = paged.Page,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount
+        };
+    }
+
+    private async Task OnCompanySelected(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            _selectedCompanyId = null;
+            _selectedCompany = null;
+            return;
+        }
+
+        _selectedCompanyId = id;
+        try
+        {
+            _selectedCompany = await CompanyService.GetCompanyByIdAsync(id);
+        }
+        catch
+        {
+            _selectedCompany = null;
+        }
+
+        if (_selectedCompany is null) return;
+
+        _selectedType = _selectedCompany.Type switch
+        {
+            CompanyType.Client => InvoiceType.Receivable,
+            CompanyType.Vendor => InvoiceType.Payable,
+            _ => _selectedType    // Both → keep current selection
+        };
+    }
+
+    private async Task Save()
+    {
+        if (!IsValid || _saving) return;
+        _saving = true;
+
+        try
+        {
+            // Resolve warehouse: prefer default, fall back to first active
+            WarehouseDto? warehouse = await WarehouseService.GetDefaultWarehouseAsync();
+            if (warehouse is null)
+            {
+                IEnumerable<WarehouseDto> all = await WarehouseService.GetAllWarehousesAsync();
+                warehouse = all.FirstOrDefault();
+            }
+
+            if (warehouse is null)
+            {
+                // Cannot create invoice without a warehouse — caller should show error
+                MudDialog.Cancel();
+                return;
+            }
+
+            DateTime issueDate = _issueDate!.Value;
+            int termsDays = _selectedCompany?.PaymentTermsDays ?? 0;
+            DateTime dueDate = issueDate.AddDays(Math.Max(termsDays, 0));
+
+            CreateInvoiceDto dto = new()
+            {
+                CompanyId = _selectedCompanyId!.Value,
+                WarehouseId = warehouse.Id,
+                Type = _selectedType,
+                IssueDate = issueDate,
+                DueDate = dueDate,
+                Notes = null,
+                LineItems = []
+            };
+
+            Guid newId = await InvoiceService.CreateInvoiceAsync(dto);
+            MudDialog.Close(DialogResult.Ok(newId));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating invoice: {ex.Message}");
+            // Re-surface as invalid state so user can retry
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private static Color GetCompanyTypeColor(CompanyType t) => t switch
+    {
+        CompanyType.Client => Color.Success,
+        CompanyType.Vendor => Color.Warning,
+        _ => Color.Primary
+    };
+
+    private string GetCompanyTypeLabel(CompanyType t) => t switch
+    {
+        CompanyType.Client => Localization.GetString("Client"),
+        CompanyType.Vendor => Localization.GetString("Vendor"),
+        _ => Localization.GetString("ClientAndVendor")
+    };
+}

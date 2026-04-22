@@ -105,9 +105,6 @@
 
         public async Task<Guid> CreateInvoiceAsync(CreateInvoiceDto createDto)
         {
-            if (createDto.LineItems == null || createDto.LineItems.Count == 0)
-                throw new InvalidOperationException("An invoice must have at least one line item.");
-
             Company company = await companyRepository.GetByIdAsync(createDto.CompanyId)
                 ?? throw new KeyNotFoundException($"Company with ID {createDto.CompanyId} not found");
 
@@ -117,13 +114,16 @@
             if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
 
-            var productIds = createDto.LineItems.Select(li => li.ProductId).ToList();
-            if (!await productRepository.AllExistAsync(productIds))
-                throw new KeyNotFoundException("One or more products in the line items were not found");
+            if (createDto.LineItems?.Count > 0)
+            {
+                var productIds = createDto.LineItems.Select(li => li.ProductId).ToList();
+                if (!await productRepository.AllExistAsync(productIds))
+                    throw new KeyNotFoundException("One or more products in the line items were not found");
+            }
 
             string invoiceNumber = await invoiceRepository.GenerateInvoiceNumberAsync(createDto.Type);
 
-            List<InvoiceLine> lineItems = createDto.LineItems.Select(li => new InvoiceLine
+            List<InvoiceLine> lineItems = createDto.LineItems?.Select(li => new InvoiceLine
             {
                 ProductId = li.ProductId,
                 Description = li.Description,
@@ -132,7 +132,7 @@
                 TaxRate = li.TaxRate,
                 DiscountPercentage = li.DiscountPercentage,
                 CreatedAt = DateTime.UtcNow,
-            }).ToList();
+            }).ToList() ?? [];
 
             decimal subTotal = lineItems.Sum(li => li.Amount);
             decimal discountTotal = lineItems.Sum(li => li.DiscountAmount);
@@ -263,6 +263,98 @@
             await invoiceRepository.UpdateAsync(invoice);
         }
 
+        // ── Draft-only field updates ──────────────────────────────────────────────────
+
+        public async Task UpdateIssueDateAsync(Guid id, DateTime issueDate)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} must be in Draft to update the issue date (current: {invoice.Status}).");
+
+            invoice.IssueDate = issueDate;
+            await invoiceRepository.UpdateAsync(invoice);
+        }
+
+        public async Task UpdateDueDateAsync(Guid id, DateTime dueDate)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} must be in Draft to update the due date (current: {invoice.Status}).");
+
+            invoice.DueDate = dueDate;
+            await invoiceRepository.UpdateAsync(invoice);
+        }
+
+        public async Task UpdateWarehouseAsync(Guid id, Guid warehouseId)
+        {
+            Invoice? invoice = await invoiceRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Invoice with ID {id} not found");
+
+            if (invoice.Status != InvoiceStatus.Draft)
+                throw new InvalidOperationException(
+                    $"Invoice {invoice.InvoiceNumber} must be in Draft to update the warehouse (current: {invoice.Status}).");
+
+            if (!await warehouseRepository.ExistsAsync(warehouseId))
+                throw new KeyNotFoundException($"Warehouse with ID {warehouseId} not found");
+
+            invoice.WarehouseId = warehouseId;
+            await invoiceRepository.UpdateAsync(invoice);
+        }
+
+        public async Task<Guid> DuplicateInvoiceAsync(Guid sourceId)
+        {
+            Invoice? source = await invoiceRepository.GetByIdAsync(sourceId)
+                ?? throw new KeyNotFoundException($"Invoice with ID {sourceId} not found");
+
+            string invoiceNumber = await invoiceRepository.GenerateInvoiceNumberAsync(source.Type);
+
+            DateTime today = DateTime.UtcNow.Date;
+            int dueDays = (source.DueDate.Date - source.IssueDate.Date).Days;
+            DateTime dueDate = today.AddDays(Math.Max(0, dueDays));
+
+            List<InvoiceLine> lineItems = source.LineItems.Select(li => new InvoiceLine
+            {
+                ProductId = li.ProductId,
+                Description = li.Description,
+                Quantity = li.Quantity,
+                UnitPrice = li.UnitPrice,
+                TaxRate = li.TaxRate,
+                DiscountPercentage = li.DiscountPercentage,
+                CreatedAt = DateTime.UtcNow,
+            }).ToList();
+
+            decimal subTotal = lineItems.Sum(li => li.Amount);
+            decimal discountTotal = lineItems.Sum(li => li.DiscountAmount);
+            decimal taxAmount = lineItems.Sum(li => li.TaxAmount);
+            decimal totalAmount = lineItems.Sum(li => li.TotalAmount);
+
+            Invoice duplicate = new()
+            {
+                InvoiceNumber = invoiceNumber,
+                CompanyId = source.CompanyId,
+                WarehouseId = source.WarehouseId,
+                Type = source.Type,
+                Status = InvoiceStatus.Draft,
+                IssueDate = today,
+                DueDate = dueDate,
+                SubTotal = subTotal,
+                DiscountTotal = discountTotal,
+                TaxAmount = taxAmount,
+                TotalAmount = totalAmount,
+                AmountPaid = 0,
+                Notes = source.Notes,
+                LineItems = lineItems
+            };
+
+            return await invoiceRepository.CreateAsync(duplicate);
+        }
+
         // ── Delete ────────────────────────────────────────────────────────────────────
 
         public async Task<bool> DeleteInvoiceAsync(Guid id)
@@ -293,6 +385,9 @@
             if (invoice.Status != InvoiceStatus.Draft)
                 throw new InvalidOperationException(
                     $"Invoice {invoice.InvoiceNumber} must be in Draft to confirm (current: {invoice.Status}).");
+
+            if (!invoice.LineItems.Any(li => li.DeletedOn == null))
+                throw new InvalidOperationException("CannotConfirmInvoiceWithNoLineItems");
 
             bool isDueDatePassed = invoice.DueDate < DateTime.UtcNow.Date;
 

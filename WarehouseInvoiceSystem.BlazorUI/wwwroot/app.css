@@ -1441,6 +1441,51 @@ html {
     border-bottom: none;
 }
 
+/* ── InvoiceLineItemsEditor edit layout ─────────────────────────────────── */
+
+.wis-li-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wis-li-header,
+.wis-li-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wis-li-header {
+    padding: 0 4px;
+}
+
+.wis-li-header > div {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--mud-palette-text-secondary);
+}
+
+.wis-li-row {
+    padding: 4px;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.wis-li-row:hover {
+    background: var(--mud-palette-action-hover);
+}
+
+.wis-li-col-product { flex: 3; min-width: 0; }
+.wis-li-col-stock   { flex: 0 0 auto; }
+.wis-li-col-qty     { flex: 1; min-width: 80px; }
+.wis-li-col-price   { flex: 1.2; min-width: 90px; }
+.wis-li-col-tax     { flex: 0.8; min-width: 70px; }
+.wis-li-col-disc    { flex: 0.8; min-width: 70px; }
+.wis-li-col-total   { flex: 1; min-width: 80px; text-align: right; }
+.wis-li-col-del     { flex: 0 0 36px; display: flex; justify-content: center; }
 
 .wis-section-label {
     text-transform: uppercase;
@@ -1501,20 +1546,25 @@ html {
     flex-shrink: 0;
 }
 
+/* ── Shared dropdown backdrop ───────────────────────────────────────────── */
+
+.wis-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1399;
+}
+
 /* ── WisAutocompleteInput ───────────────────────────────────────────────── */
 
 .wis-ac-input__dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    z-index: 10;
     overflow: hidden;
     padding: 8px;
+    margin-top: 4px;
+    min-width: 200px;
 }
 
 
@@ -1557,15 +1607,12 @@ html {
 /* ── WisDateInput ───────────────────────────────────────────────────────── */
 
 .wis-date-input__dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    z-index: 10;
     overflow: hidden;
+    margin-top: 4px;
 }
 
 /* ── Global: disable MudBlazor's default uppercase on all buttons ── */
@@ -1578,6 +1625,7 @@ html {
     justify-content: space-between !important;
     padding: 8px 24px !important;
 }
+
 
 /* ── WisAmountRangeFilter ── */
 .wis-arf-layout {
@@ -1936,18 +1984,15 @@ html {
 }
 
 .wis-select__dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 12px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-    z-index: 10;
     overflow: hidden;
     max-height: 280px;
     overflow-y: auto;
+    margin-top: 4px;
+    min-width: 200px;
 }
 
 .wis-select__option {
@@ -1975,11 +2020,6 @@ html {
         font-weight: 500;
     }
 
-.wis-select__backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 9;
-}
 
 /* ── WisPagerContent ── */
 .wis-pager {

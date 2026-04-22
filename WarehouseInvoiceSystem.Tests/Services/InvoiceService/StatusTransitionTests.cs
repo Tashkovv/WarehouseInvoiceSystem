@@ -104,6 +104,17 @@ public class StatusTransitionTests : InvoiceServiceTestBase
         isDueDatePassed.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task Confirm_WithNoLineItems_Throws()
+    {
+        var invoice = CreateEntity(InvoiceStatus.Draft, withLines: false);
+        SetupEntityLookup(invoice.Id, invoice);
+        var service = CreateService();
+
+        await service.Invoking(s => s.ConfirmAsync(invoice.Id))
+            .Should().ThrowAsync<InvalidOperationException>();
+    }
+
     [Theory]
     [InlineData(InvoiceStatus.Confirmed)]
     [InlineData(InvoiceStatus.Paid)]
