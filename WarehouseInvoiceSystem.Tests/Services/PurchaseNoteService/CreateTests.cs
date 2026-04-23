@@ -2,7 +2,6 @@ namespace WarehouseInvoiceSystem.Tests.Services.PurchaseNoteService;
 
 using FluentAssertions;
 using NSubstitute;
-using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
 using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote;
 using WarehouseInvoiceSystem.Domain.Entities;
 using WarehouseInvoiceSystem.Domain.Enums;
@@ -12,7 +11,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
     [Fact]
     public async Task Draft_DoesNotCreateInventoryTransactions()
     {
-        var dto = BuildCreateDto(markAsPaid: false);
+        var dto = BuildCreateDto();
         SetupValidCreate(dto);
         var service = CreateService();
 
@@ -21,22 +20,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
         await PurchaseNoteRepo.Received(1).CreateAsync(Arg.Is<PurchaseNote>(pn =>
             pn.Status == PurchaseNoteStatus.Draft && pn.PaidDate == null));
         await InventoryService.DidNotReceive().CreateBatchAsync(
-            Arg.Any<Guid>(), Arg.Any<IEnumerable<CreateInventoryTransactionDto>>());
-    }
-
-    [Fact]
-    public async Task MarkAsPaid_CreatesInventoryTransactions()
-    {
-        var dto = BuildCreateDto(markAsPaid: true);
-        SetupValidCreate(dto);
-        var service = CreateService();
-
-        await service.CreatePurchaseNoteAsync(dto);
-
-        await PurchaseNoteRepo.Received(1).CreateAsync(Arg.Is<PurchaseNote>(pn =>
-            pn.Status == PurchaseNoteStatus.Paid && pn.PaidDate != null));
-        await InventoryService.Received(1).CreateBatchAsync(
-            dto.WarehouseId, Arg.Any<IEnumerable<CreateInventoryTransactionDto>>());
+            Arg.Any<Guid>(), Arg.Any<IEnumerable<Application.DTOs.InventoryTransaction.CreateInventoryTransactionDto>>());
     }
 
     [Fact]
@@ -89,8 +73,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
     public async Task InvalidIndividual_ThrowsKeyNotFound()
     {
         var dto = BuildCreateDto();
-        IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns((Individual?)null);
+        IndividualRepo.ExistsAsync(dto.IndividualId, Arg.Any<CancellationToken>()).Returns(false);
 
         var service = CreateService();
 
@@ -99,25 +82,10 @@ public class CreateTests : PurchaseNoteServiceTestBase
     }
 
     [Fact]
-    public async Task InactiveIndividual_ThrowsInvalidOperation()
-    {
-        var dto = BuildCreateDto();
-        IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FullName = "Test User", IsActive = false });
-
-        var service = CreateService();
-
-        await service.Invoking(s => s.CreatePurchaseNoteAsync(dto))
-            .Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("IndividualInactiveCannotCreate");
-    }
-
-    [Fact]
     public async Task InvalidWarehouse_ThrowsKeyNotFound()
     {
         var dto = BuildCreateDto();
-        IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FullName = "Test User", IsActive = true });
+        IndividualRepo.ExistsAsync(dto.IndividualId, Arg.Any<CancellationToken>()).Returns(true);
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(false);
 
         var service = CreateService();
@@ -130,8 +98,7 @@ public class CreateTests : PurchaseNoteServiceTestBase
     public async Task InvalidProduct_ThrowsKeyNotFound()
     {
         var dto = BuildCreateDto();
-        IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FullName = "Test User", IsActive = true });
+        IndividualRepo.ExistsAsync(dto.IndividualId, Arg.Any<CancellationToken>()).Returns(true);
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(false);
 
@@ -142,9 +109,9 @@ public class CreateTests : PurchaseNoteServiceTestBase
     }
 
     [Fact]
-    public async Task Draft_SetsStatusDraftAndNoPaidDate()
+    public async Task AlwaysCreatesDraft()
     {
-        var dto = BuildCreateDto(markAsPaid: false);
+        var dto = BuildCreateDto();
         SetupValidCreate(dto);
         var service = CreateService();
 
@@ -155,16 +122,24 @@ public class CreateTests : PurchaseNoteServiceTestBase
     }
 
     [Fact]
-    public async Task MarkAsPaid_SetsPaidDate()
+    public async Task EmptyLineItems_CreatesSuccessfully()
     {
-        var dto = BuildCreateDto(markAsPaid: true);
-        SetupValidCreate(dto);
+        var dto = new CreatePurchaseNoteDto
+        {
+            IndividualId = Guid.NewGuid(),
+            WarehouseId = Guid.NewGuid(),
+            PurchaseDate = DateTime.Today,
+            LineItems = []
+        };
+        IndividualRepo.ExistsAsync(dto.IndividualId, Arg.Any<CancellationToken>()).Returns(true);
+        WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
+        PurchaseNoteRepo.GenerateNoteNumberAsync(Arg.Any<CancellationToken>()).Returns("OB-000001");
+        LocalizationService.GetString(Arg.Any<string>()).Returns("Purchase from");
+
         var service = CreateService();
 
-        await service.CreatePurchaseNoteAsync(dto);
-
-        await PurchaseNoteRepo.Received(1).CreateAsync(Arg.Is<PurchaseNote>(pn =>
-            pn.PaidDate != null));
+        await service.Invoking(s => s.CreatePurchaseNoteAsync(dto))
+            .Should().NotThrowAsync();
     }
 
     [Fact]
@@ -196,24 +171,6 @@ public class CreateTests : PurchaseNoteServiceTestBase
     }
 
     [Fact]
-    public async Task MarkAsPaid_InventoryTransactionContainsCorrectData()
-    {
-        var dto = BuildCreateDto(markAsPaid: true);
-        SetupValidCreate(dto);
-        var service = CreateService();
-
-        await service.CreatePurchaseNoteAsync(dto);
-
-        await InventoryService.Received(1).CreateBatchAsync(
-            dto.WarehouseId,
-            Arg.Is<IEnumerable<CreateInventoryTransactionDto>>(items =>
-                items.All(i =>
-                    i.Type == InventoryTransactionType.Inbound &&
-                    i.SourceDocumentType == "PurchaseNote" &&
-                    i.Quantity == 98m)));
-    }
-
-    [Fact]
     public async Task RecalculatesQuantityFromGrossAndKalo()
     {
         var dto = new CreatePurchaseNoteDto
@@ -241,21 +198,5 @@ public class CreateTests : PurchaseNoteServiceTestBase
         await PurchaseNoteRepo.Received(1).CreateAsync(Arg.Is<PurchaseNote>(pn =>
             pn.LineItems.First().Quantity == 180m &&
             pn.SubTotal == 900m));
-    }
-
-    [Fact]
-    public async Task EmptyLineItems_ThrowsInvalidOperation()
-    {
-        var dto = new CreatePurchaseNoteDto
-        {
-            IndividualId = Guid.NewGuid(),
-            WarehouseId = Guid.NewGuid(),
-            PurchaseDate = DateTime.Today,
-            LineItems = []
-        };
-        var service = CreateService();
-
-        await service.Invoking(s => s.CreatePurchaseNoteAsync(dto))
-            .Should().ThrowAsync<InvalidOperationException>();
     }
 }

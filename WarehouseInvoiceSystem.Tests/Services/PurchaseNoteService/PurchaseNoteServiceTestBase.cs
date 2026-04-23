@@ -21,12 +21,11 @@ public abstract class PurchaseNoteServiceTestBase
     protected PurchaseNoteService CreateService() =>
         new(PurchaseNoteRepo, IndividualRepo, WarehouseRepo, ProductRepo, InventoryService, LocalizationService, TransactionRepo);
 
-    protected static CreatePurchaseNoteDto BuildCreateDto(bool markAsPaid = false) => new()
+    protected static CreatePurchaseNoteDto BuildCreateDto() => new()
     {
         IndividualId = Guid.NewGuid(),
         WarehouseId = Guid.NewGuid(),
         PurchaseDate = DateTime.Today,
-        MarkAsPaid = markAsPaid,
         LineItems =
         [
             new CreatePurchaseNoteLineDto
@@ -108,8 +107,7 @@ public abstract class PurchaseNoteServiceTestBase
 
     protected void SetupValidCreate(CreatePurchaseNoteDto dto)
     {
-        IndividualRepo.GetByIdAsync(dto.IndividualId, Arg.Any<CancellationToken>())
-            .Returns(new Individual { FullName = "Test User", IsActive = true });
+        IndividualRepo.ExistsAsync(dto.IndividualId, Arg.Any<CancellationToken>()).Returns(true);
         WarehouseRepo.ExistsAsync(dto.WarehouseId, Arg.Any<CancellationToken>()).Returns(true);
         ProductRepo.AllExistAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>()).Returns(true);
         PurchaseNoteRepo.GenerateNoteNumberAsync(Arg.Any<CancellationToken>()).Returns("OB-000001");

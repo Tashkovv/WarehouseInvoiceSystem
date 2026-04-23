@@ -19,7 +19,7 @@
     </MudText>
 </div>
 
-<WisGridToolbar CreateAction="@(() => Navigation.NavigateTo("/purchase-notes/create"))"
+<WisGridToolbar CreateAction="@OpenCreatePurchaseNoteDialog"
                 CreateLabel="@Localization.GetString("PurchaseNote")"
                 CreateActions="@_createActions"
                 SearchValue="@_searchString"
@@ -477,10 +477,11 @@
         {
             actions.Add(new WisDetailActionItem
             {
-                Icon    = Icons.Material.Filled.MoveToInbox,
-                Label   = Localization.GetString("ReceiveGoods"),
-                Color   = Color.Warning,
-                OnClick = EventCallback.Factory.Create(this, () => ReceiveGoods(item))
+                Icon     = Icons.Material.Filled.MoveToInbox,
+                Label    = Localization.GetString("ReceiveGoods"),
+                Color    = Color.Warning,
+                Disabled = item.TotalAmount == 0,
+                OnClick  = EventCallback.Factory.Create(this, () => ReceiveGoods(item))
             });
         }
 
@@ -495,15 +496,7 @@
             });
         }
 
-        if (isDraft)
-        {
-            actions.Add(new WisDetailActionItem
-            {
-                Icon    = Icons.Material.Filled.Edit,
-                Label   = Localization.GetString("Edit"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/edit/{item.Id}"))
-            });
-        }
+
 
         actions.Add(new WisDetailActionItem
         {
@@ -517,7 +510,7 @@
         {
             Icon    = Icons.Material.Filled.ContentCopy,
             Label   = Localization.GetString("Copy"),
-            OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/purchase-notes/create?copyFrom={item.Id}"))
+            OnClick = EventCallback.Factory.Create(this, async () => await CopyNote(item))
         });
 
         if (canRevert)
@@ -576,6 +569,28 @@
             async () => { await PurchaseNoteService.RevertToDraftAsync(note.Id); await _grid.ReloadServerData(); },
             "PurchaseNoteRevertedToDraft", "ErrorUpdatingPurchaseNote",
             Localization.GetString("RevertToDraft"), Localization.GetString("Back"));
+
+    private async Task OpenCreatePurchaseNoteDialog()
+    {
+        Guid? result = await WisDialog.ShowFormAsync<CreatePurchaseNoteDialog, Guid>(
+            Localization.GetString("CreatePurchaseNote"), maxWidth: MaxWidth.Small);
+        if (result.HasValue && result.Value != Guid.Empty)
+            Navigation.NavigateTo($"/purchase-notes/{result.Value}");
+    }
+
+    private async Task CopyNote(PurchaseNoteDto item)
+    {
+        try
+        {
+            Guid newId = await PurchaseNoteService.DuplicatePurchaseNoteAsync(item.Id);
+            Navigation.NavigateTo($"/purchase-notes/{newId}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error copying purchase note: {ex.Message}");
+            Snackbar.Add(Localization.GetString("ErrorCreatingPurchaseNote"), Severity.Error);
+        }
+    }
 
     private void BuildCreateActions()
     {

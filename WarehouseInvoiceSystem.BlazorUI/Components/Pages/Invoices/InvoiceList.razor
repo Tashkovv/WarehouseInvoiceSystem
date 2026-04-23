@@ -760,10 +760,11 @@
         {
             actions.Add(new WisDetailActionItem
             {
-                Icon    = confirmIcon,
-                Label   = confirmLabel,
-                Color   = Color.Info,
-                OnClick = EventCallback.Factory.Create(this, () => ConfirmFromList(item))
+                Icon     = confirmIcon,
+                Label    = confirmLabel,
+                Color    = Color.Info,
+                Disabled = item.TotalAmount == 0,
+                OnClick  = EventCallback.Factory.Create(this, () => ConfirmFromList(item))
             });
         }
 

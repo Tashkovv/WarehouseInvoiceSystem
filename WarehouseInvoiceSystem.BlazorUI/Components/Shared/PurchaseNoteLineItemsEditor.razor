@@ -1,0 +1,214 @@
+@using WarehouseInvoiceSystem.Application.DTOs.Product
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@inject IProductService ProductService
+@inject ILocalizationService Localization
+
+@* ── Read-only view ── *@
+@if (ReadOnly)
+{
+    <MudTable Items="Items"
+              Hover="true"
+              Elevation="0"
+              Class="wis-secondary-list">
+        <HeaderContent>
+            <MudTh>@Localization.GetString("Product")</MudTh>
+            <MudTh>@Localization.GetString("Description")</MudTh>
+            <MudTh Class="text-right">@Localization.GetString("GrossQuantity")</MudTh>
+            <MudTh Class="text-right">@Localization.GetString("KaloPercentage")</MudTh>
+            <MudTh Class="text-right">@Localization.GetString("NetQuantity")</MudTh>
+            <MudTh Class="text-right">@Localization.GetString("UnitPrice")</MudTh>
+            <MudTh Class="text-right">@Localization.GetString("Amount")</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="@Localization.GetString("Product")">
+                <MudText Typo="Typo.body2">
+                    @context.SelectedProduct?.Code - @context.SelectedProduct?.Name
+                </MudText>
+                @if (!string.IsNullOrWhiteSpace(context.Description))
+                {
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@context.Description</MudText>
+                }
+            </MudTd>
+            <MudTd DataLabel="@Localization.GetString("Description")">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @(string.IsNullOrWhiteSpace(context.Description) ? "—" : context.Description)
+                </MudText>
+            </MudTd>
+            <MudTd DataLabel="@Localization.GetString("GrossQuantity")" Class="text-right">
+                <MudText Typo="Typo.body2">
+                    @context.GrossQuantity.ToString("N0") @context.SelectedProduct?.Unit
+                </MudText>
+            </MudTd>
+            <MudTd DataLabel="@Localization.GetString("KaloPercentage")" Class="text-right">
+                <MudText Typo="Typo.body2">@context.KaloPercentage.ToString("N0")%</MudText>
+            </MudTd>
+            <MudTd DataLabel="@Localization.GetString("NetQuantity")" Class="text-right">
+                <MudText Typo="Typo.body2" Style="font-weight:500">
+                    @context.Quantity.ToString("N0") @context.SelectedProduct?.Unit
+                </MudText>
+            </MudTd>
+            <MudTd DataLabel="@Localization.GetString("UnitPrice")" Class="text-right">
+                <MudText Typo="Typo.body2">@context.UnitPrice.ToString("C")</MudText>
+            </MudTd>
+            <MudTd DataLabel="@Localization.GetString("Amount")" Class="text-right">
+                <MudText Typo="Typo.body2" Color="Color.Primary">@context.LineTotal.ToString("C")</MudText>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="pa-4">
+                @Localization.GetString("AddLineItems")
+            </MudText>
+        </NoRecordsContent>
+    </MudTable>
+}
+else
+{
+    @* ── Edit view ── *@
+    <div class="wis-li-editor pa-3">
+
+        @* Header row *@
+        <div class="wis-li-header">
+            <div class="wis-li-col-product">@Localization.GetString("Product")</div>
+            <div class="wis-li-col-qty">@Localization.GetString("GrossQuantity")</div>
+            <div class="wis-li-col-kalo">@Localization.GetString("KaloPercentage")</div>
+            <div class="wis-li-col-net">@Localization.GetString("NetQuantity")</div>
+            <div class="wis-li-col-price">@Localization.GetString("UnitPrice")</div>
+            <div class="wis-li-col-total">@Localization.GetString("Amount")</div>
+            <div class="wis-li-col-del"></div>
+        </div>
+
+        @* Data rows *@
+        @foreach (var item in Items)
+        {
+            var captured = item;
+
+            <div class="wis-li-row">
+                <div class="wis-li-col-product">
+                    <WisAutocompleteInput TValue="Guid"
+                                          SelectedValue="@(captured.SelectedProduct?.Id ?? Guid.Empty)"
+                                          SelectedValueChanged="@(id => OnProductSelectedById(captured, id))"
+                                          LoadItems="LoadProductItems"
+                                          InitialLabel="@(captured.SelectedProduct != null ? $"{captured.SelectedProduct.Code} - {captured.SelectedProduct.Name}" : null)"
+                                          FullWidth="true" />
+                </div>
+
+                <div class="wis-li-col-qty">
+                    <WisAmountInput Value="@((decimal?)captured.GrossQuantity)"
+                                    ValueChanged="@(v => { captured.GrossQuantity = v ?? 0; StateHasChanged(); })"
+                                    AdornmentText="@(captured.SelectedProduct?.Unit ?? "")"
+                                    FullWidth="true" />
+                </div>
+
+                <div class="wis-li-col-kalo">
+                    <WisAmountInput Value="@((decimal?)captured.KaloPercentage)"
+                                    ValueChanged="@(v => { captured.KaloPercentage = Math.Clamp(v ?? 0, 0, 100); StateHasChanged(); })"
+                                    AdornmentText="%"
+                                    FullWidth="true" />
+                </div>
+
+                <div class="wis-li-col-net">
+                    <MudText Typo="Typo.body1" Class="font-weight-medium tabular-numbers">
+                        @captured.Quantity.ToString("N0") @(captured.SelectedProduct?.Unit ?? "")
+                    </MudText>
+                </div>
+
+                <div class="wis-li-col-price">
+                    <WisAmountInput Value="@((decimal?)captured.UnitPrice)"
+                                    ValueChanged="@(v => { captured.UnitPrice = v ?? 0; StateHasChanged(); })"
+                                    AdornmentText="@Localization.CurrencySymbol"
+                                    FullWidth="true" />
+                </div>
+
+                <div class="wis-li-col-total">
+                    <MudText Typo="Typo.body1" Color="Color.Primary" Class="font-weight-medium tabular-numbers">
+                        @captured.LineTotal.ToString("C")
+                    </MudText>
+                </div>
+
+                <div class="wis-li-col-del">
+                    <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   OnClick="@(() => RemoveItem(captured))" />
+                </div>
+            </div>
+        }
+
+        @* Add row button *@
+        <div class="d-flex justify-start pt-2">
+            <WisButton Action="@(new WisDetailActionItem
+                               {
+                                   Icon = Icons.Material.Filled.Add,
+                                   Label = Localization.GetString("AddItem"),
+                                   OnClick = EventCallback.Factory.Create(this, AddItem),
+                                   Color = Color.Primary
+                               })"
+                       ButtonSize="Size.Small" />
+        </div>
+
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<PurchaseNoteLineItemEditorModel> Items { get; set; } = [];
+    [Parameter] public EventCallback<List<PurchaseNoteLineItemEditorModel>> ItemsChanged { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+
+    private readonly Dictionary<Guid, ProductDto> _productCache = [];
+
+    protected override void OnParametersSet() => StateHasChanged();
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadProductItems(
+        string search, int page, CancellationToken ct)
+    {
+        GetProductsQuery query = new() { Page = page, PageSize = 20, IsActive = true };
+        if (!string.IsNullOrWhiteSpace(search)) query.Search = search;
+        PagedResult<ProductDto> result = await ProductService.GetPagedAsync(query, ct);
+
+        foreach (ProductDto p in result.Items)
+            _productCache[p.Id] = p;
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = result.Items.Select(p => new WisAutocompleteItem<Guid>
+            {
+                Value = p.Id,
+                Label = $"{p.Code} - {p.Name}",
+                SubLabel = p.Unit,
+            }).ToList(),
+            Page = result.Page,
+            PageSize = result.PageSize,
+            TotalCount = result.TotalCount,
+        };
+    }
+
+    private void OnProductSelectedById(PurchaseNoteLineItemEditorModel item, Guid? id)
+    {
+        Guid productId = id ?? Guid.Empty;
+        if (productId == Guid.Empty)
+        {
+            item.SelectedProduct = null;
+            return;
+        }
+        if (_productCache.TryGetValue(productId, out ProductDto? product))
+        {
+            item.SelectedProduct = product;
+            item.UnitPrice = product.CostPrice;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AddItem()
+    {
+        Items.Add(new PurchaseNoteLineItemEditorModel());
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private async Task RemoveItem(PurchaseNoteLineItemEditorModel item)
+    {
+        Items.Remove(item);
+        await ItemsChanged.InvokeAsync(Items);
+        StateHasChanged();
+    }
+}

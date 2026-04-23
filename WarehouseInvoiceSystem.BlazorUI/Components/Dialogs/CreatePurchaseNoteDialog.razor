@@ -1,0 +1,180 @@
+@using WarehouseInvoiceSystem.Application.DTOs.Individual
+@using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Common
+@inject ILocalizationService Localization
+@inject IPurchaseNoteService PurchaseNoteService
+@inject IIndividualService IndividualService
+@inject IWarehouseService WarehouseService
+
+<MudDialog>
+    <DialogContent>
+        <MudGrid>
+            @* ── Individual ── *@
+            <MudItem xs="12">
+                <WisAutocompleteInput TValue="Guid"
+                                      SelectedValue="@(_selectedIndividualId ?? default)"
+                                      SelectedValueChanged="OnIndividualSelected"
+                                      LoadItems="LoadIndividualItems"
+                                      Label="@Localization.GetString("Individual")"
+                                      Required="true"
+                                      FullWidth="true" />
+            </MudItem>
+
+            @* ── Individual info alert ── *@
+            @if (_selectedIndividual is not null)
+            {
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info"
+                              Variant="Variant.Outlined"
+                              Class="py-2 wis-alert-fullwidth">
+                        <MudGrid Spacing="0">
+                            <MudItem xs="6" Class="text-center">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("IdentificationNumber")</MudText>
+                                <MudText Typo="Typo.subtitle2">@_selectedIndividual.IdentificationNumber</MudText>
+                            </MudItem>
+                            @if (!string.IsNullOrWhiteSpace(_selectedIndividual.Phone))
+                            {
+                                <MudItem xs="6" Class="text-center">
+                                    <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("Phone")</MudText>
+                                    <MudText Typo="Typo.subtitle2">@_selectedIndividual.Phone</MudText>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </MudAlert>
+                </MudItem>
+            }
+
+            @* ── Warehouse ── *@
+            <MudItem xs="12" sm="6">
+                <WisSelect T="WarehouseDto"
+                           Items="_warehouses"
+                           Value="_selectedWarehouse"
+                           ValueChanged="@(w => _selectedWarehouse = w)"
+                           ToStringFunc="@(w => w?.Name ?? "")"
+                           Label="@Localization.GetString("Warehouse")"
+                           Required="true"
+                           FullWidth="true" />
+            </MudItem>
+
+            @* ── Purchase Date ── *@
+            <MudItem xs="12" sm="6">
+                <WisDateInput Date="@_purchaseDate"
+                              DateChanged="@(d => _purchaseDate = d)"
+                              Label="@Localization.GetString("PurchaseDate")"
+                              Required="true"
+                              FullWidth="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <WisDialogActions OnCancel="Cancel"
+                          OnSave="Save"
+                          SaveDisabled="@(!IsValid || _saving)" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private bool _saving;
+    private Guid? _selectedIndividualId;
+    private IndividualDto? _selectedIndividual;
+    private List<WarehouseDto> _warehouses = [];
+    private WarehouseDto? _selectedWarehouse;
+    private DateTime? _purchaseDate = DateTime.Today;
+
+    private bool IsValid =>
+        _selectedIndividualId.HasValue &&
+        _selectedWarehouse is not null &&
+        _purchaseDate.HasValue;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            PagedResult<WarehouseDto> result = await WarehouseService.GetPagedAsync(
+                new GetWarehousesQuery { Page = 1, PageSize = 100, IsActive = true, SortBy = "Name", SortAscending = true });
+            _warehouses = [.. result.Items];
+            _selectedWarehouse = _warehouses.FirstOrDefault(w => w.IsDefault) ?? _warehouses.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading warehouses: {ex.Message}");
+        }
+    }
+
+    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadIndividualItems(
+        string search, int page, CancellationToken ct)
+    {
+        PagedResult<IndividualDto> paged = await IndividualService.GetPagedAsync(new GetIndividualsQuery
+        {
+            Search = search,
+            Page = page,
+            PageSize = 10,
+            IsActive = true
+        }, ct);
+
+        return new PagedResult<WisAutocompleteItem<Guid>>
+        {
+            Items = paged.Items.Select(i => new WisAutocompleteItem<Guid>
+            {
+                Value = i.Id,
+                Label = i.FullName,
+                SubLabel = i.IdentificationNumber
+            }).ToList(),
+            Page = paged.Page,
+            PageSize = paged.PageSize,
+            TotalCount = paged.TotalCount
+        };
+    }
+
+    private async Task OnIndividualSelected(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            _selectedIndividualId = null;
+            _selectedIndividual = null;
+            return;
+        }
+
+        _selectedIndividualId = id;
+        try
+        {
+            _selectedIndividual = await IndividualService.GetIndividualByIdAsync(id);
+        }
+        catch
+        {
+            _selectedIndividual = null;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (!IsValid || _saving) return;
+        _saving = true;
+
+        try
+        {
+            CreatePurchaseNoteDto dto = new()
+            {
+                IndividualId = _selectedIndividualId!.Value,
+                WarehouseId = _selectedWarehouse!.Id,
+                PurchaseDate = _purchaseDate!.Value,
+                LineItems = []
+            };
+
+            Guid newId = await PurchaseNoteService.CreatePurchaseNoteAsync(dto);
+            MudDialog.Close(DialogResult.Ok(newId));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating purchase note: {ex.Message}");
+            _saving = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

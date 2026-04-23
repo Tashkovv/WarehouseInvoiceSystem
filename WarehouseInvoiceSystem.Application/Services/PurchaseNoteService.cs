@@ -94,27 +94,24 @@
 
         // ── Create ────────────────────────────────────────────────────────────────────
 
-        public async Task CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto)
+        public async Task<Guid> CreatePurchaseNoteAsync(CreatePurchaseNoteDto createDto)
         {
-            if (createDto.LineItems == null || createDto.LineItems.Count == 0)
-                throw new InvalidOperationException("A purchase note must have at least one line item.");
-
-            Individual individual = await individualRepository.GetByIdAsync(createDto.IndividualId)
-                ?? throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
-
-            if (!individual.IsActive)
-                throw new InvalidOperationException("IndividualInactiveCannotCreate");
+            if (!await individualRepository.ExistsAsync(createDto.IndividualId))
+                throw new KeyNotFoundException($"Individual with ID {createDto.IndividualId} not found");
 
             if (!await warehouseRepository.ExistsAsync(createDto.WarehouseId))
                 throw new KeyNotFoundException($"Warehouse with ID {createDto.WarehouseId} not found");
 
-            var productIds = createDto.LineItems.Select(li => li.ProductId).ToList();
-            if (!await productRepository.AllExistAsync(productIds))
-                throw new KeyNotFoundException("One or more products in the line items were not found");
+            if (createDto.LineItems?.Count > 0)
+            {
+                var productIds = createDto.LineItems.Select(li => li.ProductId).ToList();
+                if (!await productRepository.AllExistAsync(productIds))
+                    throw new KeyNotFoundException("One or more products in the line items were not found");
+            }
 
             string noteNumber = await purchaseNoteRepository.GenerateNoteNumberAsync();
 
-            List<PurchaseNoteLine> lineItems = [.. createDto.LineItems.Select(li => new PurchaseNoteLine
+            List<PurchaseNoteLine> lineItems = [.. (createDto.LineItems ?? []).Select(li => new PurchaseNoteLine
             {
                 ProductId = li.ProductId,
                 Description = li.Description,
@@ -127,14 +124,6 @@
 
             decimal subTotal = lineItems.Sum(li => li.Amount);
 
-            // Create always starts as Draft, unless MarkAsPaid is set
-            // MarkAsPaid skips Draft and Pending — goods received + paid on the spot
-            PurchaseNoteStatus initialStatus = createDto.MarkAsPaid
-                ? PurchaseNoteStatus.Paid
-                : PurchaseNoteStatus.Draft;
-
-            DateTime? paidDate = createDto.MarkAsPaid ? DateTime.UtcNow : null;
-
             PurchaseNote purchaseNote = new()
             {
                 NoteNumber = noteNumber,
@@ -143,24 +132,50 @@
                 PurchaseDate = createDto.PurchaseDate,
                 SubTotal = subTotal,
                 TotalAmount = subTotal,
-                Status = initialStatus,
-                PaidDate = paidDate,
+                Status = PurchaseNoteStatus.Draft,
                 Notes = createDto.Notes,
                 LineItems = lineItems
             };
 
             await purchaseNoteRepository.CreateAsync(purchaseNote);
+            return purchaseNote.Id;
+        }
 
-            // Only create inventory transactions if goods are actually received (Paid = received + paid)
-            // Draft notes do NOT create stock yet
-            if (initialStatus == PurchaseNoteStatus.Paid)
+        public async Task<Guid> DuplicatePurchaseNoteAsync(Guid sourceId)
+        {
+            PurchaseNote? source = await purchaseNoteRepository.GetByIdAsync(sourceId)
+                ?? throw new KeyNotFoundException($"Purchase note with ID {sourceId} not found");
+
+            string noteNumber = await purchaseNoteRepository.GenerateNoteNumberAsync();
+
+            List<PurchaseNoteLine> lineItems = [.. source.LineItems.Select(li => new PurchaseNoteLine
             {
-                // Set navigation property after save so CreateInventoryTransactionsAsync can build the note text.
-                // Must not be set before CreateAsync — the Individual was loaded from a different DbContext
-                // and EF would try to INSERT it again, causing a PK_Individual duplicate key violation.
-                purchaseNote.Individual = individual;
-                await CreateInventoryTransactionsAsync(purchaseNote, individual.FullName);
-            }
+                ProductId = li.ProductId,
+                Description = li.Description,
+                GrossQuantity = li.GrossQuantity,
+                KaloPercentage = li.KaloPercentage,
+                Quantity = li.Quantity,
+                UnitPrice = li.UnitPrice,
+                CreatedAt = DateTime.UtcNow,
+            })];
+
+            decimal subTotal = lineItems.Sum(li => li.Amount);
+
+            PurchaseNote copy = new()
+            {
+                NoteNumber = noteNumber,
+                IndividualId = source.IndividualId,
+                WarehouseId = source.WarehouseId,
+                PurchaseDate = DateTime.UtcNow.Date,
+                SubTotal = subTotal,
+                TotalAmount = subTotal,
+                Status = PurchaseNoteStatus.Draft,
+                Notes = source.Notes,
+                LineItems = lineItems
+            };
+
+            await purchaseNoteRepository.CreateAsync(copy);
+            return copy.Id;
         }
 
         // ── Update ────────────────────────────────────────────────────────────────────
@@ -260,6 +275,9 @@
             if (note.Status != PurchaseNoteStatus.Draft)
                 throw new InvalidOperationException(
                     $"Purchase note {note.NoteNumber} must be in Draft to receive goods (current: {note.Status}).");
+
+            if (note.LineItems.Count == 0)
+                throw new InvalidOperationException("CannotReceiveEmptyNote");
 
             PurchaseNoteStatus previousStatus = note.Status;
             note.Status = PurchaseNoteStatus.Pending;
@@ -373,6 +391,48 @@
             await purchaseNoteRepository.UpdateAsync(purchaseNote);
         }
 
+        public async Task UpdatePurchaseDateAsync(Guid id, DateTime purchaseDate)
+        {
+            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
+
+            if (note.Status != PurchaseNoteStatus.Draft)
+                throw new InvalidOperationException($"Purchase note {note.NoteNumber} must be Draft to edit.");
+
+            note.PurchaseDate = purchaseDate;
+            await purchaseNoteRepository.UpdateAsync(note);
+        }
+
+        public async Task UpdateWarehouseAsync(Guid id, Guid warehouseId)
+        {
+            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
+
+            if (note.Status != PurchaseNoteStatus.Draft)
+                throw new InvalidOperationException($"Purchase note {note.NoteNumber} must be Draft to edit.");
+
+            if (!await warehouseRepository.ExistsAsync(warehouseId))
+                throw new KeyNotFoundException($"Warehouse with ID {warehouseId} not found");
+
+            note.WarehouseId = warehouseId;
+            await purchaseNoteRepository.UpdateAsync(note);
+        }
+
+        public async Task UpdateIndividualAsync(Guid id, Guid individualId)
+        {
+            PurchaseNote? note = await purchaseNoteRepository.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException($"Purchase note with ID {id} not found");
+
+            if (note.Status != PurchaseNoteStatus.Draft)
+                throw new InvalidOperationException($"Purchase note {note.NoteNumber} must be Draft to edit.");
+
+            if (!await individualRepository.ExistsAsync(individualId))
+                throw new KeyNotFoundException($"Individual with ID {individualId} not found");
+
+            note.IndividualId = individualId;
+            await purchaseNoteRepository.UpdateAsync(note);
+        }
+
         // ── Delete ────────────────────────────────────────────────────────────────────
 
         /// <summary>Soft-deletes a Cancelled purchase note.</summary>
@@ -396,7 +456,7 @@
         // ── Helpers ───────────────────────────────────────────────────────────────────
 
         private static decimal CalculateNetQuantity(decimal grossQuantity, decimal kaloPercentage)
-            => grossQuantity * (1 - kaloPercentage / 100);
+            => Math.Round(grossQuantity * (1 - kaloPercentage / 100m), MidpointRounding.AwayFromZero);
 
         private async Task CreateInventoryTransactionsAsync(PurchaseNote purchaseNote, string individualName)
         {

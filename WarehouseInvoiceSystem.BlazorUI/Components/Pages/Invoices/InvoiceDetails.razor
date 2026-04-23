@@ -537,8 +537,8 @@ else
                 _primaryAction = confirmRecAction;
                 _actions =
                 [
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,        Localization.GetString("Export"), ExportForPrinting),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Error(Icons.Material.Filled.Cancel,           Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
@@ -549,8 +549,8 @@ else
                 _primaryAction = confirmAction;
                 _actions =
                 [
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
                 break;
@@ -559,8 +559,8 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];
@@ -572,8 +572,8 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                 ];
                 if (_invoice.Type == InvoiceType.Receivable)
                     _actions.Insert(0, _act.Info(Icons.Material.Filled.Send, Localization.GetString("Send"), OpenSendEmailDialog));
@@ -583,8 +583,8 @@ else
                 _primaryAction = _act.Success(Icons.Material.Filled.Payment, Localization.GetString("Payment"), RecordPayment);
                 _actions =
                 [
-                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Secondary(Icons.Material.Filled.Print,       Localization.GetString("Export"), ExportForPrinting),
+                    _act.Secondary(Icons.Material.Filled.ContentCopy, Localization.GetString("Copy"),   CopyInvoice),
                     _act.Primary(Icons.Material.Filled.Undo,          Localization.GetString("Draft"),  RevertToDraft),
                     _act.Error(Icons.Material.Filled.Cancel,          Localization.GetString("Cancel"), CancelInvoice, dividerBefore: true),
                 ];

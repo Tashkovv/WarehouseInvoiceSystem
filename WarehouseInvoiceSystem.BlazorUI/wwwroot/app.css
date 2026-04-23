@@ -1,4 +1,16 @@
 /* =============================================
+   Footer links
+   ============================================= */
+.wis-footer-link {
+    text-decoration: none !important;
+    transition: color 0.15s ease;
+}
+
+.wis-footer-link:hover {
+    color: var(--mud-palette-primary) !important;
+}
+
+/* =============================================
    WIS Page Title — animated gradient underline
    ============================================= */
 .wis-page-title {
@@ -1486,6 +1498,8 @@ html {
 .wis-li-col-disc    { flex: 0.8; min-width: 70px; }
 .wis-li-col-total   { flex: 1; min-width: 80px; text-align: right; }
 .wis-li-col-del     { flex: 0 0 36px; display: flex; justify-content: center; }
+.wis-li-col-kalo    { flex: 0.8; min-width: 70px; }
+.wis-li-col-net     { flex: 1; min-width: 80px; text-align: right; }
 
 .wis-section-label {
     text-transform: uppercase;
