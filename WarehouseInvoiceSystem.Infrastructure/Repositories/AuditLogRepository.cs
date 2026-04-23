@@ -49,10 +49,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
             // ── Sort ──
             q = query.SortBy?.ToLower() switch
             {
+                "timestamp" => query.SortAscending ? q.OrderBy(a => a.Timestamp) : q.OrderByDescending(a => a.Timestamp),
                 "entitytype" => query.SortAscending ? q.OrderBy(a => a.EntityType) : q.OrderByDescending(a => a.EntityType),
                 "username" => query.SortAscending ? q.OrderBy(a => a.Username) : q.OrderByDescending(a => a.Username),
                 "action" => query.SortAscending ? q.OrderBy(a => a.Action) : q.OrderByDescending(a => a.Action),
-                _ => q.OrderByDescending(a => a.Timestamp) // Default: newest first
+                _ => q.OrderByDescending(a => a.Timestamp)
             };
 
             // ── Page ──
