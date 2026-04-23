@@ -32,8 +32,7 @@ else
 
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("CompanyBreakdown")"
-                           Value="@($"{_clientCount} / {_vendorCount}")"
-                           Subtitle="@($"{Localization.GetString("Clients")} / {Localization.GetString("Vendors")}")"
+                           Subtitle="@($"{_clientCount} {Localization.GetString("Clients")} · {_vendorCount} {Localization.GetString("Vendors")}")"
                            Icon="@Icons.Material.Filled.PieChart"
                            IconColor="Color.Default" />
         </MudItem>
