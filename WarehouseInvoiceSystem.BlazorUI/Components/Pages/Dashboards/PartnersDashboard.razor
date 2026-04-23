@@ -20,7 +20,7 @@ else
 {
     <MudGrid>
 
-        <!-- â”€â”€ Summary Cards â”€â”€ -->
+        <!-- ── Summary Cards ── -->
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalCompanies")"
                            Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompaniesCount}")"
@@ -46,7 +46,7 @@ else
                            Link="/individuals" />
         </MudItem>
 
-        <!-- â”€â”€ Top Partners (left) + Attention Needed (right) â”€â”€ -->
+        <!-- ── Top Partners (left) + Attention Needed (right) ── -->
 
         <MudItem xs="12" md="6">
             <div class="d-flex align-center flex-wrap gap-2 mb-3">
@@ -223,7 +223,7 @@ else
             </MudCard>
         </MudItem>
 
-        <!-- â”€â”€ Attention Needed â”€â”€ -->
+        <!-- ── Attention Needed ── -->
 
         <MudItem xs="12" md="6">
             @{
@@ -421,7 +421,7 @@ else
     private List<PartnerAttentionDto> _unpaidVendors = [];
     private List<PartnerAttentionDto> _overduePayableCompanies = [];
 
-    // â”€â”€ Partner stats date range â”€â”€
+    // ── Partner stats date range ──
     private int? _partnerDatePreset = 365;
     private DateRange _partnerDateRange = new(DateTime.Today.AddDays(-365), DateTime.Today);
     private DateTime _partnerFromDate => _partnerDateRange.Start ?? DateTime.Today.AddDays(-365);

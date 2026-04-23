@@ -26,7 +26,7 @@
                     </MudText>
                 </div>
 
-                @* â”€â”€ Filters â”€â”€ *@
+                @* ── Filters ── *@
                 <div class="d-flex flex-wrap align-center gap-2 mb-2">
                     <WisMultiItemPicker @ref="_productPicker"
                                         TValue="Guid"
@@ -58,7 +58,7 @@
                                         OnChanged="LoadComparisonAsync" />
                 </div>
 
-                @* â”€â”€ Selected product chips â”€â”€ *@
+                @* ── Selected product chips ── *@
                 @if (_productPicker?.SelectedLabels.Count > 0)
                 {
                     <div class="d-flex flex-wrap gap-1">
@@ -80,7 +80,7 @@
         </MudCard>
     </MudItem>
 
-    @* â”€â”€ Results â”€â”€ *@
+    @* ── Results ── *@
     <MudItem xs="12">
         @if (_selectedProductIds.Count < 2)
         {
@@ -159,7 +159,7 @@
 </MudGrid>
 
 @code {
-    // â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Filters ──────────────────────────────────────────────────────────────
     private List<Guid> _selectedProductIds = [];
     private Guid? _selectedWarehouseId;
     private DateRange _dateRange = new(null, null);
@@ -167,13 +167,13 @@
     private WisDateRangeFilter? _dateRangeFilter;
     private WisMultiItemPicker<Guid>? _productPicker;
 
-    // â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Results ──────────────────────────────────────────────────────────────
     private List<ProductComparisonDto> _comparisonRows = [];
     private bool _loadingComparison;
     private bool _exporting;
     private CancellationTokenSource _loadCts = new();
 
-    // â”€â”€ Product data source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Product data source ─────────────────────────────────────────────────
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadProductItems(
         string search, int page, CancellationToken ct)
@@ -202,7 +202,7 @@
         };
     }
 
-    // â”€â”€ Warehouse data source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Warehouse data source ───────────────────────────────────────────────
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
         string search, int page, CancellationToken ct)
@@ -230,7 +230,7 @@
         };
     }
 
-    // â”€â”€ Filter callbacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Filter callbacks ────────────────────────────────────────────────────
 
     private async Task OnProductsChanged(List<Guid> values)
     {
@@ -256,7 +256,7 @@
         return Task.CompletedTask;
     }
 
-    // â”€â”€ Core comparison load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Core comparison load ────────────────────────────────────────────────
 
     private async Task LoadComparisonAsync()
     {
@@ -292,7 +292,7 @@
         }
     }
 
-    // â”€â”€ Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Export ───────────────────────────────────────────────────────────────
 
     private async Task ExportComparison()
     {

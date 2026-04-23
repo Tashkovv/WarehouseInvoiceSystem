@@ -34,7 +34,7 @@ else
 
     <MudGrid>
 
-        @* â”€â”€ Header card â”€â”€ *@
+        @* ── Header card ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
@@ -54,7 +54,7 @@ else
 
                             <div class="wis-detail-contact">
 
-                                @* â”€â”€ Individual (display only) â”€â”€ *@
+                                @* ── Individual (display only) ── *@
                                 <div class="wis-detail-contact-item">
                                     <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
                                     <MudText Typo="Typo.body2" Style="font-weight:500">@_note.IndividualFullName</MudText>
@@ -64,7 +64,7 @@ else
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.IndividualIdentificationNumber</MudText>
                                 </div>
 
-                                @* â”€â”€ Warehouse â”€â”€ *@
+                                @* ── Warehouse ── *@
                                 @if (_warehouseEditing)
                                 {
                                     <div class="wis-detail-contact-item">
@@ -96,7 +96,7 @@ else
 
                         <div class="wis-contact-row-divider"></div>
 
-                        @* â”€â”€ Notes â”€â”€ *@
+                        @* ── Notes ── *@
                         <div class="wis-contact-row-right">
                             @if (_notesEditMode)
                             {
@@ -136,7 +136,7 @@ else
                         </MudItem>
 
                         <MudItem xs="3">
-                            @* â”€â”€ Purchase Date inline edit â”€â”€ *@
+                            @* ── Purchase Date inline edit ── *@
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PurchaseDate")</MudText>
                             @if (_purchaseDateEditing)
                             {
@@ -176,7 +176,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* â”€â”€ Products card â”€â”€ *@
+        @* ── Products card ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -222,16 +222,16 @@ else
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
 
-    // â”€â”€ Warehouse inline edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Warehouse inline edit ──────────────────────────────────────────────────
     private bool _warehouseEditing, _warehouseSaving;
     private WarehouseDto? _warehouseEdit;
     private List<WarehouseDto> _warehouses = [];
 
-    // â”€â”€ Purchase date inline edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Purchase date inline edit ──────────────────────────────────────────────
     private bool _purchaseDateEditing, _purchaseDateSaving;
     private DateTime? _purchaseDateEdit;
 
-    // â”€â”€ Line items edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Line items edit ────────────────────────────────────────────────────────
     private bool _lineItemsEditing, _lineItemsSaving;
     private List<PurchaseNoteLineItemEditorModel> _lineItemsModels = [];
 
@@ -339,7 +339,7 @@ else
         }
     }
 
-    // â”€â”€ Warehouse edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Warehouse edit ─────────────────────────────────────────────────────────
 
     private void StartWarehouseEdit()
     {
@@ -371,7 +371,7 @@ else
         finally { _warehouseSaving = false; }
     }
 
-    // â”€â”€ Purchase date edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Purchase date edit ─────────────────────────────────────────────────────
 
     private void StartPurchaseDateEdit()
     {
@@ -403,7 +403,7 @@ else
         finally { _purchaseDateSaving = false; }
     }
 
-    // â”€â”€ Line items edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Line items edit ────────────────────────────────────────────────────────
 
     private void StartLineItemsEdit() => _lineItemsEditing = true;
 
@@ -450,7 +450,7 @@ else
         finally { _lineItemsSaving = false; }
     }
 
-    // â”€â”€ Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Notes ──────────────────────────────────────────────────────────────────
 
     private async Task SaveNotes()
     {
@@ -462,7 +462,7 @@ else
         }, "ErrorUpdatingPurchaseNote");
     }
 
-    // â”€â”€ Status actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Status actions ─────────────────────────────────────────────────────────
 
     private async Task ExportForPrinting()
     {

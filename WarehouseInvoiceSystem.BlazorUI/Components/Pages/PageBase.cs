@@ -104,7 +104,7 @@
         protected void NotifyWarning(string key) =>
             Snackbar.Add(Localization.GetString(key), Severity.Warning);
 
-        // â”€â”€ InvoiceStatus helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── InvoiceStatus helpers ─────────────────────────────────────────────
 
         protected static Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
         {
@@ -119,7 +119,7 @@
 
         protected string GetInvoiceStatusText(InvoiceStatus status) => GetEnumLabel(status);
 
-        // â”€â”€ PurchaseNoteStatus helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── PurchaseNoteStatus helpers ────────────────────────────────────────
 
         protected static Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
         {
@@ -132,14 +132,14 @@
 
         protected string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => GetEnumLabel(status);
 
-        // â”€â”€ Generic enum localization helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Generic enum localization helper ──────────────────────────────────
         // Looks up "{EnumTypeName}_{Value}" — e.g. InvoiceStatus.Paid â†’ "InvoiceStatus_Paid".
         // Lets each enum's status have its own translation (and gender form in mk-MK)
         // without colliding with bare-name keys used elsewhere.
         protected string GetEnumLabel<TEnum>(TEnum value) where TEnum : struct, Enum
             => Localization.GetString($"{typeof(TEnum).Name}_{value}");
 
-        // â”€â”€ PaymentMethod helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── PaymentMethod helpers ─────────────────────────────────────────────
 
         protected static Color GetPaymentMethodColor(PaymentMethod method) => method switch
         {
@@ -159,7 +159,7 @@
             _                         => method.ToString()
         };
 
-        // â”€â”€ CompanyType helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── CompanyType helpers ───────────────────────────────────────────────
 
         protected static Color GetCompanyTypeColor(CompanyType type) => type switch
         {
@@ -177,7 +177,7 @@
             _                  => type.ToString()
         };
 
-        // â”€â”€ Stock Movement helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Stock Movement helpers ────────────────────────────────────────────────
 
         protected static Color GetMovementTypeColor(InventoryTransactionType type) => type switch
         {
@@ -204,7 +204,7 @@
         protected string GetMovementTypeLabel(InventoryTransactionType type) =>
             Localization.GetString(type.ToString());
 
-        // â”€â”€ InventoryTransactionType helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── InventoryTransactionType helpers ──────────────────────────────────
 
         protected static string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
         {
@@ -228,7 +228,7 @@
             _ => Color.Default
         };
 
-        // â”€â”€ Confirm-and-execute helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Confirm-and-execute helper ────────────────────────────────────────
 
         protected async Task ConfirmAndExecuteAsync(
             string title,
@@ -253,7 +253,7 @@
             }
         }
 
-        // â”€â”€ Inline notes editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Inline notes editing ──────────────────────────────────────────────
 
         protected bool _notesEditMode;
         protected bool _notesSaving;
@@ -289,7 +289,7 @@
             }
         }
 
-        // â”€â”€ Dispose â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Dispose ───────────────────────────────────────────────────────────
 
         public void Dispose()
         {

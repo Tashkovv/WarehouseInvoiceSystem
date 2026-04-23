@@ -11,7 +11,7 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            @* â”€â”€ Individual â”€â”€ *@
+            @* ── Individual ── *@
             <MudItem xs="12">
                 <WisAutocompleteInput TValue="Guid"
                                       SelectedValue="@(_selectedIndividualId ?? default)"
@@ -22,7 +22,7 @@
                                       FullWidth="true" />
             </MudItem>
 
-            @* â”€â”€ Individual info alert â”€â”€ *@
+            @* ── Individual info alert ── *@
             @if (_selectedIndividual is not null)
             {
                 <MudItem xs="12">
@@ -46,7 +46,7 @@
                 </MudItem>
             }
 
-            @* â”€â”€ Warehouse â”€â”€ *@
+            @* ── Warehouse ── *@
             <MudItem xs="12" sm="6">
                 <WisSelect T="WarehouseDto"
                            Items="_warehouses"
@@ -58,7 +58,7 @@
                            FullWidth="true" />
             </MudItem>
 
-            @* â”€â”€ Purchase Date â”€â”€ *@
+            @* ── Purchase Date ── *@
             <MudItem xs="12" sm="6">
                 <WisDateInput Date="@_purchaseDate"
                               DateChanged="@(d => _purchaseDate = d)"

@@ -28,12 +28,12 @@ else
 
     <MudGrid>
 
-        @* â”€â”€ Header card â”€â”€ *@
+        @* ── Header card ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
 
-                    @* â”€â”€ Identity row â”€â”€ *@
+                    @* ── Identity row ── *@
                     <div class="wis-detail-identity mb-3">
                         <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">@_warehouse.Name</MudText>
                         @if (_warehouse.IsDefault)
@@ -48,7 +48,7 @@ else
                         </MudChip>
                     </div>
 
-                    @* â”€â”€ Address â”€â”€ *@
+                    @* ── Address ── *@
                     @if (!string.IsNullOrWhiteSpace(_warehouse.Address))
                     {
                         <div class="wis-detail-contact wis-product-meta-row">
@@ -64,7 +64,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* â”€â”€ Stock by Product â”€â”€ *@
+        @* ── Stock by Product ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -195,7 +195,7 @@ else
         return Color.Default;
     }
 
-    // â”€â”€ Server data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Server data ─────────────────────────────────────────────────────────
 
     private async Task<TableData<StockLevelDto>> LoadStockServerData(TableState state, CancellationToken ct)
     {
@@ -213,7 +213,7 @@ else
         };
     }
 
-    // â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
@@ -271,7 +271,7 @@ else
         _actions = actions;
     }
 
-    // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Actions ───────────────────────────────────────────────────────────────
 
     private async Task OpenEditDialog()
     {

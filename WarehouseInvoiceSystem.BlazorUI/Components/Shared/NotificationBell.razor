@@ -24,7 +24,7 @@
                     TransformOrigin="Origin.TopRight"
                     Style="width: 420px; z-index: 1301; max-height: 500px; display: flex; flex-direction: column;">
 
-            @* â”€â”€ Header â”€â”€ *@
+            @* ── Header ── *@
             <div class="d-flex justify-space-between align-center px-4 py-2" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
                 <MudText Typo="Typo.h6">@Localization.GetString("Notifications")</MudText>
                 @if (_unreadCount > 0)
@@ -38,7 +38,7 @@
                 }
             </div>
 
-            @* â”€â”€ Content â”€â”€ *@
+            @* ── Content ── *@
             @if (_loading)
             {
                 <div class="d-flex justify-center pa-6">
@@ -193,7 +193,7 @@
         catch { /* best-effort */ }
     }
 
-    // â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Display helpers ──────────────────────────────────────────────────
 
     private string FormatTitle(NotificationDto n)
     {

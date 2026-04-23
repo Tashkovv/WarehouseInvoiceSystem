@@ -43,7 +43,7 @@ else
 
     <MudGrid>
 
-        @* â”€â”€ Header card â”€â”€ *@
+        @* ── Header card ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
@@ -193,7 +193,7 @@ else
                             </div>
                         </MudItem>
 
-                        @* â”€â”€ IssueDate stat (inline edit for Draft) â”€â”€ *@
+                        @* ── IssueDate stat (inline edit for Draft) ── *@
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("IssueDate")</MudText>
                             @if (_issueDateEditing && _invoice.Status == InvoiceStatus.Draft)
@@ -227,7 +227,7 @@ else
                             }
                         </MudItem>
 
-                        @* â”€â”€ DueDate stat (inline edit for Draft) â”€â”€ *@
+                        @* ── DueDate stat (inline edit for Draft) ── *@
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("DueDate")</MudText>
                             @if (_dueDateEditing && _invoice.Status == InvoiceStatus.Draft)
@@ -269,7 +269,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* â”€â”€ Line items â”€â”€ *@
+        @* ── Line items ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -321,7 +321,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* â”€â”€ Payment history â”€â”€ *@
+        @* ── Payment history ── *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -401,23 +401,23 @@ else
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
 
-    // â”€â”€ Read-only line items view model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Read-only line items view model ──────────────────────────────────────
 
     private List<LineItemEditorModel> _readOnlyLineItems = [];
 
-    // â”€â”€ Inline IssueDate editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline IssueDate editing (Draft only) ─────────────────────────────────
 
     private bool _issueDateEditing;
     private bool _issueDateSaving;
     private DateTime? _issueDateEdit;
 
-    // â”€â”€ Inline DueDate editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline DueDate editing (Draft only) ──────────────────────────────────
 
     private bool _dueDateEditing;
     private bool _dueDateSaving;
     private DateTime? _dueDateEdit;
 
-    // â”€â”€ Inline Warehouse editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline Warehouse editing (Draft only) ─────────────────────────────────
 
     private bool _warehouseEditing;
     private bool _warehouseSaving;
@@ -425,13 +425,13 @@ else
     private List<WarehouseDto> _warehouses = [];
     private bool _warehousesLoaded;
 
-    // â”€â”€ Inline line items editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline line items editing (Draft only) ────────────────────────────────
 
     private bool _itemsEditing;
     private bool _itemsSaving;
     private List<LineItemEditorModel> _editItems = [];
 
-    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─────────────────────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
@@ -471,7 +471,7 @@ else
         await Task.WhenAll(LoadInvoice(), LoadPayments());
     }
 
-    // â”€â”€ Stock check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Stock check ───────────────────────────────────────────────────────────
 
     private async Task LoadStockAsync()
     {
@@ -496,7 +496,7 @@ else
         }
     }
 
-    // â”€â”€ Read-only line items view model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Read-only line items view model ───────────────────────────────────────
 
     private void BuildReadOnlyLineItems()
     {
@@ -518,7 +518,7 @@ else
         }).ToList() ?? [];
     }
 
-    // â”€â”€ Action builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Action builder ────────────────────────────────────────────────────────
 
     private void BuildActions()
     {
@@ -608,7 +608,7 @@ else
         }
     }
 
-    // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Actions ───────────────────────────────────────────────────────────────
 
     private async Task CopyInvoice()
     {
@@ -735,7 +735,7 @@ else
         }
     }
 
-    // â”€â”€ Inline IssueDate editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline IssueDate editing ──────────────────────────────────────────────
 
     private void StartIssueDateEdit()
     {
@@ -765,7 +765,7 @@ else
         }
     }
 
-    // â”€â”€ Inline DueDate editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline DueDate editing ────────────────────────────────────────────────
 
     private void StartDueDateEdit()
     {
@@ -795,7 +795,7 @@ else
         }
     }
 
-    // â”€â”€ Inline Warehouse editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline Warehouse editing ──────────────────────────────────────────────
 
     private async Task StartWarehouseEdit()
     {
@@ -839,7 +839,7 @@ else
         }
     }
 
-    // â”€â”€ Inline line items editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline line items editing ─────────────────────────────────────────────
 
     private void StartItemsEdit()
     {
@@ -900,7 +900,7 @@ else
         }
     }
 
-    // â”€â”€ Inline notes editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Inline notes editing ──────────────────────────────────────────────────
 
     private async Task SaveNotes()
     {

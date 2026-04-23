@@ -11,7 +11,7 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            @* â”€â”€ Company â”€â”€ *@
+            @* ── Company ── *@
             <MudItem xs="12">
                 <WisAutocompleteInput TValue="Guid"
                                       SelectedValue="@(_selectedCompanyId ?? default)"
@@ -22,7 +22,7 @@
                                       FullWidth="true" />
             </MudItem>
 
-            @* â”€â”€ Info alert (shown after company selection) â”€â”€ *@
+            @* ── Info alert (shown after company selection) ── *@
             @if (_selectedCompany is not null)
             {
                 <MudItem xs="12">
@@ -56,7 +56,7 @@
                 </MudItem>
             }
 
-            @* â”€â”€ Invoice Type â”€â”€ *@
+            @* ── Invoice Type ── *@
             <MudItem xs="12" sm="6">
                 <WisSelect T="InvoiceType"
                            Items="_invoiceTypes"
@@ -83,7 +83,7 @@
                 </WisSelect>
             </MudItem>
 
-            @* â”€â”€ Issue Date â”€â”€ *@
+            @* ── Issue Date ── *@
             <MudItem xs="12" sm="6">
                 <WisDateInput Date="@_issueDate"
                               DateChanged="@(d => _issueDate = d)"
