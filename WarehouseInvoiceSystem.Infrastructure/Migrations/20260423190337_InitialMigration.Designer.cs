@@ -12,7 +12,7 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260407124018_InitialMigration")]
+    [Migration("20260423190337_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -157,10 +157,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("FirstName")
+                    b.Property<string>("FullName")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("IdentificationNumber")
                         .IsRequired()
@@ -171,11 +171,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(50)
@@ -188,11 +183,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasIndex("DeletedOn");
 
+                    b.HasIndex("FullName");
+
                     b.HasIndex("IdentificationNumber");
 
                     b.HasIndex("IsActive");
-
-                    b.HasIndex("LastName");
 
                     b.ToTable("Individual", (string)null);
                 });
@@ -936,6 +931,12 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DeletedOn");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsDefault");
 
                     b.ToTable("Warehouse", (string)null);
                 });

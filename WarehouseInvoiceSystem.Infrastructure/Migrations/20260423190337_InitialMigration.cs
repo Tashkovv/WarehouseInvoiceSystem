@@ -57,8 +57,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FullName = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     IdentificationNumber = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
@@ -482,6 +481,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "DeletedOn");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Individual_FullName",
+                table: "Individual",
+                column: "FullName");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Individual_IdentificationNumber",
                 table: "Individual",
                 column: "IdentificationNumber");
@@ -490,11 +494,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_Individual_IsActive",
                 table: "Individual",
                 column: "IsActive");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Individual_LastName",
-                table: "Individual",
-                column: "LastName");
 
             migrationBuilder.CreateIndex(
                 name: "IX_InventoryTransaction_CreatedAt",
@@ -733,95 +732,29 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "Username",
                 unique: true);
 
-            migrationBuilder.Sql("CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 1;");
-            migrationBuilder.Sql("CREATE SEQUENCE IF NOT EXISTS bill_number_seq START 1;");
+            migrationBuilder.CreateIndex(
+                name: "IX_Warehouse_DeletedOn",
+                table: "Warehouse",
+                column: "DeletedOn");
 
-            migrationBuilder.Sql(@"
-                SELECT setval(
-                    'invoice_number_seq',
-                    GREATEST(
-                        (SELECT COALESCE(MAX(CAST(SUBSTRING(""InvoiceNumber"" FROM 13) AS INTEGER)), 0)
-                         FROM ""Invoice""
-                         WHERE ""InvoiceNumber"" LIKE 'INV-%'),
-                        1
-                    )
-                );
-            ");
-            
-            migrationBuilder.Sql(@"
-                SELECT setval(
-                    'bill_number_seq',
-                    GREATEST(
-                        (SELECT COALESCE(MAX(CAST(SUBSTRING(""InvoiceNumber"" FROM 14) AS INTEGER)), 0)
-                         FROM ""Invoice""
-                         WHERE ""InvoiceNumber"" LIKE 'BILL-%'),
-                        1
-                    )
-                );
-            ");
-            
-            // Recreate vw_product_purchase_history to exclude Draft documents.
-            // Original definition only excluded Cancelled, which let drafts (no inventory
-            // transaction yet) leak into a product's purchase history.
-            //
-            // PurchaseNoteStatus: Draft=1, Pending=2, Paid=3, Cancelled=4
-            // InvoiceStatus:      Draft=1, Confirmed=2, PartiallyPaid=3, Paid=4, Overdue=5, Cancelled=6
-            //
-            // The receivable (sold) side already filters Draft + Cancelled in
-            // InvoiceRepository.ApplyLineItemFilters; this aligns the bought side.
-            migrationBuilder.Sql(@"
-                CREATE OR REPLACE VIEW vw_product_purchase_history AS
-            
-                -- Purchase note lines (individual vendors)
-                SELECT
-                    pnl.""ProductId"",
-                    pn.""PurchaseDate""                                       AS ""Date"",
-                    pn.""NoteNumber""                                         AS ""DocumentNumber"",
-                    '/purchase-notes/' || pn.""Id""::text                    AS ""DocumentUrl"",
-                    (i.""FirstName"" || ' ' || i.""LastName"")               AS ""PartyName"",
-                    pn.""WarehouseId"",
-                    w.""Name""                                                AS ""WarehouseName"",
-                    pnl.""Quantity""                                          AS ""Quantity"",
-                    pnl.""UnitPrice"",
-                    pnl.""Quantity"" * pnl.""UnitPrice""                     AS ""TotalPrice"",
-                    pn.""IndividualId"",
-                    NULL::uuid                                                AS ""CompanyId""
-                FROM ""PurchaseNoteLine"" pnl
-                JOIN ""PurchaseNote"" pn ON pn.""Id"" = pnl.""PurchaseNoteId""
-                JOIN ""Individual""   i  ON i.""Id""  = pn.""IndividualId""
-                JOIN ""Warehouse""    w  ON w.""Id""  = pn.""WarehouseId""
-                WHERE pn.""DeletedOn"" IS NULL
-                  AND pn.""Status"" NOT IN (1, 4)
-            
-                UNION ALL
-            
-                -- Payable invoice lines (company vendors)
-                SELECT
-                    il.""ProductId"",
-                    inv.""IssueDate""                                         AS ""Date"",
-                    inv.""InvoiceNumber""                                     AS ""DocumentNumber"",
-                    '/invoices/' || inv.""Id""::text                         AS ""DocumentUrl"",
-                    c.""Name""                                                AS ""PartyName"",
-                    inv.""WarehouseId"",
-                    w.""Name""                                                AS ""WarehouseName"",
-                    CAST(il.""Quantity"" AS numeric)                         AS ""Quantity"",
-                    il.""UnitPrice"",
-                    CAST(il.""Quantity"" AS numeric) * il.""UnitPrice"" * (1 + il.""TaxRate"" / 100.0) AS ""TotalPrice"",
-                    NULL::uuid                                                AS ""IndividualId"",
-                    inv.""CompanyId""
-                FROM ""InvoiceLine"" il
-                JOIN ""Invoice""   inv ON inv.""Id"" = il.""InvoiceId""
-                JOIN ""Company""   c   ON c.""Id""  = inv.""CompanyId""
-                JOIN ""Warehouse"" w   ON w.""Id""  = inv.""WarehouseId""
-                WHERE inv.""DeletedOn"" IS NULL
-                  AND inv.""Status"" NOT IN (1, 6)
-                  AND inv.""Type""   = 2;
-            ");
+            migrationBuilder.CreateIndex(
+                name: "IX_Warehouse_IsActive",
+                table: "Warehouse",
+                column: "IsActive");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Warehouse_IsDefault",
+                table: "Warehouse",
+                column: "IsDefault");
+
+            MigrationHelper.Up(migrationBuilder);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            MigrationHelper.Down(migrationBuilder);
+
             migrationBuilder.DropTable(
                 name: "AuditLog");
 
@@ -869,10 +802,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "Warehouse");
-
-            migrationBuilder.Sql("DROP SEQUENCE IF EXISTS invoice_number_seq;");
-            migrationBuilder.Sql("DROP SEQUENCE IF EXISTS bill_number_seq;");
-            migrationBuilder.Sql("DROP VIEW IF EXISTS vw_product_purchase_history;");
         }
     }
 }
