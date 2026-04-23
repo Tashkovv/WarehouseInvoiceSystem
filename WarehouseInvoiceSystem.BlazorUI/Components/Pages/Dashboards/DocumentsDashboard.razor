@@ -1,4 +1,4 @@
-@page "/documents-dashboard"
+﻿@page "/documents-dashboard"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
@@ -22,7 +22,7 @@ else
 {
     <MudGrid>
 
-        <!-- ── Period Overview ── -->
+        <!-- â”€â”€ Period Overview â”€â”€ -->
         <MudItem xs="12" Class="mb-2">
             <div class="d-flex align-center flex-wrap gap-2">
                 <MudText Typo="Typo.h6">@Localization.GetString("Overview")</MudText>
@@ -75,7 +75,7 @@ else
 
         @PeriodCards(_periodNoteSummary, _periodInvoiceSummary, _netIssued, _margin)
 
-        <!-- ── Attention Needed ── -->
+        <!-- â”€â”€ Attention Needed â”€â”€ -->
         <MudItem xs="12" Class="mt-6">
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("AttentionNeeded")</MudText>
         </MudItem>
@@ -107,7 +107,7 @@ else
                            Link="/purchase-notes?status=Pending" />
         </MudItem>
 
-        <!-- ── Recent Activity (Tabbed) ── -->
+        <!-- â”€â”€ Recent Activity (Tabbed) â”€â”€ -->
         <MudItem xs="12" Class="mt-6">
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("RecentActivity")</MudText>
         </MudItem>
@@ -119,7 +119,7 @@ else
                          ApplyEffectsToContainer="true"
                          Color="Color.Default">
 
-                    <!-- ── Purchase Notes Tab ── -->
+                    <!-- â”€â”€ Purchase Notes Tab â”€â”€ -->
                     <MudTabPanel Text="@Localization.GetString("PurchaseNotes")"
                                  Icon="@Icons.Material.Filled.Receipt"
                                  PanelClass="pa-0"
@@ -184,7 +184,7 @@ else
                         </MudCardActions>
                     </MudTabPanel>
 
-                    <!-- ── Invoices Tab ── -->
+                    <!-- â”€â”€ Invoices Tab â”€â”€ -->
                     <MudTabPanel Text="@Localization.GetString("Invoices")"
                                  Icon="@Icons.Material.Filled.RequestQuote"
                                  PanelClass="pa-0"
@@ -258,7 +258,7 @@ else
                         </MudCardActions>
                     </MudTabPanel>
 
-                    <!-- ── Payments Tab ── -->
+                    <!-- â”€â”€ Payments Tab â”€â”€ -->
                     <MudTabPanel Text="@Localization.GetString("Payments")"
                                  Icon="@Icons.Material.Filled.Payment"
                                  PanelClass="pa-0"
@@ -337,11 +337,11 @@ else
 @code {
     private enum PeriodMode { Day, Month, Year, Custom }
 
-    // ── Period toggle ──
+    // â”€â”€ Period toggle â”€â”€
     private PeriodMode _periodMode = PeriodMode.Day;
     private DateTime _selectedDate = DateTime.Today;
 
-    // ── Custom range ──
+    // â”€â”€ Custom range â”€â”€
     private DateRange _customDateRange = new(DateTime.Today.AddDays(-7), DateTime.Today);
     private int? _customDatePreset = 7;
     private WisDateRangeFilter? _customDateRangeFilter;
@@ -367,17 +367,17 @@ else
         _ => "SelectDay"
     });
 
-    // ── Period data ──
+    // â”€â”€ Period data â”€â”€
     private InvoicePeriodSummaryResult _periodInvoiceSummary = new();
     private DayPurchaseNoteSummaryResult _periodNoteSummary = new();
     private decimal _netIssued => _periodInvoiceSummary.ReceivableAmount - _periodInvoiceSummary.PayableAmount - _periodNoteSummary.Amount;
     private decimal _margin => _periodInvoiceSummary.ReceivableAmount > 0 ? _netIssued / _periodInvoiceSummary.ReceivableAmount : 0;
 
-    // ── Outstanding position ──
+    // â”€â”€ Outstanding position â”€â”€
     private InvoiceOutstandingResult _invoicePosition = new();
     private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
 
-    // ── Recent activity ──
+    // â”€â”€ Recent activity â”€â”€
     private List<InvoiceDto> _recentInvoices = [];
     private List<PurchaseNoteDto> _recentPurchaseNotes = [];
     private List<PaymentDto> _recentPayments = [];
@@ -403,9 +403,8 @@ else
                     .ContinueWith(t => _purchaseNotePosition = t.Result)
             );
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading documents data: {ex.Message}");
         }
         finally
         {
@@ -523,9 +522,8 @@ else
                 await LoadRecentActivity();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error recording payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
         }
     }

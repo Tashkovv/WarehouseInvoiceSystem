@@ -245,9 +245,8 @@
                 if (individual is not null)
                     _filterIndividualInitialLabel = individual.FullName;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error resolving individual param: {ex.Message}");
             }
         }
     }
@@ -585,9 +584,8 @@
             Guid newId = await PurchaseNoteService.DuplicatePurchaseNoteAsync(item.Id);
             Navigation.NavigateTo($"/purchase-notes/{newId}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error copying purchase note: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingPurchaseNote"), Severity.Error);
         }
     }
@@ -634,9 +632,8 @@
             string fileName = $"{Localization.GetString("PurchaseNotes")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting purchase notes: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally
@@ -658,9 +655,8 @@
             string fileName = $"{Localization.GetString("PurchaseNote")}_{fullNote.NoteNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting purchase note: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally

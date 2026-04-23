@@ -379,9 +379,8 @@
             Snackbar.Add(Localization.GetString("CheckOverdueInvoicesSuccess"), Severity.Success);
             Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error running overdue check: {ex.Message}");
             Snackbar.Add(Localization.GetString("CheckOverdueInvoicesError"), Severity.Error);
             _runningJob = false;
         }
@@ -406,9 +405,8 @@
             Snackbar.Add(Localization.GetString("GenerateNotificationsSuccess"), Severity.Success);
             Navigation.NavigateTo(Navigation.Uri, forceLoad: true);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error generating notifications: {ex.Message}");
             Snackbar.Add(Localization.GetString("GenerateNotificationsError"), Severity.Error);
             _runningNotifications = false;
         }

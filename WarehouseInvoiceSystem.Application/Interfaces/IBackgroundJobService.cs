@@ -5,7 +5,7 @@
         /// <summary>
         /// Checks invoices and marks them as Overdue if due date has passed
         /// </summary>
-        Task<List<Guid>> CheckAndUpdateOverdueInvoicesAsync();
+        Task<List<Guid>> CheckAndUpdateOverdueInvoicesAsync(CancellationToken ct = default);
 
         /// <summary>
         /// Generates due-date reminder notifications for receivable and payable invoices.

@@ -1,4 +1,4 @@
-@page "/partners-dashboard"
+﻿@page "/partners-dashboard"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Dashboard
@@ -20,7 +20,7 @@ else
 {
     <MudGrid>
 
-        <!-- ── Summary Cards ── -->
+        <!-- â”€â”€ Summary Cards â”€â”€ -->
         <MudItem xs="12" sm="6" md="4">
             <DashboardCard Title="@Localization.GetString("TotalCompanies")"
                            Subtitle="@($"{Localization.GetString("ActiveCompanies")}: {_activeCompaniesCount}")"
@@ -47,7 +47,7 @@ else
                            Link="/individuals" />
         </MudItem>
 
-        <!-- ── Top Partners (left) + Attention Needed (right) ── -->
+        <!-- â”€â”€ Top Partners (left) + Attention Needed (right) â”€â”€ -->
 
         <MudItem xs="12" md="6">
             <div class="d-flex align-center flex-wrap gap-2 mb-3">
@@ -224,7 +224,7 @@ else
             </MudCard>
         </MudItem>
 
-        <!-- ── Attention Needed ── -->
+        <!-- â”€â”€ Attention Needed â”€â”€ -->
 
         <MudItem xs="12" md="6">
             @{
@@ -422,7 +422,7 @@ else
     private List<PartnerAttentionDto> _unpaidVendors = [];
     private List<PartnerAttentionDto> _overduePayableCompanies = [];
 
-    // ── Partner stats date range ──
+    // â”€â”€ Partner stats date range â”€â”€
     private int? _partnerDatePreset = 365;
     private DateRange _partnerDateRange = new(DateTime.Today.AddDays(-365), DateTime.Today);
     private DateTime _partnerFromDate => _partnerDateRange.Start ?? DateTime.Today.AddDays(-365);
@@ -457,9 +457,8 @@ else
             _totalIndividuals = indTotal;
             _activeIndividualsCount = indActive;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading partners data: {ex.Message}");
         }
         finally
         {

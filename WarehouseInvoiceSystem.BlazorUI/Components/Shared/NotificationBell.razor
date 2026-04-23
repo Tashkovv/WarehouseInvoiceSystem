@@ -1,4 +1,4 @@
-@implements IDisposable
+﻿@implements IDisposable
 @using System.Text.Json
 @using WarehouseInvoiceSystem.Application.DTOs.Notification
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -24,7 +24,7 @@
                     TransformOrigin="Origin.TopRight"
                     Style="width: 420px; z-index: 1301; max-height: 500px; display: flex; flex-direction: column;">
 
-            @* ── Header ── *@
+            @* â”€â”€ Header â”€â”€ *@
             <div class="d-flex justify-space-between align-center px-4 py-2" style="border-bottom: 1px solid var(--mud-palette-lines-default);">
                 <MudText Typo="Typo.h6">@Localization.GetString("Notifications")</MudText>
                 @if (_unreadCount > 0)
@@ -38,7 +38,7 @@
                 }
             </div>
 
-            @* ── Content ── *@
+            @* â”€â”€ Content â”€â”€ *@
             @if (_loading)
             {
                 <div class="d-flex justify-center pa-6">
@@ -75,7 +75,7 @@
                                             @FormatInvoiceList(n)
                                         </MudText>
                                         <MudText Typo="Typo.caption" Color="Color.Secondary" Style="white-space: nowrap; flex-shrink: 0;">
-                                            · @FormatTimeAgo(n.CreatedAt)
+                                            Â· @FormatTimeAgo(n.CreatedAt)
                                         </MudText>
                                     </div>
                                 </div>
@@ -132,9 +132,8 @@
             {
                 _notifications = await NotificationService.GetRecentNotificationsAsync(20, _cts.Token);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error loading notifications: {ex.Message}");
             }
             finally
             {
@@ -194,7 +193,7 @@
         catch { /* best-effort */ }
     }
 
-    // ── Display helpers ──────────────────────────────────────────────────
+    // â”€â”€ Display helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private string FormatTitle(NotificationDto n)
     {

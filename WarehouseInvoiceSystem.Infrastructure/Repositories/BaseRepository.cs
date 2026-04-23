@@ -50,15 +50,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         }
 
         protected async Task<TResult> WithTransactionAsync<TResult>(
-            Func<ApplicationDbContext, Task<TResult>> action)
+            Func<ApplicationDbContext, Task<TResult>> action,
+            CancellationToken ct = default)
         {
             await using var context = CreateContext();
-            await using var tx = await context.Database.BeginTransactionAsync();
+            await using var tx = await context.Database.BeginTransactionAsync(ct);
 
             var result = await action(context);
 
-            await context.SaveChangesAsync();
-            await tx.CommitAsync();
+            await context.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
 
             return result;
         }

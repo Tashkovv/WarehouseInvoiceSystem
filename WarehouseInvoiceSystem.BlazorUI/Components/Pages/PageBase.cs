@@ -1,4 +1,4 @@
-namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
+﻿namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 {
     using Microsoft.AspNetCore.Components;
     using Microsoft.AspNetCore.Components.Authorization;
@@ -30,9 +30,8 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             {
                 await work();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error: {ex.Message}");
                 if (errorKey is not null)
                     Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
             }
@@ -51,9 +50,8 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
                 await JSRuntime.InvokeVoidAsync("fileDownloadHelper.downloadFileFromStream", fileName, streamRef);
                 Snackbar.Add(Localization.GetString("ExportSuccess"), Severity.Success);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error downloading file: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
             }
         }
@@ -106,7 +104,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         protected void NotifyWarning(string key) =>
             Snackbar.Add(Localization.GetString(key), Severity.Warning);
 
-        // ── InvoiceStatus helpers ─────────────────────────────────────────────
+        // â”€â”€ InvoiceStatus helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected static Color GetInvoiceStatusColor(InvoiceStatus status) => status switch
         {
@@ -121,7 +119,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 
         protected string GetInvoiceStatusText(InvoiceStatus status) => GetEnumLabel(status);
 
-        // ── PurchaseNoteStatus helpers ────────────────────────────────────────
+        // â”€â”€ PurchaseNoteStatus helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected static Color GetPurchaseNoteStatusColor(PurchaseNoteStatus status) => status switch
         {
@@ -134,14 +132,14 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
 
         protected string GetPurchaseNoteStatusText(PurchaseNoteStatus status) => GetEnumLabel(status);
 
-        // ── Generic enum localization helper ──────────────────────────────────
-        // Looks up "{EnumTypeName}_{Value}" — e.g. InvoiceStatus.Paid → "InvoiceStatus_Paid".
+        // â”€â”€ Generic enum localization helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Looks up "{EnumTypeName}_{Value}" — e.g. InvoiceStatus.Paid â†’ "InvoiceStatus_Paid".
         // Lets each enum's status have its own translation (and gender form in mk-MK)
         // without colliding with bare-name keys used elsewhere.
         protected string GetEnumLabel<TEnum>(TEnum value) where TEnum : struct, Enum
             => Localization.GetString($"{typeof(TEnum).Name}_{value}");
 
-        // ── PaymentMethod helpers ─────────────────────────────────────────────
+        // â”€â”€ PaymentMethod helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected static Color GetPaymentMethodColor(PaymentMethod method) => method switch
         {
@@ -161,7 +159,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                         => method.ToString()
         };
 
-        // ── CompanyType helpers ───────────────────────────────────────────────
+        // â”€â”€ CompanyType helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected static Color GetCompanyTypeColor(CompanyType type) => type switch
         {
@@ -179,7 +177,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _                  => type.ToString()
         };
 
-        // ── Stock Movement helpers ────────────────────────────────────────────────
+        // â”€â”€ Stock Movement helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected static Color GetMovementTypeColor(InventoryTransactionType type) => type switch
         {
@@ -206,7 +204,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
         protected string GetMovementTypeLabel(InventoryTransactionType type) =>
             Localization.GetString(type.ToString());
 
-        // ── InventoryTransactionType helpers ──────────────────────────────────
+        // â”€â”€ InventoryTransactionType helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected static string GetQuantityText(InventoryTransactionType type, decimal quantity) => type switch
         {
@@ -230,7 +228,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             _ => Color.Default
         };
 
-        // ── Confirm-and-execute helper ────────────────────────────────────────
+        // â”€â”€ Confirm-and-execute helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected async Task ConfirmAndExecuteAsync(
             string title,
@@ -249,14 +247,13 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
                 await action();
                 Snackbar.Add(Localization.GetString(successKey), Severity.Success);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error: {ex.Message}");
                 Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
             }
         }
 
-        // ── Inline notes editing ──────────────────────────────────────────────
+        // â”€â”€ Inline notes editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         protected bool _notesEditMode;
         protected bool _notesSaving;
@@ -282,9 +279,8 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
                 await saveFunc(_notesEditValue);
                 _notesEditMode = false;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error updating notes: {ex.Message}");
                 Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
             }
             finally
@@ -293,7 +289,7 @@ namespace WarehouseInvoiceSystem.BlazorUI.Components.Pages
             }
         }
 
-        // ── Dispose ───────────────────────────────────────────────────────────
+        // â”€â”€ Dispose â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         public void Dispose()
         {

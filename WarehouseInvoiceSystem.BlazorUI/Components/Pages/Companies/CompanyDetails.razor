@@ -392,9 +392,8 @@ else
         {
             _analytics = await CompanyService.GetCompanyAnalyticsAsync(Id, CancellationToken.None);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading analytics: {ex.Message}");
         }
         finally
         {
@@ -465,9 +464,8 @@ else
             Snackbar.Add(Localization.GetString("CompanyActivated"), Severity.Success);
             await LoadCompany();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error activating company: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorActivatingCompany"), Severity.Error);
         }
     }

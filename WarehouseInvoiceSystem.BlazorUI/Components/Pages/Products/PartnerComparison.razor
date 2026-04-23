@@ -1,4 +1,4 @@
-@page "/products/{Id:guid}/compare"
+﻿@page "/products/{Id:guid}/compare"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Product
@@ -35,7 +35,7 @@ else
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
 
-                    @* ── Product identity ── *@
+                    @* â”€â”€ Product identity â”€â”€ *@
                     <div class="wis-detail-identity mb-3">
                         <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">
                             @Localization.GetString("PartnerComparison")
@@ -53,7 +53,7 @@ else
                         </div>
                     </div>
 
-                    @* ── Mode tabs ── *@
+                    @* â”€â”€ Mode tabs â”€â”€ *@
                     <div class="d-flex gap-2 mb-3">
                         <button class="wis-pill-btn @(_mode == PartnerComparisonMode.Individuals ? "wis-pill-btn--active" : "")"
                                 type="button"
@@ -72,7 +72,7 @@ else
                         </button>
                     </div>
 
-                    @* ── Filters ── *@
+                    @* â”€â”€ Filters â”€â”€ *@
                     <div class="d-flex flex-wrap align-center gap-2 mb-2">
                         <WisMultiItemPicker @ref="_partnerPicker"
                                             TValue="Guid"
@@ -104,7 +104,7 @@ else
                                             OnChanged="LoadComparisonAsync" />
                     </div>
 
-                    @* ── Selected partner chips ── *@
+                    @* â”€â”€ Selected partner chips â”€â”€ *@
                     @if (_partnerPicker?.SelectedLabels.Count > 0)
                     {
                         <div class="d-flex flex-wrap gap-1">
@@ -126,7 +126,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* ── Results ── *@
+        @* â”€â”€ Results â”€â”€ *@
         <MudItem xs="12">
             @if (_selectedPartnerIds.Count < 2)
             {
@@ -207,7 +207,7 @@ else
     private ProductDto? _product;
     private PartnerComparisonMode _mode = PartnerComparisonMode.Individuals;
 
-    // ── Filters ──────────────────────────────────────────────────────────────
+    // â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private List<Guid> _selectedPartnerIds = [];
     private Guid? _selectedWarehouseId;
     private DateRange _dateRange = new(null, null);
@@ -215,13 +215,13 @@ else
     private WisDateRangeFilter? _dateRangeFilter;
     private WisMultiItemPicker<Guid>? _partnerPicker;
 
-    // ── Results ──────────────────────────────────────────────────────────────
+    // â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private List<PartnerComparisonDto> _comparisonRows = [];
     private bool _loadingComparison;
     private bool _exporting;
     private CancellationTokenSource _loadCts = new();
 
-    // ── Computed labels ──────────────────────────────────────────────────────
+    // â”€â”€ Computed labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private string PartnerPickerLabel => _mode == PartnerComparisonMode.Individuals
         ? Localization.GetString("Individual")
         : Localization.GetString("Company");
@@ -230,7 +230,7 @@ else
         ? Localization.GetString("Individual")
         : Localization.GetString("Company");
 
-    // ── Lifecycle ────────────────────────────────────────────────────────────
+    // â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     protected override async Task OnInitializedAsync()
     {
@@ -244,7 +244,7 @@ else
             _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
         }, "ErrorLoadingProduct");
 
-    // ── Mode switching ──────────────────────────────────────────────────────
+    // â”€â”€ Mode switching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task SetMode(PartnerComparisonMode mode)
     {
@@ -257,7 +257,7 @@ else
         StateHasChanged();
     }
 
-    // ── Partner data source ─────────────────────────────────────────────────
+    // â”€â”€ Partner data source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadPartnerItems(
         string search, int page, CancellationToken ct)
@@ -329,7 +329,7 @@ else
         };
     }
 
-    // ── Warehouse data source ───────────────────────────────────────────────
+    // â”€â”€ Warehouse data source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
         string search, int page, CancellationToken ct)
@@ -357,7 +357,7 @@ else
         };
     }
 
-    // ── Filter callbacks ────────────────────────────────────────────────────
+    // â”€â”€ Filter callbacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task OnPartnersChanged(List<Guid> values)
     {
@@ -383,7 +383,7 @@ else
         return Task.CompletedTask;
     }
 
-    // ── Core comparison load ────────────────────────────────────────────────
+    // â”€â”€ Core comparison load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task LoadComparisonAsync()
     {
@@ -404,10 +404,9 @@ else
             if (ct.IsCancellationRequested) return;
         }
         catch (OperationCanceledException) { return; }
-        catch (Exception ex)
+        catch (Exception)
         {
             if (ct.IsCancellationRequested) return;
-            Console.WriteLine($"Error loading comparison: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorLoadingData"), Severity.Error);
         }
         finally
@@ -420,7 +419,7 @@ else
         }
     }
 
-    // ── Export ───────────────────────────────────────────────────────────────
+    // â”€â”€ Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task ExportComparison()
     {
@@ -449,9 +448,8 @@ else
             string fileName = $"{Localization.GetString("PartnerComparison")}_{_product.Code}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting comparison: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally

@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+﻿@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @inject ILocalizationService Localization
 @inject IInventoryService InventoryService
 @inject ISnackbar Snackbar
@@ -61,9 +61,8 @@
             Snackbar.Add(Localization.GetString("ThresholdsUpdated"), Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating thresholds: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingThresholds"), Severity.Error);
         }
         finally

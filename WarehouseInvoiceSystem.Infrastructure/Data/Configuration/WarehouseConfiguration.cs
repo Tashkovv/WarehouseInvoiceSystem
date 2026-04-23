@@ -21,6 +21,10 @@
             builder.Property(e => e.Address).HasMaxLength(100);
             builder.Property(e => e.IsActive).IsRequired();
             builder.Property(e => e.IsDefault).IsRequired();
+
+            builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => e.IsActive);
+            builder.HasIndex(e => e.IsDefault);
         }
     }
 }

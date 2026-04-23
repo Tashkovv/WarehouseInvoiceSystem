@@ -83,9 +83,8 @@
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (InvalidOperationException ex) { Snackbar.Add(ex.Message, Severity.Error); }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving warehouse: {ex.Message}");
             Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingWarehouse" : "ErrorCreatingWarehouse"), Severity.Error);
         }
         finally { _saving = false; }

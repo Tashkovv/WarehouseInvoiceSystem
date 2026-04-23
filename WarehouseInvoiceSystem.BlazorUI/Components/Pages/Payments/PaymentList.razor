@@ -324,9 +324,8 @@
                 await _grid.ReloadServerData();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingPayment"), Severity.Error);
         }
     }
@@ -345,9 +344,8 @@
                 Snackbar.Add(Localization.GetString("PaymentUpdated"), Severity.Success);
                 await _grid.ReloadServerData();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error updating payment: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorUpdatingPayment"), Severity.Error);
             }
         }
@@ -372,9 +370,8 @@
                     await _grid.ReloadServerData();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error deleting payment: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorDeletingPayment"), Severity.Error);
             }
         }

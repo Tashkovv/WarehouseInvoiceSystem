@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.Individual
+﻿@using WarehouseInvoiceSystem.Application.DTOs.Individual
 @inject ILocalizationService Localization
 @inject IIndividualService IndividualService
 @inject ISnackbar Snackbar
@@ -126,9 +126,8 @@
         {
             Snackbar.Add(ex.Message, Severity.Error);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving individual: {ex.Message}");
             Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingIndividual" : "ErrorCreatingIndividual"), Severity.Error);
         }
         finally

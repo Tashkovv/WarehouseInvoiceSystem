@@ -1,4 +1,4 @@
-@page "/products/compare"
+﻿@page "/products/compare"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Product
@@ -26,7 +26,7 @@
                     </MudText>
                 </div>
 
-                @* ── Filters ── *@
+                @* â”€â”€ Filters â”€â”€ *@
                 <div class="d-flex flex-wrap align-center gap-2 mb-2">
                     <WisMultiItemPicker @ref="_productPicker"
                                         TValue="Guid"
@@ -58,7 +58,7 @@
                                         OnChanged="LoadComparisonAsync" />
                 </div>
 
-                @* ── Selected product chips ── *@
+                @* â”€â”€ Selected product chips â”€â”€ *@
                 @if (_productPicker?.SelectedLabels.Count > 0)
                 {
                     <div class="d-flex flex-wrap gap-1">
@@ -80,7 +80,7 @@
         </MudCard>
     </MudItem>
 
-    @* ── Results ── *@
+    @* â”€â”€ Results â”€â”€ *@
     <MudItem xs="12">
         @if (_selectedProductIds.Count < 2)
         {
@@ -159,7 +159,7 @@
 </MudGrid>
 
 @code {
-    // ── Filters ──────────────────────────────────────────────────────────────
+    // â”€â”€ Filters â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private List<Guid> _selectedProductIds = [];
     private Guid? _selectedWarehouseId;
     private DateRange _dateRange = new(null, null);
@@ -167,13 +167,13 @@
     private WisDateRangeFilter? _dateRangeFilter;
     private WisMultiItemPicker<Guid>? _productPicker;
 
-    // ── Results ──────────────────────────────────────────────────────────────
+    // â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private List<ProductComparisonDto> _comparisonRows = [];
     private bool _loadingComparison;
     private bool _exporting;
     private CancellationTokenSource _loadCts = new();
 
-    // ── Product data source ─────────────────────────────────────────────────
+    // â”€â”€ Product data source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadProductItems(
         string search, int page, CancellationToken ct)
@@ -202,7 +202,7 @@
         };
     }
 
-    // ── Warehouse data source ───────────────────────────────────────────────
+    // â”€â”€ Warehouse data source â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadWarehouseItems(
         string search, int page, CancellationToken ct)
@@ -230,7 +230,7 @@
         };
     }
 
-    // ── Filter callbacks ────────────────────────────────────────────────────
+    // â”€â”€ Filter callbacks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task OnProductsChanged(List<Guid> values)
     {
@@ -256,7 +256,7 @@
         return Task.CompletedTask;
     }
 
-    // ── Core comparison load ────────────────────────────────────────────────
+    // â”€â”€ Core comparison load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task LoadComparisonAsync()
     {
@@ -277,10 +277,9 @@
             if (ct.IsCancellationRequested) return;
         }
         catch (OperationCanceledException) { return; }
-        catch (Exception ex)
+        catch (Exception)
         {
             if (ct.IsCancellationRequested) return;
-            Console.WriteLine($"Error loading comparison: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorLoadingData"), Severity.Error);
         }
         finally
@@ -293,7 +292,7 @@
         }
     }
 
-    // ── Export ───────────────────────────────────────────────────────────────
+    // â”€â”€ Export â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task ExportComparison()
     {
@@ -314,9 +313,8 @@
             string fileName = $"{Localization.GetString("CompareProducts")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting comparison: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally

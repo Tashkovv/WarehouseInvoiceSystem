@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.User
+﻿@using WarehouseInvoiceSystem.Application.DTOs.User
 @using WarehouseInvoiceSystem.Domain.Enums
 @inject ILocalizationService Localization
 @inject IUserService UserService
@@ -139,9 +139,8 @@
         {
             Snackbar.Add(ex.Message, Severity.Error);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving user: {ex.Message}");
             Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingUser" : "ErrorCreatingUser"), Severity.Error);
         }
         finally

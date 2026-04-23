@@ -709,9 +709,8 @@ else
             string fileName = $"{Localization.GetString("StockMovements")}_{_product.Name}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting movements: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally

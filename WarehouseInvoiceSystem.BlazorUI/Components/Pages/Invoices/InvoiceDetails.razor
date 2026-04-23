@@ -1,4 +1,4 @@
-@page "/invoices/{Id:guid}"
+﻿@page "/invoices/{Id:guid}"
 @attribute [Authorize]
 @inherits PageBase
 @using System.Globalization
@@ -43,7 +43,7 @@ else
 
     <MudGrid>
 
-        @* ── Header card ── *@
+        @* â”€â”€ Header card â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
@@ -193,7 +193,7 @@ else
                             </div>
                         </MudItem>
 
-                        @* ── IssueDate stat (inline edit for Draft) ── *@
+                        @* â”€â”€ IssueDate stat (inline edit for Draft) â”€â”€ *@
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("IssueDate")</MudText>
                             @if (_issueDateEditing && _invoice.Status == InvoiceStatus.Draft)
@@ -227,7 +227,7 @@ else
                             }
                         </MudItem>
 
-                        @* ── DueDate stat (inline edit for Draft) ── *@
+                        @* â”€â”€ DueDate stat (inline edit for Draft) â”€â”€ *@
                         <MudItem xs="2">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("DueDate")</MudText>
                             @if (_dueDateEditing && _invoice.Status == InvoiceStatus.Draft)
@@ -269,7 +269,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* ── Line items ── *@
+        @* â”€â”€ Line items â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -321,7 +321,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* ── Payment history ── *@
+        @* â”€â”€ Payment history â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -401,23 +401,23 @@ else
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
 
-    // ── Read-only line items view model ──────────────────────────────────────
+    // â”€â”€ Read-only line items view model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private List<LineItemEditorModel> _readOnlyLineItems = [];
 
-    // ── Inline IssueDate editing (Draft only) ─────────────────────────────────
+    // â”€â”€ Inline IssueDate editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private bool _issueDateEditing;
     private bool _issueDateSaving;
     private DateTime? _issueDateEdit;
 
-    // ── Inline DueDate editing (Draft only) ──────────────────────────────────
+    // â”€â”€ Inline DueDate editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private bool _dueDateEditing;
     private bool _dueDateSaving;
     private DateTime? _dueDateEdit;
 
-    // ── Inline Warehouse editing (Draft only) ─────────────────────────────────
+    // â”€â”€ Inline Warehouse editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private bool _warehouseEditing;
     private bool _warehouseSaving;
@@ -425,13 +425,13 @@ else
     private List<WarehouseDto> _warehouses = [];
     private bool _warehousesLoaded;
 
-    // ── Inline line items editing (Draft only) ────────────────────────────────
+    // â”€â”€ Inline line items editing (Draft only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private bool _itemsEditing;
     private bool _itemsSaving;
     private List<LineItemEditorModel> _editItems = [];
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     protected override async Task OnInitializedAsync()
     {
@@ -461,9 +461,8 @@ else
             IEnumerable<PaymentDto> payments = await PaymentService.GetPaymentsByInvoiceAsync(Id, CancellationToken.None);
             _payments = payments.ToList();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading payments: {ex.Message}");
         }
     }
 
@@ -472,7 +471,7 @@ else
         await Task.WhenAll(LoadInvoice(), LoadPayments());
     }
 
-    // ── Stock check ───────────────────────────────────────────────────────────
+    // â”€â”€ Stock check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task LoadStockAsync()
     {
@@ -491,14 +490,13 @@ else
                 !_stockByProduct.TryGetValue(li.ProductId, out StockLevelDto? s) ||
                 li.Quantity > s.AvailableQuantity);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading stock: {ex.Message}");
             _hasInsufficientStock = false;
         }
     }
 
-    // ── Read-only line items view model ───────────────────────────────────────
+    // â”€â”€ Read-only line items view model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void BuildReadOnlyLineItems()
     {
@@ -520,7 +518,7 @@ else
         }).ToList() ?? [];
     }
 
-    // ── Action builder ────────────────────────────────────────────────────────
+    // â”€â”€ Action builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void BuildActions()
     {
@@ -610,7 +608,7 @@ else
         }
     }
 
-    // ── Actions ───────────────────────────────────────────────────────────────
+    // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task CopyInvoice()
     {
@@ -619,9 +617,8 @@ else
             Guid newId = await InvoiceService.DuplicateInvoiceAsync(Id);
             Navigation.NavigateTo($"/invoices/{newId}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error duplicating invoice: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingInvoice"), Severity.Error);
         }
     }
@@ -637,9 +634,8 @@ else
                 await Reload();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error recording payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
         }
     }
@@ -664,9 +660,8 @@ else
             Snackbar.Add(Localization.GetString("InvoiceConfirmed"), Severity.Success);
             await Reload();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error confirming invoice: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
     }
@@ -692,9 +687,8 @@ else
             await EmailService.SendInvoiceEmailAsync(invoiceId, customMessage);
             await InvokeAsync(() => Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error sending invoice email: {ex.Message}");
             await InvokeAsync(() => Snackbar.Add(Localization.GetString("ErrorSendingEmail"), Severity.Error));
         }
     }
@@ -735,14 +729,13 @@ else
             string fileName = $"{Localization.GetString("Invoice")}_{_invoice?.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting invoice: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
     }
 
-    // ── Inline IssueDate editing ──────────────────────────────────────────────
+    // â”€â”€ Inline IssueDate editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void StartIssueDateEdit()
     {
@@ -762,9 +755,8 @@ else
             _issueDateEditing = false;
             await LoadInvoice();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating issue date: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
         finally
@@ -773,7 +765,7 @@ else
         }
     }
 
-    // ── Inline DueDate editing ────────────────────────────────────────────────
+    // â”€â”€ Inline DueDate editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void StartDueDateEdit()
     {
@@ -793,9 +785,8 @@ else
             _dueDateEditing = false;
             await LoadInvoice();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating due date: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
         finally
@@ -804,7 +795,7 @@ else
         }
     }
 
-    // ── Inline Warehouse editing ──────────────────────────────────────────────
+    // â”€â”€ Inline Warehouse editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task StartWarehouseEdit()
     {
@@ -816,9 +807,8 @@ else
                 _warehouses = all.Where(w => w.IsActive).ToList();
                 _warehousesLoaded = true;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error loading warehouses: {ex.Message}");
                 Snackbar.Add(Localization.GetString("ErrorLoadingWarehouse"), Severity.Error);
                 return;
             }
@@ -839,9 +829,8 @@ else
             _warehouseEditing = false;
             await LoadInvoice();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating warehouse: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
         finally
@@ -850,7 +839,7 @@ else
         }
     }
 
-    // ── Inline line items editing ─────────────────────────────────────────────
+    // â”€â”€ Inline line items editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void StartItemsEdit()
     {
@@ -901,9 +890,8 @@ else
             _itemsEditing = false;
             await LoadInvoice();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving line items: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
         finally
@@ -912,7 +900,7 @@ else
         }
     }
 
-    // ── Inline notes editing ──────────────────────────────────────────────────
+    // â”€â”€ Inline notes editing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task SaveNotes()
     {

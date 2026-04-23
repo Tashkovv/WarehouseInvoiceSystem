@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
@@ -28,7 +28,7 @@ else
 {
     <MudGrid>
 
-        <!-- ── Quick Actions ── -->
+        <!-- â”€â”€ Quick Actions â”€â”€ -->
         <MudItem xs="12">
             <MudPaper Elevation="2" Class="pa-4 rounded-lg" Style="background-color: rgba(var(--mud-palette-secondary-rgb), 0.07);">
                 <div class="d-flex flex-wrap gap-3 justify-space-between">
@@ -43,7 +43,7 @@ else
             </MudPaper>
         </MudItem>
 
-        <!-- ── Row 1: Today's Pulse ── -->
+        <!-- â”€â”€ Row 1: Today's Pulse â”€â”€ -->
         <MudItem xs="12">
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("TodaysActivity")</MudText>
         </MudItem>
@@ -80,7 +80,7 @@ else
                            IconColor="@(_netIssuedToday >= 0 ? Color.Success : Color.Error)" />
         </MudItem>
 
-        <!-- ── Row 2: Financial Health ── -->
+        <!-- â”€â”€ Row 2: Financial Health â”€â”€ -->
         <MudItem xs="12" Class="mt-6">
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("FinancialHealth")</MudText>
         </MudItem>
@@ -97,7 +97,7 @@ else
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayables.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")} · {_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
+                           Subtitle="@($"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")} Â· {_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
                            Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Default" />
         </MudItem>
@@ -119,7 +119,7 @@ else
                            Link="/invoices?status=Overdue" />
         </MudItem>
 
-        <!-- ── Row 3: Warehouse Health ── -->
+        <!-- â”€â”€ Row 3: Warehouse Health â”€â”€ -->
         <MudItem xs="12" Class="mt-6">
             <div class="d-flex align-center flex-wrap gap-3 mb-4">
                 <MudText Typo="Typo.h6">@Localization.GetString("WarehouseHealth")</MudText>
@@ -171,7 +171,7 @@ else
 }
 
 @code {
-    // ── State ──────────────────────────────────────────────────────────────────
+    // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private InvoicePeriodSummaryResult _todayInvoiceSummary = new();
     private DayPurchaseNoteSummaryResult _todayNoteSummary = new();
@@ -182,7 +182,7 @@ else
     private string? _selectedWarehouseName;
     private readonly Dictionary<Guid, string> _warehouseNameCache = [];
 
-    // ── Computed display values ─────────────────────────────────────────────────
+    // â”€â”€ Computed display values â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private decimal _netIssuedToday =>
         _todayInvoiceSummary.ReceivableAmount - _todayInvoiceSummary.PayableAmount - _todayNoteSummary.Amount;
@@ -198,7 +198,7 @@ else
             ? _selectedWarehouseName ?? string.Empty
             : $"{_stockSummary.WarehouseCount} {Localization.GetString("Warehouses")}";
 
-    // ── Lifecycle ──────────────────────────────────────────────────────────────
+    // â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     protected override async Task OnInitializedAsync()
     {
@@ -226,9 +226,8 @@ else
                 LoadWarehouseData()
             );
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading home data: {ex.Message}");
         }
         finally
         {
@@ -298,9 +297,8 @@ else
             if (created)
                 Snackbar.Add(Localization.GetString("PaymentCreated"), Severity.Success);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingPayment"), Severity.Error);
         }
     }
@@ -326,9 +324,8 @@ else
             });
             Snackbar.Add(Localization.GetString("ProductCreated"), Severity.Success);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating product: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingProduct"), Severity.Error);
         }
     }
@@ -356,9 +353,8 @@ else
             });
             Snackbar.Add(Localization.GetString("CompanyCreated"), Severity.Success);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating company: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingCompany"), Severity.Error);
         }
     }
@@ -403,9 +399,8 @@ else
             });
             Snackbar.Add(Localization.GetString("IndividualCreated"), Severity.Success);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating individual: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingIndividual"), Severity.Error);
         }
     }

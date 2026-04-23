@@ -317,9 +317,8 @@
                 ? ex.Message : "ErrorDeletingProduct";
             Snackbar.Add(Localization.GetString(key), Severity.Error);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error deleting product: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
         }
     }
@@ -343,9 +342,8 @@
             Snackbar.Add(Localization.GetString(key), Severity.Success);
             await _grid.ReloadServerData();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating product status: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingProduct"), Severity.Error);
         }
     }

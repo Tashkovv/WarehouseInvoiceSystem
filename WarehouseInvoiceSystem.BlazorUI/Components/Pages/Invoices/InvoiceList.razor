@@ -300,9 +300,8 @@
                 if (company is not null)
                     _filterCompanyInitialLabel = company.Name;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error resolving company param: {ex.Message}");
             }
         }
     }
@@ -338,9 +337,8 @@
             Guid newId = await InvoiceService.DuplicateInvoiceAsync(item.Id);
             Navigation.NavigateTo($"/invoices/{newId}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error duplicating invoice: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingInvoice"), Severity.Error);
         }
     }
@@ -590,9 +588,8 @@
                 await _grid.ReloadServerData();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error recording payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorRecordingPayment"), Severity.Error);
         }
     }
@@ -621,9 +618,8 @@
             Snackbar.Add(Localization.GetString("InvoiceConfirmed"), Severity.Success);
             await _grid.ReloadServerData();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error confirming invoice: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingInvoice"), Severity.Error);
         }
     }
@@ -647,9 +643,8 @@
             await EmailService.SendInvoiceEmailAsync(invoiceId, customMessage);
             await InvokeAsync(() => Snackbar.Add(Localization.GetString("InvoiceEmailSentSuccessfully"), Severity.Success));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error sending invoice email: {ex.Message}");
             await InvokeAsync(() => Snackbar.Add(Localization.GetString("ErrorSendingEmail"), Severity.Error));
         }
     }
@@ -669,9 +664,8 @@
             return !full.LineItems.Any(li =>
                 !stockByProduct.TryGetValue(li.ProductId, out decimal available) || li.Quantity > available);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error checking stock: {ex.Message}");
             return true;
         }
     }
@@ -694,9 +688,8 @@
             string fileName = $"{Localization.GetString("Invoices")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting invoices: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally
@@ -851,9 +844,8 @@
             string fileName = $"{Localization.GetString("Invoice")}_{item.InvoiceNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting invoice: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally

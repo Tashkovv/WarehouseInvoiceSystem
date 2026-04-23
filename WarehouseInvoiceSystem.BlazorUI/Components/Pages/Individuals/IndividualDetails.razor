@@ -307,9 +307,8 @@ else
             Snackbar.Add(Localization.GetString("IndividualActivated"), Severity.Success);
             await LoadIndividual();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error activating individual: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorActivatingIndividual"), Severity.Error);
         }
     }

@@ -94,7 +94,7 @@ namespace WarehouseInvoiceSystem.Application.BackgroundWorkers
             {
                 scope.ServiceProvider.GetRequiredService<IAuditContextService>().SetUsername("SYSTEM");
                 IBackgroundJobService backgroundJobService = scope.ServiceProvider.GetRequiredService<IBackgroundJobService>();
-                List<Guid> overdueIds = await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync();
+                List<Guid> overdueIds = await backgroundJobService.CheckAndUpdateOverdueInvoicesAsync(ct);
 
                 if (overdueIds.Count > 0)
                 {

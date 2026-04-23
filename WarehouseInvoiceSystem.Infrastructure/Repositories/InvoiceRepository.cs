@@ -293,16 +293,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
         public Task<string> GenerateInvoiceNumberAsync(InvoiceType type, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
-                string sequenceName = type == InvoiceType.Receivable
-                    ? "invoice_number_seq"
-                    : "bill_number_seq";
-
                 string prefix = type == InvoiceType.Receivable ? "INV" : "BILL";
                 int year = DateTime.UtcNow.Year;
                 int month = DateTime.UtcNow.Month;
 
                 long nextNumber = await context.Database
-                    .SqlQueryRaw<long>($"SELECT nextval('{sequenceName}') AS \"Value\"")
+                    .SqlQueryRaw<long>(type == InvoiceType.Receivable
+                        ? "SELECT nextval('invoice_number_seq') AS \"Value\""
+                        : "SELECT nextval('bill_number_seq') AS \"Value\"")
                     .FirstAsync(ct);
 
                 return $"{prefix}-{year:D4}{month:D2}{nextNumber:D4}";
@@ -882,6 +880,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Where(i => (i.Status == InvoiceStatus.Confirmed || i.Status == InvoiceStatus.PartiallyPaid)
                              && i.Type == type
                              && i.DueDate >= targetStart && i.DueDate < targetEnd)
+                    .ToListAsync(ct);
+            }, ct);
+
+        public Task<List<Invoice>> GetOverdueEligibleAsync(CancellationToken ct = default) =>
+            WithContextAsync(context =>
+            {
+                DateTime today = DateTime.UtcNow.Date;
+                return All<Invoice>(context)
+                    .Where(i => i.DueDate < today
+                             && (i.Status == InvoiceStatus.Confirmed || i.Status == InvoiceStatus.PartiallyPaid))
                     .ToListAsync(ct);
             }, ct);
 

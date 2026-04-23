@@ -301,9 +301,8 @@
             Snackbar.Add(Localization.GetString(key), Severity.Success);
             await _grid.ReloadServerData();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating company status: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingCompany"), Severity.Error);
         }
     }

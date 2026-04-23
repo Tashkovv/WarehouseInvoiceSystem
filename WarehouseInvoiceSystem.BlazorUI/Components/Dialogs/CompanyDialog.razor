@@ -204,9 +204,8 @@
         {
             Snackbar.Add(ex.Message, Severity.Error);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving company: {ex.Message}");
             Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingCompany" : "ErrorCreatingCompany"), Severity.Error);
         }
         finally

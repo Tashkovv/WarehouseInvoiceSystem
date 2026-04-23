@@ -1,4 +1,4 @@
-@page "/warehouses/{Id:guid}"
+﻿@page "/warehouses/{Id:guid}"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
@@ -28,12 +28,12 @@ else
 
     <MudGrid>
 
-        @* ── Header card ── *@
+        @* â”€â”€ Header card â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
 
-                    @* ── Identity row ── *@
+                    @* â”€â”€ Identity row â”€â”€ *@
                     <div class="wis-detail-identity mb-3">
                         <MudText Typo="Typo.h4" Class="font-weight-bold mb-0">@_warehouse.Name</MudText>
                         @if (_warehouse.IsDefault)
@@ -48,7 +48,7 @@ else
                         </MudChip>
                     </div>
 
-                    @* ── Address ── *@
+                    @* â”€â”€ Address â”€â”€ *@
                     @if (!string.IsNullOrWhiteSpace(_warehouse.Address))
                     {
                         <div class="wis-detail-contact wis-product-meta-row">
@@ -64,7 +64,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* ── Stock by Product ── *@
+        @* â”€â”€ Stock by Product â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -195,7 +195,7 @@ else
         return Color.Default;
     }
 
-    // ── Server data ─────────────────────────────────────────────────────────
+    // â”€â”€ Server data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task<TableData<StockLevelDto>> LoadStockServerData(TableState state, CancellationToken ct)
     {
@@ -213,7 +213,7 @@ else
         };
     }
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
+    // â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     protected override async Task OnInitializedAsync()
     {
@@ -271,7 +271,7 @@ else
         _actions = actions;
     }
 
-    // ── Actions ───────────────────────────────────────────────────────────────
+    // â”€â”€ Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task OpenEditDialog()
     {
@@ -295,9 +295,8 @@ else
             await LoadWarehouse();
             if (_stockTable is not null) await _stockTable.ReloadServerData();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error setting default warehouse: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorSettingDefaultWarehouse"), Severity.Error);
         }
     }
@@ -323,9 +322,8 @@ else
             await LoadWarehouse();
             if (_stockTable is not null) await _stockTable.ReloadServerData();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error changing warehouse status: {ex.Message}");
             string errorKey = isActive ? "ErrorActivatingWarehouse" : "ErrorDeactivatingWarehouse";
             Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
         }
@@ -362,9 +360,8 @@ else
             string fileName = $"{Localization.GetString("Stock")}_{_warehouse!.Name}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting stock: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
         finally

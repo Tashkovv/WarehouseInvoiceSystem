@@ -142,9 +142,8 @@
                 : ex.Message;
             Snackbar.Add(msg, Severity.Error);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving product: {ex.Message}");
             Snackbar.Add(Localization.GetString(IsEditMode ? "ErrorUpdatingProduct" : "ErrorCreatingProduct"), Severity.Error);
         }
         finally

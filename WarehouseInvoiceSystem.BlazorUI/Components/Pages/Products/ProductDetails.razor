@@ -505,9 +505,8 @@ else
                 ? ex.Message : "ErrorDeletingProduct";
             Snackbar.Add(Localization.GetString(key), Severity.Error);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error deleting product: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorDeletingProduct"), Severity.Error);
         }
     }

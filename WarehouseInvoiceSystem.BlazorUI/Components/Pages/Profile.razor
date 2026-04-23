@@ -331,9 +331,8 @@ else
             NotifySuccess("ProfileSaved");
             await InvokeAsync(StateHasChanged);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving profile: {ex.Message}");
             NotifyError("ProfileSaveError");
         }
         finally

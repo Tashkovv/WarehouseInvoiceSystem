@@ -2,7 +2,6 @@
 {
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
-    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
 
     /// <summary>
@@ -15,24 +14,15 @@
         IInvoiceService invoiceService,
         INotificationService notificationService) : IBackgroundJobService
     {
-        public async Task<List<Guid>> CheckAndUpdateOverdueInvoicesAsync()
+        public async Task<List<Guid>> CheckAndUpdateOverdueInvoicesAsync(CancellationToken ct = default)
         {
-            IEnumerable<Invoice> invoices = await invoiceRepository.GetAllAsync();
-
-            DateTime today = DateTime.UtcNow.Date;
+            List<Invoice> invoices = await invoiceRepository.GetOverdueEligibleAsync(ct);
             List<Guid> newlyOverdueIds = [];
 
             foreach (Invoice invoice in invoices)
             {
-                if (invoice.DueDate < today &&
-                    invoice.Status != InvoiceStatus.Draft &&
-                    invoice.Status != InvoiceStatus.Paid &&
-                    invoice.Status != InvoiceStatus.Cancelled &&
-                    invoice.Status != InvoiceStatus.Overdue)
-                {
-                    await invoiceService.MarkAsOverdueAsync(invoice.Id);
-                    newlyOverdueIds.Add(invoice.Id);
-                }
+                await invoiceService.MarkAsOverdueAsync(invoice.Id);
+                newlyOverdueIds.Add(invoice.Id);
             }
 
             return newlyOverdueIds;

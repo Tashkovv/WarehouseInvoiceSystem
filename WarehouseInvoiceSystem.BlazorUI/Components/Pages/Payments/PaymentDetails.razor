@@ -208,9 +208,8 @@ else
             if (_payment != null)
                 _invoice = await InvoiceService.GetInvoiceByIdAsync(_payment.InvoiceId, CancellationToken.None);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading invoice: {ex.Message}");
         }
         finally
         {
@@ -250,9 +249,8 @@ else
             await LoadInvoice();
             BuildActions();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPayment"), Severity.Error);
         }
     }
@@ -276,9 +274,8 @@ else
                 Navigation.NavigateTo("/payments");
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error deleting payment: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorDeletingPayment"), Severity.Error);
         }
     }

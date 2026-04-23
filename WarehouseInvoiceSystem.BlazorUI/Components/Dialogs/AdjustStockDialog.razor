@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+﻿@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries.Common
@@ -193,9 +193,8 @@
 
             await LoadCurrentStock();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading adjust stock data: {ex.Message}");
         }
         finally
         {
@@ -271,9 +270,8 @@
             Snackbar.Add(Localization.GetString("StockAdjusted"), Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error adjusting stock: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorAdjustingStock"), Severity.Error);
         }
         finally

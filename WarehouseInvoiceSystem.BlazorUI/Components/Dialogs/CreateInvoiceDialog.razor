@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.Company
+﻿@using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries
@@ -11,7 +11,7 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            @* ── Company ── *@
+            @* â”€â”€ Company â”€â”€ *@
             <MudItem xs="12">
                 <WisAutocompleteInput TValue="Guid"
                                       SelectedValue="@(_selectedCompanyId ?? default)"
@@ -22,7 +22,7 @@
                                       FullWidth="true" />
             </MudItem>
 
-            @* ── Info alert (shown after company selection) ── *@
+            @* â”€â”€ Info alert (shown after company selection) â”€â”€ *@
             @if (_selectedCompany is not null)
             {
                 <MudItem xs="12">
@@ -56,7 +56,7 @@
                 </MudItem>
             }
 
-            @* ── Invoice Type ── *@
+            @* â”€â”€ Invoice Type â”€â”€ *@
             <MudItem xs="12" sm="6">
                 <WisSelect T="InvoiceType"
                            Items="_invoiceTypes"
@@ -83,7 +83,7 @@
                 </WisSelect>
             </MudItem>
 
-            @* ── Issue Date ── *@
+            @* â”€â”€ Issue Date â”€â”€ *@
             <MudItem xs="12" sm="6">
                 <WisDateInput Date="@_issueDate"
                               DateChanged="@(d => _issueDate = d)"
@@ -166,7 +166,7 @@
         {
             CompanyType.Client => InvoiceType.Receivable,
             CompanyType.Vendor => InvoiceType.Payable,
-            _ => _selectedType    // Both → keep current selection
+            _ => _selectedType    // Both â†’ keep current selection
         };
     }
 
@@ -210,9 +210,8 @@
             Guid newId = await InvoiceService.CreateInvoiceAsync(dto);
             MudDialog.Close(DialogResult.Ok(newId));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating invoice: {ex.Message}");
             // Re-surface as invalid state so user can retry
             _saving = false;
         }

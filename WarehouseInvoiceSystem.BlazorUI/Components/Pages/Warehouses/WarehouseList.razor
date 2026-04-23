@@ -1,4 +1,4 @@
-@page "/warehouses"
+﻿@page "/warehouses"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
@@ -279,9 +279,8 @@
             Snackbar.Add(Localization.GetString("WarehouseSetAsDefault"), Severity.Success);
             await _grid.ReloadServerData();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error setting default warehouse: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorSettingDefaultWarehouse"), Severity.Error);
         }
     }
@@ -308,9 +307,8 @@
                 Snackbar.Add(Localization.GetString(successKey), Severity.Success);
                 await _grid.ReloadServerData();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Error changing warehouse status: {ex.Message}");
                 string errorKey = isActive ? "ErrorActivatingWarehouse" : "ErrorDeactivatingWarehouse";
                 Snackbar.Add(Localization.GetString(errorKey), Severity.Error);
             }

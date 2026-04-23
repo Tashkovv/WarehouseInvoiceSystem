@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
+﻿@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries.Common
@@ -185,9 +185,8 @@
 
             await LoadSourceStock();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading transfer stock data: {ex.Message}");
         }
         finally
         {
@@ -263,9 +262,8 @@
             Snackbar.Add(Localization.GetString("StockTransferred"), Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error transferring stock: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorTransferringStock"), Severity.Error);
         }
         finally

@@ -1,4 +1,4 @@
-@page "/purchase-notes/{Id:guid}"
+﻿@page "/purchase-notes/{Id:guid}"
 @attribute [Authorize]
 @inherits PageBase
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
@@ -34,7 +34,7 @@ else
 
     <MudGrid>
 
-        @* ── Header card ── *@
+        @* â”€â”€ Header card â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardContent Class="pa-4">
@@ -54,7 +54,7 @@ else
 
                             <div class="wis-detail-contact">
 
-                                @* ── Individual (display only) ── *@
+                                @* â”€â”€ Individual (display only) â”€â”€ *@
                                 <div class="wis-detail-contact-item">
                                     <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Color="Color.Secondary" />
                                     <MudText Typo="Typo.body2" Style="font-weight:500">@_note.IndividualFullName</MudText>
@@ -64,7 +64,7 @@ else
                                     <MudText Typo="Typo.body2" Color="Color.Secondary">@_note.IndividualIdentificationNumber</MudText>
                                 </div>
 
-                                @* ── Warehouse ── *@
+                                @* â”€â”€ Warehouse â”€â”€ *@
                                 @if (_warehouseEditing)
                                 {
                                     <div class="wis-detail-contact-item">
@@ -96,7 +96,7 @@ else
 
                         <div class="wis-contact-row-divider"></div>
 
-                        @* ── Notes ── *@
+                        @* â”€â”€ Notes â”€â”€ *@
                         <div class="wis-contact-row-right">
                             @if (_notesEditMode)
                             {
@@ -136,7 +136,7 @@ else
                         </MudItem>
 
                         <MudItem xs="3">
-                            @* ── Purchase Date inline edit ── *@
+                            @* â”€â”€ Purchase Date inline edit â”€â”€ *@
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("PurchaseDate")</MudText>
                             @if (_purchaseDateEditing)
                             {
@@ -176,7 +176,7 @@ else
             </MudCard>
         </MudItem>
 
-        @* ── Products card ── *@
+        @* â”€â”€ Products card â”€â”€ *@
         <MudItem xs="12">
             <MudCard Elevation="2">
                 <MudCardHeader>
@@ -222,16 +222,16 @@ else
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
 
-    // ── Warehouse inline edit ──────────────────────────────────────────────────
+    // â”€â”€ Warehouse inline edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private bool _warehouseEditing, _warehouseSaving;
     private WarehouseDto? _warehouseEdit;
     private List<WarehouseDto> _warehouses = [];
 
-    // ── Purchase date inline edit ──────────────────────────────────────────────
+    // â”€â”€ Purchase date inline edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private bool _purchaseDateEditing, _purchaseDateSaving;
     private DateTime? _purchaseDateEdit;
 
-    // ── Line items edit ────────────────────────────────────────────────────────
+    // â”€â”€ Line items edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private bool _lineItemsEditing, _lineItemsSaving;
     private List<PurchaseNoteLineItemEditorModel> _lineItemsModels = [];
 
@@ -256,9 +256,8 @@ else
                 _cts.Token);
             _warehouses = [.. result.Items];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading warehouses: {ex.Message}");
         }
     }
 
@@ -340,7 +339,7 @@ else
         }
     }
 
-    // ── Warehouse edit ─────────────────────────────────────────────────────────
+    // â”€â”€ Warehouse edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void StartWarehouseEdit()
     {
@@ -365,15 +364,14 @@ else
             _warehouseEdit = null;
             await LoadNote();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating warehouse: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
         }
         finally { _warehouseSaving = false; }
     }
 
-    // ── Purchase date edit ─────────────────────────────────────────────────────
+    // â”€â”€ Purchase date edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void StartPurchaseDateEdit()
     {
@@ -398,15 +396,14 @@ else
             _purchaseDateEdit = null;
             await LoadNote();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating purchase date: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
         }
         finally { _purchaseDateSaving = false; }
     }
 
-    // ── Line items edit ────────────────────────────────────────────────────────
+    // â”€â”€ Line items edit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private void StartLineItemsEdit() => _lineItemsEditing = true;
 
@@ -446,15 +443,14 @@ else
             _lineItemsEditing = false;
             await LoadNote();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error updating line items: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
         }
         finally { _lineItemsSaving = false; }
     }
 
-    // ── Notes ──────────────────────────────────────────────────────────────────
+    // â”€â”€ Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task SaveNotes()
     {
@@ -466,7 +462,7 @@ else
         }, "ErrorUpdatingPurchaseNote");
     }
 
-    // ── Status actions ─────────────────────────────────────────────────────────
+    // â”€â”€ Status actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private async Task ExportForPrinting()
     {
@@ -476,9 +472,8 @@ else
             string fileName = $"{Localization.GetString("PurchaseNote")}_{_note?.NoteNumber}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error exporting purchase note: {ex.Message}");
             Snackbar.Add(Localization.GetString("ExportError"), Severity.Error);
         }
     }
@@ -490,9 +485,8 @@ else
             Guid newId = await PurchaseNoteService.DuplicatePurchaseNoteAsync(Id);
             Navigation.NavigateTo($"/purchase-notes/{newId}");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error copying purchase note: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorCreatingPurchaseNote"), Severity.Error);
         }
     }
@@ -505,9 +499,8 @@ else
             Snackbar.Add(Localization.GetString("PurchaseNoteReceived"), Severity.Success);
             await LoadNote();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error receiving goods: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
         }
     }
@@ -520,9 +513,8 @@ else
             Snackbar.Add(Localization.GetString("PurchaseNoteMarkedPaid"), Severity.Success);
             await LoadNote();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error marking as paid: {ex.Message}");
             Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
         }
     }

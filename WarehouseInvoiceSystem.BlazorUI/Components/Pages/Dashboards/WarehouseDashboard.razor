@@ -498,9 +498,8 @@ else
 
             await Task.WhenAll(LoadWarehouseData(), LoadProductStatistics());
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading inventory data: {ex.Message}");
         }
         finally
         {

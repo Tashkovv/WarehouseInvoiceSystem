@@ -1,4 +1,4 @@
-@using WarehouseInvoiceSystem.Application.DTOs.Individual
+﻿@using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Queries
@@ -11,7 +11,7 @@
 <MudDialog>
     <DialogContent>
         <MudGrid>
-            @* ── Individual ── *@
+            @* â”€â”€ Individual â”€â”€ *@
             <MudItem xs="12">
                 <WisAutocompleteInput TValue="Guid"
                                       SelectedValue="@(_selectedIndividualId ?? default)"
@@ -22,7 +22,7 @@
                                       FullWidth="true" />
             </MudItem>
 
-            @* ── Individual info alert ── *@
+            @* â”€â”€ Individual info alert â”€â”€ *@
             @if (_selectedIndividual is not null)
             {
                 <MudItem xs="12">
@@ -46,7 +46,7 @@
                 </MudItem>
             }
 
-            @* ── Warehouse ── *@
+            @* â”€â”€ Warehouse â”€â”€ *@
             <MudItem xs="12" sm="6">
                 <WisSelect T="WarehouseDto"
                            Items="_warehouses"
@@ -58,7 +58,7 @@
                            FullWidth="true" />
             </MudItem>
 
-            @* ── Purchase Date ── *@
+            @* â”€â”€ Purchase Date â”€â”€ *@
             <MudItem xs="12" sm="6">
                 <WisDateInput Date="@_purchaseDate"
                               DateChanged="@(d => _purchaseDate = d)"
@@ -100,9 +100,8 @@
             _warehouses = [.. result.Items];
             _selectedWarehouse = _warehouses.FirstOrDefault(w => w.IsDefault) ?? _warehouses.FirstOrDefault();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading warehouses: {ex.Message}");
         }
     }
 
@@ -169,9 +168,8 @@
             Guid newId = await PurchaseNoteService.CreatePurchaseNoteAsync(dto);
             MudDialog.Close(DialogResult.Ok(newId));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error creating purchase note: {ex.Message}");
             _saving = false;
         }
     }
