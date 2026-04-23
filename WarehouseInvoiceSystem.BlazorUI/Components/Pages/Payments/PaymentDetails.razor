@@ -80,13 +80,11 @@ else
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label flex-grow-1" Style="margin-bottom:0">@Localization.GetString("Notes")</MudText>
                             <MudIconButton Icon="@Icons.Material.Filled.Close"
                                            Size="Size.Small"
-
                                            OnClick="CancelNotesEdit"
                                            Disabled="@_notesSaving" />
                             <MudIconButton Icon="@Icons.Material.Filled.Check"
                                            Size="Size.Small"
                                            Color="Color.Primary"
-
                                            OnClick="SaveNotes"
                                            Disabled="@_notesSaving" />
                         </div>

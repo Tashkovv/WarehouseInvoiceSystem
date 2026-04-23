@@ -123,7 +123,7 @@
 @code {
     // ── Parameters ────────────────────────────────────────────────────────────
 
-    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+    [Parameter] public string Label { get; set; } = string.Empty;
 
     /// <summary>
     /// Server-side data source. Called with (searchTerm, page, cancellationToken).

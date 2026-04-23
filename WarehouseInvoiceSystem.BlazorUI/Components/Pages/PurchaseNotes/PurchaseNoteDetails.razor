@@ -1,7 +1,6 @@
 @page "/purchase-notes/{Id:guid}"
 @attribute [Authorize]
 @inherits PageBase
-@using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -9,7 +8,6 @@
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IWarehouseService WarehouseService
-@inject IIndividualService IndividualService
 @inject IExcelExportService ExcelExportService
 
 <PageTitle>@Localization.GetString("PurchaseNoteDetails") - @Localization.GetString("InvoiceSystem")</PageTitle>
@@ -224,10 +222,6 @@ else
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
 
-    // ── Individual inline edit ─────────────────────────────────────────────────
-    private bool _individualEditing, _individualSaving;
-    private Guid? _individualEdit;
-
     // ── Warehouse inline edit ──────────────────────────────────────────────────
     private bool _warehouseEditing, _warehouseSaving;
     private WarehouseDto? _warehouseEdit;
@@ -344,58 +338,6 @@ else
                 _actions = [exportAction, copyAction];
                 break;
         }
-    }
-
-    // ── Individual edit ────────────────────────────────────────────────────────
-
-    private void StartIndividualEdit()
-    {
-        _individualEdit = _note?.IndividualId;
-        _individualEditing = true;
-    }
-
-    private void CancelIndividualEdit()
-    {
-        _individualEditing = false;
-        _individualEdit = null;
-    }
-
-    private async Task SaveIndividual()
-    {
-        if (_note is null || _individualEdit is null) return;
-        _individualSaving = true;
-        try
-        {
-            await PurchaseNoteService.UpdateIndividualAsync(Id, _individualEdit.Value);
-            _individualEditing = false;
-            _individualEdit = null;
-            await LoadNote();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error updating individual: {ex.Message}");
-            Snackbar.Add(Localization.GetString("ErrorUpdatingPurchaseNote"), Severity.Error);
-        }
-        finally { _individualSaving = false; }
-    }
-
-    private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadIndividualItems(
-        string search, int page, CancellationToken ct)
-    {
-        PagedResult<IndividualDto> result = await IndividualService.GetPagedAsync(
-            new GetIndividualsQuery { Search = search, Page = page, PageSize = 10, IsActive = true }, ct);
-        return new PagedResult<WisAutocompleteItem<Guid>>
-        {
-            Items = result.Items.Select(i => new WisAutocompleteItem<Guid>
-            {
-                Value = i.Id,
-                Label = i.FullName,
-                SubLabel = i.IdentificationNumber
-            }).ToList(),
-            Page = result.Page,
-            PageSize = result.PageSize,
-            TotalCount = result.TotalCount
-        };
     }
 
     // ── Warehouse edit ─────────────────────────────────────────────────────────
