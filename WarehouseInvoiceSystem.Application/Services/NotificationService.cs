@@ -113,13 +113,7 @@ namespace WarehouseInvoiceSystem.Application.Services
 
             if (_settings.SendEmails)
             {
-                List<Invoice> invoices = [];
-                foreach (Guid id in invoiceIds)
-                {
-                    Invoice? invoice = await invoiceRepository.GetByIdAsync(id, ct);
-                    if (invoice != null) invoices.Add(invoice);
-                }
-
+                List<Invoice> invoices = await invoiceRepository.GetByIdsWithCompanyAsync(invoiceIds, ct);
                 await SendOverdueEmailsAsync(invoices, notificationId, ct);
             }
         }

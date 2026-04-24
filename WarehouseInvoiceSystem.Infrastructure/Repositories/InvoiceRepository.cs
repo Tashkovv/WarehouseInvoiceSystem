@@ -907,6 +907,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return ids;
             }, ct);
 
+        public Task<List<Invoice>> GetByIdsWithCompanyAsync(List<Guid> ids, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+                context.Invoices
+                    .Where(i => ids.Contains(i.Id))
+                    .Include(i => i.Company)
+                    .ToListAsync(ct), ct);
+
         private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)
         {
             if (query.Statuses is { Count: > 0 })

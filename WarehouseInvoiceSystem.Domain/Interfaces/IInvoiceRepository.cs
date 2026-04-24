@@ -70,5 +70,6 @@
 
         // ── Background job queries ────────────────────────────────────────────
         Task<List<Guid>> BulkMarkOverdueAsync(CancellationToken ct = default);
+        Task<List<Invoice>> GetByIdsWithCompanyAsync(List<Guid> ids, CancellationToken ct = default);
     }
 }
