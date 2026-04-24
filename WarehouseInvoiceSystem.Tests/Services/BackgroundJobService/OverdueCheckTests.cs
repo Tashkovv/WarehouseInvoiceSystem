@@ -2,8 +2,6 @@ namespace WarehouseInvoiceSystem.Tests.Services.BackgroundJobService;
 
 using FluentAssertions;
 using NSubstitute;
-using WarehouseInvoiceSystem.Domain.Entities;
-using WarehouseInvoiceSystem.Domain.Enums;
 
 public class OverdueCheckTests : BackgroundJobServiceTestBase
 {
@@ -12,40 +10,36 @@ public class OverdueCheckTests : BackgroundJobServiceTestBase
     [Fact]
     public async Task NoEligibleInvoices_ReturnsEmptyList()
     {
-        InvoiceRepo.GetOverdueEligibleAsync(Arg.Any<CancellationToken>()).Returns([]);
+        InvoiceRepo.BulkMarkOverdueAsync(Arg.Any<CancellationToken>()).Returns([]);
         var service = CreateService();
 
         var result = await service.CheckAndUpdateOverdueInvoicesAsync();
 
         result.Should().BeEmpty();
-        await InvoiceSvc.DidNotReceive().MarkAsOverdueAsync(Arg.Any<Guid>());
     }
 
     [Fact]
-    public async Task SingleEligibleInvoice_MarksOverdueAndReturnsId()
+    public async Task SingleEligibleInvoice_ReturnsId()
     {
-        var invoice = BuildInvoice();
-        InvoiceRepo.GetOverdueEligibleAsync(Arg.Any<CancellationToken>()).Returns([invoice]);
+        var id = Guid.NewGuid();
+        InvoiceRepo.BulkMarkOverdueAsync(Arg.Any<CancellationToken>()).Returns([id]);
         var service = CreateService();
 
         var result = await service.CheckAndUpdateOverdueInvoicesAsync();
 
-        result.Should().ContainSingle().Which.Should().Be(invoice.Id);
-        await InvoiceSvc.Received(1).MarkAsOverdueAsync(invoice.Id);
+        result.Should().ContainSingle().Which.Should().Be(id);
     }
 
     [Fact]
-    public async Task MultipleEligibleInvoices_AllMarkedAndIdsReturned()
+    public async Task MultipleEligibleInvoices_AllIdsReturned()
     {
-        var invoices = new[] { BuildInvoice(), BuildInvoice(), BuildInvoice() };
-        InvoiceRepo.GetOverdueEligibleAsync(Arg.Any<CancellationToken>()).Returns([.. invoices]);
+        var ids = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
+        InvoiceRepo.BulkMarkOverdueAsync(Arg.Any<CancellationToken>()).Returns([.. ids]);
         var service = CreateService();
 
         var result = await service.CheckAndUpdateOverdueInvoicesAsync();
 
-        result.Should().HaveCount(3);
-        result.Should().BeEquivalentTo(invoices.Select(i => i.Id));
-        await InvoiceSvc.Received(3).MarkAsOverdueAsync(Arg.Any<Guid>());
+        result.Should().HaveCount(3).And.BeEquivalentTo(ids);
     }
 
     [Fact]
@@ -53,13 +47,24 @@ public class OverdueCheckTests : BackgroundJobServiceTestBase
     {
         using var cts = new CancellationTokenSource();
         CancellationToken capturedCt = default;
-        InvoiceRepo.GetOverdueEligibleAsync(Arg.Do<CancellationToken>(ct => capturedCt = ct))
+        InvoiceRepo.BulkMarkOverdueAsync(Arg.Do<CancellationToken>(ct => capturedCt = ct))
                    .Returns([]);
         var service = CreateService();
 
         await service.CheckAndUpdateOverdueInvoicesAsync(cts.Token);
 
         capturedCt.Should().Be(cts.Token);
+    }
+
+    [Fact]
+    public async Task BulkMarkOverdue_CalledExactlyOnce()
+    {
+        InvoiceRepo.BulkMarkOverdueAsync(Arg.Any<CancellationToken>()).Returns([]);
+        var service = CreateService();
+
+        await service.CheckAndUpdateOverdueInvoicesAsync();
+
+        await InvoiceRepo.Received(1).BulkMarkOverdueAsync(Arg.Any<CancellationToken>());
     }
 
     // ── GenerateAndSendDueDateRemindersAsync ──────────────────────────────────
@@ -72,22 +77,5 @@ public class OverdueCheckTests : BackgroundJobServiceTestBase
         await service.GenerateAndSendDueDateRemindersAsync();
 
         await NotificationSvc.Received(1).GenerateAndSendDueDateRemindersAsync(Arg.Any<CancellationToken>());
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static Invoice BuildInvoice()
-    {
-        var invoice = new Invoice
-        {
-            InvoiceNumber = "INV-000001",
-            Status = InvoiceStatus.Confirmed,
-            DueDate = DateTime.Today.AddDays(-1),
-            TotalAmount = 1000m
-        };
-        typeof(Domain.Common.Entity)
-            .GetProperty(nameof(Domain.Common.Entity.Id))!
-            .SetValue(invoice, Guid.NewGuid());
-        return invoice;
     }
 }

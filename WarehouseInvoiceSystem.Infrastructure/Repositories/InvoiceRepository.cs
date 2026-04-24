@@ -883,14 +883,28 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .ToListAsync(ct);
             }, ct);
 
-        public Task<List<Invoice>> GetOverdueEligibleAsync(CancellationToken ct = default) =>
-            WithContextAsync(context =>
+        public Task<List<Guid>> BulkMarkOverdueAsync(CancellationToken ct = default) =>
+            WithContextAsync(async context =>
             {
                 DateTime today = DateTime.UtcNow.Date;
-                return All<Invoice>(context)
+                DateTime now   = DateTime.UtcNow;
+
+                List<Guid> ids = await context.Invoices
                     .Where(i => i.DueDate < today
-                             && (i.Status == InvoiceStatus.Confirmed || i.Status == InvoiceStatus.PartiallyPaid))
+                             && (i.Status == InvoiceStatus.Confirmed || i.Status == InvoiceStatus.PartiallyPaid)
+                             && i.DeletedOn == null)
+                    .Select(i => i.Id)
                     .ToListAsync(ct);
+
+                if (ids.Count == 0) return ids;
+
+                await context.Invoices
+                    .Where(i => ids.Contains(i.Id))
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(i => i.Status, InvoiceStatus.Overdue)
+                        .SetProperty(i => i.UpdatedAt, now), ct);
+
+                return ids;
             }, ct);
 
         private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)

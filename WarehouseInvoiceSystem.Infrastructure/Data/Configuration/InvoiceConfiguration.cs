@@ -38,6 +38,9 @@
 
             // Indexes
             builder.HasIndex(e => new { e.Status, e.DueDate });
+            builder.HasIndex(e => e.DueDate)
+                   .HasFilter("\"Status\" IN (2, 3) AND \"DeletedOn\" IS NULL")
+                   .HasDatabaseName("IX_Invoice_DueDate_OverdueEligible");
             builder.HasIndex(e => e.CompanyId);
             builder.HasIndex(e => e.WarehouseId);
             builder.HasIndex(e => e.IssueDate);

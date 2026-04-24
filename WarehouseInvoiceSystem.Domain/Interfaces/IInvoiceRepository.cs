@@ -69,6 +69,6 @@
         Task<List<Invoice>> GetInvoicesDueInDaysAsync(int days, InvoiceType type, CancellationToken ct = default);
 
         // ── Background job queries ────────────────────────────────────────────
-        Task<List<Invoice>> GetOverdueEligibleAsync(CancellationToken ct = default);
+        Task<List<Guid>> BulkMarkOverdueAsync(CancellationToken ct = default);
     }
 }
