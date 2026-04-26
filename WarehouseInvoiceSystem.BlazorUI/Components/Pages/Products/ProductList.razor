@@ -267,12 +267,6 @@
             },
             new WisDetailActionItem
             {
-                Icon    = Icons.Material.Filled.CompareArrows,
-                Label   = Localization.GetString("Compare"),
-                OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo($"/products/{item.Id}/compare"))
-            },
-            new WisDetailActionItem
-            {
                 Icon            = Icons.Material.Filled.PowerSettingsNew,
                 Label           = item.IsActive ? Localization.GetString("Deactivate") : Localization.GetString("Activate"),
                 Color           = item.IsActive ? Color.Warning : Color.Success,
