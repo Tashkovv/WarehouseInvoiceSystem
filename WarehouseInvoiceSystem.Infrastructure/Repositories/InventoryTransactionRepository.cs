@@ -3,6 +3,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Domain.Queries;
     using WarehouseInvoiceSystem.Domain.Queries.Common;
@@ -42,16 +43,24 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     query);
 
                 if (query.CompanyId.HasValue)
+                {
+                    IQueryable<Guid?> invoiceIds = All<Invoice>(context)
+                        .Where(i => i.CompanyId == query.CompanyId.Value)
+                        .Select(i => (Guid?)i.Id);
                     q = q.Where(t => t.SourceDocumentType != null
-                        && t.SourceDocumentType.StartsWith("Invoice")
-                        && context.Set<Invoice>().Any(i =>
-                            i.Id == t.SourceDocumentId && i.CompanyId == query.CompanyId.Value));
+                                  && t.SourceDocumentType.StartsWith("Invoice")
+                                  && invoiceIds.Contains(t.SourceDocumentId));
+                }
 
                 if (query.IndividualId.HasValue)
+                {
+                    IQueryable<Guid?> purchaseNoteIds = All<PurchaseNote>(context)
+                        .Where(pn => pn.IndividualId == query.IndividualId.Value)
+                        .Select(pn => (Guid?)pn.Id);
                     q = q.Where(t => t.SourceDocumentType != null
-                        && t.SourceDocumentType.StartsWith("PurchaseNote")
-                        && context.Set<PurchaseNote>().Any(pn =>
-                            pn.Id == t.SourceDocumentId && pn.IndividualId == query.IndividualId.Value));
+                                  && t.SourceDocumentType.StartsWith("PurchaseNote")
+                                  && purchaseNoteIds.Contains(t.SourceDocumentId));
+                }
 
                 q = q.OrderByDescending(t => t.CreatedAt);
 
@@ -145,6 +154,33 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 context.InventoryTransactions.Add(transaction);
                 await SaveAsync(context);
                 return transaction;
+            });
+
+        public Task<(decimal TotalIncoming, decimal TotalOutgoing)> GetMovementTotalsAsync(
+            Guid productId, Guid? warehouseId, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InventoryTransaction> baseQ = All<InventoryTransaction>(context)
+                    .Where(t => t.ProductId == productId
+                             && (!warehouseId.HasValue || t.WarehouseId == warehouseId.Value));
+
+                decimal incoming = await baseQ
+                    .Where(t => t.Type == InventoryTransactionType.Inbound
+                             || t.Type == InventoryTransactionType.TransferIn
+                             || ((t.Type == InventoryTransactionType.Adjustment
+                                  || t.Type == InventoryTransactionType.Reversed)
+                                 && t.Quantity > 0))
+                    .SumAsync(t => t.Quantity, ct);
+
+                decimal outgoing = await baseQ
+                    .Where(t => t.Type == InventoryTransactionType.Outbound
+                             || t.Type == InventoryTransactionType.TransferOut
+                             || ((t.Type == InventoryTransactionType.Adjustment
+                                  || t.Type == InventoryTransactionType.Reversed)
+                                 && t.Quantity < 0))
+                    .SumAsync(t => Math.Abs(t.Quantity), ct);
+
+                return (incoming, outgoing);
             });
 
         public Task<IEnumerable<InventoryTransaction>> GetTopRecentByWarehouseAsync(

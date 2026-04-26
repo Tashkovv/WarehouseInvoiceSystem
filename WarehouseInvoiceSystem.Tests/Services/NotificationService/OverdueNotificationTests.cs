@@ -49,8 +49,8 @@ public class OverdueNotificationTests : NotificationServiceTestBase
         NotificationRepo.ExistsTodayAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
         NotificationRepo.CreateWithInvoicesAsync(Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
-        InvoiceRepo.GetByIdAsync(invoice1.Id, Arg.Any<CancellationToken>()).Returns(invoice1);
-        InvoiceRepo.GetByIdAsync(invoice2.Id, Arg.Any<CancellationToken>()).Returns(invoice2);
+        InvoiceRepo.GetByIdsWithCompanyAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Invoice> { invoice1, invoice2 });
         EmailService.SendOverdueNotificationEmailAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<List<Invoice>>(), Arg.Any<CancellationToken>())
             .Returns(true);
@@ -75,8 +75,8 @@ public class OverdueNotificationTests : NotificationServiceTestBase
         NotificationRepo.ExistsTodayAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
         NotificationRepo.CreateWithInvoicesAsync(Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
-        InvoiceRepo.GetByIdAsync(invoiceNoEmail.Id, Arg.Any<CancellationToken>()).Returns(invoiceNoEmail);
-        InvoiceRepo.GetByIdAsync(invoiceWithEmail.Id, Arg.Any<CancellationToken>()).Returns(invoiceWithEmail);
+        InvoiceRepo.GetByIdsWithCompanyAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Invoice> { invoiceNoEmail, invoiceWithEmail });
         EmailService.SendOverdueNotificationEmailAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<List<Invoice>>(), Arg.Any<CancellationToken>())
             .Returns(true);

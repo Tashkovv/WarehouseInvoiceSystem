@@ -1,6 +1,5 @@
 ﻿namespace WarehouseInvoiceSystem.Application.Services
 {
-    using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction;
     using WarehouseInvoiceSystem.Application.DTOs.Product;
     using WarehouseInvoiceSystem.Application.DTOs.StockLevel;
     using WarehouseInvoiceSystem.Application.Interfaces;
@@ -16,8 +15,6 @@
                                 IInvoiceRepository invoiceRepository,
                                 IPurchaseNoteRepository purchaseNoteRepository) : IProductService
     {
-        private const string reversalString = "_Reversal";
-
         public async Task<IEnumerable<ProductDto>> GetAllProductsAsync(CancellationToken ct = default)
         {
             IEnumerable<Product> products = await productRepository.GetAllAsync(ct);
@@ -62,81 +59,13 @@
 
         public async Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId, CancellationToken ct = default)
         {
-            Product? product = await productRepository.GetByIdAsync(productId, ct)
+            _ = await productRepository.GetByIdAsync(productId, ct)
                 ?? throw new KeyNotFoundException($"Product with ID {productId} not found");
 
-            // EF Core's scoped DbContext cannot run concurrent queries on the same instance.
-            // These must be awaited sequentially even though they're logically independent.
-            IEnumerable<StockLevelDto> stockLevels = await inventoryService.GetStockByProductAsync(productId);
-            IEnumerable<InventoryTransactionDto> allTransactions = await inventoryService.GetTransactionsByProductAsync(productId);
-            IEnumerable<PurchaseNoteLine> purchaseLines = await purchaseNoteRepository.GetLineItemsByProductIdAsync(productId, ct);
-            IEnumerable<InvoiceLine> invoiceLines = await invoiceRepository.GetLineItemsByProductIdAsync(productId, ct);
-
-            var stockList = stockLevels.ToList();
-
-            // ── Build live document id set (exclude reversed docs) ────────────
-            var reversalSourceIds = allTransactions
-                .Where(t => t.SourceDocumentType != null && t.SourceDocumentType.EndsWith(reversalString))
-                .Select(t => t.SourceDocumentId)
-                .ToHashSet();
-
-            var liveDocumentIds = allTransactions
-                .Where(t => t.SourceDocumentType != null
-                         && !t.SourceDocumentType.EndsWith(reversalString)
-                         && !reversalSourceIds.Contains(t.SourceDocumentId))
-                .Select(t => t.SourceDocumentId)
-                .ToHashSet();
-
-            // ── Aggregate purchased rows (purchase notes + payable invoices) ──
-            var purchasedRows = purchaseLines
-                .Where(li => liveDocumentIds.Contains(li.PurchaseNoteId))
-                .Select(li => new { li.PurchaseNote.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.Amount })
-                .Concat(invoiceLines
-                    .Where(li => li.Invoice.Type == InvoiceType.Payable && liveDocumentIds.Contains(li.InvoiceId))
-                    .Select(li => new { li.Invoice.WarehouseId, Quantity = (decimal)li.Quantity, li.UnitPrice, TotalPrice = li.TotalAmount }))
-                .ToList();
-
-            var purchasedByWarehouse = purchasedRows
-                .GroupBy(r => r.WarehouseId)
-                .Select(g => new WarehouseTransactionSummaryDto
-                {
-                    WarehouseId = g.Key,
-                    Count = g.Count(),
-                    TotalQuantity = g.Sum(r => r.Quantity),
-                    TotalAmount = g.Sum(r => r.TotalPrice),
-                    AverageUnitPrice = g.Average(r => r.UnitPrice)
-                }).ToList();
-
-            // ── Aggregate sold rows (receivable invoices) ─────────────────────
-            var soldRows = invoiceLines
-                .Where(li => li.Invoice.Type == InvoiceType.Receivable && liveDocumentIds.Contains(li.InvoiceId))
-                .Select(li => new { li.Invoice.WarehouseId, li.Quantity, li.UnitPrice, TotalPrice = li.TotalAmount })
-                .ToList();
-
-            var soldByWarehouse = soldRows
-                .GroupBy(r => r.WarehouseId)
-                .Select(g => new WarehouseTransactionSummaryDto
-                {
-                    WarehouseId = g.Key,
-                    Count = g.Count(),
-                    TotalQuantity = g.Sum(r => r.Quantity),
-                    TotalAmount = g.Sum(r => r.TotalPrice),
-                    AverageUnitPrice = g.Average(r => r.UnitPrice)
-                }).ToList();
-
-            // ── Compute profitability ─────────────────────────────────────────
-            decimal avgPurchasePrice = purchasedRows.Count > 0 ? purchasedRows.Average(r => r.UnitPrice) : 0;
-            decimal avgSellingPrice = soldRows.Count > 0 ? soldRows.Average(r => r.UnitPrice) : product.SellingPrice;
-            decimal grossMargin = avgSellingPrice > 0 && avgPurchasePrice > 0
-                ? (avgSellingPrice - avgPurchasePrice) / avgSellingPrice * 100
-                : 0;
-
-            decimal totalPurchasedAmount = purchasedRows.Sum(r => r.TotalPrice);
-            decimal totalSoldAmount = soldRows.Sum(r => r.TotalPrice);
+            List<StockLevelDto> stockList = (await inventoryService.GetStockByProductAsync(productId, ct)).ToList();
 
             return new ProductDetailsDto
             {
-                // Stock
                 TotalStockAcrossWarehouses = stockList.Sum(sl => sl.Quantity),
                 HasLowStock = stockList.Any(sl => sl.Quantity <= sl.MinimumQuantity && sl.Quantity > 0),
                 StockByWarehouse = stockList.Select(sl => new WarehouseStockDto
@@ -148,26 +77,77 @@
                     AvailableQuantity = sl.AvailableQuantity,
                     MinimumQuantity = sl.MinimumQuantity,
                     ReorderPoint = sl.ReorderPoint,
-                    LastRestockedAt = sl.LastRestockedAt
-                }).ToList(),
+                    LastRestockedAt = sl.LastRestockedAt,
+                    IsDefault = sl.IsDefault
+                }).ToList()
+            };
+        }
 
-                // Profitability
-                AverageSellingPrice = avgSellingPrice,
-                AveragePurchasePrice = avgPurchasePrice,
-                GrossMarginPercentage = grossMargin,
+        public Task<ProductTransactionSummaryDto> GetProductTransactionSummaryAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default) =>
+            BuildTransactionSummaryAsync(productId, dateFrom, dateTo, ct);
 
-                // Per-warehouse summaries
+        private async Task<ProductTransactionSummaryDto> BuildTransactionSummaryAsync(Guid productId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct)
+        {
+            Task<List<ProductWarehouseSummary>> purchaseNoteTask = purchaseNoteRepository.GetProductPurchaseNoteAggregatesAsync(productId, dateFrom, dateTo, ct);
+            Task<List<ProductWarehouseSummary>> soldTask = invoiceRepository.GetProductSoldAggregatesAsync(productId, dateFrom, dateTo, ct);
+            Task<List<ProductWarehouseSummary>> payableTask = invoiceRepository.GetProductPayableAggregatesAsync(productId, dateFrom, dateTo, ct);
+
+            await Task.WhenAll(purchaseNoteTask, soldTask, payableTask);
+
+            List<ProductWarehouseSummary> purchaseNoteAgg = purchaseNoteTask.Result;
+            List<ProductWarehouseSummary> soldAgg = soldTask.Result;
+            List<ProductWarehouseSummary> payableAgg = payableTask.Result;
+
+            var purchasedByWarehouse = purchaseNoteAgg
+                .Concat(payableAgg)
+                .GroupBy(x => x.WarehouseId)
+                .Select(g =>
+                {
+                    int cnt = g.Sum(x => x.Count);
+                    return new WarehouseTransactionSummaryDto
+                    {
+                        WarehouseId = g.Key,
+                        Count = cnt,
+                        TotalQuantity = g.Sum(x => x.TotalQuantity),
+                        TotalAmount = g.Sum(x => x.TotalAmount),
+                        AverageUnitPrice = cnt > 0 ? g.Sum(x => x.AvgUnitPrice * x.Count) / cnt : 0
+                    };
+                }).ToList();
+
+            var soldByWarehouse = soldAgg
+                .Select(x => new WarehouseTransactionSummaryDto
+                {
+                    WarehouseId = x.WarehouseId,
+                    Count = x.Count,
+                    TotalQuantity = x.TotalQuantity,
+                    TotalAmount = x.TotalAmount,
+                    AverageUnitPrice = x.AvgUnitPrice
+                }).ToList();
+
+            int totalPurchasedCount = purchaseNoteAgg.Sum(x => x.Count) + payableAgg.Sum(x => x.Count);
+            decimal totalPurchasedAmount = purchaseNoteAgg.Sum(x => x.TotalAmount) + payableAgg.Sum(x => x.TotalAmount);
+            int totalSoldCount = soldAgg.Sum(x => x.Count);
+            decimal totalSoldAmount = soldAgg.Sum(x => x.TotalAmount);
+
+            decimal avgPurchasePrice = totalPurchasedCount > 0
+                ? (purchaseNoteAgg.Sum(x => x.AvgUnitPrice * x.Count) + payableAgg.Sum(x => x.AvgUnitPrice * x.Count)) / totalPurchasedCount
+                : 0;
+            decimal avgSellingPrice = totalSoldCount > 0
+                ? soldAgg.Sum(x => x.AvgUnitPrice * x.Count) / totalSoldCount
+                : 0;
+
+            return new ProductTransactionSummaryDto
+            {
                 PurchasedByWarehouse = purchasedByWarehouse,
                 SoldByWarehouse = soldByWarehouse,
-
-                // Global totals
-                TotalPurchasedCount = purchasedRows.Count,
-                TotalPurchasedQuantity = purchasedRows.Sum(r => r.Quantity),
+                TotalPurchasedCount = totalPurchasedCount,
+                TotalPurchasedQuantity = purchaseNoteAgg.Sum(x => x.TotalQuantity) + payableAgg.Sum(x => x.TotalQuantity),
                 TotalPurchasedAmount = totalPurchasedAmount,
-                TotalSoldCount = soldRows.Count,
-                TotalSoldQuantity = soldRows.Sum(r => r.Quantity),
+                TotalSoldCount = totalSoldCount,
+                TotalSoldQuantity = soldAgg.Sum(x => x.TotalQuantity),
                 TotalSoldAmount = totalSoldAmount,
-                TotalProfit = totalSoldAmount - totalPurchasedAmount
+                AveragePurchasePrice = avgPurchasePrice,
+                AverageSellingPrice = avgSellingPrice
             };
         }
 
@@ -228,13 +208,11 @@
             }
         }
 
-        public async Task<(decimal TotalQuantity, decimal TotalAmount)> GetProductHistoryTotalsAsync(
-            GetProductHistoryQuery query, CancellationToken ct = default)
-        {
-            return query.Purchased
-                ? await invoiceRepository.GetPurchasedHistoryTotalsAsync(query, ct)
-                : await invoiceRepository.GetSoldHistoryTotalsAsync(query, ct);
-        }
+        public Task<(int Count, decimal TotalQuantity, decimal TotalAmount)> GetProductHistoryStatsAsync(
+            GetProductHistoryQuery query, CancellationToken ct = default) =>
+            query.Purchased
+                ? invoiceRepository.GetPurchasedHistoryStatsAsync(query, ct)
+                : invoiceRepository.GetSoldHistoryStatsAsync(query, ct);
 
         public async Task CreateProductAsync(CreateProductDto createDto)
         {

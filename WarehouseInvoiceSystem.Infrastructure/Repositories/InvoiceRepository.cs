@@ -210,8 +210,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = q.OrderByDescending(li => li.Invoice.IssueDate);
 
-                int totalCount = await q.CountAsync(ct);
-
                 List<InvoiceLine> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
@@ -220,10 +218,56 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return new PagedResult<InvoiceLine>
                 {
                     Items = items,
-                    TotalCount = totalCount,
+                    TotalCount = 0,
                     Page = query.Page,
                     PageSize = query.PageSize
                 };
+            });
+
+        public Task<List<ProductWarehouseSummary>> GetProductSoldAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+            {
+                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
+                    .Where(li => li.ProductId == productId
+                              && li.Invoice.Type == InvoiceType.Receivable
+                              && li.Invoice.DeletedOn == null
+                              && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && !context.InventoryTransactions
+                                    .Any(r => r.SourceDocumentId == li.InvoiceId
+                                           && r.SourceDocumentType == "Invoice_Reversal"));
+                if (dateFrom.HasValue) q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value.Date);
+                if (dateTo.HasValue)   q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
+                return q.GroupBy(li => li.Invoice.WarehouseId)
+                    .Select(g => new ProductWarehouseSummary(
+                        g.Key,
+                        g.Count(),
+                        g.Sum(li => li.Quantity),
+                        g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2)),
+                        Math.Round(g.Average(li => li.UnitPrice), 2)))
+                    .ToListAsync(ct);
+            });
+
+        public Task<List<ProductWarehouseSummary>> GetProductPayableAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+            {
+                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
+                    .Where(li => li.ProductId == productId
+                              && li.Invoice.Type == InvoiceType.Payable
+                              && li.Invoice.DeletedOn == null
+                              && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && !context.InventoryTransactions
+                                    .Any(r => r.SourceDocumentId == li.InvoiceId
+                                           && r.SourceDocumentType == "Invoice_Reversal"));
+                if (dateFrom.HasValue) q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value.Date);
+                if (dateTo.HasValue)   q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
+                return q.GroupBy(li => li.Invoice.WarehouseId)
+                    .Select(g => new ProductWarehouseSummary(
+                        g.Key,
+                        g.Count(),
+                        g.Sum(li => li.Quantity),
+                        g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2)),
+                        Math.Round(g.Average(li => li.UnitPrice), 2)))
+                    .ToListAsync(ct);
             });
 
         public Task<Guid> CreateAsync(Invoice invoice) =>
@@ -683,8 +727,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
 
                 q = q.OrderByDescending(v => v.Date);
 
-                int totalCount = await q.CountAsync(ct);
-
                 List<ProductPurchaseHistoryView> items = await q
                     .Skip((query.Page - 1) * query.PageSize)
                     .Take(query.PageSize)
@@ -693,13 +735,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return new PagedResult<ProductPurchaseHistoryView>
                 {
                     Items = items,
-                    TotalCount = totalCount,
+                    TotalCount = 0,
                     Page = query.Page,
                     PageSize = query.PageSize
                 };
             });
 
-        public Task<(decimal TotalQuantity, decimal TotalAmount)> GetPurchasedHistoryTotalsAsync(
+        public Task<(int Count, decimal TotalQuantity, decimal TotalAmount)> GetPurchasedHistoryStatsAsync(
             GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
@@ -721,16 +763,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (query.DateTo.HasValue)
                     q = q.Where(v => v.Date < query.DateTo.Value.Date.AddDays(1));
 
-                if (!await q.AnyAsync(ct))
-                    return (0m, 0m);
-
-                return (
-                    await q.SumAsync(v => v.Quantity, ct),
-                    await q.SumAsync(v => v.TotalPrice, ct)
-                );
+                var agg = await q
+                    .GroupBy(_ => 1)
+                    .Select(g => new { Count = g.Count(), Qty = g.Sum(v => v.Quantity), Amount = g.Sum(v => Math.Round(v.TotalPrice, 2)) })
+                    .FirstOrDefaultAsync(ct);
+                return agg is null ? (0, 0m, 0m) : (agg.Count, agg.Qty, agg.Amount);
             });
 
-        public Task<(decimal TotalQuantity, decimal TotalAmount)> GetSoldHistoryTotalsAsync(
+        public Task<(int Count, decimal TotalQuantity, decimal TotalAmount)> GetSoldHistoryStatsAsync(
             GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
@@ -739,13 +779,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                         .Include(li => li.Invoice),
                     query);
 
-                if (!await q.AnyAsync(ct))
-                    return (0m, 0m);
-
-                return (
-                    await q.SumAsync(li => (decimal)li.Quantity, ct),
-                    await q.SumAsync(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2), ct)
-                );
+                var agg = await q
+                    .GroupBy(_ => 1)
+                    .Select(g => new
+                    {
+                        Count = g.Count(),
+                        Qty = g.Sum(li => (decimal)li.Quantity),
+                        Amount = g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (1 + li.TaxRate / 100m), 2))
+                    })
+                    .FirstOrDefaultAsync(ct);
+                return agg is null ? (0, 0m, 0m) : (agg.Count, agg.Qty, agg.Amount);
             });
 
         // ── Home dashboard aggregates ─────────────────────────────────────────────

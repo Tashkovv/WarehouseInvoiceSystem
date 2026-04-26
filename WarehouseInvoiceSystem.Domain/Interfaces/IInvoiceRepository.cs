@@ -28,6 +28,8 @@
         Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdsAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, InvoiceType? type = null, CancellationToken ct = default);
 
         Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<List<ProductWarehouseSummary>> GetProductSoldAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
+        Task<List<ProductWarehouseSummary>> GetProductPayableAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
 
         Task<Guid> CreateAsync(Invoice invoice);
         Task<Invoice> UpdateAsync(Invoice invoice);
@@ -55,8 +57,8 @@
         Task<CompanyAnalyticsResult> GetCompanyAnalyticsDataAsync(Guid companyId, CancellationToken ct = default);
 
         Task<PagedResult<ProductPurchaseHistoryView>> GetPagedPurchasedHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
-        Task<(decimal TotalQuantity, decimal TotalAmount)> GetPurchasedHistoryTotalsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
-        Task<(decimal TotalQuantity, decimal TotalAmount)> GetSoldHistoryTotalsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<(int Count, decimal TotalQuantity, decimal TotalAmount)> GetPurchasedHistoryStatsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<(int Count, decimal TotalQuantity, decimal TotalAmount)> GetSoldHistoryStatsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
 
         // ── Dashboard aggregates ──────────────────────────────────────────────────
         Task<IEnumerable<Invoice>> GetTopOverdueReceivablesAsync(Guid? warehouseId, int top, CancellationToken ct = default);

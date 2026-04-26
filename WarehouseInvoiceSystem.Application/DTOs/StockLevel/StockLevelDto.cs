@@ -17,5 +17,6 @@
         public DateTime LastRestockedAt { get; set; }
         public decimal UnitPrice { get; set; }
         public decimal TotalValue => Quantity * UnitPrice;
+        public bool IsDefault { get; set; }
     }
 }

@@ -152,6 +152,9 @@
             return result.Items.Select(MapTransactionToDto);
         }
 
+        public Task<(decimal TotalIncoming, decimal TotalOutgoing)> GetMovementTotalsAsync(Guid productId, Guid? warehouseId, CancellationToken ct = default) =>
+            transactionRepository.GetMovementTotalsAsync(productId, warehouseId, ct);
+
         public async Task<IEnumerable<InventoryTransactionDto>> GetTransactionsByWarehouseAsync(Guid warehouseId, CancellationToken ct = default)
         {
             IEnumerable<InventoryTransaction> transactions = await transactionRepository.GetByWarehouseIdAsync(warehouseId, ct);
@@ -400,7 +403,8 @@
                 MinimumQuantity = stockLevel.MinimumQuantity,
                 ReorderPoint = stockLevel.ReorderPoint,
                 LastRestockedAt = stockLevel.LastRestockedAt,
-                UnitPrice = stockLevel.Product.SellingPrice
+                UnitPrice = stockLevel.Product.SellingPrice,
+                IsDefault = stockLevel.Warehouse.IsDefault
             };
         }
 

@@ -40,7 +40,7 @@ namespace WarehouseInvoiceSystem.Application.Models
             new(t.GetString("Quantity"), x => $"{x.Quantity:N0} {x.ProductUnit}"),
             new(t.GetString("LastRestocked"), x => x.LastRestockedAt, ExportColumnType.Date),
             new(t.GetString("MinimumQuantity"), x => x.MinimumQuantity, ExportColumnType.Number),
-            new(t.GetString("UnitPrice"), x => x.UnitPrice, ExportColumnType.Currency),
+            new(t.GetString("SellingPrice"), x => x.UnitPrice, ExportColumnType.Currency),
             new(t.GetString("TotalValue"), x => x.TotalValue, ExportColumnType.Currency, IncludeInTotals: true),
         ];
 

@@ -47,7 +47,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     w.""Name""                                                AS ""WarehouseName"",
                     pnl.""Quantity""                                          AS ""Quantity"",
                     pnl.""UnitPrice"",
-                    pnl.""Quantity"" * pnl.""UnitPrice""                     AS ""TotalPrice"",
+                    ROUND(pnl.""Quantity"" * pnl.""UnitPrice"", 2)            AS ""TotalPrice"",
                     pn.""IndividualId"",
                     NULL::uuid                                                AS ""CompanyId""
                 FROM ""PurchaseNoteLine"" pnl
@@ -70,7 +70,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     w.""Name""                                                AS ""WarehouseName"",
                     CAST(il.""Quantity"" AS numeric)                         AS ""Quantity"",
                     il.""UnitPrice"",
-                    CAST(il.""Quantity"" AS numeric) * il.""UnitPrice"" * (1 + il.""TaxRate"" / 100.0) AS ""TotalPrice"",
+                    ROUND(CAST(il.""Quantity"" AS numeric) * il.""UnitPrice"" * (1 + il.""TaxRate"" / 100.0), 2) AS ""TotalPrice"",
                     NULL::uuid                                                AS ""IndividualId"",
                     inv.""CompanyId""
                 FROM ""InvoiceLine"" il

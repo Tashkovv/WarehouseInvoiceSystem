@@ -137,29 +137,31 @@ public class HistoryTests : ProductServiceTestBase
     }
 
     [Fact]
-    public async Task Totals_Purchased_RoutesToPurchasedTotals()
+    public async Task Stats_Purchased_RoutesToPurchasedStats()
     {
         var query = new GetProductHistoryQuery { ProductId = Guid.NewGuid(), Purchased = true };
-        InvoiceRepo.GetPurchasedHistoryTotalsAsync(query, Arg.Any<CancellationToken>())
-            .Returns((100m, 5000m));
+        InvoiceRepo.GetPurchasedHistoryStatsAsync(query, Arg.Any<CancellationToken>())
+            .Returns((42, 100m, 5000m));
         var service = CreateService();
 
-        var (totalQty, totalAmt) = await service.GetProductHistoryTotalsAsync(query);
+        var (count, totalQty, totalAmt) = await service.GetProductHistoryStatsAsync(query);
 
+        count.Should().Be(42);
         totalQty.Should().Be(100m);
         totalAmt.Should().Be(5000m);
     }
 
     [Fact]
-    public async Task Totals_Sold_RoutesToSoldTotals()
+    public async Task Stats_Sold_RoutesToSoldStats()
     {
         var query = new GetProductHistoryQuery { ProductId = Guid.NewGuid(), Purchased = false };
-        InvoiceRepo.GetSoldHistoryTotalsAsync(query, Arg.Any<CancellationToken>())
-            .Returns((50m, 10000m));
+        InvoiceRepo.GetSoldHistoryStatsAsync(query, Arg.Any<CancellationToken>())
+            .Returns((17, 50m, 10000m));
         var service = CreateService();
 
-        var (totalQty, totalAmt) = await service.GetProductHistoryTotalsAsync(query);
+        var (count, totalQty, totalAmt) = await service.GetProductHistoryStatsAsync(query);
 
+        count.Should().Be(17);
         totalQty.Should().Be(50m);
         totalAmt.Should().Be(10000m);
     }

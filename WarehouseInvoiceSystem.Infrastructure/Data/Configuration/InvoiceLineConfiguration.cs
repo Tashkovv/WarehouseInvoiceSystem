@@ -36,6 +36,8 @@
             builder.HasIndex(e => e.InvoiceId);
             builder.HasIndex(e => e.ProductId);
             builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => new { e.ProductId, e.InvoiceId })
+                   .HasDatabaseName("IX_InvoiceLine_ProductId_InvoiceId");
 
             // Relationships
             builder.HasOne(e => e.Invoice)

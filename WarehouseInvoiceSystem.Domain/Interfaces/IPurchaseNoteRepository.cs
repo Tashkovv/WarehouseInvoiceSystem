@@ -27,6 +27,7 @@
         Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdsAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
 
         Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<List<ProductWarehouseSummary>> GetProductPurchaseNoteAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
 
         Task<string> GenerateNoteNumberAsync(CancellationToken ct = default);
         Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);

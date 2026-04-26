@@ -93,22 +93,16 @@ else
                         @* Stat 2 *@
                         <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalStock")</MudText>
-                            <div class="wis-stat-value @StockColorClass">@_filteredTotalStock.ToString("N0") @_product.Unit</div>
-                            <MudText Typo="Typo.caption" Color="@StockBadgeColor" Class="mt-1">@StockStatusLabel</MudText>
+                            <div class="d-flex align-center gap-2">
+                                <div class="wis-stat-value @StockColorClass">@_filteredTotalStock.ToString("N0") @_product.Unit</div>
+                                <MudChip T="string" Variant="Variant.Outlined" Color="@StockBadgeColor" Size="Size.Small" Class="ma-0">@StockStatusLabel</MudChip>
+                            </div>
                         </div>
 
                         @* Stat 3 *@
                         <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("StockValue")</MudText>
                             <div class="wis-stat-value mud-success-text">@_filteredStockValue.ToString("C")</div>
-                        </div>
-
-                        @* Stat 4 *@
-                        <div class="wis-product-stats-bar__stat">
-                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("GrossMargin")</MudText>
-                            <div class="wis-stat-value @(_scopedGrossMarginPct > 30 ? "mud-success-text" : "mud-warning-text")">
-                                @_scopedGrossMarginPct.ToString("N1")%
-                            </div>
                         </div>
 
                     </div>
@@ -182,7 +176,15 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("Profitability")</MudText>
+                        <div class="d-flex align-center justify-space-between">
+                            <MudText Typo="Typo.h6">@Localization.GetString("Profitability")</MudText>
+                            <WisDateRangeFilter DateRange="_summaryDateRange"
+                                                DateRangeChanged="OnSummaryDateRangeChanged"
+                                                DatePreset="_summaryDatePreset"
+                                                DatePresetChanged="@(v => _summaryDatePreset = v)"
+                                                MaxDate="DateTime.Today"
+                                                OnChanged="ReloadTransactionSummary" />
+                        </div>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent Class="pa-4">
@@ -222,11 +224,16 @@ else
             <MudCard Elevation="2">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">@Localization.GetString("TransactionHistory")</MudText>
+                        <div class="d-flex align-center justify-space-between">
+                            <div class="d-flex align-center gap-3">
+                                <MudText Typo="Typo.h6">@Localization.GetString("TransactionHistory")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @Localization.GetString("Period"): @FormatPeriod()
+                                </MudText>
+                            </div>
+                            <WisButton Action="@_transactionsAction" />
+                        </div>
                     </CardHeaderContent>
-                    <CardHeaderActions>
-                        <WisSplitButton PrimaryAction="@_transactionsAction" />
-                    </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-4">
                     <MudGrid Spacing="4" Class="wis-detail-stats">
@@ -277,8 +284,13 @@ else
 
     private ProductDto? _product;
     private ProductDetailsDto _details = new();
+    private ProductTransactionSummaryDto _transactionSummary = new();
 
     private Guid? _selectedWarehouseId = null;
+
+    // ── Transaction summary period filter ─────────────────────────────────────
+    private DateRange _summaryDateRange = new(DateTime.Today.AddDays(-90), DateTime.Today);
+    private int? _summaryDatePreset = 90;
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
@@ -343,54 +355,56 @@ else
         _filteredHasLowStock ? Localization.GetString("LowStock") :
                                 Localization.GetString("InStock");
 
-    // ── Transaction summary computed properties ──────────────────────────────
-    // Read directly from pre-aggregated WarehouseTransactionSummaryDto — no in-memory lists.
-    // When a warehouse is selected but has no transactions, values are zero (not global totals).
-    // Global totals are only used when no warehouse is selected (null).
-
+    // ── Period-scoped computed properties (drive profitability + transaction history) ──
     private WarehouseTransactionSummaryDto? _scopedPurchasedSummary =>
         _selectedWarehouseId.HasValue
-            ? _details.PurchasedByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
+            ? _transactionSummary.PurchasedByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
             : null;
 
     private WarehouseTransactionSummaryDto? _scopedSoldSummary =>
         _selectedWarehouseId.HasValue
-            ? _details.SoldByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
+            ? _transactionSummary.SoldByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)
             : null;
 
-    private int _scopedPurchasedCount =>
-        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.Count ?? 0) : _details.TotalPurchasedCount;
-
-    private decimal _scopedPurchasedQuantity =>
-        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.TotalQuantity ?? 0) : _details.TotalPurchasedQuantity;
-
-    private decimal _scopedPurchasedAmount =>
-        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.TotalAmount ?? 0) : _details.TotalPurchasedAmount;
-
-    private int _scopedSoldCount =>
-        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.Count ?? 0) : _details.TotalSoldCount;
-
-    private decimal _scopedSoldQuantity =>
-        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.TotalQuantity ?? 0) : _details.TotalSoldQuantity;
-
-    private decimal _scopedSoldAmount =>
-        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.TotalAmount ?? 0) : _details.TotalSoldAmount;
-
     private decimal _scopedAvgPurchasePrice =>
-        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.AverageUnitPrice ?? 0) : _details.AveragePurchasePrice;
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.AverageUnitPrice ?? 0) : _transactionSummary.AveragePurchasePrice;
 
-    private decimal _scopedAvgSellingPrice =>
-        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.AverageUnitPrice ?? _details.AverageSellingPrice) : _details.AverageSellingPrice;
+    private decimal _scopedAvgSellingPrice
+    {
+        get
+        {
+            decimal avg = _selectedWarehouseId.HasValue
+                ? (_scopedSoldSummary?.AverageUnitPrice ?? 0)
+                : _transactionSummary.AverageSellingPrice;
+            return avg > 0 ? avg : _product?.SellingPrice ?? 0;
+        }
+    }
 
     private decimal _scopedGrossMarginPct =>
-    _selectedWarehouseId.HasValue
-        ? (_scopedAvgSellingPrice > 0 && _scopedAvgPurchasePrice > 0
+        _scopedAvgSellingPrice > 0 && _scopedAvgPurchasePrice > 0
             ? (_scopedAvgSellingPrice - _scopedAvgPurchasePrice) / _scopedAvgSellingPrice * 100
-            : 0)
-        : _details.GrossMarginPercentage;
+            : 0;
 
     private decimal _scopedEstimatedProfit =>
         (_scopedAvgSellingPrice - _scopedAvgPurchasePrice) * _filteredTotalStock;
+
+    private int _scopedPurchasedCount =>
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.Count ?? 0) : _transactionSummary.TotalPurchasedCount;
+
+    private decimal _scopedPurchasedQuantity =>
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.TotalQuantity ?? 0) : _transactionSummary.TotalPurchasedQuantity;
+
+    private decimal _scopedPurchasedAmount =>
+        _selectedWarehouseId.HasValue ? (_scopedPurchasedSummary?.TotalAmount ?? 0) : _transactionSummary.TotalPurchasedAmount;
+
+    private int _scopedSoldCount =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.Count ?? 0) : _transactionSummary.TotalSoldCount;
+
+    private decimal _scopedSoldQuantity =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.TotalQuantity ?? 0) : _transactionSummary.TotalSoldQuantity;
+
+    private decimal _scopedSoldAmount =>
+        _selectedWarehouseId.HasValue ? (_scopedSoldSummary?.TotalAmount ?? 0) : _transactionSummary.TotalSoldAmount;
 
     private decimal _scopedProfit =>
         _scopedSoldAmount - _scopedPurchasedAmount;
@@ -412,21 +426,46 @@ else
     private async Task LoadProduct() =>
         await SafeLoadAsync(async () =>
         {
-            _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
+            Task<ProductDto?> productTask = ProductService.GetProductByIdAsync(Id, CancellationToken.None);
+            Task<ProductDetailsDto> detailsTask = ProductService.GetProductDetailsAsync(Id, CancellationToken.None);
+            Task<ProductTransactionSummaryDto> summaryTask = ProductService.GetProductTransactionSummaryAsync(Id, _summaryDateRange.Start, _summaryDateRange.End, CancellationToken.None);
+            await Task.WhenAll(productTask, detailsTask, summaryTask);
+
+            _product = productTask.Result;
             if (_product != null)
             {
-                // Single call — replaces GetProductAnalyticsAsync + GetAllWarehousesAsync + GetProductTransactionHistoryAsync
-                _details = await ProductService.GetProductDetailsAsync(Id, CancellationToken.None);
-                _selectedWarehouseId = null;
+                _details = detailsTask.Result;
+                _transactionSummary = summaryTask.Result;
+                _selectedWarehouseId = (_details.StockByWarehouse.FirstOrDefault(s => s.IsDefault)
+                                     ?? _details.StockByWarehouse.MaxBy(s => s.Quantity))?.WarehouseId;
                 BuildActions();
             }
         }, "ErrorLoadingProduct");
+
+    private string FormatPeriod()
+    {
+        DateTime? start = _summaryDateRange.Start;
+        DateTime? end = _summaryDateRange.End;
+        string s = start?.ToString("dd MMM yyyy") ?? "—";
+        string e = end?.ToString("dd MMM yyyy") ?? "—";
+        return $"{s} – {e}";
+    }
+
+    private void OnSummaryDateRangeChanged(DateRange range) => _summaryDateRange = range;
+
+    private async Task ReloadTransactionSummary()
+    {
+        if (_product is null) return;
+        _transactionSummary = await ProductService.GetProductTransactionSummaryAsync(
+            Id, _summaryDateRange.Start, _summaryDateRange.End, CancellationToken.None);
+        await InvokeAsync(StateHasChanged);
+    }
 
     private void BuildActions()
     {
         if (_product is null) return;
 
-        _primaryAction = _act.Primary(Icons.Material.Filled.Inventory2, Localization.GetString("AdjustStock"), OpenAdjustDialog);
+        _primaryAction = _act.Primary(Icons.Material.Filled.Inventory2, Localization.GetString("Adjust"), OpenAdjustDialog);
 
         bool noWarehouse = !_selectedWarehouseId.HasValue;
         _actions =

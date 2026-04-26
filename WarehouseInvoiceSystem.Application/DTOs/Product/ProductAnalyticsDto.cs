@@ -25,6 +25,7 @@
         public decimal? MinimumQuantity { get; set; }
         public decimal? ReorderPoint { get; set; }
         public DateTime? LastRestockedAt { get; set; }
+        public bool IsDefault { get; set; }
     }
 
     public class RecentTransactionDto

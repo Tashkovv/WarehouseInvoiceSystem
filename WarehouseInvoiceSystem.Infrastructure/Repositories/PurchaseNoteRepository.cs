@@ -208,6 +208,28 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
+        public Task<List<ProductWarehouseSummary>> GetProductPurchaseNoteAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+            {
+                IQueryable<PurchaseNoteLine> q = All<PurchaseNoteLine>(context)
+                    .Where(li => li.ProductId == productId
+                              && li.PurchaseNote.DeletedOn == null
+                              && li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled
+                              && !context.InventoryTransactions
+                                    .Any(r => r.SourceDocumentId == li.PurchaseNoteId
+                                           && r.SourceDocumentType == "PurchaseNote_Reversal"));
+                if (dateFrom.HasValue) q = q.Where(li => li.PurchaseNote.PurchaseDate >= dateFrom.Value.Date);
+                if (dateTo.HasValue)   q = q.Where(li => li.PurchaseNote.PurchaseDate < dateTo.Value.Date.AddDays(1));
+                return q.GroupBy(li => li.PurchaseNote.WarehouseId)
+                    .Select(g => new ProductWarehouseSummary(
+                        g.Key,
+                        g.Count(),
+                        g.Sum(li => li.Quantity),
+                        g.Sum(li => Math.Round(li.Quantity * li.UnitPrice, 2)),
+                        Math.Round(g.Average(li => li.UnitPrice), 2)))
+                    .ToListAsync(ct);
+            });
+
         public Task<string> GenerateNoteNumberAsync(CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {

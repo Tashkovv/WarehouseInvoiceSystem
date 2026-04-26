@@ -32,6 +32,8 @@
             builder.HasIndex(e => e.PurchaseNoteId);
             builder.HasIndex(e => e.ProductId);
             builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => new { e.ProductId, e.PurchaseNoteId })
+                   .HasDatabaseName("IX_PurchaseNoteLine_ProductId_PurchaseNoteId");
 
             // Relationships
             builder.HasOne(e => e.PurchaseNote)

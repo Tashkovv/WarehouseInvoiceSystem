@@ -115,4 +115,34 @@ public class TransactionQueryTests : InventoryServiceTestBase
                 q.Types != null && q.Types.Contains(InventoryTransactionType.Inbound)),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task GetMovementTotals_DelegatesToRepositoryAndReturnsTotals()
+    {
+        var productId = Guid.NewGuid();
+        var warehouseId = Guid.NewGuid();
+        TransactionRepo.GetMovementTotalsAsync(productId, warehouseId, Arg.Any<CancellationToken>())
+            .Returns((150m, 40m));
+        var service = CreateService();
+
+        var (incoming, outgoing) = await service.GetMovementTotalsAsync(productId, warehouseId);
+
+        incoming.Should().Be(150m);
+        outgoing.Should().Be(40m);
+    }
+
+    [Fact]
+    public async Task GetMovementTotals_NullWarehouseId_PassedThrough()
+    {
+        var productId = Guid.NewGuid();
+        TransactionRepo.GetMovementTotalsAsync(productId, null, Arg.Any<CancellationToken>())
+            .Returns((200m, 80m));
+        var service = CreateService();
+
+        var (incoming, outgoing) = await service.GetMovementTotalsAsync(productId, null);
+
+        incoming.Should().Be(200m);
+        outgoing.Should().Be(80m);
+        await TransactionRepo.Received(1).GetMovementTotalsAsync(productId, null, Arg.Any<CancellationToken>());
+    }
 }

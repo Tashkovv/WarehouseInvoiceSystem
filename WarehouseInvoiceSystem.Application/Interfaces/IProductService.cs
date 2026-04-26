@@ -13,11 +13,13 @@
         Task<ProductDto?> GetProductByIdAsync(Guid id, CancellationToken ct = default);
         Task<ProductDto?> GetProductByCodeAsync(string code, CancellationToken ct = default);
         /// <summary>
-        /// Returns full product analytics + transaction history + stock movements in a single coordinated call.
+        /// Returns stock-only details for a product. Profitability and transaction totals
+        /// are period-scoped — fetch those via GetProductTransactionSummaryAsync.
         /// </summary>
         Task<ProductDetailsDto> GetProductDetailsAsync(Guid productId, CancellationToken ct = default);
+        Task<ProductTransactionSummaryDto> GetProductTransactionSummaryAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
         Task<PagedResult<ProductTransactionRowDto>> GetPagedProductHistoryAsync(GetProductHistoryQuery query, CancellationToken ct = default);
-        Task<(decimal TotalQuantity, decimal TotalAmount)> GetProductHistoryTotalsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
+        Task<(int Count, decimal TotalQuantity, decimal TotalAmount)> GetProductHistoryStatsAsync(GetProductHistoryQuery query, CancellationToken ct = default);
         Task CreateProductAsync(CreateProductDto createDto);
         Task UpdateProductAsync(Guid id, UpdateProductDto updateDto);
         Task<bool> SetActiveStatusAsync(Guid id, bool isActive);

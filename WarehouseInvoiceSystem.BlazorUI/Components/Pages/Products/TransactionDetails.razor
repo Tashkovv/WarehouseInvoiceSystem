@@ -4,6 +4,7 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
 @using WarehouseInvoiceSystem.Application.DTOs.InventoryTransaction
+@using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Individual
 @using WarehouseInvoiceSystem.Domain.Enums
@@ -413,11 +414,12 @@ else
     private enum Tab { StockMovements, DocumentHistory }
 
     private ProductDto? _product;
-    private ProductDetailsDto _details = new();
     private Guid? _selectedWarehouseId;
+    private string _selectedWarehouseName = "";
     private Tab _activeTab = Tab.StockMovements;
     private decimal _totalIncoming;
     private decimal _totalOutgoing;
+    private List<StockLevelDto> _stockLevels = [];
 
     // ── Table refs ────────────────────────────────────────────────────────────
 
@@ -452,21 +454,26 @@ else
         };
     }
 
-    // ── Computed stock summary (from _details, always in memory — bounded set) ─
-
-    private string _selectedWarehouseName => _selectedWarehouseId.HasValue
-        ? _details.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)?.WarehouseName ?? ""
-        : "";
-
-    private decimal? _currentStock => _selectedWarehouseId.HasValue
-        ? _details.StockByWarehouse.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
-        : _details.TotalStockAcrossWarehouses;
+    private decimal? _currentStock => _stockLevels.Count == 0
+        ? null
+        : _selectedWarehouseId.HasValue
+            ? _stockLevels.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
+            : _stockLevels.Sum(s => s.Quantity);
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+        _transactionTypeItems =
+        [
+            new() { Label = Localization.GetString("Inbound"),     Value = InventoryTransactionType.Inbound,     Color = Color.Success,  Icon = Icons.Material.Filled.ArrowDownward },
+            new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Error,    Icon = Icons.Material.Filled.ArrowUpward },
+            new() { Label = Localization.GetString("Adjustment"),  Value = InventoryTransactionType.Adjustment,  Color = Color.Info,     Icon = Icons.Material.Filled.Tune },
+            new() { Label = Localization.GetString("TransferIn"),  Value = InventoryTransactionType.TransferIn,  Color = Color.Tertiary, Icon = Icons.Material.Filled.CallMade },
+            new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Warning,  Icon = Icons.Material.Filled.CallReceived },
+            new() { Label = Localization.GetString("Reversed"),    Value = InventoryTransactionType.Reversed,    Color = Color.Dark,     Icon = Icons.Material.Filled.Undo },
+        ];
         await LoadAsync();
     }
 
@@ -480,12 +487,14 @@ else
         await SafeLoadAsync(async () =>
         {
             _product = await ProductService.GetProductByIdAsync(Id, CancellationToken.None);
-            // GetProductDetailsAsync is used only for the stock summary header —
-            // document history and movements are loaded by the tables via ServerData.
-            _details = await ProductService.GetProductDetailsAsync(Id, CancellationToken.None);
+            _stockLevels = [.. await InventoryService.GetStockByProductAsync(Id, CancellationToken.None)];
 
             if (_product != null && WarehouseQueryParam.HasValue)
+            {
                 _selectedWarehouseId = WarehouseQueryParam;
+                WarehouseDto? wh = await WarehouseService.GetWarehouseByIdAsync(WarehouseQueryParam.Value, CancellationToken.None);
+                _selectedWarehouseName = wh?.Name ?? "";
+            }
 
             await ComputeMovementTotalsAsync();
         }, "ErrorLoadingProduct");
@@ -495,6 +504,15 @@ else
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
         _selectedWarehouseId = warehouseId;
+        if (warehouseId.HasValue)
+        {
+            WarehouseDto? wh = await WarehouseService.GetWarehouseByIdAsync(warehouseId.Value, CancellationToken.None);
+            _selectedWarehouseName = wh?.Name ?? "";
+        }
+        else
+        {
+            _selectedWarehouseName = "";
+        }
         await ComputeMovementTotalsAsync();
         // Reload both tables — warehouse is a server-side filter
         if (_movementsTable is not null)
@@ -505,19 +523,7 @@ else
 
     private async Task ComputeMovementTotalsAsync()
     {
-        IEnumerable<InventoryTransactionDto> transactions = await InventoryService.GetAllFilteredTransactionsAsync(
-            new GetInventoryTransactionsQuery { ProductId = Id, WarehouseId = _selectedWarehouseId },
-            CancellationToken.None);
-
-        var list = transactions.ToList();
-        _totalIncoming = list
-            .Where(t => t.Type is InventoryTransactionType.Inbound or InventoryTransactionType.TransferIn
-                || (t.Type is InventoryTransactionType.Adjustment or InventoryTransactionType.Reversed && t.Quantity > 0))
-            .Sum(t => t.Quantity);
-        _totalOutgoing = list
-            .Where(t => t.Type is InventoryTransactionType.Outbound or InventoryTransactionType.TransferOut
-                || (t.Type is InventoryTransactionType.Adjustment or InventoryTransactionType.Reversed && t.Quantity < 0))
-            .Sum(t => Math.Abs(t.Quantity));
+        (_totalIncoming, _totalOutgoing) = await InventoryService.GetMovementTotalsAsync(Id, _selectedWarehouseId, CancellationToken.None);
     }
 
     private void SetTab(Tab tab)
@@ -529,22 +535,14 @@ else
     // ── Stock Movements ───────────────────────────────────────────────────────
 
     private IReadOnlyCollection<InventoryTransactionType> _movementTypeFilter = [];
-    private DateRange _movementDateRange = new(null, null);
-    private int? _movementDatePreset = null;
+    private DateRange _movementDateRange = new(DateTime.Today.AddDays(-90), DateTime.Today);
+    private int? _movementDatePreset = 90;
     private WisDateRangeFilter? _movementDateRangeFilter;
     private bool _exportingMovements = false;
     private Guid? _movementPartnerId;
     private readonly Dictionary<Guid, bool> _movementPartnerTypeMap = new(); // true = individual
 
-    private List<FilterPopoverItem<InventoryTransactionType>> _transactionTypeItems =>
-    [
-        new() { Label = Localization.GetString("Inbound"),     Value = InventoryTransactionType.Inbound,     Color = Color.Success,  Icon = Icons.Material.Filled.ArrowDownward },
-        new() { Label = Localization.GetString("Outbound"),    Value = InventoryTransactionType.Outbound,    Color = Color.Error,    Icon = Icons.Material.Filled.ArrowUpward },
-        new() { Label = Localization.GetString("Adjustment"),  Value = InventoryTransactionType.Adjustment,  Color = Color.Info,     Icon = Icons.Material.Filled.Tune },
-        new() { Label = Localization.GetString("TransferIn"),  Value = InventoryTransactionType.TransferIn,  Color = Color.Tertiary, Icon = Icons.Material.Filled.CallMade },
-        new() { Label = Localization.GetString("TransferOut"), Value = InventoryTransactionType.TransferOut, Color = Color.Warning,  Icon = Icons.Material.Filled.CallReceived },
-        new() { Label = Localization.GetString("Reversed"),    Value = InventoryTransactionType.Reversed,    Color = Color.Dark,     Icon = Icons.Material.Filled.Undo },
-    ];
+    private List<FilterPopoverItem<InventoryTransactionType>> _transactionTypeItems = [];
 
     private async Task<TableData<InventoryTransactionDto>> LoadMovementsServerData(TableState state, CancellationToken ct)
     {
@@ -725,8 +723,8 @@ else
     private enum HistoryMode { Purchased, Sold }
 
     private HistoryMode _historyMode = HistoryMode.Purchased;
-    private DateRange _historyDateRange = new(null, null);
-    private int? _historyDatePreset = null;
+    private DateRange _historyDateRange = new(DateTime.Today.AddDays(-90), DateTime.Today);
+    private int? _historyDatePreset = 90;
     private WisDateRangeFilter? _historyDateRangeFilter;
     // PURCHASED filter state (companies + individuals)
     private Guid? _historyVendorId;
@@ -735,9 +733,11 @@ else
     // SOLD filter state (companies only)
     private Guid? _historyClientId;
 
-    // Totals
+    // Stats — cached against filter signature so paging doesn't recompute them.
+    private int _historyTotalCount;
     private decimal _historyTotalQuantity;
     private decimal _historyTotalAmount;
+    private string? _historyTotalsKey;
 
     private async Task<PagedResult<WisAutocompleteItem<Guid>>> LoadVendorItems(string search, int page, CancellationToken ct)
     {
@@ -825,17 +825,36 @@ else
             PageSize = state.PageSize
         };
 
-        PagedResult<ProductTransactionRowDto> result = await ProductService.GetPagedProductHistoryAsync(query, ct);
+        // Filter signature: everything except page/pageSize. Stats only depend on filters.
+        string filterKey = $"{query.Purchased}|{query.WarehouseId}|{query.CompanyId}|{query.IndividualId}|{query.DateFrom:O}|{query.DateTo:O}";
 
-        var totals = await ProductService.GetProductHistoryTotalsAsync(query, ct);
-        _historyTotalQuantity = totals.TotalQuantity;
-        _historyTotalAmount = totals.TotalAmount;
+        Task<PagedResult<ProductTransactionRowDto>> pageTask = ProductService.GetPagedProductHistoryAsync(query, ct);
+        Task<(int Count, decimal TotalQuantity, decimal TotalAmount)>? statsTask =
+            filterKey == _historyTotalsKey
+                ? null
+                : ProductService.GetProductHistoryStatsAsync(query, ct);
+
+        if (statsTask is not null)
+            await Task.WhenAll(pageTask, statsTask);
+        else
+            await pageTask;
+
+        if (statsTask is not null)
+        {
+            var stats = statsTask.Result;
+            _historyTotalCount   = stats.Count;
+            _historyTotalQuantity = stats.TotalQuantity;
+            _historyTotalAmount   = stats.TotalAmount;
+            _historyTotalsKey = filterKey;
+        }
+
+        PagedResult<ProductTransactionRowDto> result = pageTask.Result;
         await InvokeAsync(StateHasChanged);
 
         return new TableData<ProductTransactionRowDto>
         {
             Items = result.Items,
-            TotalItems = result.TotalCount
+            TotalItems = _historyTotalCount
         };
     }
 
