@@ -3,8 +3,8 @@ namespace WarehouseInvoiceSystem.Tests.Services.ProductService;
 using FluentAssertions;
 using NSubstitute;
 using WarehouseInvoiceSystem.Application.DTOs.Product;
-using WarehouseInvoiceSystem.Domain.Entities;
 using WarehouseInvoiceSystem.Domain.Enums;
+using WarehouseInvoiceSystem.Domain.Queries.Results;
 
 public class ComparisonTests : ProductServiceTestBase
 {
@@ -15,34 +15,21 @@ public class ComparisonTests : ProductServiceTestBase
     {
         var productId = Guid.NewGuid();
         var individualId = Guid.NewGuid();
-        var pnId = Guid.NewGuid();
 
-        var line = new PurchaseNoteLine
-        {
-            PurchaseNoteId = pnId,
-            ProductId = productId,
-            Quantity = 20,
-            UnitPrice = 30m,
-            PurchaseNote = new PurchaseNote
+        PurchaseNoteRepo.GetIndividualAggregatesForProductAsync(
+            productId, null, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<PartnerSummary>
             {
-                IndividualId = individualId,
-                WarehouseId = Guid.NewGuid(),
-                Individual = new Individual { FullName = "John Doe" },
-                Warehouse = new Warehouse { Name = "WH1" }
-            },
-            Product = CreateEntity()
-        };
-        SetEntityId(line, Guid.NewGuid());
+                new(individualId, "John Doe", DocumentCount: 1, TotalQuantity: 20m, TotalAmount: 600m, AvgUnitPrice: 30m)
+            });
 
-        PurchaseNoteRepo.GetLineItemsByProductIdAsync(productId, null, null, null, Arg.Any<CancellationToken>())
-            .Returns(new[] { line });
         var service = CreateService();
 
         var result = await service.GetPartnerComparisonAsync(productId, PartnerComparisonMode.Individuals, null, null, null);
 
         result.Should().HaveCount(1);
         result[0].PartnerId.Should().Be(individualId);
-        result[0].TotalQuantity.Should().Be(20);
+        result[0].TotalQuantity.Should().Be(20m);
         result[0].DocumentCount.Should().Be(1);
     }
 
@@ -51,18 +38,21 @@ public class ComparisonTests : ProductServiceTestBase
     {
         var productId = Guid.NewGuid();
         var companyId = Guid.NewGuid();
-        var invoiceId = Guid.NewGuid();
 
-        var line = CreateComparisonInvoiceLine(productId, invoiceId, companyId, InvoiceType.Payable, 10, 50m);
-        InvoiceRepo.GetLineItemsByProductIdAsync(productId, InvoiceType.Payable, null, null, null, Arg.Any<CancellationToken>())
-            .Returns(new[] { line });
+        InvoiceRepo.GetCompanyAggregatesForProductAsync(
+            productId, InvoiceType.Payable, null, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<PartnerSummary>
+            {
+                new(companyId, "Vendor Corp", DocumentCount: 1, TotalQuantity: 10m, TotalAmount: 500m, AvgUnitPrice: 50m)
+            });
+
         var service = CreateService();
 
         var result = await service.GetPartnerComparisonAsync(productId, PartnerComparisonMode.Vendors, null, null, null);
 
         result.Should().HaveCount(1);
         result[0].PartnerId.Should().Be(companyId);
-        result[0].TotalQuantity.Should().Be(10);
+        result[0].TotalQuantity.Should().Be(10m);
     }
 
     [Fact]
@@ -70,62 +60,37 @@ public class ComparisonTests : ProductServiceTestBase
     {
         var productId = Guid.NewGuid();
         var companyId = Guid.NewGuid();
-        var invoiceId = Guid.NewGuid();
 
-        var line = CreateComparisonInvoiceLine(productId, invoiceId, companyId, InvoiceType.Receivable, 5, 100m);
-        InvoiceRepo.GetLineItemsByProductIdAsync(productId, InvoiceType.Receivable, null, null, null, Arg.Any<CancellationToken>())
-            .Returns(new[] { line });
+        InvoiceRepo.GetCompanyAggregatesForProductAsync(
+            productId, InvoiceType.Receivable, null, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<PartnerSummary>
+            {
+                new(companyId, "Client Corp", DocumentCount: 2, TotalQuantity: 5m, TotalAmount: 500m, AvgUnitPrice: 100m)
+            });
+
         var service = CreateService();
 
         var result = await service.GetPartnerComparisonAsync(productId, PartnerComparisonMode.Clients, null, null, null);
 
         result.Should().HaveCount(1);
         result[0].PartnerId.Should().Be(companyId);
+        result[0].DocumentCount.Should().Be(2);
     }
 
     [Fact]
-    public async Task PartnerComparison_FiltersByPartnerIds()
+    public async Task PartnerComparison_FiltersByPartnerIds_PassedToRepository()
     {
         var productId = Guid.NewGuid();
         var includedId = Guid.NewGuid();
-        var excludedId = Guid.NewGuid();
 
-        var line1 = new PurchaseNoteLine
-        {
-            PurchaseNoteId = Guid.NewGuid(),
-            ProductId = productId,
-            Quantity = 10,
-            UnitPrice = 30m,
-            PurchaseNote = new PurchaseNote
+        PurchaseNoteRepo.GetIndividualAggregatesForProductAsync(
+            productId, null, Arg.Is<IEnumerable<Guid>?>(ids => ids != null && ids.Contains(includedId)),
+            null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<PartnerSummary>
             {
-                IndividualId = includedId,
-                WarehouseId = Guid.NewGuid(),
-                Individual = new Individual { FullName = "Included Person" },
-                Warehouse = new Warehouse { Name = "WH1" }
-            },
-            Product = CreateEntity()
-        };
-        SetEntityId(line1, Guid.NewGuid());
+                new(includedId, "Included Person", DocumentCount: 1, TotalQuantity: 10m, TotalAmount: 300m, AvgUnitPrice: 30m)
+            });
 
-        var line2 = new PurchaseNoteLine
-        {
-            PurchaseNoteId = Guid.NewGuid(),
-            ProductId = productId,
-            Quantity = 5,
-            UnitPrice = 20m,
-            PurchaseNote = new PurchaseNote
-            {
-                IndividualId = excludedId,
-                WarehouseId = Guid.NewGuid(),
-                Individual = new Individual { FullName = "Excluded Person" },
-                Warehouse = new Warehouse { Name = "WH1" }
-            },
-            Product = CreateEntity()
-        };
-        SetEntityId(line2, Guid.NewGuid());
-
-        PurchaseNoteRepo.GetLineItemsByProductIdAsync(productId, null, null, null, Arg.Any<CancellationToken>())
-            .Returns(new[] { line1, line2 });
         var service = CreateService();
 
         var result = await service.GetPartnerComparisonAsync(
@@ -170,37 +135,30 @@ public class ComparisonTests : ProductServiceTestBase
 
         var productIds = new List<Guid> { product1.Id, product2.Id };
 
-        // Purchase note lines (incoming from individuals)
-        var pnLine = new PurchaseNoteLine
-        {
-            PurchaseNoteId = Guid.NewGuid(),
-            ProductId = product1.Id,
-            Quantity = 10,
-            UnitPrice = 30m,
-            Product = product1,
-            PurchaseNote = new PurchaseNote
+        ProductRepo.GetByIdsAsync(productIds, Arg.Any<CancellationToken>())
+            .Returns(new[] { product1, product2 });
+
+        // Purchase notes (incoming from individuals) → product1: 10 qty, 300 amt
+        PurchaseNoteRepo.GetProductsPurchaseAggregatesAsync(productIds, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<ProductSummary>
             {
-                IndividualId = Guid.NewGuid(),
-                WarehouseId = Guid.NewGuid(),
-                Warehouse = new Warehouse { Name = "WH1" }
-            }
-        };
-        SetEntityId(pnLine, Guid.NewGuid());
+                new(product1.Id, DocumentCount: 1, TotalQuantity: 10m, TotalAmount: 300m)
+            });
 
-        // Payable invoice lines (incoming from vendors)
-        var payLine = CreateComparisonInvoiceLine(product2.Id, Guid.NewGuid(), Guid.NewGuid(), InvoiceType.Payable, 5, 40m);
-        payLine.Product = product2;
+        // Payable invoices (incoming from vendors) → product2: 5 qty, 200 amt
+        InvoiceRepo.GetProductsInvoiceAggregatesAsync(productIds, InvoiceType.Payable, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<ProductSummary>
+            {
+                new(product2.Id, DocumentCount: 1, TotalQuantity: 5m, TotalAmount: 200m)
+            });
 
-        // Receivable invoice lines (outgoing to clients)
-        var recLine = CreateComparisonInvoiceLine(product1.Id, Guid.NewGuid(), Guid.NewGuid(), InvoiceType.Receivable, 8, 100m);
-        recLine.Product = product1;
+        // Receivable invoices (outgoing to clients) → product1: 8 qty, 800 amt
+        InvoiceRepo.GetProductsInvoiceAggregatesAsync(productIds, InvoiceType.Receivable, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<ProductSummary>
+            {
+                new(product1.Id, DocumentCount: 1, TotalQuantity: 8m, TotalAmount: 800m)
+            });
 
-        PurchaseNoteRepo.GetLineItemsByProductIdsAsync(productIds, null, null, null, Arg.Any<CancellationToken>())
-            .Returns(new[] { pnLine });
-        InvoiceRepo.GetLineItemsByProductIdsAsync(productIds, null, null, null, InvoiceType.Payable, Arg.Any<CancellationToken>())
-            .Returns(new[] { payLine });
-        InvoiceRepo.GetLineItemsByProductIdsAsync(productIds, null, null, null, InvoiceType.Receivable, Arg.Any<CancellationToken>())
-            .Returns(new[] { recLine });
         var service = CreateService();
 
         var result = await service.GetProductComparisonAsync(productIds, null, null, null);
@@ -209,43 +167,41 @@ public class ComparisonTests : ProductServiceTestBase
 
         var p1Result = result.First(r => r.ProductId == product1.Id);
         p1Result.IncomingQuantity.Should().Be(10); // from purchase note
+        p1Result.IncomingAmount.Should().Be(300m);
         p1Result.OutgoingQuantity.Should().Be(8); // from receivable invoice
+        p1Result.OutgoingAmount.Should().Be(800m);
+        p1Result.DocumentCount.Should().Be(2); // 1 PN + 1 receivable
 
         var p2Result = result.First(r => r.ProductId == product2.Id);
         p2Result.IncomingQuantity.Should().Be(5); // from payable invoice
+        p2Result.IncomingAmount.Should().Be(200m);
         p2Result.OutgoingQuantity.Should().Be(0); // no receivable
+        p2Result.DocumentCount.Should().Be(1); // 1 payable
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private static InvoiceLine CreateComparisonInvoiceLine(Guid productId, Guid invoiceId, Guid companyId,
-        InvoiceType type, int quantity, decimal unitPrice)
+    [Fact]
+    public async Task ProductComparison_SkipsProductsMissingFromRepository()
     {
-        var invoice = new Invoice
-        {
-            InvoiceNumber = "INV-001",
-            CompanyId = companyId,
-            WarehouseId = Guid.NewGuid(),
-            Type = type,
-            Status = InvoiceStatus.Confirmed,
-            Company = new Company { Name = "Test Company", Email = "test@test.com" },
-            Warehouse = new Warehouse { Name = "WH1" },
-            LineItems = []
-        };
-        SetEntityId(invoice, invoiceId);
+        var product1 = CreateEntity();
+        var unknownId = Guid.NewGuid();
+        var productIds = new List<Guid> { product1.Id, unknownId };
 
-        var line = new InvoiceLine
-        {
-            InvoiceId = invoiceId,
-            ProductId = productId,
-            Quantity = quantity,
-            UnitPrice = unitPrice,
-            TaxRate = 0,
-            DiscountPercentage = 0,
-            Invoice = invoice,
-            Product = new Product { Code = "P001", Name = "Test", Unit = "kg" }
-        };
-        SetEntityId(line, Guid.NewGuid());
-        return line;
+        ProductRepo.GetByIdsAsync(productIds, Arg.Any<CancellationToken>())
+            .Returns(new[] { product1 });
+
+        PurchaseNoteRepo.GetProductsPurchaseAggregatesAsync(productIds, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<ProductSummary>());
+        InvoiceRepo.GetProductsInvoiceAggregatesAsync(productIds, InvoiceType.Payable, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<ProductSummary>());
+        InvoiceRepo.GetProductsInvoiceAggregatesAsync(productIds, InvoiceType.Receivable, null, null, null, Arg.Any<CancellationToken>())
+            .Returns(new List<ProductSummary>());
+
+        var service = CreateService();
+
+        var result = await service.GetProductComparisonAsync(productIds, null, null, null);
+
+        result.Should().HaveCount(1);
+        result[0].ProductId.Should().Be(product1.Id);
     }
+
 }

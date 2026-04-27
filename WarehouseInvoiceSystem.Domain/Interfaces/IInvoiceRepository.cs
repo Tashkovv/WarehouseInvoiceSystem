@@ -23,13 +23,12 @@
         Task<Invoice?> GetByInvoiceNumberAsync(string invoiceNumber, CancellationToken ct = default);
 
         Task<bool> IsProductInActiveInvoicesAsync(Guid productId, CancellationToken ct = default);
-        Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default);
-        Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, InvoiceType? type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
-        Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdsAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, InvoiceType? type = null, CancellationToken ct = default);
 
         Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
         Task<List<ProductWarehouseSummary>> GetProductSoldAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
         Task<List<ProductWarehouseSummary>> GetProductPayableAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
+        Task<List<ProductSummary>> GetProductsInvoiceAggregatesAsync(List<Guid> productIds, InvoiceType type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
+        Task<List<PartnerSummary>> GetCompanyAggregatesForProductAsync(Guid productId, InvoiceType type, Guid? warehouseId, IEnumerable<Guid>? companyIds, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
 
         Task<Guid> CreateAsync(Invoice invoice);
         Task<Invoice> UpdateAsync(Invoice invoice);

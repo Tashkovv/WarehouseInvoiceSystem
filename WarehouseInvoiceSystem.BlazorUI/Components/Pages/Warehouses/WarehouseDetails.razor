@@ -5,6 +5,7 @@
 @using WarehouseInvoiceSystem.Application.DTOs.StockLevel
 @using WarehouseInvoiceSystem.Application.Models
 @using WarehouseInvoiceSystem.Domain.Queries
+@using WarehouseInvoiceSystem.Domain.Queries.Results
 @inject IWarehouseService WarehouseService
 @inject IInventoryService InventoryService
 @inject IExcelExportService ExcelExportService
@@ -48,17 +49,20 @@ else
                         </MudChip>
                     </div>
 
-                    @* ── Address ── *@
-                    @if (!string.IsNullOrWhiteSpace(_warehouse.Address))
-                    {
-                        <div class="wis-detail-contact wis-product-meta-row">
+                    @* ── Address + value ── *@
+                    <div class="wis-detail-contact wis-product-meta-row">
+                        @if (!string.IsNullOrWhiteSpace(_warehouse.Address))
+                        {
                             <div class="wis-detail-contact-item">
                                 <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
                                 <MudText Typo="Typo.body2" Color="Color.Secondary">@_warehouse.Address</MudText>
                             </div>
+                        }
+                        <div class="wis-detail-contact-item">
+                            <MudIcon Icon="@Icons.Material.Filled.Paid" Size="Size.Small" Color="Color.Secondary" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_warehouseStats.TotalValue.ToString("C")</MudText>
                         </div>
-                    }
-
+                    </div>
 
                 </MudCardContent>
             </MudCard>
@@ -73,15 +77,11 @@ else
                     </CardHeaderContent>
                     <CardHeaderActions>
                         <div class="d-flex align-center gap-2 pr-2">
-                            <MudChip T="string" Size="Size.Small" Color="Color.Default"
-                                     Icon="@Icons.Material.Filled.Inventory2">
-                                @_totalProducts @Localization.GetString("Products")
-                            </MudChip>
-                            @if (_lowStockCount > 0)
+                            @if (_warehouseStats.LowStockCount > 0)
                             {
                                 <MudChip T="string" Size="Size.Small" Color="Color.Warning"
                                          Icon="@Icons.Material.Filled.Warning">
-                                    @_lowStockCount @Localization.GetString("LowStock")
+                                    @_warehouseStats.LowStockCount @Localization.GetString("LowStock")
                                 </MudChip>
                             }
                             <WisButton Action="@(new WisDetailActionItem
@@ -95,7 +95,7 @@ else
                     </CardHeaderActions>
                 </MudCardHeader>
                 <MudCardContent Class="pa-0">
-                    @if (_totalProducts > 0)
+                    @if (_warehouseStats.ProductCount > 0)
                     {
                         <MudTable @ref="_stockTable"
                                   ServerData="LoadStockServerData"
@@ -181,8 +181,7 @@ else
 
     private WarehouseDto? _warehouse;
     private MudTable<StockLevelDto>? _stockTable;
-    private int _totalProducts;
-    private int _lowStockCount;
+    private WarehouseDetailStatsResult _warehouseStats = new(0, 0, 0m);
 
     private WisDetailActionItem? _primaryAction;
     private List<WisDetailActionItem> _actions = [];
@@ -230,19 +229,15 @@ else
     private async Task LoadWarehouse() =>
         await SafeLoadAsync(async () =>
         {
-            _warehouse = await WarehouseService.GetWarehouseByIdAsync(Id, CancellationToken.None);
+            Task<WarehouseDto?> warehouseTask = WarehouseService.GetWarehouseByIdAsync(Id, CancellationToken.None);
+            Task<WarehouseDetailStatsResult> statsTask = InventoryService.GetWarehouseDetailStatsAsync(Id, CancellationToken.None);
+            await Task.WhenAll(warehouseTask, statsTask);
+
+            _warehouse = warehouseTask.Result;
+            _warehouseStats = statsTask.Result;
+
             if (_warehouse != null)
-            {
-                var allResult = await InventoryService.GetPagedStockAsync(
-                    new GetStockQuery { WarehouseId = Id, Page = 1, PageSize = 1 }, CancellationToken.None);
-                _totalProducts = allResult.TotalCount;
-
-                var lowResult = await InventoryService.GetPagedStockAsync(
-                    new GetStockQuery { WarehouseId = Id, IsLowStock = true, Page = 1, PageSize = 1 }, CancellationToken.None);
-                _lowStockCount = lowResult.TotalCount;
-
                 BuildActions();
-            }
         }, "ErrorLoadingWarehouse");
 
     private void BuildActions()
@@ -258,7 +253,7 @@ else
 
         if (_warehouse.IsActive)
         {
-            bool cannotDeactivate = _warehouse.IsDefault || _totalProducts > 0;
+            bool cannotDeactivate = _warehouse.IsDefault || _warehouseStats.ProductCount > 0;
             actions.Add(_act.Warning(Icons.Material.Filled.PowerSettingsNew, Localization.GetString("Deactivate"), () => SetActiveStatus(false),
                 dividerBefore: actions.Count > 0,
                 disabled: cannotDeactivate,

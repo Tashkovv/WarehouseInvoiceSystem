@@ -131,72 +131,6 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                                     li.Invoice.Status != InvoiceStatus.Paid &&
                                     li.Invoice.Status != InvoiceStatus.Cancelled, ct));
 
-        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default) =>
-            WithContextAsync(async context =>
-            {
-                return (IEnumerable<InvoiceLine>)await All<InvoiceLine>(context)
-                    .Where(li => li.ProductId == productId &&
-                                 li.Invoice.DeletedOn == null &&
-                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
-                                 li.Invoice.Status != InvoiceStatus.Draft)
-                    .Include(li => li.Invoice)
-                        .ThenInclude(i => i.Company)
-                    .Include(li => li.Invoice)
-                        .ThenInclude(i => i.Warehouse)
-                    .OrderByDescending(li => li.Invoice.IssueDate)
-                    .ToListAsync(ct);
-            });
-
-        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdAsync(
-            Guid productId, InvoiceType? type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
-            WithContextAsync(async context =>
-            {
-                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
-                    .Where(li => li.ProductId == productId &&
-                                 li.Invoice.DeletedOn == null &&
-                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
-                                 li.Invoice.Status != InvoiceStatus.Draft);
-
-                if (type.HasValue)
-                    q = q.Where(li => li.Invoice.Type == type.Value);
-                if (warehouseId.HasValue)
-                    q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
-                if (dateFrom.HasValue)
-                    q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value);
-                if (dateTo.HasValue)
-                    q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
-
-                return (IEnumerable<InvoiceLine>)await q
-                    .Include(li => li.Invoice)
-                        .ThenInclude(i => i.Company)
-                    .ToListAsync(ct);
-            });
-
-        public Task<IEnumerable<InvoiceLine>> GetLineItemsByProductIdsAsync(
-            List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, InvoiceType? type = null, CancellationToken ct = default) =>
-            WithContextAsync(async context =>
-            {
-                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
-                    .Where(li => productIds.Contains(li.ProductId) &&
-                                 li.Invoice.DeletedOn == null &&
-                                 li.Invoice.Status != InvoiceStatus.Cancelled &&
-                                 li.Invoice.Status != InvoiceStatus.Draft);
-
-                if (type.HasValue)
-                    q = q.Where(li => li.Invoice.Type == type.Value);
-                if (warehouseId.HasValue)
-                    q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
-                if (dateFrom.HasValue)
-                    q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value);
-                if (dateTo.HasValue)
-                    q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
-
-                return (IEnumerable<InvoiceLine>)await q
-                    .Include(li => li.Invoice)
-                    .Include(li => li.Product)
-                    .ToListAsync(ct);
-            });
-
         public Task<PagedResult<InvoiceLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default) =>
             WithContextAsync(async context =>
             {
@@ -222,6 +156,79 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     Page = query.Page,
                     PageSize = query.PageSize
                 };
+            });
+
+        public Task<List<ProductSummary>> GetProductsInvoiceAggregatesAsync(
+            List<Guid> productIds, InvoiceType type, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+            {
+                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
+                    .Where(li => productIds.Contains(li.ProductId)
+                              && li.Invoice.Type == type
+                              && li.Invoice.DeletedOn == null
+                              && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && li.Invoice.Status != InvoiceStatus.Draft);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
+                if (dateFrom.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value.Date);
+                if (dateTo.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
+
+                return q.GroupBy(li => li.ProductId)
+                    .Select(g => new ProductSummary(
+                        g.Key,
+                        g.Select(li => li.InvoiceId).Distinct().Count(),
+                        g.Sum(li => li.Quantity),
+                        g.Sum(li => Math.Round(li.Quantity * li.UnitPrice, 2))))
+                    .ToListAsync(ct);
+            });
+
+        public Task<List<PartnerSummary>> GetCompanyAggregatesForProductAsync(
+            Guid productId, InvoiceType type, Guid? warehouseId, IEnumerable<Guid>? companyIds, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<InvoiceLine> q = All<InvoiceLine>(context)
+                    .Where(li => li.ProductId == productId
+                              && li.Invoice.Type == type
+                              && li.Invoice.DeletedOn == null
+                              && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && li.Invoice.Status != InvoiceStatus.Draft);
+
+                if (warehouseId.HasValue)
+                    q = q.Where(li => li.Invoice.WarehouseId == warehouseId.Value);
+                if (dateFrom.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate >= dateFrom.Value.Date);
+                if (dateTo.HasValue)
+                    q = q.Where(li => li.Invoice.IssueDate < dateTo.Value.Date.AddDays(1));
+
+                List<Guid>? ids = companyIds?.ToList();
+                if (ids is { Count: > 0 })
+                    q = q.Where(li => ids.Contains(li.Invoice.CompanyId));
+
+                var rows = await q
+                    .Select(li => new
+                    {
+                        li.Invoice.CompanyId,
+                        li.Invoice.Company!.Name,
+                        li.InvoiceId,
+                        li.Quantity,
+                        li.UnitPrice
+                    })
+                    .ToListAsync(ct);
+
+                return rows
+                    .GroupBy(r => new { r.CompanyId, r.Name })
+                    .Select(g => new PartnerSummary(
+                        g.Key.CompanyId,
+                        g.Key.Name,
+                        g.Select(r => r.InvoiceId).Distinct().Count(),
+                        g.Sum(r => r.Quantity),
+                        Math.Round(g.Sum(r => r.Quantity * r.UnitPrice), 2),
+                        Math.Round(g.Average(r => r.UnitPrice), 2)))
+                    .OrderByDescending(s => s.TotalQuantity)
+                    .ToList();
             });
 
         public Task<List<ProductWarehouseSummary>> GetProductSoldAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default) =>

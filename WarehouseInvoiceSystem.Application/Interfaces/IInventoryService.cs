@@ -42,6 +42,7 @@
 
         // ── Dashboard aggregates ──────────────────────────────────────────────────
         Task<WarehouseStockSummaryResult> GetWarehouseStockSummaryAsync(Guid? warehouseId, CancellationToken ct = default);
+        Task<WarehouseDetailStatsResult> GetWarehouseDetailStatsAsync(Guid warehouseId, CancellationToken ct = default);
         Task<IEnumerable<StockLevelDto>> GetStockAlertsAsync(Guid? warehouseId, int top, CancellationToken ct = default);
         Task<IEnumerable<StockLevelDto>> GetTopProductsByStockAsync(Guid warehouseId, int top, CancellationToken ct = default);
         Task<IEnumerable<InventoryTransactionDto>> GetRecentTransactionsAsync(Guid warehouseId, int top, CancellationToken ct = default);

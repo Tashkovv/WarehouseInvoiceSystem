@@ -388,6 +388,7 @@
   "DeactivateProductConfirm": "Are you sure you want to deactivate this product? It will no longer appear in new invoices or purchase notes.",
   "ActivateProductConfirm": "Are you sure you want to activate this product?",
   "ErrorLoadingProduct": "Error loading product",
+  "ErrorLoadingData": "Error loading data",
   "ErrorCreatingProduct": "Error creating product",
   "ErrorUpdatingProduct": "Error updating product",
   "ErrorDeletingProduct": "Error deleting product",

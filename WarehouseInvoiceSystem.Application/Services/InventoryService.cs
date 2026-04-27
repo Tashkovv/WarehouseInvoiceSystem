@@ -63,6 +63,10 @@
             Guid? warehouseId, CancellationToken ct = default)
             => stockLevelRepository.GetWarehouseStockSummaryAsync(warehouseId, ct);
 
+        public Task<WarehouseDetailStatsResult> GetWarehouseDetailStatsAsync(
+            Guid warehouseId, CancellationToken ct = default)
+            => stockLevelRepository.GetWarehouseDetailStatsAsync(warehouseId, ct);
+
         public async Task<IEnumerable<StockLevelDto>> GetStockAlertsAsync(
             Guid? warehouseId, int top, CancellationToken ct = default)
         {

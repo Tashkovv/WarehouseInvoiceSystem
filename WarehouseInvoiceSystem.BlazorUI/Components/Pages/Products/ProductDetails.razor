@@ -90,6 +90,22 @@ else
                             <div class="wis-stat-value mud-success-text">@_product.SellingPrice.ToString("C")</div>
                         </div>
 
+                        @* Stat 1c — minimum quantity threshold *@
+                        <div class="wis-product-stats-bar__stat">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("MinimumQuantity")</MudText>
+                            <div class="wis-stat-value mud-default-text">
+                                @(_filteredMinimumQuantity.HasValue ? $"{_filteredMinimumQuantity.Value.ToString("N0")} {_product.Unit}" : "—")
+                            </div>
+                        </div>
+
+                        @* Stat 1d — reorder point *@
+                        <div class="wis-product-stats-bar__stat">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("ReorderPoint")</MudText>
+                            <div class="wis-stat-value mud-default-text">
+                                @(_filteredReorderPoint.HasValue ? $"{_filteredReorderPoint.Value.ToString("N0")} {_product.Unit}" : "—")
+                            </div>
+                        </div>
+
                         @* Stat 2 *@
                         <div class="wis-product-stats-bar__stat">
                             <MudText Typo="Typo.caption" Color="Color.Secondary" Class="wis-section-label">@Localization.GetString("TotalStock")</MudText>
@@ -130,9 +146,9 @@ else
                                 <MudTh>@Localization.GetString("Warehouse")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Quantity")</MudTh>
                                 <MudTh>@Localization.GetString("LastRestocked")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("Reserved")</MudTh>
-                                <MudTh Class="text-right">@Localization.GetString("Available")</MudTh>
                                 <MudTh Class="text-right">@Localization.GetString("Minimum")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("ReorderPoint")</MudTh>
+                                <MudTh Class="text-right">@Localization.GetString("Value")</MudTh>
                                 <MudTh />
                             </HeaderContent>
                             <RowTemplate>
@@ -148,20 +164,19 @@ else
                                 <MudTd DataLabel="@Localization.GetString("LastRestocked")">
                                     <MudText Typo="Typo.body2">@(context.LastRestockedAt?.ToString("dd MMM yyyy") ?? "-")</MudText>
                                 </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Reserved")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@context.ReservedQuantity.ToString("N0") @_product.Unit</MudText>
-                                </MudTd>
-                                <MudTd DataLabel="@Localization.GetString("Available")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@context.AvailableQuantity.ToString("N0") @_product.Unit</MudText>
-                                </MudTd>
                                 <MudTd DataLabel="@Localization.GetString("Minimum")" Class="text-right">
-                                    <MudText Typo="Typo.body2">@(context.MinimumQuantity?.ToString("N0") ?? "0,00") @_product.Unit</MudText>
+                                    <MudText Typo="Typo.body2">@(context.MinimumQuantity?.ToString("N0") ?? "—")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("ReorderPoint")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@(context.ReorderPoint?.ToString("N0") ?? "—")</MudText>
+                                </MudTd>
+                                <MudTd DataLabel="@Localization.GetString("Value")" Class="text-right">
+                                    <MudText Typo="Typo.body2">@((context.Quantity * _scopedAvgSellingPrice).ToString("C"))</MudText>
                                 </MudTd>
                                 <MudTd>
                                     <MudIconButton Icon="@Icons.Material.Filled.Tune"
                                                    Size="Size.Small"
                                                    Color="Color.Primary"
-
                                                    OnClick="@(() => OpenSetThresholdsDialog(context))" />
                                 </MudTd>
                             </RowTemplate>
@@ -177,7 +192,12 @@ else
                 <MudCardHeader>
                     <CardHeaderContent>
                         <div class="d-flex align-center justify-space-between">
-                            <MudText Typo="Typo.h6">@Localization.GetString("Profitability")</MudText>
+                            <div class="d-flex align-center gap-3">
+                                <MudText Typo="Typo.h6">@Localization.GetString("Profitability")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    @Localization.GetString("Period"): @FormatPeriod()
+                                </MudText>
+                            </div>
                             <WisDateRangeFilter DateRange="_summaryDateRange"
                                                 DateRangeChanged="OnSummaryDateRangeChanged"
                                                 DatePreset="_summaryDatePreset"
@@ -337,6 +357,14 @@ else
     private decimal _filteredTotalStock => _selectedWarehouseId.HasValue
         ? _details.StockByWarehouse.Where(s => s.WarehouseId == _selectedWarehouseId.Value).Sum(s => s.Quantity)
         : _details.TotalStockAcrossWarehouses;
+
+    private decimal? _filteredMinimumQuantity => _selectedWarehouseId.HasValue
+        ? _details.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)?.MinimumQuantity
+        : null;
+
+    private decimal? _filteredReorderPoint => _selectedWarehouseId.HasValue
+        ? _details.StockByWarehouse.FirstOrDefault(s => s.WarehouseId == _selectedWarehouseId.Value)?.ReorderPoint
+        : null;
 
     private decimal _filteredStockValue => _filteredTotalStock * _scopedAvgSellingPrice;
 

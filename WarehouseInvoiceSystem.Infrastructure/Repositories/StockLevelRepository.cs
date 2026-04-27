@@ -225,6 +225,23 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 };
             });
 
+        public Task<WarehouseDetailStatsResult> GetWarehouseDetailStatsAsync(
+            Guid warehouseId, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                IQueryable<StockLevel> q = All<StockLevel>(context)
+                    .Where(s => s.WarehouseId == warehouseId);
+
+                int productCount = await q.CountAsync(ct);
+                decimal totalValue = productCount > 0
+                    ? await q.SumAsync(s => s.Quantity * s.Product.SellingPrice, ct)
+                    : 0m;
+                int lowStockCount = await q.CountAsync(
+                    s => s.MinimumQuantity.HasValue && s.Quantity > 0 && s.Quantity <= s.MinimumQuantity.Value, ct);
+
+                return new WarehouseDetailStatsResult(productCount, lowStockCount, totalValue);
+            });
+
         public Task<IEnumerable<StockLevel>> GetStockAlertsAsync(
             Guid? warehouseId, int top, CancellationToken ct = default) =>
             WithContextAsync(async context =>

@@ -22,12 +22,11 @@
         Task<IEnumerable<PurchaseNote>> GetByStatusAsync(PurchaseNoteStatus status, CancellationToken ct = default);
 
         Task<bool> IsProductInActivePurchaseNotesAsync(Guid productId, CancellationToken ct = default);
-        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, CancellationToken ct = default);
-        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdAsync(Guid productId, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
-        Task<IEnumerable<PurchaseNoteLine>> GetLineItemsByProductIdsAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
 
         Task<PagedResult<PurchaseNoteLine>> GetPagedLineItemsByProductIdAsync(GetProductHistoryQuery query, CancellationToken ct = default);
         Task<List<ProductWarehouseSummary>> GetProductPurchaseNoteAggregatesAsync(Guid productId, DateTime? dateFrom = null, DateTime? dateTo = null, CancellationToken ct = default);
+        Task<List<ProductSummary>> GetProductsPurchaseAggregatesAsync(List<Guid> productIds, Guid? warehouseId, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
+        Task<List<PartnerSummary>> GetIndividualAggregatesForProductAsync(Guid productId, Guid? warehouseId, IEnumerable<Guid>? individualIds, DateTime? dateFrom, DateTime? dateTo, CancellationToken ct = default);
 
         Task<string> GenerateNoteNumberAsync(CancellationToken ct = default);
         Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
