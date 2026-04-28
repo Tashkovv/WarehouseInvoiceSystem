@@ -4,11 +4,13 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Payment
 @using WarehouseInvoiceSystem.Application.DTOs.Invoice
 @using WarehouseInvoiceSystem.Application.DTOs.PurchaseNote
+@using WarehouseInvoiceSystem.Application.DTOs.Vat
 @using WarehouseInvoiceSystem.Domain.Enums
 @using WarehouseInvoiceSystem.Domain.Queries.Results
 @inject IInvoiceService InvoiceService
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IPaymentService PaymentService
+@inject IVatService VatService
 
 <PageTitle>@Localization.GetString("DocumentsDashboard") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
@@ -74,6 +76,39 @@ else
         </MudItem>
 
         @PeriodCards(_periodNoteSummary, _periodInvoiceSummary, _netIssued, _margin)
+
+        @if (_periodVatSummary != null)
+        {
+            <MudItem xs="12" Class="mt-2">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2" Style="text-transform: uppercase; letter-spacing: 0.05em;">
+                    @Localization.GetString("Vat")
+                </MudText>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <DashboardCard Title="@Localization.GetString("OutputVat")"
+                               Value="@_periodVatSummary.OutputVat.ToString("C")"
+                               Subtitle="@($"{_periodVatSummary.OutputDocCount} {Localization.GetString("Invoices")}")"
+                               Icon="@Icons.Material.Filled.ArrowUpward"
+                               IconColor="Color.Primary"
+                               Link="/vat" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <DashboardCard Title="@Localization.GetString("InputVat")"
+                               Value="@_periodVatSummary.InputVat.ToString("C")"
+                               Subtitle="@($"{_periodVatSummary.InputDocCount} {Localization.GetString("Invoices")}")"
+                               Icon="@Icons.Material.Filled.ArrowDownward"
+                               IconColor="Color.Secondary"
+                               Link="/vat" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <DashboardCard Title="@Localization.GetString("NetVat")"
+                               Value="@Math.Abs(_periodVatSummary.NetVat).ToString("C")"
+                               Subtitle="@(_periodVatSummary.IsLiability ? Localization.GetString("VatLiability") : Localization.GetString("VatRefund"))"
+                               Icon="@Icons.Material.Filled.AccountBalance"
+                               IconColor="@(_periodVatSummary.IsLiability ? Color.Warning : Color.Success)"
+                               Link="/vat" />
+            </MudItem>
+        }
 
         <!-- ── Attention Needed ── -->
         <MudItem xs="12" Class="mt-6">
@@ -370,6 +405,7 @@ else
     // ── Period data ──
     private InvoicePeriodSummaryResult _periodInvoiceSummary = new();
     private DayPurchaseNoteSummaryResult _periodNoteSummary = new();
+    private VatCurrentPeriodDto? _periodVatSummary;
     private decimal _netIssued => _periodInvoiceSummary.ReceivableAmount - _periodInvoiceSummary.PayableAmount - _periodNoteSummary.Amount;
     private decimal _margin => _periodInvoiceSummary.ReceivableAmount > 0 ? _netIssued / _periodInvoiceSummary.ReceivableAmount : 0;
 
@@ -434,9 +470,13 @@ else
             _ => PurchaseNoteService.GetDayIssuedSummaryAsync(_selectedDate, _cts.Token)
         };
 
+        (DateTime vatFrom, DateTime vatTo, string vatLabel) = GetVatDateRange();
+        Task<VatCurrentPeriodDto?> vatTask = VatService.GetRangeSummaryAsync(vatFrom, vatTo, vatLabel, _cts.Token);
+
         await Task.WhenAll(
             invoiceTask.ContinueWith(t => _periodInvoiceSummary = t.Result),
-            noteTask.ContinueWith(t => _periodNoteSummary = t.Result)
+            noteTask.ContinueWith(t => _periodNoteSummary = t.Result),
+            vatTask.ContinueWith(t => _periodVatSummary = t.Result)
         );
     }
 
@@ -528,6 +568,23 @@ else
         }
     }
     
+    private (DateTime From, DateTime To, string Label) GetVatDateRange() => _periodMode switch
+    {
+        PeriodMode.Custom when _customDateRange.Start != null && _customDateRange.End != null =>
+            (_customDateRange.Start.Value, _customDateRange.End.Value,
+             $"{_customDateRange.Start.Value:dd.MM.yyyy} – {_customDateRange.End.Value:dd.MM.yyyy}"),
+        PeriodMode.Month =>
+            (new DateTime(_selectedDate.Year, _selectedDate.Month, 1),
+             new DateTime(_selectedDate.Year, _selectedDate.Month, 1).AddMonths(1).AddDays(-1),
+             _selectedDate.ToString("MMMM yyyy")),
+        PeriodMode.Year =>
+            (new DateTime(_selectedDate.Year, 1, 1),
+             new DateTime(_selectedDate.Year, 12, 31),
+             _selectedDate.Year.ToString()),
+        _ =>
+            (_selectedDate.Date, _selectedDate.Date, _selectedDate.ToString("dd.MM.yyyy"))
+    };
+
     private (string, string) GetDateFilter()
     {
         return _periodMode switch
@@ -573,7 +630,7 @@ else
                            Link=@($"/invoices?type=Receivable&issueDateFrom={dateFrom}&issueDateTo={dateTo}") />
         </MudItem>
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("NetIssued")"
+            <DashboardCard Title="@Localization.GetString("NetResult")"
                            Value="@net.ToString("C")"
                            Subtitle="@margin.ToString("P1")"
                            Icon="@Icons.Material.Filled.SwapVert"

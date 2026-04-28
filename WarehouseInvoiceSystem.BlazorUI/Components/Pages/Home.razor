@@ -5,10 +5,12 @@
 @using WarehouseInvoiceSystem.Application.DTOs.Product
 @using WarehouseInvoiceSystem.Application.DTOs.Company
 @using WarehouseInvoiceSystem.Application.DTOs.Warehouse
+@using WarehouseInvoiceSystem.Application.DTOs.Vat
 @using WarehouseInvoiceSystem.Domain.Queries
 @using WarehouseInvoiceSystem.Domain.Queries.Common
 @using WarehouseInvoiceSystem.Domain.Queries.Results
 @inject IInvoiceService InvoiceService
+@inject IVatService VatService
 @inject IPurchaseNoteService PurchaseNoteService
 @inject IInventoryService InventoryService
 @inject IIndividualService IndividualService
@@ -73,7 +75,7 @@ else
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("NetIssued")"
+            <DashboardCard Title="@Localization.GetString("NetResult")"
                            Value="@_netIssuedToday.ToString("C")"
                            Subtitle="@_marginToday.ToString("P1")"
                            Icon="@Icons.Material.Filled.SwapVert"
@@ -119,7 +121,60 @@ else
                            Link="/invoices?status=Overdue" />
         </MudItem>
 
-        <!-- ── Row 3: Warehouse Health ── -->
+        <!-- ── Row 3: VAT / ДДВ ── -->
+        @if (_vatPeriod != null)
+        {
+            <MudItem xs="12" Class="mt-6">
+                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("Vat")</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <DashboardCard Title="@Localization.GetString("NetVat")"
+                               Value="@Math.Abs(_vatPeriod.NetVat).ToString("C")"
+                               SubtitleLines="@([$"{Localization.GetString("OutputVat")}: {_vatPeriod.OutputVat.ToString("C")}", $"{Localization.GetString("InputVat")}: {_vatPeriod.InputVat.ToString("C")}"])"
+                               Icon="@Icons.Material.Filled.AccountBalance"
+                               IconColor="@(_vatPeriod.IsLiability ? Color.Warning : Color.Success)"
+                               Link="/vat" />
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <DashboardCard Title="@Localization.GetString("NextDeadline")"
+                               Value="@($"{_vatPeriod.DaysUntilDeadline} дена")"
+                               SubtitleLines="@([$"{_vatPeriod.PeriodLabel}", $"{_vatPeriod.FilingDeadline:dd.MM.yyyy}"])"
+                               Icon="@Icons.Material.Filled.Schedule"
+                               IconColor="@(_vatPeriod.DaysUntilDeadline <= 7 ? Color.Error : _vatPeriod.DaysUntilDeadline <= 14 ? Color.Warning : Color.Info)"
+                               Link="/vat" />
+            </MudItem>
+
+            @if (_vatThreshold != null)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <DashboardCard Title="@Localization.GetString("VatThreshold")"
+                                   Value="@_vatThreshold.YtdRevenue.ToString("C")"
+                                   Subtitle="@($"{_vatThreshold.Percentage}% од 2.000.000 ден.")"
+                                   Icon="@Icons.Material.Filled.BarChart"
+                                   IconColor="Color.Info"
+                                   Link="/vat" />
+                </MudItem>
+            }
+        }
+        else if (_vatThreshold != null)
+        {
+            <MudItem xs="12" Class="mt-6">
+                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("Vat")</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <DashboardCard Title="@Localization.GetString("YtdRevenue")"
+                               Value="@_vatThreshold.YtdRevenue.ToString("C")"
+                               Subtitle="@($"{_vatThreshold.Percentage}% {Localization.GetString("VatThreshold")} 2.000.000 ден.")"
+                               Icon="@Icons.Material.Filled.BarChart"
+                               IconColor="@(_vatThreshold.Percentage >= 80 ? Color.Warning : Color.Info)"
+                               Link="/profile" />
+            </MudItem>
+        }
+
+        <!-- ── Row 5: Warehouse Health ── -->
         <MudItem xs="12" Class="mt-6">
             <div class="d-flex align-center flex-wrap gap-3 mb-4">
                 <MudText Typo="Typo.h6">@Localization.GetString("WarehouseHealth")</MudText>
@@ -173,6 +228,9 @@ else
 @code {
     // ── State ──────────────────────────────────────────────────────────────────
 
+    private VatCurrentPeriodDto? _vatPeriod;
+    private VatThresholdDto? _vatThreshold;
+
     private InvoicePeriodSummaryResult _todayInvoiceSummary = new();
     private DayPurchaseNoteSummaryResult _todayNoteSummary = new();
     private InvoiceOutstandingResult _invoicePosition = new();
@@ -223,7 +281,11 @@ else
                     .ContinueWith(t => _invoicePosition = t.Result),
                 PurchaseNoteService.GetOutstandingPositionAsync(_cts.Token)
                     .ContinueWith(t => _purchaseNotePosition = t.Result),
-                LoadWarehouseData()
+                LoadWarehouseData(),
+                VatService.GetCurrentPeriodSummaryAsync(_cts.Token)
+                    .ContinueWith(t => _vatPeriod = t.Result),
+                VatService.GetThresholdProgressAsync(_cts.Token)
+                    .ContinueWith(t => _vatThreshold = t.Result)
             );
         }
         catch (Exception)

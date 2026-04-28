@@ -1,0 +1,240 @@
+@page "/vat"
+@attribute [Authorize(Roles = "Admin")]
+@inherits PageBase
+@using WarehouseInvoiceSystem.Application.DTOs.Vat
+
+@inject IVatService VatService
+
+<PageTitle>@Localization.GetString("Vat") - @Localization.GetString("InvoiceSystem")</PageTitle>
+
+<div class="wis-page-header">
+    <MudText Typo="Typo.h3" Class="wis-page-title">@Localization.GetString("Vat")</MudText>
+</div>
+
+@if (_loading)
+{
+    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+}
+else if (!_isRegistered)
+{
+    <!-- ── Not VAT registered: threshold only ── -->
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudCard Elevation="2">
+                <MudCardHeader Style="align-items: center;">
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@Icons.Material.Filled.BarChart" Color="Color.Info" />
+                    </CardHeaderAvatar>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">@Localization.GetString("VatThreshold")</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudDivider />
+                <MudCardContent>
+                    @if (_threshold != null)
+                    {
+                        <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">@_threshold.YtdRevenue.ToString("C")</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">
+                            @Localization.GetString("YtdRevenue") @_threshold.Year — @_threshold.Percentage% од 2.000.000 ден.
+                        </MudText>
+                        <MudProgressLinear Value="@((double)_threshold.Percentage)"
+                                           Color="@(_threshold.Percentage >= 80 ? Color.Warning : Color.Info)"
+                                           Rounded="true"
+                                           Size="Size.Large"
+                                           Class="mb-2" />
+                        <div class="d-flex justify-space-between">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">0</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">2.000.000 ден.</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+                <MudCardActions>
+                    <WisButton Action="@(new WisDetailActionItem { Icon = Icons.Material.Filled.Tune, Label = Localization.GetString("Profile"), Color = Color.Primary, OnClick = EventCallback.Factory.Create(this, () => Navigation.NavigateTo("/profile")) })" />
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudGrid>
+
+        <!-- ── Hero: Current Period ── -->
+        @if (_currentPeriod != null)
+        {
+            <MudItem xs="12" md="5">
+                <MudCard Elevation="2" Style="height: 100%;">
+                    <MudCardContent Class="pa-6">
+                        <div class="d-flex align-center justify-space-between mb-2">
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Style="text-transform: uppercase; letter-spacing: 0.05em;">
+                                @Localization.GetString("CurrentPeriod")
+                            </MudText>
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Color="@(_currentPeriod.IsLiability ? Color.Warning : Color.Success)"
+                                     Variant="Variant.Filled">
+                                @(_currentPeriod.IsLiability ? Localization.GetString("VatLiability") : Localization.GetString("VatRefund"))
+                            </MudChip>
+                        </div>
+
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">@_currentPeriod.PeriodLabel</MudText>
+
+                        <MudText Typo="Typo.h3" Class="font-weight-bold mb-4"
+                                 Style="@($"color: {(_currentPeriod.IsLiability ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
+                            @Math.Abs(_currentPeriod.NetVat).ToString("C")
+                        </MudText>
+
+                        <MudDivider Class="mb-3" />
+
+                        <div class="d-flex justify-space-between mb-1">
+                            <MudText Typo="Typo.body2">@Localization.GetString("OutputVat")</MudText>
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">@_currentPeriod.OutputVat.ToString("C")</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between mb-1">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("OutputVat") @Localization.GetString("Base"): @_currentPeriod.OutputBase.ToString("C") (@_currentPeriod.OutputDocCount @Localization.GetString("Doc"))</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between mb-1 mt-2">
+                            <MudText Typo="Typo.body2">@Localization.GetString("InputVat")</MudText>
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">@_currentPeriod.InputVat.ToString("C")</MudText>
+                        </div>
+                        <div class="d-flex justify-space-between">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("InputVat") @Localization.GetString("Base"): @_currentPeriod.InputBase.ToString("C") (@_currentPeriod.InputDocCount @Localization.GetString("Doc"))</MudText>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+
+            <!-- ── Deadline + Threshold ── -->
+            <MudItem xs="12" md="7">
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudCard Elevation="2" Style="height: 100%;">
+                            <MudCardContent Class="pa-5">
+                                <div class="d-flex align-center gap-2 mb-3">
+                                    <MudIcon Icon="@Icons.Material.Filled.Schedule"
+                                             Color="@(_currentPeriod.DaysUntilDeadline <= 7 ? Color.Error : _currentPeriod.DaysUntilDeadline <= 14 ? Color.Warning : Color.Info)" />
+                                    <MudText Typo="Typo.subtitle2">@Localization.GetString("NextDeadline")</MudText>
+                                </div>
+                                <MudText Typo="Typo.h4" Class="font-weight-bold">@_currentPeriod.DaysUntilDeadline</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">дена до рокот</MudText>
+                                <MudDivider Class="my-2" />
+                                <MudText Typo="Typo.body2">@_currentPeriod.FilingDeadline.ToString("dd.MM.yyyy")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@_currentPeriod.PeriodFrom.ToString("dd.MM") – @_currentPeriod.PeriodTo.ToString("dd.MM.yyyy")</MudText>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+
+                    @if (_threshold != null)
+                    {
+                        <MudItem xs="12" sm="6">
+                            <MudCard Elevation="2" Style="height: 100%;">
+                                <MudCardContent Class="pa-5">
+                                    <div class="d-flex align-center gap-2 mb-3">
+                                        <MudIcon Icon="@Icons.Material.Filled.BarChart" Color="Color.Info" />
+                                        <MudText Typo="Typo.subtitle2">@Localization.GetString("YtdRevenue") @_threshold.Year</MudText>
+                                    </div>
+                                    <MudText Typo="Typo.h5" Class="font-weight-bold mb-1">@_threshold.YtdRevenue.ToString("C")</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">@_threshold.Percentage% од 2.000.000 ден.</MudText>
+                                    <MudProgressLinear Value="@((double)_threshold.Percentage)"
+                                                       Color="@(_threshold.Percentage >= 80 ? Color.Warning : Color.Info)"
+                                                       Rounded="true"
+                                                       Size="Size.Medium" />
+                                </MudCardContent>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudItem>
+        }
+
+        <!-- ── History Table ── -->
+        @if (_history.Count > 0)
+        {
+            <MudItem xs="12" Class="mt-4">
+                <MudCard Elevation="2">
+                    <MudCardHeader Style="align-items: center;">
+                        <CardHeaderAvatar>
+                            <MudIcon Icon="@Icons.Material.Filled.History" Color="Color.Primary" />
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("FilingDeadline") — претходни периоди</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudDivider />
+                    <MudTable Items="_history"
+                              Hover="true"
+                              Dense="true"
+                              Elevation="0"
+                              Class="wis-secondary-list">
+                        <HeaderContent>
+                            <MudTh>@Localization.GetString("CurrentPeriod")</MudTh>
+                            <MudTh>@Localization.GetString("FilingDeadline")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("OutputVat")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("InputVat")</MudTh>
+                            <MudTh Class="text-right">@Localization.GetString("NetVat")</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.PeriodLabel</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PeriodFrom.ToString("dd.MM") – @context.PeriodTo.ToString("dd.MM.yyyy")</MudText>
+                            </MudTd>
+                            <MudTd>
+                                <MudText Typo="Typo.body2">@context.FilingDeadline.ToString("dd.MM.yyyy")</MudText>
+                            </MudTd>
+                            <MudTd Class="text-right">
+                                <MudText Typo="Typo.body2">@context.OutputVat.ToString("C")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OutputDocCount @Localization.GetString("Doc")</MudText>
+                            </MudTd>
+                            <MudTd Class="text-right">
+                                <MudText Typo="Typo.body2">@context.InputVat.ToString("C")</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.InputDocCount @Localization.GetString("Doc")</MudText>
+                            </MudTd>
+                            <MudTd Class="text-right">
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="@(context.IsLiability ? Color.Warning : Color.Success)"
+                                         Variant="Variant.Outlined">
+                                    @Math.Abs(context.NetVat).ToString("C")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="@(context.IsLiability ? Color.Warning : Color.Success)"
+                                         Variant="Variant.Text">
+                                    @(context.IsLiability ? Localization.GetString("VatLiability") : Localization.GetString("VatRefund"))
+                                </MudChip>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCard>
+            </MudItem>
+        }
+
+    </MudGrid>
+}
+
+@code {
+    private bool _isRegistered;
+    private VatCurrentPeriodDto? _currentPeriod;
+    private VatThresholdDto? _threshold;
+    private List<VatPeriodHistoryItemDto> _history = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SafeLoadAsync(async () =>
+        {
+            _isRegistered = await VatService.IsVatRegisteredAsync(_cts.Token);
+
+            await Task.WhenAll(
+                VatService.GetCurrentPeriodSummaryAsync(_cts.Token)
+                    .ContinueWith(t => _currentPeriod = t.Result),
+                VatService.GetThresholdProgressAsync(_cts.Token)
+                    .ContinueWith(t => _threshold = t.Result),
+                VatService.GetPeriodHistoryAsync(8, _cts.Token)
+                    .ContinueWith(t => _history = t.Result.ToList())
+            );
+        });
+    }
+}

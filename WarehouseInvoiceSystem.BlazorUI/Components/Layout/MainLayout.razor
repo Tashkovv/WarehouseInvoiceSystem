@@ -171,6 +171,13 @@
                                         <span>@Localization.GetString("Profile")</span>
                                     </div>
                                 </MudListItem>
+                                <MudListItem OnClick="@(() => { Navigation.NavigateTo("/vat"); _settingsOpen = false; })"
+                                             Class="px-3 py-2" Style="cursor: pointer;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Size="Size.Small" Color="Color.Secondary" />
+                                        <span>@Localization.GetString("Vat")</span>
+                                    </div>
+                                </MudListItem>
                             </Authorized>
                         </AuthorizeView>
                         <MudListItem OnClick="@(() => { _settingsOpen = false; _ = OpenChangePasswordDialog(); })"

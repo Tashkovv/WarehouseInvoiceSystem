@@ -967,6 +967,52 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Include(i => i.Company)
                     .ToListAsync(ct), ct);
 
+        public Task<VatPeriodSummaryResult> GetVatPeriodSummaryAsync(
+            DateTime from, DateTime to, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+            {
+                DateTime fromUtc = from.Date;
+                DateTime toUtc   = to.Date.AddDays(1);
+
+                var rows = await All<InvoiceLine>(context)
+                    .Where(li => li.Invoice.DeletedOn == null
+                              && li.Invoice.Status != InvoiceStatus.Draft
+                              && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && li.Invoice.IssueDate >= fromUtc
+                              && li.Invoice.IssueDate < toUtc)
+                    .GroupBy(li => li.Invoice.Type)
+                    .Select(g => new
+                    {
+                        Type      = g.Key,
+                        VatTotal  = g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m) * (li.TaxRate / 100m), 2)),
+                        BaseTotal = g.Sum(li => Math.Round(li.Quantity * li.UnitPrice * (1 - li.DiscountPercentage / 100m), 2)),
+                        DocCount  = g.Select(li => li.InvoiceId).Distinct().Count()
+                    })
+                    .ToListAsync(ct);
+
+                var receivable = rows.FirstOrDefault(r => r.Type == InvoiceType.Receivable);
+                var payable    = rows.FirstOrDefault(r => r.Type == InvoiceType.Payable);
+
+                return new VatPeriodSummaryResult
+                {
+                    OutputVatTotal  = Math.Round(receivable?.VatTotal  ?? 0, 2),
+                    OutputBaseTotal = Math.Round(receivable?.BaseTotal ?? 0, 2),
+                    OutputDocCount  = receivable?.DocCount ?? 0,
+                    InputVatTotal   = Math.Round(payable?.VatTotal  ?? 0, 2),
+                    InputBaseTotal  = Math.Round(payable?.BaseTotal ?? 0, 2),
+                    InputDocCount   = payable?.DocCount ?? 0,
+                };
+            });
+
+        public Task<decimal> GetYtdReceivableTotalAsync(int year, CancellationToken ct = default) =>
+            WithContextAsync(context =>
+                All<Invoice>(context)
+                    .Where(i => i.IssueDate.Year == year
+                             && i.Type == InvoiceType.Receivable
+                             && i.Status != InvoiceStatus.Draft
+                             && i.Status != InvoiceStatus.Cancelled)
+                    .SumAsync(i => i.TotalAmount, ct));
+
         private static IQueryable<Invoice> ApplyFilters(IQueryable<Invoice> q, GetInvoicesQuery query)
         {
             if (query.Statuses is { Count: > 0 })

@@ -1,5 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Tenant
 {
+    using WarehouseInvoiceSystem.Domain.Enums;
+
     public class TenantDto
     {
         public Guid Id { get; set; }
@@ -22,5 +24,9 @@
 
         public byte[]? LogoData { get; set; }
         public string? LogoMimeType { get; set; }
+
+        public bool VatRegistered { get; set; }
+        public VatPayerPeriod VatPayerPeriod { get; set; }
+        public DateTime? VatRegistrationDate { get; set; }
     }
 }

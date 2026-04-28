@@ -77,6 +77,7 @@ builder.Services.AddTransient<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuditContextService, AuditContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<IVatService, VatService>();
 builder.Services.AddScoped<WisDialogService>();
 
 // Authentication & Authorization

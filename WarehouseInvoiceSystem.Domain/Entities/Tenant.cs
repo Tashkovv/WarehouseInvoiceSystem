@@ -1,6 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Domain.Entities
 {
     using WarehouseInvoiceSystem.Domain.Common;
+    using WarehouseInvoiceSystem.Domain.Enums;
 
     public class Tenant : AuditableEntity
     {
@@ -15,7 +16,12 @@
         public string? BankBranch { get; set; }
         public string? Email { get; set; }
         public string? EmailPasswordEncrypted { get; set; }    
-        public byte[]? LogoData { get; set; }                  
-        public string? LogoMimeType { get; set; }              
+        public byte[]? LogoData { get; set; }
+        public string? LogoMimeType { get; set; }
+
+        // VAT / ДДВ configuration
+        public bool VatRegistered { get; set; }
+        public VatPayerPeriod VatPayerPeriod { get; set; } = VatPayerPeriod.Quarterly;
+        public DateTime? VatRegistrationDate { get; set; }
     }
 }

@@ -30,6 +30,10 @@
             tenant.BankBranch = dto.BankBranch;
             tenant.Email = dto.Email;
 
+            tenant.VatRegistered = dto.VatRegistered;
+            tenant.VatPayerPeriod = dto.VatPayerPeriod;
+            tenant.VatRegistrationDate = dto.VatRegistrationDate;
+
             // Only replace the stored password when the caller supplies a new one.
             // An empty or null EmailPassword means "leave the existing value alone".
             if (!string.IsNullOrWhiteSpace(dto.EmailPassword))
@@ -72,6 +76,9 @@
             HasEmailPassword = !string.IsNullOrEmpty(tenant.EmailPasswordEncrypted),
             LogoData = tenant.LogoData,
             LogoMimeType = tenant.LogoMimeType,
+            VatRegistered = tenant.VatRegistered,
+            VatPayerPeriod = tenant.VatPayerPeriod,
+            VatRegistrationDate = tenant.VatRegistrationDate,
         };
     }
 }
