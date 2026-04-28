@@ -56,10 +56,10 @@ namespace WarehouseInvoiceSystem.Application.Models
         public static IReadOnlyList<ExportColumn<PartnerComparisonDto>> PartnerComparisonColumns(ILocalizationService t, string productUnit) =>
         [
             new(t.GetString("Partner"), x => x.PartnerName),
-            new(t.GetString("Quantity"), x => $"{x.TotalQuantity:N0} {productUnit}"),
-            new(t.GetString("Amount"), x => x.TotalAmount, ExportColumnType.Currency),
-            new(t.GetString("AveragePrice"), x => x.AverageUnitPrice, ExportColumnType.Currency),
             new(t.GetString("Documents"), x => x.DocumentCount, ExportColumnType.Number),
+            new(t.GetString("Quantity"), x => $"{x.TotalQuantity:N0} {productUnit}"),
+            new(t.GetString("AveragePrice"), x => x.AverageUnitPrice, ExportColumnType.Currency),
+            new(t.GetString("Amount"), x => x.TotalAmount, ExportColumnType.Currency),
         ];
 
         public static IReadOnlyList<ExportColumn<ProductComparisonDto>> ProductComparisonColumns(ILocalizationService t) =>

@@ -87,8 +87,8 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("UnpaidPurchaseNotes")"
-                           Value="@_purchaseNotePosition.unpaidCount.ToString()"
-                           Subtitle="@_purchaseNotePosition.unpaidAmount.ToString("C")"
+                           Value="@_purchaseNotePosition.unpaidAmount.ToString("C")"
+                           Subtitle="@($"{_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
                            Icon="@Icons.Material.Filled.Receipt"
                            IconColor="@(_purchaseNotePosition.unpaidCount > 0 ? Color.Warning : Color.Success)"
                            Link="/purchase-notes?status=Pending" />
@@ -97,7 +97,7 @@ else
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayables.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")} · {_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
+                           SubtitleLines="@([$"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")}", $"{_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}"])"
                            Icon="@Icons.Material.Filled.ShoppingCart"
                            IconColor="Color.Default" />
         </MudItem>
@@ -112,8 +112,8 @@ else
 
         <MudItem xs="12" sm="6" md="3">
             <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                           Value="@_invoicePosition.TotalOverdueCount.ToString()"
-                           Subtitle="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
+                           Value="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_invoicePosition.TotalOverdueCount} {Localization.GetString("Invoices")}")"
                            Icon="@Icons.Material.Filled.Warning"
                            IconColor="@(_invoicePosition.TotalOverdueCount > 0 ? Color.Error : Color.Success)"
                            Link="/invoices?status=Overdue" />

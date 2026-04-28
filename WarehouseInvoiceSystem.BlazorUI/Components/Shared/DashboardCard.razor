@@ -26,7 +26,14 @@
                 <MudText Typo="Typo.h4" Class="font-weight-bold my-1" Style="line-height: 1.1;">
                     @Value
                 </MudText>
-                @if (!string.IsNullOrEmpty(Subtitle))
+                @if (SubtitleLines is { Count: > 0 })
+                {
+                    @foreach (var line in SubtitleLines)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@line</MudText>
+                    }
+                }
+                else if (!string.IsNullOrEmpty(Subtitle))
                 {
                     <MudText Typo="Typo.caption" Color="Color.Secondary">
                         @Subtitle
@@ -60,6 +67,7 @@
     [Parameter] public string Title { get; set; } = string.Empty;
     [Parameter] public string Value { get; set; } = string.Empty;
     [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public IReadOnlyList<string>? SubtitleLines { get; set; }
     [Parameter] public string? Icon { get; set; }
     [Parameter] public Color IconColor { get; set; } = Color.Primary;
     [Parameter] public string? Link { get; set; }

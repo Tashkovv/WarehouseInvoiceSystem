@@ -56,6 +56,17 @@
                                         DatePreset="_datePreset"
                                         DatePresetChanged="OnDatePresetChanged"
                                         OnChanged="LoadComparisonAsync" />
+
+                    @if (_hasActiveFilters)
+                    {
+                        <div class="wis-toolbar-divider"></div>
+                        <button type="button"
+                                class="wis-filter-btn wis-filter-btn--clear"
+                                @onclick="ClearFilters">
+                            <MudIcon Icon="@Icons.Material.Filled.FilterAltOff" Size="Size.Small" Style="margin-right: 6px;" />
+                            @Localization.GetString("ClearFilters")
+                        </button>
+                    }
                 </div>
 
                 @* ── Selected product chips ── *@
@@ -162,6 +173,8 @@
     // ── Filters ──────────────────────────────────────────────────────────────
     private List<Guid> _selectedProductIds = [];
     private Guid? _selectedWarehouseId;
+    private string? _selectedWarehouseName;
+    private readonly Dictionary<Guid, string> _warehouseNameCache = [];
     private DateRange _dateRange = new(null, null);
     private int? _datePreset;
     private WisDateRangeFilter? _dateRangeFilter;
@@ -172,6 +185,12 @@
     private bool _loadingComparison;
     private bool _exporting;
     private CancellationTokenSource _loadCts = new();
+
+    private bool _hasActiveFilters =>
+        _selectedProductIds.Count > 0 ||
+        _selectedWarehouseId.HasValue ||
+        _dateRange.Start.HasValue ||
+        _dateRange.End.HasValue;
 
     // ── Product data source ─────────────────────────────────────────────────
 
@@ -217,13 +236,18 @@
                 SortAscending = true
             }, ct);
 
+        var items = result.Items.Select(w => new WisAutocompleteItem<Guid>
+        {
+            Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
+            Value = w.Id
+        }).ToList();
+
+        foreach (var w in result.Items)
+            _warehouseNameCache[w.Id] = w.Name;
+
         return new PagedResult<WisAutocompleteItem<Guid>>
         {
-            Items = result.Items.Select(w => new WisAutocompleteItem<Guid>
-            {
-                Label = w.Name + (w.IsDefault ? $" ({Localization.GetString("Default")})" : ""),
-                Value = w.Id
-            }).ToList(),
+            Items = items,
             TotalCount = result.TotalCount,
             Page = result.Page,
             PageSize = result.PageSize
@@ -241,6 +265,8 @@
     private async Task OnWarehouseChanged(Guid? warehouseId)
     {
         _selectedWarehouseId = warehouseId;
+        _selectedWarehouseName = warehouseId.HasValue && _warehouseNameCache.TryGetValue(warehouseId.Value, out var name)
+            ? name : null;
         await LoadComparisonAsync();
     }
 
@@ -292,7 +318,40 @@
         }
     }
 
+    // ── Clear filters ────────────────────────────────────────────────────────
+
+    private async Task ClearFilters()
+    {
+        _selectedProductIds = [];
+        _selectedWarehouseId = null;
+        _selectedWarehouseName = null;
+        _dateRange = new(null, null);
+        _datePreset = null;
+        _comparisonRows = [];
+        if (_productPicker is not null)
+            await _productPicker.ClearAsync();
+        if (_dateRangeFilter is not null)
+            await _dateRangeFilter.ClearAsync();
+        StateHasChanged();
+    }
+
     // ── Export ───────────────────────────────────────────────────────────────
+
+    private string BuildExportSubtitle()
+    {
+        string? warehouse = _selectedWarehouseName;
+        string? period = _dateRange.Start.HasValue || _dateRange.End.HasValue
+            ? $"{_dateRange.Start?.ToString("dd MMM yyyy") ?? "—"} – {_dateRange.End?.ToString("dd MMM yyyy") ?? "—"}"
+            : null;
+
+        return (warehouse, period) switch
+        {
+            (not null, not null) => $"{warehouse} | {period}",
+            (not null, null)     => warehouse,
+            (null, not null)     => period,
+            _                    => ""
+        };
+    }
 
     private async Task ExportComparison()
     {
@@ -308,7 +367,7 @@
                 ExportColumnDefinitions.ProductComparisonColumns(Localization),
                 new ExportListOptions(
                     Localization.GetString("CompareProducts"),
-                    ""));
+                    BuildExportSubtitle()));
 
             string fileName = $"{Localization.GetString("CompareProducts")}_{DateTime.UtcNow:yyyyMMdd}.xlsx";
             await DownloadFileAsync(fileBytes, fileName);
