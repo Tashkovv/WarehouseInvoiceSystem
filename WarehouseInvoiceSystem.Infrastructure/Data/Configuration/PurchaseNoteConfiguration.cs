@@ -31,6 +31,7 @@
             builder.HasIndex(e => e.PurchaseDate);
             builder.HasIndex(e => e.Status);
             builder.HasIndex(e => e.DeletedOn);
+            builder.HasIndex(e => new { e.Status, e.DeletedOn, e.PurchaseDate });
 
             // Relationships
             builder.HasOne(e => e.Individual)

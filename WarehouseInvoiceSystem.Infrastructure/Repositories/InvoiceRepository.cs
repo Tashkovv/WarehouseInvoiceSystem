@@ -207,27 +207,28 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (ids is { Count: > 0 })
                     q = q.Where(li => ids.Contains(li.Invoice.CompanyId));
 
-                var rows = await q
-                    .Select(li => new
+                var aggregated = await q
+                    .GroupBy(li => new { li.Invoice.CompanyId, li.Invoice.Company!.Name })
+                    .Select(g => new
                     {
-                        li.Invoice.CompanyId,
-                        li.Invoice.Company!.Name,
-                        li.InvoiceId,
-                        li.Quantity,
-                        li.UnitPrice
-                    })
-                    .ToListAsync(ct);
-
-                return rows
-                    .GroupBy(r => new { r.CompanyId, r.Name })
-                    .Select(g => new PartnerSummary(
                         g.Key.CompanyId,
                         g.Key.Name,
-                        g.Select(r => r.InvoiceId).Distinct().Count(),
-                        g.Sum(r => r.Quantity),
-                        Math.Round(g.Sum(r => r.Quantity * r.UnitPrice), 2),
-                        Math.Round(g.Average(r => r.UnitPrice), 2)))
-                    .OrderByDescending(s => s.TotalQuantity)
+                        DocCount = g.Select(li => li.InvoiceId).Distinct().Count(),
+                        TotalQty  = g.Sum(li => li.Quantity),
+                        TotalAmt  = g.Sum(li => li.Quantity * li.UnitPrice),
+                        AvgPrice  = g.Average(li => li.UnitPrice)
+                    })
+                    .OrderByDescending(g => g.TotalQty)
+                    .ToListAsync(ct);
+
+                return aggregated
+                    .Select(r => new PartnerSummary(
+                        r.CompanyId,
+                        r.Name,
+                        r.DocCount,
+                        r.TotalQty,
+                        Math.Round(r.TotalAmt, 2),
+                        Math.Round(r.AvgPrice, 2)))
                     .ToList();
             });
 

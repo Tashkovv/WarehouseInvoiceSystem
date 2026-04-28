@@ -194,27 +194,28 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (ids is { Count: > 0 })
                     q = q.Where(li => ids.Contains(li.PurchaseNote.IndividualId));
 
-                var rows = await q
-                    .Select(li => new
+                var aggregated = await q
+                    .GroupBy(li => new { li.PurchaseNote.IndividualId, li.PurchaseNote.Individual!.FullName })
+                    .Select(g => new
                     {
-                        li.PurchaseNote.IndividualId,
-                        li.PurchaseNote.Individual!.FullName,
-                        li.PurchaseNoteId,
-                        li.Quantity,
-                        li.UnitPrice
-                    })
-                    .ToListAsync(ct);
-
-                return rows
-                    .GroupBy(r => new { r.IndividualId, r.FullName })
-                    .Select(g => new PartnerSummary(
                         g.Key.IndividualId,
                         g.Key.FullName,
-                        g.Select(r => r.PurchaseNoteId).Distinct().Count(),
-                        g.Sum(r => r.Quantity),
-                        Math.Round(g.Sum(r => r.Quantity * r.UnitPrice), 2),
-                        Math.Round(g.Average(r => r.UnitPrice), 2)))
-                    .OrderByDescending(s => s.TotalQuantity)
+                        DocCount = g.Select(li => li.PurchaseNoteId).Distinct().Count(),
+                        TotalQty  = g.Sum(li => li.Quantity),
+                        TotalAmt  = g.Sum(li => li.Quantity * li.UnitPrice),
+                        AvgPrice  = g.Average(li => li.UnitPrice)
+                    })
+                    .OrderByDescending(g => g.TotalQty)
+                    .ToListAsync(ct);
+
+                return aggregated
+                    .Select(r => new PartnerSummary(
+                        r.IndividualId,
+                        r.FullName,
+                        r.DocCount,
+                        r.TotalQty,
+                        Math.Round(r.TotalAmt, 2),
+                        Math.Round(r.AvgPrice, 2)))
                     .ToList();
             });
 

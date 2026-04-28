@@ -48,6 +48,7 @@
             builder.HasIndex(e => e.DeletedOn); 
             builder.HasIndex(e => e.Type);
             builder.HasIndex(e => new { e.Type, e.Status, e.DeletedOn });
+            builder.HasIndex(e => new { e.Type, e.Status, e.DeletedOn, e.IssueDate });
 
             // Relationships
             builder.HasOne(e => e.Company)
