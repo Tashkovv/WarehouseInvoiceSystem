@@ -49,6 +49,14 @@
             builder.HasIndex(e => e.Type);
             builder.HasIndex(e => new { e.Type, e.Status, e.DeletedOn });
             builder.HasIndex(e => new { e.Type, e.Status, e.DeletedOn, e.IssueDate });
+            builder.HasIndex(e => e.IssueDate)
+                   .IsDescending()
+                   .HasFilter("\"DeletedOn\" IS NULL AND \"Type\" = 1 AND \"Status\" NOT IN (1, 6)")
+                   .HasDatabaseName("IX_Invoice_Receivable_Active_IssueDate");
+            builder.HasIndex(e => e.IssueDate)
+                   .IsDescending()
+                   .HasFilter("\"DeletedOn\" IS NULL AND \"Type\" = 2 AND \"Status\" NOT IN (1, 6)")
+                   .HasDatabaseName("IX_Invoice_Payable_Active_IssueDate");
 
             // Relationships
             builder.HasOne(e => e.Company)

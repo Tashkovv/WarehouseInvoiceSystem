@@ -334,7 +334,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("InvoiceNumber")
                         .IsUnique();
 
-                    b.HasIndex("IssueDate");
+                    b.HasIndex("IssueDate")
+                        .IsDescending()
+                        .HasDatabaseName("IX_Invoice_Payable_Active_IssueDate")
+                        .HasFilter("\"DeletedOn\" IS NULL AND \"Type\" = 2 AND \"Status\" NOT IN (1, 6)");
 
                     b.HasIndex("Type");
 
@@ -652,7 +655,10 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("NoteNumber")
                         .IsUnique();
 
-                    b.HasIndex("PurchaseDate");
+                    b.HasIndex("PurchaseDate")
+                        .IsDescending()
+                        .HasDatabaseName("IX_PurchaseNote_Active_PurchaseDate")
+                        .HasFilter("\"DeletedOn\" IS NULL AND \"Status\" NOT IN (1, 4)");
 
                     b.HasIndex("Status");
 

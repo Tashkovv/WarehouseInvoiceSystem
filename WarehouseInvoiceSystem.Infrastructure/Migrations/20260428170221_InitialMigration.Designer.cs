@@ -12,7 +12,7 @@ using WarehouseInvoiceSystem.Infrastructure.Data;
 namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260423190337_InitialMigration")]
+    [Migration("20260428170221_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -330,10 +330,17 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
 
                     b.HasIndex("DeletedOn");
 
+                    b.HasIndex("DueDate")
+                        .HasDatabaseName("IX_Invoice_DueDate_OverdueEligible")
+                        .HasFilter("\"Status\" IN (2, 3) AND \"DeletedOn\" IS NULL");
+
                     b.HasIndex("InvoiceNumber")
                         .IsUnique();
 
-                    b.HasIndex("IssueDate");
+                    b.HasIndex("IssueDate")
+                        .IsDescending()
+                        .HasDatabaseName("IX_Invoice_Payable_Active_IssueDate")
+                        .HasFilter("\"DeletedOn\" IS NULL AND \"Type\" = 2 AND \"Status\" NOT IN (1, 6)");
 
                     b.HasIndex("Type");
 
@@ -342,6 +349,8 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("Status", "DueDate");
 
                     b.HasIndex("Type", "Status", "DeletedOn");
+
+                    b.HasIndex("Type", "Status", "DeletedOn", "IssueDate");
 
                     b.ToTable("Invoice", (string)null);
                 });
@@ -398,6 +407,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("InvoiceId");
 
                     b.HasIndex("ProductId");
+
+                    b.HasIndex("ProductId", "InvoiceId")
+                        .HasDatabaseName("IX_InvoiceLine_ProductId_InvoiceId");
 
                     b.ToTable("InvoiceLine", (string)null);
                 });
@@ -646,11 +658,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("NoteNumber")
                         .IsUnique();
 
-                    b.HasIndex("PurchaseDate");
+                    b.HasIndex("PurchaseDate")
+                        .IsDescending()
+                        .HasDatabaseName("IX_PurchaseNote_Active_PurchaseDate")
+                        .HasFilter("\"DeletedOn\" IS NULL AND \"Status\" NOT IN (1, 4)");
 
                     b.HasIndex("Status");
 
                     b.HasIndex("WarehouseId");
+
+                    b.HasIndex("Status", "DeletedOn", "PurchaseDate");
 
                     b.ToTable("PurchaseNote", (string)null);
                 });
@@ -704,6 +721,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.HasIndex("PurchaseNoteId");
+
+                    b.HasIndex("ProductId", "PurchaseNoteId")
+                        .HasDatabaseName("IX_PurchaseNoteLine_ProductId_PurchaseNoteId");
 
                     b.ToTable("PurchaseNoteLine", (string)null);
                 });

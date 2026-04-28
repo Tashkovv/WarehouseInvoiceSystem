@@ -32,6 +32,10 @@
             builder.HasIndex(e => e.Status);
             builder.HasIndex(e => e.DeletedOn);
             builder.HasIndex(e => new { e.Status, e.DeletedOn, e.PurchaseDate });
+            builder.HasIndex(e => e.PurchaseDate)
+                   .IsDescending()
+                   .HasFilter("\"DeletedOn\" IS NULL AND \"Status\" NOT IN (1, 4)")
+                   .HasDatabaseName("IX_PurchaseNote_Active_PurchaseDate");
 
             // Relationships
             builder.HasOne(e => e.Individual)

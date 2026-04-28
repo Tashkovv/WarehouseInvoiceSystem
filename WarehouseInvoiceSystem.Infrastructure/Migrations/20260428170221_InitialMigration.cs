@@ -531,15 +531,23 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "DeletedOn");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Invoice_DueDate_OverdueEligible",
+                table: "Invoice",
+                column: "DueDate",
+                filter: "\"Status\" IN (2, 3) AND \"DeletedOn\" IS NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Invoice_InvoiceNumber",
                 table: "Invoice",
                 column: "InvoiceNumber",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Invoice_IssueDate",
+                name: "IX_Invoice_Payable_Active_IssueDate",
                 table: "Invoice",
-                column: "IssueDate");
+                column: "IssueDate",
+                descending: new bool[0],
+                filter: "\"DeletedOn\" IS NULL AND \"Type\" = 2 AND \"Status\" NOT IN (1, 6)");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoice_Status_DueDate",
@@ -555,6 +563,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_Invoice_Type_Status_DeletedOn",
                 table: "Invoice",
                 columns: new[] { "Type", "Status", "DeletedOn" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Invoice_Type_Status_DeletedOn_IssueDate",
+                table: "Invoice",
+                columns: new[] { "Type", "Status", "DeletedOn", "IssueDate" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoice_WarehouseId",
@@ -575,6 +588,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_InvoiceLine_ProductId",
                 table: "InvoiceLine",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InvoiceLine_ProductId_InvoiceId",
+                table: "InvoiceLine",
+                columns: new[] { "ProductId", "InvoiceId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notification_Data_CreatedAt",
@@ -649,6 +667,13 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 column: "Name");
 
             migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_Active_PurchaseDate",
+                table: "PurchaseNote",
+                column: "PurchaseDate",
+                descending: new bool[0],
+                filter: "\"DeletedOn\" IS NULL AND \"Status\" NOT IN (1, 4)");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PurchaseNote_DeletedOn",
                 table: "PurchaseNote",
                 column: "DeletedOn");
@@ -665,14 +690,14 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_PurchaseNote_PurchaseDate",
-                table: "PurchaseNote",
-                column: "PurchaseDate");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_PurchaseNote_Status",
                 table: "PurchaseNote",
                 column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNote_Status_DeletedOn_PurchaseDate",
+                table: "PurchaseNote",
+                columns: new[] { "Status", "DeletedOn", "PurchaseDate" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_PurchaseNote_WarehouseId",
@@ -688,6 +713,11 @@ namespace WarehouseInvoiceSystem.Infrastructure.Migrations
                 name: "IX_PurchaseNoteLine_ProductId",
                 table: "PurchaseNoteLine",
                 column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PurchaseNoteLine_ProductId_PurchaseNoteId",
+                table: "PurchaseNoteLine",
+                columns: new[] { "ProductId", "PurchaseNoteId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_PurchaseNoteLine_PurchaseNoteId",
