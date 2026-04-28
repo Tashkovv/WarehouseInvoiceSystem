@@ -226,6 +226,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                     .Where(li => li.ProductId == productId
                               && li.PurchaseNote.DeletedOn == null
                               && li.PurchaseNote.Status != PurchaseNoteStatus.Cancelled
+                              && li.PurchaseNote.Status != PurchaseNoteStatus.Draft
                               && !context.InventoryTransactions
                                     .Any(r => r.SourceDocumentId == li.PurchaseNoteId
                                            && r.SourceDocumentType == "PurchaseNote_Reversal"));

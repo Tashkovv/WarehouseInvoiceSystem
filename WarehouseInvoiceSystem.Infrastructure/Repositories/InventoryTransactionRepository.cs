@@ -45,7 +45,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (query.CompanyId.HasValue)
                 {
                     IQueryable<Guid?> invoiceIds = All<Invoice>(context)
-                        .Where(i => i.CompanyId == query.CompanyId.Value)
+                        .Where(i => i.CompanyId == query.CompanyId.Value
+                                 && i.Status != InvoiceStatus.Draft
+                                 && i.Status != InvoiceStatus.Cancelled)
                         .Select(i => (Guid?)i.Id);
                     q = q.Where(t => t.SourceDocumentType != null
                                   && t.SourceDocumentType.StartsWith("Invoice")
@@ -55,7 +57,9 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 if (query.IndividualId.HasValue)
                 {
                     IQueryable<Guid?> purchaseNoteIds = All<PurchaseNote>(context)
-                        .Where(pn => pn.IndividualId == query.IndividualId.Value)
+                        .Where(pn => pn.IndividualId == query.IndividualId.Value
+                                  && pn.Status != PurchaseNoteStatus.Draft
+                                  && pn.Status != PurchaseNoteStatus.Cancelled)
                         .Select(pn => (Guid?)pn.Id);
                     q = q.Where(t => t.SourceDocumentType != null
                                   && t.SourceDocumentType.StartsWith("PurchaseNote")

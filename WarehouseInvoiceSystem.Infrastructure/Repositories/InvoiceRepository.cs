@@ -240,6 +240,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                               && li.Invoice.Type == InvoiceType.Receivable
                               && li.Invoice.DeletedOn == null
                               && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && li.Invoice.Status != InvoiceStatus.Draft
                               && !context.InventoryTransactions
                                     .Any(r => r.SourceDocumentId == li.InvoiceId
                                            && r.SourceDocumentType == "Invoice_Reversal"));
@@ -263,6 +264,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                               && li.Invoice.Type == InvoiceType.Payable
                               && li.Invoice.DeletedOn == null
                               && li.Invoice.Status != InvoiceStatus.Cancelled
+                              && li.Invoice.Status != InvoiceStatus.Draft
                               && !context.InventoryTransactions
                                     .Any(r => r.SourceDocumentId == li.InvoiceId
                                            && r.SourceDocumentType == "Invoice_Reversal"));
