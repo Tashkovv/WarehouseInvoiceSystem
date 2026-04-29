@@ -30,7 +30,7 @@
                 {
                     @foreach (var line in SubtitleLines)
                     {
-                        <MudText Typo="Typo.caption" Color="Color.Secondary">@line</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="d-block">@line</MudText>
                     }
                 }
                 else if (!string.IsNullOrEmpty(Subtitle))
@@ -41,7 +41,7 @@
                 }
                 @if (!string.IsNullOrEmpty(Trend))
                 {
-                    <div class="d-flex align-center justify-end gap-1 mt-1">
+                    <div class="d-flex align-center justify-start gap-1 mt-1">
                         <MudIcon Icon="@(TrendPositive ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)"
                                  Size="Size.Small"
                                  Color="@(TrendPositive ? Color.Success : Color.Error)" />

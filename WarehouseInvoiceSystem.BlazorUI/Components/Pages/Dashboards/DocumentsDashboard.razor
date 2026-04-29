@@ -75,32 +75,23 @@ else
             </div>
         </MudItem>
 
-        @PeriodCards(_periodNoteSummary, _periodInvoiceSummary, _netIssued, _margin)
+        @{
+            var (pDateFrom, pDateTo) = GetDateFilter();
+            int pMd = _periodVatSummary != null ? 3 : 4;
+        }
+
+        <MudItem xs="12" sm="6" md="@pMd">
+            <DashboardCard Title="@Localization.GetString("ReceivableInvoices")"
+                           Value="@_periodInvoiceSummary.ReceivableAmount.ToString("C")"
+                           Subtitle="@($"{_periodInvoiceSummary.ReceivableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="Color.Primary"
+                           Link="@($"/invoices?type=Receivable&issueDateFrom={pDateFrom}&issueDateTo={pDateTo}")" />
+        </MudItem>
 
         @if (_periodVatSummary != null)
         {
-            <MudItem xs="12" Class="mt-2">
-                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2" Style="text-transform: uppercase; letter-spacing: 0.05em;">
-                    @Localization.GetString("Vat")
-                </MudText>
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
-                <DashboardCard Title="@Localization.GetString("OutputVat")"
-                               Value="@_periodVatSummary.OutputVat.ToString("C")"
-                               Subtitle="@($"{_periodVatSummary.OutputDocCount} {Localization.GetString("Invoices")}")"
-                               Icon="@Icons.Material.Filled.ArrowUpward"
-                               IconColor="Color.Primary"
-                               Link="/vat" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
-                <DashboardCard Title="@Localization.GetString("InputVat")"
-                               Value="@_periodVatSummary.InputVat.ToString("C")"
-                               Subtitle="@($"{_periodVatSummary.InputDocCount} {Localization.GetString("Invoices")}")"
-                               Icon="@Icons.Material.Filled.ArrowDownward"
-                               IconColor="Color.Secondary"
-                               Link="/vat" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="4">
+            <MudItem xs="12" sm="6" md="3">
                 <DashboardCard Title="@Localization.GetString("NetVat")"
                                Value="@Math.Abs(_periodVatSummary.NetVat).ToString("C")"
                                Subtitle="@(_periodVatSummary.IsLiability ? Localization.GetString("VatLiability") : Localization.GetString("VatRefund"))"
@@ -109,6 +100,24 @@ else
                                Link="/vat" />
             </MudItem>
         }
+
+        <MudItem xs="12" sm="6" md="@pMd">
+            <DashboardCard Title="@Localization.GetString("PayableInvoices")"
+                           Value="@_periodInvoiceSummary.PayableAmount.ToString("C")"
+                           Subtitle="@(_periodVatSummary != null ? $"{Localization.GetString("InputVat")}: {_periodVatSummary.InputVat.ToString("C")}" : $"{_periodInvoiceSummary.PayableCount} {Localization.GetString("Invoices")}")"
+                           Icon="@Icons.Material.Filled.ShoppingCart"
+                           IconColor="Color.Secondary"
+                           Link="@($"/invoices?type=Payable&issueDateFrom={pDateFrom}&issueDateTo={pDateTo}")" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="@pMd">
+            <DashboardCard Title="@Localization.GetString("NetResult")"
+                           Value="@_netIssued.ToString("C")"
+                           Trend="@_margin.ToString("P1")"
+                           TrendPositive="@(_netIssued >= 0)"
+                           Icon="@Icons.Material.Filled.SwapVert"
+                           IconColor="@(_netIssued >= 0 ? Color.Success : Color.Error)" />
+        </MudItem>
 
         <!-- ── Attention Needed ── -->
         <MudItem xs="12" Class="mt-6">
@@ -404,9 +413,8 @@ else
 
     // ── Period data ──
     private InvoicePeriodSummaryResult _periodInvoiceSummary = new();
-    private DayPurchaseNoteSummaryResult _periodNoteSummary = new();
     private VatCurrentPeriodDto? _periodVatSummary;
-    private decimal _netIssued => _periodInvoiceSummary.ReceivableAmount - _periodInvoiceSummary.PayableAmount - _periodNoteSummary.Amount;
+    private decimal _netIssued => _periodInvoiceSummary.ReceivableAmount - _periodInvoiceSummary.PayableAmount;
     private decimal _margin => _periodInvoiceSummary.ReceivableAmount > 0 ? _netIssued / _periodInvoiceSummary.ReceivableAmount : 0;
 
     // ── Outstanding position ──
@@ -462,20 +470,11 @@ else
             _ => InvoiceService.GetDayInvoiceSummaryAsync(_selectedDate, _cts.Token)
         };
 
-        var noteTask = _periodMode switch
-        {
-            PeriodMode.Custom => PurchaseNoteService.GetRangeIssuedSummaryAsync(_customDateRange.Start!.Value, _customDateRange.End!.Value, _cts.Token),
-            PeriodMode.Year => PurchaseNoteService.GetYearIssuedSummaryAsync(_selectedDate.Year, _cts.Token),
-            PeriodMode.Month => PurchaseNoteService.GetMonthIssuedSummaryAsync(_selectedDate.Year, _selectedDate.Month, _cts.Token),
-            _ => PurchaseNoteService.GetDayIssuedSummaryAsync(_selectedDate, _cts.Token)
-        };
-
         (DateTime vatFrom, DateTime vatTo, string vatLabel) = GetVatDateRange();
         Task<VatCurrentPeriodDto?> vatTask = VatService.GetRangeSummaryAsync(vatFrom, vatTo, vatLabel, _cts.Token);
 
         await Task.WhenAll(
             invoiceTask.ContinueWith(t => _periodInvoiceSummary = t.Result),
-            noteTask.ContinueWith(t => _periodNoteSummary = t.Result),
             vatTask.ContinueWith(t => _periodVatSummary = t.Result)
         );
     }
@@ -596,46 +595,5 @@ else
             _ => (_selectedDate.ToString("yyyy-MM-dd"), _selectedDate.ToString("yyyy-MM-dd"))
         };
     }
-
-    private RenderFragment PeriodCards(
-        DayPurchaseNoteSummaryResult notes,
-        InvoicePeriodSummaryResult invoices,
-        decimal net,
-        decimal margin) => __builder =>
-    {
-        (string dateFrom, string dateTo) = GetDateFilter();
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PurchaseNotes")"
-                           Value="@notes.Amount.ToString("C")"
-                           Subtitle="@($"{notes.Count} {Localization.GetString("PurchaseNotes")}")"
-                           Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="Color.Default"
-                           Link=@($"/purchase-notes?purchaseDateFrom={dateFrom}&purchaseDateTo={dateTo}")/>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PayableInvoices")"
-                           Value="@invoices.PayableAmount.ToString("C")"
-                           Subtitle="@($"{invoices.PayableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.ShoppingCart"
-                           IconColor="Color.Default"
-                           Link=@($"/invoices?type=Payable&issueDateFrom={dateFrom}&issueDateTo={dateTo}") />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("ReceivableInvoices")"
-                           Value="@invoices.ReceivableAmount.ToString("C")"
-                           Subtitle="@($"{invoices.ReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Primary" 
-                           Link=@($"/invoices?type=Receivable&issueDateFrom={dateFrom}&issueDateTo={dateTo}") />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("NetResult")"
-                           Value="@net.ToString("C")"
-                           Subtitle="@margin.ToString("P1")"
-                           Icon="@Icons.Material.Filled.SwapVert"
-                           IconColor="@(net >= 0 ? Color.Success : Color.Error)" />
-        </MudItem>
-    };
 
 }

@@ -45,129 +45,59 @@ else
             </MudPaper>
         </MudItem>
 
-        <!-- ── Row 1: Today's Pulse ── -->
+        <!-- ── Financial Overview ── -->
         <MudItem xs="12">
-            <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("TodaysActivity")</MudText>
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PurchaseNotes")"
-                           Value="@_todayNoteSummary.Amount.ToString("C")"
-                           Subtitle="@($"{_todayNoteSummary.Count} {Localization.GetString("PurchaseNotes")}")"
-                           Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="Color.Default" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("PayableInvoices")"
-                           Value="@_todayInvoiceSummary.PayableAmount.ToString("C")"
-                           Subtitle="@($"{_todayInvoiceSummary.PayableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.ShoppingCart"
-                           IconColor="Color.Default" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("ReceivableInvoices")"
-                           Value="@_todayInvoiceSummary.ReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_todayInvoiceSummary.ReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Primary" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("NetResult")"
-                           Value="@_netIssuedToday.ToString("C")"
-                           Subtitle="@_marginToday.ToString("P1")"
-                           Icon="@Icons.Material.Filled.SwapVert"
-                           IconColor="@(_netIssuedToday >= 0 ? Color.Success : Color.Error)" />
-        </MudItem>
-
-        <!-- ── Row 2: Financial Health ── -->
-        <MudItem xs="12" Class="mt-6">
             <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("FinancialHealth")</MudText>
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("UnpaidPurchaseNotes")"
-                           Value="@_purchaseNotePosition.unpaidAmount.ToString("C")"
-                           Subtitle="@($"{_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}")"
-                           Icon="@Icons.Material.Filled.Receipt"
-                           IconColor="@(_purchaseNotePosition.unpaidCount > 0 ? Color.Warning : Color.Success)"
-                           Link="/purchase-notes?status=Pending" />
+        @{
+            bool _showVatCard = _vatPeriod != null || _vatThreshold != null;
+            int _overviewMd = _showVatCard ? 3 : 4;
+        }
+
+        <MudItem xs="12" sm="6" md="@_overviewMd">
+            <DashboardCard Title="@Localization.GetString("TodaysActivity")"
+                           Value="@_todayInvoiceSummary.ReceivableAmount.ToString("C")"
+                           SubtitleLines="@([$"{_todayInvoiceSummary.ReceivableCount} {Localization.GetString("Invoices")}", $"{Localization.GetString("PayableInvoices")}: {_todayInvoiceSummary.PayableAmount.ToString("C")}"])"
+                           Icon="@Icons.Material.Filled.TrendingUp"
+                           IconColor="Color.Primary"
+                           Link="/invoices?type=Receivable" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="12" sm="6" md="@_overviewMd">
+            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
+                           Value="@_invoicePosition.ReceivableAmount.ToString("C")"
+                           SubtitleLines="@([$"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}", $"{Localization.GetString("OverdueInvoices")}: {_invoicePosition.OverdueReceivableAmount.ToString("C")}"])"
+                           Icon="@Icons.Material.Filled.RequestQuote"
+                           IconColor="@(_invoicePosition.TotalOverdueCount > 0 ? Color.Error : Color.Primary)"
+                           Link="@(_invoicePosition.TotalOverdueCount > 0 ? "/invoices?status=Overdue" : "/invoices?type=Receivable")" />
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="@_overviewMd">
             <DashboardCard Title="@Localization.GetString("TotalPayables")"
                            Value="@_totalPayables.ToString("C")"
                            SubtitleLines="@([$"{_invoicePosition.PayableCount} {Localization.GetString("Invoices")}", $"{_purchaseNotePosition.unpaidCount} {Localization.GetString("PurchaseNotes")}"])"
                            Icon="@Icons.Material.Filled.ShoppingCart"
-                           IconColor="Color.Default" />
+                           IconColor="@(_totalPayables > 0 ? Color.Warning : Color.Secondary)" />
         </MudItem>
 
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("TotalReceivables")"
-                           Value="@_invoicePosition.ReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.ReceivableCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.RequestQuote"
-                           IconColor="Color.Primary" />
-        </MudItem>
-
-        <MudItem xs="12" sm="6" md="3">
-            <DashboardCard Title="@Localization.GetString("OverdueInvoices")"
-                           Value="@_invoicePosition.OverdueReceivableAmount.ToString("C")"
-                           Subtitle="@($"{_invoicePosition.TotalOverdueCount} {Localization.GetString("Invoices")}")"
-                           Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_invoicePosition.TotalOverdueCount > 0 ? Color.Error : Color.Success)"
-                           Link="/invoices?status=Overdue" />
-        </MudItem>
-
-        <!-- ── Row 3: VAT / ДДВ ── -->
         @if (_vatPeriod != null)
         {
-            <MudItem xs="12" Class="mt-6">
-                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("Vat")</MudText>
-            </MudItem>
-
-            <MudItem xs="12" sm="6" md="4">
+            <MudItem xs="12" sm="6" md="3">
                 <DashboardCard Title="@Localization.GetString("NetVat")"
                                Value="@Math.Abs(_vatPeriod.NetVat).ToString("C")"
-                               SubtitleLines="@([$"{Localization.GetString("OutputVat")}: {_vatPeriod.OutputVat.ToString("C")}", $"{Localization.GetString("InputVat")}: {_vatPeriod.InputVat.ToString("C")}"])"
+                               SubtitleLines="@([$"{_vatPeriod.DaysUntilDeadline} дена до рокот", _vatPeriod.PeriodLabel])"
                                Icon="@Icons.Material.Filled.AccountBalance"
-                               IconColor="@(_vatPeriod.IsLiability ? Color.Warning : Color.Success)"
+                               IconColor="@(_vatPeriod.DaysUntilDeadline <= 7 ? Color.Error : _vatPeriod.IsLiability ? Color.Warning : Color.Success)"
                                Link="/vat" />
             </MudItem>
-
-            <MudItem xs="12" sm="6" md="4">
-                <DashboardCard Title="@Localization.GetString("NextDeadline")"
-                               Value="@($"{_vatPeriod.DaysUntilDeadline} дена")"
-                               SubtitleLines="@([$"{_vatPeriod.PeriodLabel}", $"{_vatPeriod.FilingDeadline:dd.MM.yyyy}"])"
-                               Icon="@Icons.Material.Filled.Schedule"
-                               IconColor="@(_vatPeriod.DaysUntilDeadline <= 7 ? Color.Error : _vatPeriod.DaysUntilDeadline <= 14 ? Color.Warning : Color.Info)"
-                               Link="/vat" />
-            </MudItem>
-
-            @if (_vatThreshold != null)
-            {
-                <MudItem xs="12" sm="6" md="4">
-                    <DashboardCard Title="@Localization.GetString("VatThreshold")"
-                                   Value="@_vatThreshold.YtdRevenue.ToString("C")"
-                                   Subtitle="@($"{_vatThreshold.Percentage}% од 2.000.000 ден.")"
-                                   Icon="@Icons.Material.Filled.BarChart"
-                                   IconColor="Color.Info"
-                                   Link="/vat" />
-                </MudItem>
-            }
         }
         else if (_vatThreshold != null)
         {
-            <MudItem xs="12" Class="mt-6">
-                <MudText Typo="Typo.h6" Class="mb-4">@Localization.GetString("Vat")</MudText>
-            </MudItem>
-
-            <MudItem xs="12" sm="6" md="4">
+            <MudItem xs="12" sm="6" md="3">
                 <DashboardCard Title="@Localization.GetString("YtdRevenue")"
                                Value="@_vatThreshold.YtdRevenue.ToString("C")"
-                               Subtitle="@($"{_vatThreshold.Percentage}% {Localization.GetString("VatThreshold")} 2.000.000 ден.")"
+                               Subtitle="@($"{_vatThreshold.Percentage}% од 2.000.000 ден.")"
                                Icon="@Icons.Material.Filled.BarChart"
                                IconColor="@(_vatThreshold.Percentage >= 80 ? Color.Warning : Color.Info)"
                                Link="/profile" />
@@ -232,7 +162,6 @@ else
     private VatThresholdDto? _vatThreshold;
 
     private InvoicePeriodSummaryResult _todayInvoiceSummary = new();
-    private DayPurchaseNoteSummaryResult _todayNoteSummary = new();
     private InvoiceOutstandingResult _invoicePosition = new();
     private (int unpaidCount, decimal unpaidAmount) _purchaseNotePosition;
     private WarehouseStockSummaryResult _stockSummary = new();
@@ -241,12 +170,6 @@ else
     private readonly Dictionary<Guid, string> _warehouseNameCache = [];
 
     // ── Computed display values ─────────────────────────────────────────────────
-
-    private decimal _netIssuedToday =>
-        _todayInvoiceSummary.ReceivableAmount - _todayInvoiceSummary.PayableAmount - _todayNoteSummary.Amount;
-
-    private decimal _marginToday =>
-        _todayInvoiceSummary.ReceivableAmount > 0 ? _netIssuedToday / _todayInvoiceSummary.ReceivableAmount : 0;
 
     private decimal _totalPayables =>
         _invoicePosition.PayableAmount + _purchaseNotePosition.unpaidAmount;
@@ -275,8 +198,6 @@ else
             await Task.WhenAll(
                 InvoiceService.GetDayInvoiceSummaryAsync(today, _cts.Token)
                     .ContinueWith(t => _todayInvoiceSummary = t.Result),
-                PurchaseNoteService.GetDayIssuedSummaryAsync(today, _cts.Token)
-                    .ContinueWith(t => _todayNoteSummary = t.Result),
                 InvoiceService.GetOutstandingPositionAsync(_cts.Token)
                     .ContinueWith(t => _invoicePosition = t.Result),
                 PurchaseNoteService.GetOutstandingPositionAsync(_cts.Token)

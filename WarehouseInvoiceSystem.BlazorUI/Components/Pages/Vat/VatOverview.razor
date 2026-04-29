@@ -77,8 +77,6 @@ else
                             </MudChip>
                         </div>
 
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">@_currentPeriod.PeriodLabel</MudText>
-
                         <MudText Typo="Typo.h3" Class="font-weight-bold mb-4"
                                  Style="@($"color: {(_currentPeriod.IsLiability ? "var(--mud-palette-warning)" : "var(--mud-palette-success)")};")">
                             @Math.Abs(_currentPeriod.NetVat).ToString("C")
@@ -86,19 +84,15 @@ else
 
                         <MudDivider Class="mb-3" />
 
-                        <div class="d-flex justify-space-between mb-1">
-                            <MudText Typo="Typo.body2">@Localization.GetString("OutputVat")</MudText>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">@_currentPeriod.OutputVat.ToString("C")</MudText>
-                        </div>
-                        <div class="d-flex justify-space-between mb-1">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("OutputVat") @Localization.GetString("Base"): @_currentPeriod.OutputBase.ToString("C") (@_currentPeriod.OutputDocCount @Localization.GetString("Doc"))</MudText>
-                        </div>
-                        <div class="d-flex justify-space-between mb-1 mt-2">
-                            <MudText Typo="Typo.body2">@Localization.GetString("InputVat")</MudText>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">@_currentPeriod.InputVat.ToString("C")</MudText>
-                        </div>
                         <div class="d-flex justify-space-between">
-                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.GetString("InputVat") @Localization.GetString("Base"): @_currentPeriod.InputBase.ToString("C") (@_currentPeriod.InputDocCount @Localization.GetString("Doc"))</MudText>
+                            <div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("OutputVat")</MudText>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">@_currentPeriod.OutputVat.ToString("C")</MudText>
+                            </div>
+                            <div class="text-right">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.GetString("InputVat")</MudText>
+                                <MudText Typo="Typo.body2" Class="font-weight-bold">@_currentPeriod.InputVat.ToString("C")</MudText>
+                            </div>
                         </div>
                     </MudCardContent>
                 </MudCard>
@@ -152,14 +146,22 @@ else
         {
             <MudItem xs="12" Class="mt-4">
                 <MudCard Elevation="2">
-                    <MudCardHeader Style="align-items: center;">
+                    <MudCardHeader Style="align-items: center; cursor: pointer;" @onclick="ToggleHistory">
                         <CardHeaderAvatar>
                             <MudIcon Icon="@Icons.Material.Filled.History" Color="Color.Primary" />
                         </CardHeaderAvatar>
                         <CardHeaderContent>
                             <MudText Typo="Typo.h6">@Localization.GetString("FilingDeadline") — претходни периоди</MudText>
                         </CardHeaderContent>
+                        <CardHeaderActions>
+                            <MudIconButton Icon="@(_historyExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="ToggleHistory" />
+                        </CardHeaderActions>
                     </MudCardHeader>
+                    @if (_historyExpanded)
+                    {
                     <MudDivider />
                     <MudTable Items="_history"
                               Hover="true"
@@ -208,6 +210,7 @@ else
                             </MudTd>
                         </RowTemplate>
                     </MudTable>
+                    }
                 </MudCard>
             </MudItem>
         }
@@ -217,9 +220,12 @@ else
 
 @code {
     private bool _isRegistered;
+    private bool _historyExpanded;
     private VatCurrentPeriodDto? _currentPeriod;
     private VatThresholdDto? _threshold;
     private List<VatPeriodHistoryItemDto> _history = [];
+
+    private void ToggleHistory() => _historyExpanded = !_historyExpanded;
 
     protected override async Task OnInitializedAsync()
     {

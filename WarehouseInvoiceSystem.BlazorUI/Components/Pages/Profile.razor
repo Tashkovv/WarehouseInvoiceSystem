@@ -6,23 +6,25 @@
 
 <PageTitle>@Localization.GetString("Profile") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div class="wis-page-header">
-    <MudText Typo="Typo.h3" Class="wis-page-title">
-        @Localization.GetString("Profile")
-    </MudText>
-</div>
+<MudGrid Spacing="4" Justify="Justify.Center">
 
-@if (_loading)
-{
-    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
-}
-else
-{
-    <MudStack Spacing="4">
+    <MudItem xs="12" md="10">
+        <div class="wis-page-header">
+            <MudText Typo="Typo.h3" Class="wis-page-title">
+                @Localization.GetString("Profile")
+            </MudText>
+        </div>
+    </MudItem>
 
-        @* ── Row: Company Info + Banking + Email ─────────────────────────── *@
-        <MudGrid>
-            <MudItem xs="12" md="4">
+    @if (_loading)
+    {
+        <MudItem xs="12" md="10">
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        </MudItem>
+    }
+    else
+    {
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -95,7 +97,7 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -124,7 +126,7 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -154,11 +156,7 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-        </MudGrid>
-
-        @* ── Row: VAT / ДДВ configuration ───────────────────────────────── *@
-        <MudGrid>
-            <MudItem xs="12" md="6">
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -178,7 +176,7 @@ else
                             </MudItem>
                             @if (_vatRegistered)
                             {
-                                <MudItem xs="12">
+                                <MudItem xs="12" sm="6">
                                     <MudText Typo="Typo.caption" Class="mb-1">@Localization.GetString("VatPayerPeriod")</MudText>
                                     <div class="d-flex gap-2 flex-wrap">
                                         @foreach (VatPayerPeriod period in Enum.GetValues<VatPayerPeriod>())
@@ -191,27 +189,26 @@ else
                                         }
                                     </div>
                                 </MudItem>
-                                <MudItem xs="12" sm="6">
-                                    <MudDatePicker @bind-Date="_vatRegistrationDate"
-                                                   Label="@Localization.GetString("VatRegistrationDate")"
-                                                   DateFormat="dd.MM.yyyy"
-                                                   Editable="true"
-                                                   MaxDate="@DateTime.Today" />
+                                <MudItem xs="12" sm="6" Style="align-self: flex-end;">
+                                    <WisDateInput @bind-Date="_vatRegistrationDate"
+                                                  Label="@Localization.GetString("VatRegistrationDate")"
+                                                  DateFormat="dd.MM.yyyy"
+                                                  MaxDate="@DateTime.Today" />
                                 </MudItem>
                             }
                         </MudGrid>
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-        </MudGrid>
 
         @* ── Save ─────────────────────────────────────────────────────────── *@
-        <MudStack Row="true" Justify="Justify.FlexEnd">
+        <MudItem xs="12" md="10" Class="d-flex justify-end">
             <WisButton Action="@_saveAction" ButtonSize="Size.Large"/>
-        </MudStack>
+        </MudItem>
 
-    </MudStack>
-}
+    }
+
+</MudGrid>
 
 @if (_showLightbox && _logoPreviewUrl is not null)
 {
