@@ -6,23 +6,25 @@
 
 <PageTitle>@Localization.GetString("Profile") - @Localization.GetString("InvoiceSystem")</PageTitle>
 
-<div class="wis-page-header">
-    <MudText Typo="Typo.h3" Class="wis-page-title">
-        @Localization.GetString("Profile")
-    </MudText>
-</div>
+<MudGrid Spacing="4" Justify="Justify.Center">
 
-@if (_loading)
-{
-    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
-}
-else
-{
-    <MudStack Spacing="4">
+    <MudItem xs="12" md="10">
+        <div class="wis-page-header">
+            <MudText Typo="Typo.h3" Class="wis-page-title">
+                @Localization.GetString("Profile")
+            </MudText>
+        </div>
+    </MudItem>
 
-        @* ── Row: Company Info + Banking + Email ─────────────────────────── *@
-        <MudGrid>
-            <MudItem xs="12" md="4">
+    @if (_loading)
+    {
+        <MudItem xs="12" md="10">
+            <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+        </MudItem>
+    }
+    else
+    {
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -95,7 +97,7 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -124,7 +126,7 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="5">
                 <MudCard Elevation="2" Style="height: 100%;">
                     <MudCardHeader Style="align-items: center;">
                         <CardHeaderAvatar>
@@ -154,15 +156,53 @@ else
                     </MudCardContent>
                 </MudCard>
             </MudItem>
-        </MudGrid>
+            <MudItem xs="12" md="5">
+                <MudCard Elevation="2" Style="height: 100%;">
+                    <MudCardHeader Style="align-items: center;">
+                        <CardHeaderAvatar>
+                            <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Primary" />
+                        </CardHeaderAvatar>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h6">@Localization.GetString("Vat")</MudText>
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudDivider />
+                    <MudCardContent>
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <MudSwitch @bind-Value="_vatRegistered"
+                                           Color="Color.Primary"
+                                           Label="@Localization.GetString("VatRegistered")" />
+                            </MudItem>
+                            @if (_vatRegistered)
+                            {
+                                <MudItem xs="12" sm="6">
+                                    <MudText Typo="Typo.caption" Class="mb-1">@Localization.GetString("VatPayerPeriod")</MudText>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        @foreach (VatPayerPeriod period in Enum.GetValues<VatPayerPeriod>())
+                                        {
+                                            <button type="button"
+                                                    class="wis-pill-btn @(_vatPayerPeriod == period ? "wis-pill-btn--active" : "")"
+                                                    @onclick="@(() => _vatPayerPeriod = period)">
+                                                @Localization.GetString(period.ToString())
+                                            </button>
+                                        }
+                                    </div>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
 
         @* ── Save ─────────────────────────────────────────────────────────── *@
-        <MudStack Row="true" Justify="Justify.FlexEnd">
+        <MudItem xs="12" md="10" Class="d-flex justify-end">
             <WisButton Action="@_saveAction" ButtonSize="Size.Large"/>
-        </MudStack>
+        </MudItem>
 
-    </MudStack>
-}
+    }
+
+</MudGrid>
 
 @if (_showLightbox && _logoPreviewUrl is not null)
 {
@@ -180,6 +220,8 @@ else
 @code {
     // Form state
     private string _companyName = string.Empty;
+    private bool _vatRegistered;
+    private VatPayerPeriod _vatPayerPeriod = VatPayerPeriod.Quarterly;
     private string? _address;
     private string? _phone;
     private string? _taxId;
@@ -246,6 +288,8 @@ else
     private void PopulateForm(TenantDto tenant)
     {
         _companyName         = tenant.CompanyName;
+        _vatRegistered       = tenant.VatRegistered;
+        _vatPayerPeriod      = tenant.VatPayerPeriod;
         _address             = tenant.Address;
         _phone               = tenant.Phone;
         _taxId               = tenant.TaxId;
@@ -302,17 +346,19 @@ else
             // 1. Save all scalar fields
             await TenantService.UpdateAsync(new UpdateTenantDto
             {
-                CompanyName   = _companyName.Trim(),
-                OperatorName  = null,
-                Address       = _address?.Trim(),
-                Phone         = _phone?.Trim(),
-                TaxId         = _taxId?.Trim(),
-                Embs          = _embs?.Trim(),
-                BankAccount   = _bankAccount?.Trim(),
-                BankName      = _bankName?.Trim(),
-                BankBranch    = _bankBranch?.Trim(),
-                Email         = _email?.Trim(),
-                EmailPassword = _emailPassword,
+                CompanyName         = _companyName.Trim(),
+                OperatorName        = null,
+                Address             = _address?.Trim(),
+                Phone               = _phone?.Trim(),
+                TaxId               = _taxId?.Trim(),
+                Embs                = _embs?.Trim(),
+                BankAccount         = _bankAccount?.Trim(),
+                BankName            = _bankName?.Trim(),
+                BankBranch          = _bankBranch?.Trim(),
+                Email               = _email?.Trim(),
+                EmailPassword       = _emailPassword,
+                VatRegistered       = _vatRegistered,
+                VatPayerPeriod      = _vatPayerPeriod,
             }, _cts.Token);
 
             // 2. Logo: upload new, remove existing, or leave untouched

@@ -31,6 +31,10 @@
             // bytea in PostgreSQL — no max length constraint
             builder.Property(e => e.LogoData).HasColumnType("bytea");
             builder.Property(e => e.LogoMimeType).HasMaxLength(50);
+
+            // VAT / ДДВ
+            builder.Property(e => e.VatRegistered).IsRequired().HasDefaultValue(false);
+            builder.Property(e => e.VatPayerPeriod).IsRequired().HasDefaultValue(Domain.Enums.VatPayerPeriod.Quarterly);
         }
     }
 }

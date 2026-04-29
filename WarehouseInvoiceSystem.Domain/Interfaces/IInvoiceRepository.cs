@@ -72,5 +72,9 @@
         // ── Background job queries ────────────────────────────────────────────
         Task<List<Guid>> BulkMarkOverdueAsync(CancellationToken ct = default);
         Task<List<Invoice>> GetByIdsWithCompanyAsync(List<Guid> ids, CancellationToken ct = default);
+
+        // ── VAT aggregates ────────────────────────────────────────────────────
+        Task<VatPeriodSummaryResult> GetVatPeriodSummaryAsync(DateTime from, DateTime to, CancellationToken ct = default);
+        Task<decimal> GetYtdReceivableTotalAsync(int year, CancellationToken ct = default);
     }
 }

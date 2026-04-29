@@ -1,5 +1,7 @@
 ﻿namespace WarehouseInvoiceSystem.Application.DTOs.Tenant
 {
+    using WarehouseInvoiceSystem.Domain.Enums;
+
     public class UpdateTenantDto
     {
         public string CompanyName { get; set; } = string.Empty;
@@ -19,5 +21,8 @@
         /// TenantService encrypts this before persisting.
         /// </summary>
         public string? EmailPassword { get; set; }
+
+        public bool VatRegistered { get; set; }
+        public VatPayerPeriod VatPayerPeriod { get; set; }
     }
 }
