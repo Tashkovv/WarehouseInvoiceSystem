@@ -56,7 +56,8 @@ else
                            Value="@_stockSummary.TotalProducts.ToString()"
                            Subtitle="@($"{_stockSummary.InStockCount} {Localization.GetString("InStock")}")"
                            Icon="@Icons.Material.Filled.Inventory2"
-                           IconColor="Color.Default" />
+                           IconColor="Color.Default"
+                           Link="/products" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -72,7 +73,8 @@ else
                            Value="@_stockSummary.LowStockCount.ToString()"
                            Subtitle="@Localization.GetString("ProductsBelowMinimum")"
                            Icon="@Icons.Material.Filled.Warning"
-                           IconColor="@(_stockSummary.LowStockCount > 0 ? Color.Error : Color.Success)" />
+                           IconColor="@(_stockSummary.LowStockCount > 0 ? Color.Error : Color.Success)"
+                           Link="/inventory?lowstock=true" />
         </MudItem>
 
         <MudItem xs="12" sm="6" md="3">
@@ -80,7 +82,8 @@ else
                            Value="@_stockSummary.OutOfStockCount.ToString()"
                            Subtitle="@Localization.GetString("ProductsOutOfStock")"
                            Icon="@Icons.Material.Filled.RemoveShoppingCart"
-                           IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)" />
+                           IconColor="@(_stockSummary.OutOfStockCount > 0 ? Color.Error : Color.Success)"
+                           Link="/inventory?lowstock=true" />
         </MudItem>
 
         <!-- ── Alerts & Warnings ── -->
@@ -156,12 +159,23 @@ else
         <!-- ── Top Products By Stock ── -->
         <MudItem xs="12">
             <MudCard Elevation="2">
-                <MudCardHeader>
+                <MudCardHeader Style="align-items: center; cursor: pointer;" @onclick="ToggleTopByStock">
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory2" Color="Color.Primary" />
+                    </CardHeaderAvatar>
                     <CardHeaderContent>
                         <MudText Typo="Typo.h6">@Localization.GetString("TopProductsByStock")</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">@_selectedWarehouseName</MudText>
                     </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@(_topByStockExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                       Size="Size.Small"
+                                       Color="Color.Default"
+                                       OnClick="ToggleTopByStock" />
+                    </CardHeaderActions>
                 </MudCardHeader>
+                @if (_topByStockExpanded)
+                {
                 <MudCardContent Class="pa-0">
                     @if (_topByStock.Any())
                     {
@@ -239,6 +253,7 @@ else
                         </div>
                     }
                 </MudCardContent>
+                }
             </MudCard>
         </MudItem>
 
@@ -379,18 +394,25 @@ else
         <!-- ── Recent Stock Movements ── -->
         <MudItem xs="12">
             <MudCard Elevation="2">
-                <MudCardHeader>
+                <MudCardHeader Style="cursor: pointer;" @onclick="ToggleMovements">
+                    <CardHeaderAvatar>
+                        <MudIcon Icon="@Icons.Material.Filled.SwapVert" Color="Color.Primary" />
+                    </CardHeaderAvatar>
                     <CardHeaderContent>
-                        <div class="d-flex align-center justify-space-between">
-                            <div>
-                                <MudText Typo="Typo.h6">@Localization.GetString("RecentStockMovements")</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                    @Localization.GetString("Last10Transactions") — @_selectedWarehouseName
-                                </MudText>
-                            </div>
-                        </div>
+                        <MudText Typo="Typo.h6">@Localization.GetString("RecentStockMovements")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @Localization.GetString("Last10Transactions") — @_selectedWarehouseName
+                        </MudText>
                     </CardHeaderContent>
+                    <CardHeaderActions>
+                        <MudIconButton Icon="@(_movementsExpanded ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                                       Size="Size.Small"
+                                       Color="Color.Default"
+                                       OnClick="ToggleMovements" />
+                    </CardHeaderActions>
                 </MudCardHeader>
+                @if (_movementsExpanded)
+                {
                 <MudCardContent Class="pa-0">
                     @if (_allTransactions.Any())
                     {
@@ -443,6 +465,7 @@ else
                         </div>
                     }
                 </MudCardContent>
+                }
             </MudCard>
         </MudItem>
 
@@ -465,6 +488,13 @@ else
     // ── Computed alert lists (split from _stockAlerts) ─────────────────────────
     private IEnumerable<StockLevelDto> _outOfStockItems => _stockAlerts.Where(s => s.Quantity == 0);
     private IEnumerable<StockLevelDto> _lowStockItems => _stockAlerts.Where(s => s.Quantity > 0);
+
+    // ── Collapsible sections ───────────────────────────────────────────────────
+    private bool _topByStockExpanded = true;
+    private void ToggleTopByStock() => _topByStockExpanded = !_topByStockExpanded;
+
+    private bool _movementsExpanded;
+    private void ToggleMovements() => _movementsExpanded = !_movementsExpanded;
 
     // ── Statistics date range ──────────────────────────────────────────────────
     private int? _statsDatePreset = 365;
