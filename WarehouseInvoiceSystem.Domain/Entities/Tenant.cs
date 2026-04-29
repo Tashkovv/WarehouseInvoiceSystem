@@ -22,6 +22,5 @@
         // VAT / ДДВ configuration
         public bool VatRegistered { get; set; }
         public VatPayerPeriod VatPayerPeriod { get; set; } = VatPayerPeriod.Quarterly;
-        public DateTime? VatRegistrationDate { get; set; }
     }
 }

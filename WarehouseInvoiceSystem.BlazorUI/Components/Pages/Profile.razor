@@ -189,12 +189,6 @@
                                         }
                                     </div>
                                 </MudItem>
-                                <MudItem xs="12" sm="6" Style="align-self: flex-end;">
-                                    <WisDateInput @bind-Date="_vatRegistrationDate"
-                                                  Label="@Localization.GetString("VatRegistrationDate")"
-                                                  DateFormat="dd.MM.yyyy"
-                                                  MaxDate="@DateTime.Today" />
-                                </MudItem>
                             }
                         </MudGrid>
                     </MudCardContent>
@@ -228,7 +222,6 @@
     private string _companyName = string.Empty;
     private bool _vatRegistered;
     private VatPayerPeriod _vatPayerPeriod = VatPayerPeriod.Quarterly;
-    private DateTime? _vatRegistrationDate;
     private string? _address;
     private string? _phone;
     private string? _taxId;
@@ -297,7 +290,6 @@
         _companyName         = tenant.CompanyName;
         _vatRegistered       = tenant.VatRegistered;
         _vatPayerPeriod      = tenant.VatPayerPeriod;
-        _vatRegistrationDate = tenant.VatRegistrationDate;
         _address             = tenant.Address;
         _phone               = tenant.Phone;
         _taxId               = tenant.TaxId;
@@ -367,7 +359,6 @@
                 EmailPassword       = _emailPassword,
                 VatRegistered       = _vatRegistered,
                 VatPayerPeriod      = _vatPayerPeriod,
-                VatRegistrationDate = _vatRegistered ? _vatRegistrationDate : null,
             }, _cts.Token);
 
             // 2. Logo: upload new, remove existing, or leave untouched

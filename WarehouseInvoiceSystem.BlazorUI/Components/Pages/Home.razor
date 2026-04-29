@@ -181,10 +181,10 @@ else
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
-    protected override async Task OnInitializedAsync()
+    protected override Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-        await LoadData();
+        Navigation.NavigateTo("/documents-dashboard", replace: true);
+        return Task.CompletedTask;
     }
 
     private async Task LoadData()

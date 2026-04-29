@@ -35,7 +35,6 @@
             // VAT / ДДВ
             builder.Property(e => e.VatRegistered).IsRequired().HasDefaultValue(false);
             builder.Property(e => e.VatPayerPeriod).IsRequired().HasDefaultValue(Domain.Enums.VatPayerPeriod.Quarterly);
-            builder.Property(e => e.VatRegistrationDate);
         }
     }
 }

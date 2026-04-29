@@ -382,8 +382,8 @@ else
     private enum PeriodMode { Day, Month, Year, Custom }
 
     // ── Period toggle ──
-    private PeriodMode _periodMode = PeriodMode.Day;
-    private DateTime _selectedDate = DateTime.Today;
+    private PeriodMode _periodMode = PeriodMode.Month;
+    private DateTime _selectedDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
 
     // ── Custom range ──
     private DateRange _customDateRange = new(DateTime.Today.AddDays(-7), DateTime.Today);

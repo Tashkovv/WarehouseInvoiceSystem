@@ -24,6 +24,5 @@
 
         public bool VatRegistered { get; set; }
         public VatPayerPeriod VatPayerPeriod { get; set; }
-        public DateTime? VatRegistrationDate { get; set; }
     }
 }
