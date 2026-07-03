@@ -486,3 +486,4 @@ Temporary Items
 
 # claude
 .claude/settings.local.json
+.claude/launch.json

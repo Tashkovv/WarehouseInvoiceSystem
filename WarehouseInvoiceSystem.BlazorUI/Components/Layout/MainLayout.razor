@@ -1,7 +1,6 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @using Microsoft.Extensions.Options
-@using System.Security.Claims
 @using WarehouseInvoiceSystem.Application.Settings
 @inject ILocalizationService Localization
 @inject IBackgroundJobService BackgroundJobService
@@ -21,7 +20,7 @@
     @if (_licenseStatus is LicenseStatus.Locked or LicenseStatus.NotActivated)
     {
         @* ── Locked: minimal app bar (title + language only), License page instead of Body ── *@
-        <MudAppBar Elevation="1" Color="Color.Primary">
+        <MudAppBar Elevation="1" Color="Color.Primary" Class="px-16" Style="background-color: #FFFFFF !important; color: #0F172A !important; border-bottom: 1px solid #E2E8F0;">
             <MudIcon Icon="@Icons.Material.Filled.Key" Color="Color.Inherit" Class="ml-2" />
             <MudText Typo="Typo.h5" Class="ml-3">
                 @Localization.GetString("InvoiceSystem")
@@ -30,21 +29,22 @@
             <LanguageSwitcher />
         </MudAppBar>
 
-        <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
+        <MudMainContent Class="pt-16 px-16" Style="background-color: #F1F5F9; min-height: 100vh; display: flex; flex-direction: column;">
             <WarehouseInvoiceSystem.BlazorUI.Components.Pages.License @key="Localization.CurrentLanguage" />
         </MudMainContent>
     }
     else
     {
         @* ── Licensed: full app bar with navigation ── *@
-        <MudAppBar Elevation="1" Color="Color.Primary">
-            <MudIconButton Icon="@Icons.Material.Filled.Dashboard"
-                           Color="Color.Inherit"
-                           Edge="Edge.Start"
-                           Href="/" />
-            <MudText Typo="Typo.h5" Class="ml-3">
-                @Localization.GetString("InvoiceSystem")
-            </MudText>
+        <MudAppBar Elevation="1" Color="Color.Primary" Class="px-16" Style="background-color: #FFFFFF !important; color: #0F172A !important; border-bottom: 1px solid #E2E8F0;">
+            <MudButton Href="/"
+                       Color="Color.Inherit"
+                       Style="text-transform: none;">
+                <img src="app-logo.png" alt="Logo" style="width: 40px; height: 40px; object-fit: contain;" />
+                <MudText Typo="Typo.h5" Class="ml-3">
+                    @Localization.GetString("InvoiceSystem")
+                </MudText>
+            </MudButton>
             <MudSpacer />
             <MudMenu ActivationEvent="@MouseEvent.MouseOver"
                      AnchorOrigin="Origin.BottomLeft"
@@ -138,7 +138,7 @@
                 <Authorized>
                     <MudChip T="string" Color="Color.Default" Size="Size.Small"
                              Icon="@Icons.Material.Filled.Person"
-                             Style="color: white; border: 1px solid rgba(255,255,255,0.3);">
+                             Style="color: #0F172A; border: 1px solid #E2E8F0;">
                         @context.User.Identity?.Name
                         @if (context.User.IsInRole("Admin"))
                         {
@@ -265,7 +265,7 @@
             </div>
         </MudAppBar>
 
-        <MudMainContent Class="pt-16 px-16" Style="background-color: #F8FAFC; min-height: 100vh; display: flex; flex-direction: column;">
+        <MudMainContent Class="pt-16 px-16" Style="background-color: #F1F5F9; min-height: 100vh; display: flex; flex-direction: column;">
             <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="mt-4 mb-6" Style="flex: 1 1 auto;">
                 @Body
             </MudContainer>
