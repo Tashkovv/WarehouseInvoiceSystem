@@ -104,6 +104,24 @@
         background-color: #6b9ed2;
     }
 
+html[data-theme="dark"] #components-reconnect-modal {
+    background-color: #1E293B;
+    color: #F1F5F9;
+}
+
+html[data-theme="dark"] #components-reconnect-modal button {
+    background-color: #3B82F6;
+    color: #0F172A;
+}
+
+    html[data-theme="dark"] #components-reconnect-modal button:hover {
+        background-color: #60A5FA;
+    }
+
+    html[data-theme="dark"] #components-reconnect-modal button:active {
+        background-color: #3B82F6;
+    }
+
 .components-rejoining-animation {
     position: relative;
     width: 80px;

@@ -740,6 +740,7 @@
   "PasswordResetSuccess": "Лозинката е успешно ресетирана",
   "ErrorResettingPassword": "Грешка при ресетирање на лозинката",
 
+  "DarkMode": "Темен режим",
   "ChangePassword": "Промени Лозинка",
   "CurrentPassword": "Тековна Лозинка",
   "PasswordChanged": "Лозинката е успешно променета",

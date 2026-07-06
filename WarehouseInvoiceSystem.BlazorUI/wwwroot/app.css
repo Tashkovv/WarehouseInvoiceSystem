@@ -109,7 +109,7 @@ html {
 
 .dashboard-card-hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    box-shadow: 0 8px 16px rgba(var(--mud-palette-dark-rgb), 0.25) !important;
 }
 
 
@@ -1574,7 +1574,7 @@ html {
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 20px rgba(var(--mud-palette-dark-rgb), 0.3);
     overflow: hidden;
     padding: 8px;
     margin-top: 4px;
@@ -1624,7 +1624,7 @@ html {
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 20px rgba(var(--mud-palette-dark-rgb), 0.3);
     overflow: hidden;
     margin-top: 4px;
 }
@@ -2001,7 +2001,7 @@ html {
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 6px 20px rgba(var(--mud-palette-dark-rgb), 0.3);
     overflow: hidden;
     max-height: 280px;
     overflow-y: auto;
@@ -2095,7 +2095,7 @@ html {
     background: var(--mud-palette-surface);
     border: 1px solid var(--mud-palette-divider);
     border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 16px rgba(var(--mud-palette-dark-rgb), 0.3);
     z-index: 2;
     min-width: 72px;
     overflow: hidden;

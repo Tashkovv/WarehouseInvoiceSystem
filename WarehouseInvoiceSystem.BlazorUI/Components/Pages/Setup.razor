@@ -1,15 +1,18 @@
 @page "/setup"
 @layout WarehouseInvoiceSystem.BlazorUI.Components.Layout.EmptyLayout
+@implements IDisposable
+@using WarehouseInvoiceSystem.BlazorUI.Theme
 @inject IUserService UserService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IHostEnvironment Environment
+@inject IThemeService ThemeService
 
-<MudThemeProvider Theme="_theme" />
+<MudThemeProvider Theme="AppTheme.Theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 <MudSnackbarProvider />
 
-<div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #F8FAFC;">
+<div style="@PageBackgroundStyle">
     <MudCard Style="width: 420px;" Elevation="4">
         <MudCardHeader>
             <CardHeaderContent>
@@ -87,25 +90,11 @@
     private string? _error;
     private bool _submitting;
 
-    private readonly MudTheme _theme = new()
-    {
-        PaletteLight = new PaletteLight()
-        {
-            Primary = "#1E40AF",
-            Background = "#F8FAFC",
-            Surface = "#FFFFFF",
-            TextPrimary = "#0F172A",
-            TextSecondary = "#475569",
-        },
-        Typography = new MudBlazor.Typography()
-        {
-            Default = new DefaultTypography()
-            {
-                FontFamily = ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"]
-            }
-        },
-        LayoutProperties = new LayoutProperties() { DefaultBorderRadius = "8px" }
-    };
+    private bool _isDarkMode;
+
+    private string PageBackgroundStyle => _isDarkMode
+        ? "display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #0F172A;"
+        : "display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #F8FAFC;";
 
     protected override async Task OnInitializedAsync()
     {
@@ -119,6 +108,21 @@
             if (anyUsers)
                 Navigation.NavigateTo("/login");
         }
+
+        ThemeService.OnThemeChanged += HandleThemeChanged;
+        _isDarkMode = ThemeService.IsDarkMode;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await ThemeService.InitializeAsync();
+    }
+
+    private void HandleThemeChanged()
+    {
+        _isDarkMode = ThemeService.IsDarkMode;
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task CreateAdmin()
@@ -162,5 +166,10 @@
             _error = ex.Message;
             _submitting = false;
         }
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= HandleThemeChanged;
     }
 }

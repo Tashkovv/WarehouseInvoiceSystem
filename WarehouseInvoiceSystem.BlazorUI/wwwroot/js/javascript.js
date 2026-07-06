@@ -58,3 +58,22 @@ globalThis.wisUtils = {
         if (el) el.focus();
     }
 };
+
+globalThis.wisTheme = {
+    getPreference: function () {
+        try {
+            return localStorage.getItem('wis-theme');
+        } catch (e) {
+            return null;
+        }
+    },
+
+    setPreference: function (value) {
+        try {
+            localStorage.setItem('wis-theme', value);
+        } catch (e) {
+            // localStorage unavailable; theme just won't persist.
+        }
+        document.documentElement.setAttribute('data-theme', value);
+    }
+};

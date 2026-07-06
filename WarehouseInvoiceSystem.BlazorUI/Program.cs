@@ -78,6 +78,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuditContextService, AuditContextService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IVatService, VatService>();
+builder.Services.AddScoped<IThemeService, ThemeService>();
 builder.Services.AddScoped<WisDialogService>();
 
 // Authentication & Authorization

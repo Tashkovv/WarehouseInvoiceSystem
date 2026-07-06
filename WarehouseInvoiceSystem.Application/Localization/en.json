@@ -740,6 +740,7 @@
   "PasswordResetSuccess": "Password reset successfully",
   "ErrorResettingPassword": "Error resetting password",
 
+  "DarkMode": "Dark Mode",
   "ChangePassword": "Change Password",
   "CurrentPassword": "Current Password",
   "PasswordChanged": "Password changed successfully",

@@ -1,14 +1,17 @@
 @page "/login"
 @layout WarehouseInvoiceSystem.BlazorUI.Components.Layout.EmptyLayout
+@implements IDisposable
+@using WarehouseInvoiceSystem.BlazorUI.Theme
 @inject IUserService UserService
 @inject ILocalizationService Localization
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject IThemeService ThemeService
 
-<MudThemeProvider Theme="_theme" />
+<MudThemeProvider Theme="AppTheme.Theme" IsDarkMode="_isDarkMode" />
 <MudPopoverProvider />
 
-<div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #F8FAFC;">
+<div style="@PageBackgroundStyle">
     <MudCard Style="width: 420px;" Elevation="4">
         <MudCardHeader>
             <CardHeaderContent>
@@ -31,18 +34,18 @@
                 <div class="mb-4">
                     <label class="mud-input-label" for="username">@Localization.GetString("Username")</label>
                     <input type="text" id="username" name="username" required autofocus
-                           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; font-family: Inter, sans-serif;" />
+                           style="@InputStyle" />
                 </div>
 
                 <div class="mb-4">
                     <label class="mud-input-label" for="password">@Localization.GetString("Password")</label>
                     <input type="password" id="password" name="password" required
-                           style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; font-family: Inter, sans-serif;" />
+                           style="@InputStyle" />
                 </div>
 
                 <div class="d-flex align-center mb-4">
                     <input type="checkbox" id="remember" name="remember" value="true" style="margin-right: 8px;" />
-                    <label for="remember" style="font-size: 0.875rem; color: #475569;">@Localization.GetString("RememberMe")</label>
+                    <label for="remember" style="@CheckboxLabelStyle">@Localization.GetString("RememberMe")</label>
                 </div>
 
                 <div class="d-flex justify-end">
@@ -61,26 +64,19 @@
 
 @code {
     private string? _error;
+    private bool _isDarkMode;
 
-    private readonly MudTheme _theme = new()
-    {
-        PaletteLight = new PaletteLight()
-        {
-            Primary = "#1E40AF",
-            Background = "#F8FAFC",
-            Surface = "#FFFFFF",
-            TextPrimary = "#0F172A",
-            TextSecondary = "#475569",
-        },
-        Typography = new MudBlazor.Typography()
-        {
-            Default = new DefaultTypography()
-            {
-                FontFamily = ["Inter", "Roboto", "Helvetica", "Arial", "sans-serif"]
-            }
-        },
-        LayoutProperties = new LayoutProperties() { DefaultBorderRadius = "8px" }
-    };
+    private string PageBackgroundStyle => _isDarkMode
+        ? "display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #0F172A;"
+        : "display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #F8FAFC;";
+
+    private string InputStyle => _isDarkMode
+        ? "width: 100%; padding: 12px; border: 1px solid #334155; border-radius: 8px; font-size: 1rem; font-family: Inter, sans-serif; background-color: #1E293B; color: #F1F5F9;"
+        : "width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; font-family: Inter, sans-serif;";
+
+    private string CheckboxLabelStyle => _isDarkMode
+        ? "font-size: 0.875rem; color: #94A3B8;"
+        : "font-size: 0.875rem; color: #475569;";
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,10 +87,30 @@
         bool anyUsers = await UserService.AnyUsersExistAsync();
         if (!anyUsers)
             Navigation.NavigateTo("/setup");
+
+        ThemeService.OnThemeChanged += HandleThemeChanged;
+        _isDarkMode = ThemeService.IsDarkMode;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await ThemeService.InitializeAsync();
+    }
+
+    private void HandleThemeChanged()
+    {
+        _isDarkMode = ThemeService.IsDarkMode;
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task SubmitLogin()
     {
         await JS.InvokeVoidAsync("wisAuth.submitForm", "loginForm");
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= HandleThemeChanged;
     }
 }

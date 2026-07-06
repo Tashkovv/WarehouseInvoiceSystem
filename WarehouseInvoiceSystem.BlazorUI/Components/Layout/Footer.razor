@@ -1,7 +1,8 @@
 ﻿@inject ILocalizationService Localization
+@inject IThemeService ThemeService
 @implements IDisposable
 
-<MudContainer MaxWidth="MaxWidth.False" Class="mt-auto py-4" Style="background-color: #F8FAFC;">
+<MudContainer MaxWidth="MaxWidth.False" Class="mt-auto py-4" Style="@BackgroundStyle">
     <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge">
         <div class="d-flex justify-space-between align-center flex-wrap">
             <MudText Typo="Typo.body2" Color="Color.Secondary">
@@ -16,9 +17,23 @@
 </MudContainer>
 
 @code {
+    private bool _isDarkMode;
+
+    private string BackgroundStyle => _isDarkMode
+        ? "background-color: #0F172A;"
+        : "background-color: #F8FAFC;";
+
     protected override void OnInitialized()
     {
         Localization.OnLanguageChanged += StateHasChanged;
+        ThemeService.OnThemeChanged += HandleThemeChanged;
+        _isDarkMode = ThemeService.IsDarkMode;
+    }
+
+    private void HandleThemeChanged()
+    {
+        _isDarkMode = ThemeService.IsDarkMode;
+        InvokeAsync(StateHasChanged);
     }
 
     private void ChangeLanguage(string language)
@@ -29,5 +44,6 @@
     public void Dispose()
     {
         Localization.OnLanguageChanged -= StateHasChanged;
+        ThemeService.OnThemeChanged -= HandleThemeChanged;
     }
 }
