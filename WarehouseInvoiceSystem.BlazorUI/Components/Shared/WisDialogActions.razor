@@ -13,6 +13,9 @@
     /// <summary>Label for the confirm button. Defaults to "Save".</summary>
     [Parameter] public string? SaveLabel { get; set; }
 
+    /// <summary>Label for the cancel/dismiss button. Defaults to "Cancel".</summary>
+    [Parameter] public string? CancelLabel { get; set; }
+
     /// <summary>Icon for the confirm button. Optional.</summary>
     [Parameter] public string? SaveIcon { get; set; }
 
@@ -27,7 +30,7 @@
 
     private WisDetailActionItem _cancelAction => new()
     {
-        Label = Localization.GetString("Cancel"),
+        Label = CancelLabel ?? Localization.GetString("Cancel"),
         Color = Color.Secondary,
         OnClick = OnCancel
     };
