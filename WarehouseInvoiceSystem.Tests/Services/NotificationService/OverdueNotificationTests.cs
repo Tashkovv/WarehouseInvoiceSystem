@@ -12,7 +12,8 @@ public class OverdueNotificationTests : NotificationServiceTestBase
     public async Task CreateOverdue_CreatesNotificationWithInvoices()
     {
         var invoiceIds = new List<Guid> { Guid.NewGuid(), Guid.NewGuid() };
-        NotificationRepo.ExistsTodayAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        NotificationRepo.GetInvoiceIdsAlreadyNotifiedAsync(Arg.Any<List<Guid>>(), Arg.Any<NotificationType>(), Arg.Any<CancellationToken>())
+            .Returns([]);
         NotificationRepo.CreateWithInvoicesAsync(Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
         var service = CreateService();
@@ -26,16 +27,40 @@ public class OverdueNotificationTests : NotificationServiceTestBase
     }
 
     [Fact]
-    public async Task CreateOverdue_AlreadyExistsToday_ReturnsEarly()
+    public async Task CreateOverdue_AllInvoicesAlreadyNotified_ReturnsEarly()
     {
         var invoiceIds = new List<Guid> { Guid.NewGuid() };
-        NotificationRepo.ExistsTodayAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(true);
+        NotificationRepo.GetInvoiceIdsAlreadyNotifiedAsync(Arg.Any<List<Guid>>(), Arg.Any<NotificationType>(), Arg.Any<CancellationToken>())
+            .Returns(invoiceIds);
         var service = CreateService();
 
         await service.CreateOverdueNotificationAsync(invoiceIds);
 
         await NotificationRepo.DidNotReceive().CreateWithInvoicesAsync(
             Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateOverdue_SomeInvoicesAlreadyNotified_OnlyNotifiesNewOnes()
+    {
+        // Regression test: an invoice that already has an InvoiceOverdue notification
+        // (e.g. from a prior run) must not be re-notified when it appears again in a
+        // later overdue batch alongside a genuinely new invoice.
+        var alreadyNotifiedId = Guid.NewGuid();
+        var newInvoiceId = Guid.NewGuid();
+        var invoiceIds = new List<Guid> { alreadyNotifiedId, newInvoiceId };
+        NotificationRepo.GetInvoiceIdsAlreadyNotifiedAsync(Arg.Any<List<Guid>>(), Arg.Any<NotificationType>(), Arg.Any<CancellationToken>())
+            .Returns([alreadyNotifiedId]);
+        NotificationRepo.CreateWithInvoicesAsync(Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(Guid.NewGuid());
+        var service = CreateService();
+
+        await service.CreateOverdueNotificationAsync(invoiceIds);
+
+        await NotificationRepo.Received(1).CreateWithInvoicesAsync(
+            Arg.Is<Notification>(n => n.Data!.Contains("\"count\":1")),
+            Arg.Is<List<Guid>>(ids => ids.Count == 1 && ids.Contains(newInvoiceId) && !ids.Contains(alreadyNotifiedId)),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -46,7 +71,8 @@ public class OverdueNotificationTests : NotificationServiceTestBase
         var invoice2 = CreateInvoice("Company B", "b@test.com");
         var invoiceIds = new List<Guid> { invoice1.Id, invoice2.Id };
 
-        NotificationRepo.ExistsTodayAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        NotificationRepo.GetInvoiceIdsAlreadyNotifiedAsync(Arg.Any<List<Guid>>(), Arg.Any<NotificationType>(), Arg.Any<CancellationToken>())
+            .Returns([]);
         NotificationRepo.CreateWithInvoicesAsync(Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
         InvoiceRepo.GetByIdsWithCompanyAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
@@ -72,7 +98,8 @@ public class OverdueNotificationTests : NotificationServiceTestBase
         var invoiceWithEmail = CreateInvoice("Has Email Co", "has@test.com");
         var invoiceIds = new List<Guid> { invoiceNoEmail.Id, invoiceWithEmail.Id };
 
-        NotificationRepo.ExistsTodayAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(false);
+        NotificationRepo.GetInvoiceIdsAlreadyNotifiedAsync(Arg.Any<List<Guid>>(), Arg.Any<NotificationType>(), Arg.Any<CancellationToken>())
+            .Returns([]);
         NotificationRepo.CreateWithInvoicesAsync(Arg.Any<Notification>(), Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(Guid.NewGuid());
         InvoiceRepo.GetByIdsWithCompanyAsync(Arg.Any<List<Guid>>(), Arg.Any<CancellationToken>())

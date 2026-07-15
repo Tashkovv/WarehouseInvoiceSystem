@@ -3,6 +3,7 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
     using Microsoft.EntityFrameworkCore;
     using WarehouseInvoiceSystem.Application.Interfaces;
     using WarehouseInvoiceSystem.Domain.Entities;
+    using WarehouseInvoiceSystem.Domain.Enums;
     using WarehouseInvoiceSystem.Domain.Interfaces;
     using WarehouseInvoiceSystem.Infrastructure.Data;
 
@@ -33,6 +34,16 @@ namespace WarehouseInvoiceSystem.Infrastructure.Repositories
                 return await All<Notification>(context)
                     .AnyAsync(n => n.Data == data && n.CreatedAt >= today && n.CreatedAt < tomorrow, ct);
             }, ct);
+
+        public Task<List<Guid>> GetInvoiceIdsAlreadyNotifiedAsync(List<Guid> invoiceIds, NotificationType type, CancellationToken ct = default) =>
+            WithContextAsync(async context =>
+                await context.NotificationInvoices
+                    .Where(ni => invoiceIds.Contains(ni.InvoiceId)
+                              && ni.Notification.DeletedOn == null
+                              && ni.Notification.Type == type)
+                    .Select(ni => ni.InvoiceId)
+                    .Distinct()
+                    .ToListAsync(ct), ct);
 
         public Task<Guid> CreateWithInvoicesAsync(Notification notification, List<Guid> invoiceIds, CancellationToken ct = default) =>
             WithContextAsync(async context =>

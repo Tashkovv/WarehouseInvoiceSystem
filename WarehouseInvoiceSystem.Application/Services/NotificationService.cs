@@ -98,22 +98,25 @@ namespace WarehouseInvoiceSystem.Application.Services
 
         public async Task CreateOverdueNotificationAsync(List<Guid> invoiceIds, CancellationToken ct = default)
         {
-            string data = JsonSerializer.Serialize(new { count = invoiceIds.Count });
-            if (await notificationRepository.ExistsTodayAsync(data, ct)) return;
+            List<Guid> alreadyNotified = await notificationRepository.GetInvoiceIdsAlreadyNotifiedAsync(
+                invoiceIds, NotificationType.InvoiceOverdue, ct);
+            List<Guid> newInvoiceIds = invoiceIds.Except(alreadyNotified).ToList();
+
+            if (newInvoiceIds.Count == 0) return;
 
             var notification = new Notification
             {
                 Type = NotificationType.InvoiceOverdue,
-                Data = data,
+                Data = JsonSerializer.Serialize(new { count = newInvoiceIds.Count }),
                 IsRead = false,
                 IsEmailSent = false
             };
 
-            Guid notificationId = await notificationRepository.CreateWithInvoicesAsync(notification, invoiceIds, ct);
+            Guid notificationId = await notificationRepository.CreateWithInvoicesAsync(notification, newInvoiceIds, ct);
 
             if (_settings.SendEmails)
             {
-                List<Invoice> invoices = await invoiceRepository.GetByIdsWithCompanyAsync(invoiceIds, ct);
+                List<Invoice> invoices = await invoiceRepository.GetByIdsWithCompanyAsync(newInvoiceIds, ct);
                 await SendOverdueEmailsAsync(invoices, notificationId, ct);
             }
         }
